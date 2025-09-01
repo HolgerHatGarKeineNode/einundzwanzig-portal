@@ -23,16 +23,19 @@ class BitcoinEvent extends Model implements HasMedia
     protected $guarded = [];
 
     /**
-     * The attributes that should be cast to native types.
+     * Get the attributes that should be cast.
      *
-     * @var array
+     * @return array<string, string>
      */
-    protected $casts = [
-        'id' => 'integer',
-        'venue_id' => 'integer',
-        'from' => 'datetime',
-        'to' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'id' => 'integer',
+            'venue_id' => 'integer',
+            'from' => 'datetime',
+            'to' => 'datetime',
+        ];
+    }
 
     protected static function booted()
     {

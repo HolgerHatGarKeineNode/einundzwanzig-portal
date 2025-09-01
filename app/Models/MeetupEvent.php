@@ -20,17 +20,20 @@ class MeetupEvent extends Model
     protected $guarded = [];
 
     /**
-     * The attributes that should be cast to native types.
+     * Get the attributes that should be cast.
      *
-     * @var array
+     * @return array<string, string>
      */
-    protected $casts = [
-        'id' => 'integer',
-        'meetup_id' => 'integer',
-        'start' => 'datetime',
-        'attendees' => 'array',
-        'might_attendees' => 'array',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'id' => 'integer',
+            'meetup_id' => 'integer',
+            'start' => 'datetime',
+            'attendees' => 'array',
+            'might_attendees' => 'array',
+        ];
+    }
 
     protected static function booted()
     {

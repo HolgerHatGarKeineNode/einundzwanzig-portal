@@ -8,7 +8,10 @@ class TwitterAccount extends Model
 {
     protected $guarded = [];
 
-    protected $casts = [
-        'data' => 'array',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'data' => 'array',
+        ];
+    }
 }

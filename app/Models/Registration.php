@@ -18,16 +18,19 @@ class Registration extends Model
     protected $guarded = [];
 
     /**
-     * The attributes that should be cast to native types.
+     * Get the attributes that should be cast.
      *
-     * @var array
+     * @return array<string, string>
      */
-    protected $casts = [
-        'id' => 'integer',
-        'event_id' => 'integer',
-        'participant_id' => 'integer',
-        'active' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'id' => 'integer',
+            'event_id' => 'integer',
+            'participant_id' => 'integer',
+            'active' => 'boolean',
+        ];
+    }
 
     public function courseEvent(): BelongsTo
     {

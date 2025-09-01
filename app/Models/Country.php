@@ -18,14 +18,17 @@ class Country extends Model
     protected $guarded = [];
 
     /**
-     * The attributes that should be cast to native types.
+     * Get the attributes that should be cast.
      *
-     * @var array
+     * @return array<string, string>
      */
-    protected $casts = [
-        'id' => 'integer',
-        'language_codes' => 'array',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'id' => 'integer',
+            'language_codes' => 'array',
+        ];
+    }
 
     public function cities(): HasMany
     {
