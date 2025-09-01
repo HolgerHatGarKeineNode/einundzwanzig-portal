@@ -212,7 +212,7 @@ Deshalb werden Sie von mir in diesem Kurs leicht verständlich an das Thema hera
         ]);
         $course->syncTagsWithType(['Hardware Wallet'], 'course');
         $course->categories()
-               ->attach($category);
+            ->attach($category);
         $course = Course::create([
             'lecturer_id' => 1,
             'name' => 'Bitcoin <> Crypto',
@@ -233,7 +233,7 @@ Deshalb werden Sie von mir in diesem Kurs leicht verständlich an das Thema hera
         ]);
         $course->syncTagsWithType(['Lightning'], 'course');
         $course->categories()
-               ->attach($categoryOnline);
+            ->attach($categoryOnline);
         $course = Course::create([
             'lecturer_id' => 2,
             'name' => 'Bitcoin Lightning Network',
@@ -254,7 +254,7 @@ Deshalb werden Sie von mir in diesem Kurs leicht verständlich an das Thema hera
         ]);
         $course->syncTagsWithType(['Für Unternehmen'], 'course');
         $course->categories()
-               ->attach($categoryOnline);
+            ->attach($categoryOnline);
         Participant::create([
             'first_name' => 'Roman',
             'last_name' => 'Reher',
@@ -331,7 +331,7 @@ Deshalb werden Sie von mir in diesem Kurs leicht verständlich an das Thema hera
         $libraryItem->setStatus('published');
         $libraryItem->syncTagsWithType(['Bitcoin'], 'library_item');
         $library->libraryItems()
-                ->attach($libraryItem);
+            ->attach($libraryItem);
         $library = Library::create([
             'name' => 'Apricot',
             'language_codes' => ['de', 'en'],
@@ -348,7 +348,7 @@ Deshalb werden Sie von mir in diesem Kurs leicht verständlich an das Thema hera
         $libraryItem->setStatus('published');
         $libraryItem->syncTagsWithType(['Bitcoin'], 'library_item');
         $library->libraryItems()
-                ->attach($libraryItem);
+            ->attach($libraryItem);
         $library = Library::create([
             'name' => 'Gigi',
             'language_codes' => ['de', 'en'],
@@ -365,7 +365,7 @@ Deshalb werden Sie von mir in diesem Kurs leicht verständlich an das Thema hera
         $libraryItem->setStatus('published');
         $libraryItem->syncTagsWithType(['Proof of Work'], 'library_item');
         $library->libraryItems()
-                ->attach($libraryItem);
+            ->attach($libraryItem);
         $nonPublicLibrary = Library::create([
             'name' => 'Einundzwanzig Dozenten',
             'is_public' => false,
@@ -383,7 +383,7 @@ Deshalb werden Sie von mir in diesem Kurs leicht verständlich an das Thema hera
         $libraryItem->setStatus('published');
         $libraryItem->syncTagsWithType(['Präsentationen'], 'library_item');
         $nonPublicLibrary->libraryItems()
-                         ->attach($libraryItem);
+            ->attach($libraryItem);
         Artisan::call(ReadAndSyncPodcastFeeds::class);
         Artisan::call(SyncOpenBooks::class);
         Artisan::call(ImportGithubMeetups::class);
@@ -412,11 +412,11 @@ Deshalb werden Sie von mir in diesem Kurs leicht verständlich an das Thema hera
         BitcoinEvent::create([
             'venue_id' => 4,
             'from' => Carbon::parse('2023-09-12')
-                                   ->startOfDay()
-                                   ->addHours(8),
+                ->startOfDay()
+                ->addHours(8),
             'to' => Carbon::parse('2023-09-16')
-                                   ->startOfDay()
-                                   ->addHours(18),
+                ->startOfDay()
+                ->addHours(18),
             'title' => 'BTC23',
             'description' => 'The largest Bitcoin conference in German is entering the second round: The BTC23 will be even better, more diverse and quite controversial. We are open - for Bitcoiners, interested parties and skeptics from all directions. Three days with bitcoiners, thought leaders and entrepreneurs from space - full of relevant lectures, debates and conversations. And of course parties! The following applies: The BTC23 is there for everyone, no matter what level of knowledge you have on the subject. #bitcoinonly
 

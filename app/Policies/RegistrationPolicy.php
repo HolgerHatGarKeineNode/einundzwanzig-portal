@@ -29,7 +29,7 @@ class RegistrationPolicy extends BasePolicy
     {
         return $registration->whereHas('event.course.lecturer',
             fn ($q) => $q->where('team_id', $user->current_team_id))
-                            ->exists();
+            ->exists();
     }
 
     /**

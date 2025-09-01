@@ -47,10 +47,10 @@ class City extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     public function subtitle()
@@ -65,7 +65,7 @@ class City extends Resource
     {
         return [
             ID::make()
-              ->sortable(),
+                ->sortable(),
 
             Text::make(__('Name'), 'name')
                 ->rules('required', 'string'),
@@ -74,18 +74,18 @@ class City extends Resource
                 ->exceptOnForms(),
 
             Number::make(__('Latitude'), 'latitude')
-                  ->rules('required', 'numeric')
-                  ->step(0.000001)
-                  ->help('<a target="_blank" href="https://www.latlong.net/">https://www.latlong.net/</a>'),
+                ->rules('required', 'numeric')
+                ->step(0.000001)
+                ->help('<a target="_blank" href="https://www.latlong.net/">https://www.latlong.net/</a>'),
 
             Number::make(__('Longitude'), 'longitude')
-                  ->rules('required', 'numeric')
-                  ->step(0.000001)
-                  ->help('<a target="_blank" href="https://www.latlong.net/">https://www.latlong.net/</a>'),
+                ->rules('required', 'numeric')
+                ->step(0.000001)
+                ->help('<a target="_blank" href="https://www.latlong.net/">https://www.latlong.net/</a>'),
 
             BelongsTo::make(__('Country'), 'country', Country::class)
-                     ->searchable()
-                     ->withSubtitles(),
+                ->searchable()
+                ->withSubtitles(),
 
             HasMany::make(__('Venues'), 'venues', Venue::class),
 
@@ -94,12 +94,12 @@ class City extends Resource
             HasMany::make(__('Meetups'), 'meetups', Meetup::class),
 
             BelongsTo::make(__('Created By'), 'createdBy', User::class)
-                     ->canSee(function ($request) {
-                         return $request->user()
-                                        ->hasRole('super-admin');
-                     })
-                     ->searchable()
-                     ->withSubtitles(),
+                ->canSee(function ($request) {
+                    return $request->user()
+                        ->hasRole('super-admin');
+                })
+                ->searchable()
+                ->withSubtitles(),
 
         ];
     }

@@ -23,7 +23,7 @@ class CustomEnsureEmailVerified
                 $request->user() instanceof MustVerifyEmail
                 && ! $request->user()->public_key
                 && ! $request->user()
-                            ->hasVerifiedEmail()
+                    ->hasVerifiedEmail()
             )
         ) {
             return $request->expectsJson()

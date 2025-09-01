@@ -39,10 +39,10 @@ class Language extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     public function subtitle()
@@ -57,7 +57,7 @@ class Language extends Resource
     {
         return [
             ID::make()
-              ->sortable(),
+                ->sortable(),
 
             Text::make(__('Name'), 'name')
                 ->rules('required', 'string'),

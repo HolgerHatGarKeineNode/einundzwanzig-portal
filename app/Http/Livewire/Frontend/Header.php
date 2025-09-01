@@ -35,8 +35,8 @@ class Header extends Component
         $this->l = Cookie::get('lang') ?: config('app.locale');
         if (! $this->country) {
             $this->country = Country::query()
-                                    ->where('code', $this->c)
-                                    ->first();
+                ->where('code', $this->c)
+                ->first();
         }
         $this->currentRouteName = Route::currentRouteName();
         $this->c = $this->country->code;
@@ -60,19 +60,19 @@ class Header extends Component
 
         return view('livewire.frontend.header', [
             'cities' => City::query()
-                               ->select(['latitude', 'longitude'])
-                               ->get(),
+                ->select(['latitude', 'longitude'])
+                ->get(),
             'countries' => Country::query()
-                                  ->select('id', 'name', 'code')
-                                  ->orderBy('name')
-                                  ->get()
-                                  ->map(function (Country $country) {
-                                      $country->name = config('countries.emoji_flags')[str($country->code)
-                                              ->upper()
-                                              ->toString()].' '.$country->name;
+                ->select('id', 'name', 'code')
+                ->orderBy('name')
+                ->get()
+                ->map(function (Country $country) {
+                    $country->name = config('countries.emoji_flags')[str($country->code)
+                        ->upper()
+                        ->toString()].' '.$country->name;
 
-                                      return $country;
-                                  }),
+                    return $country;
+                }),
         ]);
     }
 }

@@ -51,25 +51,25 @@ class Lecturer extends Model implements HasMedia
         });
     }
 
-    public function registerMediaConversions(Media $media = null): void
+    public function registerMediaConversions(?Media $media = null): void
     {
         $this
             ->addMediaConversion('preview')
             ->fit(Manipulations::FIT_CROP, 300, 300)
             ->nonQueued();
         $this->addMediaConversion('thumb')
-             ->fit(Manipulations::FIT_CROP, 130, 130)
-             ->width(130)
-             ->height(130);
+            ->fit(Manipulations::FIT_CROP, 130, 130)
+            ->width(130)
+            ->height(130);
     }
 
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('avatar')
-             ->singleFile()
-             ->useFallbackUrl(asset('img/einundzwanzig.png'));
+            ->singleFile()
+            ->useFallbackUrl(asset('img/einundzwanzig.png'));
         $this->addMediaCollection('images')
-             ->useFallbackUrl(asset('img/einundzwanzig.png'));
+            ->useFallbackUrl(asset('img/einundzwanzig.png'));
     }
 
     /**
@@ -78,9 +78,9 @@ class Lecturer extends Model implements HasMedia
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
-                          ->generateSlugsFrom(['name'])
-                          ->saveSlugsTo('slug')
-                          ->usingLanguage(Cookie::get('lang', config('app.locale')));
+            ->generateSlugsFrom(['name'])
+            ->saveSlugsTo('slug')
+            ->usingLanguage(Cookie::get('lang', config('app.locale')));
     }
 
     public function createdBy(): BelongsTo

@@ -13,15 +13,15 @@ class Footer extends Component
     {
         $l = Cookie::get('lang', config('app.locale'));
         $language = Language::query()
-                            ->where('language', $l)
-                            ->first();
+            ->where('language', $l)
+            ->first();
         $translated = $language->translations()
-                               ->whereNotNull('value')
-                               ->where('value', '<>', '')
-                               ->count();
+            ->whereNotNull('value')
+            ->where('value', '<>', '')
+            ->count();
         $toTranslate = Translation::query()
-                                  ->where('language_id', $language->id)
-                                  ->count();
+            ->where('language_id', $language->id)
+            ->count();
         $toTranslate = $toTranslate > 0 ? $toTranslate : 1;
 
         return view('livewire.frontend.footer', [

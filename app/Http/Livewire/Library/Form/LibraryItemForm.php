@@ -75,16 +75,16 @@ class LibraryItemForm extends Component
             ]);
             if ($this->lecturer) {
                 $this->library = Library::query()
-                                        ->firstWhere('name', '=', 'Dozentenmaterial')?->id;
+                    ->firstWhere('name', '=', 'Dozentenmaterial')?->id;
             }
         } else {
             $this->selectedTags = $this->libraryItem->tags()
-                                                    ->where('type', 'library_item')
-                                                    ->get()
-                                                    ->map(fn ($tag) => $tag->name)
-                                                    ->toArray();
+                ->where('type', 'library_item')
+                ->get()
+                ->map(fn ($tag) => $tag->name)
+                ->toArray();
             $this->library = $this->libraryItem->libraries()
-                                               ->first()
+                ->first()
                 ->id;
         }
         if (! $this->fromUrl) {
@@ -105,16 +105,16 @@ class LibraryItemForm extends Component
 
         if ($this->image) {
             $this->libraryItem->addMedia($this->image)
-                              ->toMediaCollection('main');
+                ->toMediaCollection('main');
         }
 
         if ($this->file) {
             $this->libraryItem->addMedia($this->file)
-                              ->toMediaCollection('single_file');
+                ->toMediaCollection('single_file');
         }
 
         $this->libraryItem->libraries()
-                          ->syncWithoutDetaching([(int) $this->library]);
+            ->syncWithoutDetaching([(int) $this->library]);
 
         return to_route('library.table.libraryItems', ['country' => $this->country]);
     }
@@ -128,29 +128,29 @@ class LibraryItemForm extends Component
             $selectedTags->push($name);
         }
         $this->selectedTags = $selectedTags->values()
-                                           ->toArray();
+            ->toArray();
     }
 
     public function render()
     {
         return view('livewire.library.form.library-item-form', [
             'types' => Options::forEnum(LibraryItemType::class)
-                                  ->filter(
-                                      fn ($type) => $type !== LibraryItemType::PodcastEpisode
-                                                   && $type !== LibraryItemType::MarkdownArticle
-                                  )
-                                  ->toArray(),
+                ->filter(
+                    fn ($type) => $type !== LibraryItemType::PodcastEpisode
+                                 && $type !== LibraryItemType::MarkdownArticle
+                )
+                ->toArray(),
             'libraries' => Library::query()
-                                  ->where('is_public', true)
-                                  ->get()
-                                  ->map(fn ($library) => [
-                                      'id' => $library->id,
-                                      'name' => $library->name,
-                                  ])
-                                  ->toArray(),
+                ->where('is_public', true)
+                ->get()
+                ->map(fn ($library) => [
+                    'id' => $library->id,
+                    'name' => $library->name,
+                ])
+                ->toArray(),
             'tags' => Tag::query()
-                              ->where('type', 'library_item')
-                              ->get(),
+                ->where('type', 'library_item')
+                ->get(),
         ]);
     }
 }

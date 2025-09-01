@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('bitcoin_events', function (Blueprint $table) {
             $table->boolean('show_worldwide')
-                  ->default(false);
+                ->default(false);
         });
     }
 

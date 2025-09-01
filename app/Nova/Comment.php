@@ -37,10 +37,10 @@ class Comment extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     public function fields(NovaRequest $request)
@@ -52,9 +52,9 @@ class Comment extends Resource
                 ->readonly(),
 
             MorphTo::make(__('Commentator'), 'commentator')
-                   ->types([
-                       User::class,
-                   ]),
+                ->types([
+                    User::class,
+                ]),
 
             Markdown::make(__('Original text'), 'original_text'),
 

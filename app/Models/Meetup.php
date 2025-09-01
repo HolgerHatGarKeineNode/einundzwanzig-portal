@@ -18,8 +18,8 @@ use Spatie\Sluggable\SlugOptions;
 class Meetup extends Model implements HasMedia
 {
     use HasFactory;
-    use InteractsWithMedia;
     use HasSlug;
+    use InteractsWithMedia;
 
     /**
      * The attributes that aren't mass assignable.
@@ -52,28 +52,28 @@ class Meetup extends Model implements HasMedia
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
-                          ->generateSlugsFrom(['name'])
-                          ->saveSlugsTo('slug')
-                          ->usingLanguage(Cookie::get('lang', config('app.locale')));
+            ->generateSlugsFrom(['name'])
+            ->saveSlugsTo('slug')
+            ->usingLanguage(Cookie::get('lang', config('app.locale')));
     }
 
-    public function registerMediaConversions(Media $media = null): void
+    public function registerMediaConversions(?Media $media = null): void
     {
         $this
             ->addMediaConversion('preview')
             ->fit(Manipulations::FIT_CROP, 300, 300)
             ->nonQueued();
         $this->addMediaConversion('thumb')
-             ->fit(Manipulations::FIT_CROP, 130, 130)
-             ->width(130)
-             ->height(130);
+            ->fit(Manipulations::FIT_CROP, 130, 130)
+            ->width(130)
+            ->height(130);
     }
 
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('logo')
-             ->singleFile()
-             ->useFallbackUrl(asset('img/einundzwanzig.png'));
+            ->singleFile()
+            ->useFallbackUrl(asset('img/einundzwanzig.png'));
     }
 
     public function createdBy(): BelongsTo

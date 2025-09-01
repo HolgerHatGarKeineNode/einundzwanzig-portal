@@ -45,10 +45,10 @@ class Venue extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     public function subtitle()
@@ -63,10 +63,10 @@ class Venue extends Resource
     {
         return [
             ID::make()
-              ->sortable(),
+                ->sortable(),
 
             Images::make('Bilder', 'images') // second parameter is the media collection name
-                  ->conversionOnIndexView('thumb'), // conversion used to display the image
+                ->conversionOnIndexView('thumb'), // conversion used to display the image
 
             Text::make('Name')
                 ->rules('required', 'string'),
@@ -80,11 +80,11 @@ class Venue extends Resource
             BelongsTo::make(__('City'), 'city', City::class)->searchable()->withSubtitles(),
 
             BelongsTo::make(__('Created By'), 'createdBy', User::class)
-                     ->canSee(function ($request) {
-                         return $request->user()
-                                        ->hasRole('super-admin');
-                     })
-                     ->searchable()->withSubtitles(),
+                ->canSee(function ($request) {
+                    return $request->user()
+                        ->hasRole('super-admin');
+                })
+                ->searchable()->withSubtitles(),
 
         ];
     }

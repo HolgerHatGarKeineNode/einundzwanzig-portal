@@ -24,7 +24,7 @@ class AttachLibraryItemToLibrary extends Action
     {
         foreach ($models as $model) {
             $model->libraries()
-                  ->attach($fields->library);
+                ->attach($fields->library);
         }
     }
 
@@ -34,11 +34,11 @@ class AttachLibraryItemToLibrary extends Action
     public function fields(NovaRequest $request): array
     {
         $libraries = Library::query()
-                            ->pluck('name', 'id');
+            ->pluck('name', 'id');
 
         return [
             Select::make('Library')
-                  ->options($libraries),
+                ->options($libraries),
         ];
     }
 }

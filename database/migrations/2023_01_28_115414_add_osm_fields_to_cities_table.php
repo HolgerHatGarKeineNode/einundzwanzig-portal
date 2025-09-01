@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::table('cities', function (Blueprint $table) {
             $table->json('osm_relation')
-                  ->nullable();
+                ->nullable();
             $table->json('simplified_geojson')
-                  ->nullable();
+                ->nullable();
             $table->unsignedBigInteger('population')
-                  ->nullable();
+                ->nullable();
             $table->string('population_date')
-                  ->nullable();
+                ->nullable();
         });
     }
 

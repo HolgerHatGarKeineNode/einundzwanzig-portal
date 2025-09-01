@@ -24,11 +24,11 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             'timezone' => ['required', 'string'],
             'email' => [
                 'nullable', 'email', 'max:255', Rule::unique('users')
-                                                    ->ignore($user->id),
+                    ->ignore($user->id),
             ],
             'photo' => ['nullable', 'mimes:jpg,jpeg,png,gif', 'max:10240'],
         ])
-                 ->validateWithBag('updateProfileInformation');
+            ->validateWithBag('updateProfileInformation');
 
         if (isset($input['photo'])) {
             $user->updateProfilePhoto($input['photo']);
@@ -46,7 +46,7 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
                 'email' => $input['email'],
                 'timezone' => $input['timezone'],
             ])
-                 ->save();
+                ->save();
         }
     }
 
@@ -66,7 +66,7 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             'timezone' => $input['timezone'],
             'email_verified_at' => null,
         ])
-             ->save();
+            ->save();
 
         $user->sendEmailVerificationNotification();
     }

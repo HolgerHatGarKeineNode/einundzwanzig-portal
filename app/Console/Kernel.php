@@ -22,13 +22,13 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->call(new PruneStaleAttachments)
-                 ->daily();
+            ->daily();
         $schedule->command(SyncOpenBooks::class)
-                 ->dailyAt('04:00');
+            ->dailyAt('04:00');
         $schedule->command(ReadAndSyncPodcastFeeds::class)
-                 ->dailyAt('04:30');
+            ->dailyAt('04:30');
         $schedule->command(CleanupLoginKeys::class)
-                 ->everyFifteenMinutes();
+            ->everyFifteenMinutes();
     }
 
     /**

@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::table('meetups', function (Blueprint $table) {
             $table->string('telegram_link')
-                  ->nullable()
-                  ->change();
+                ->nullable()
+                ->change();
         });
     }
 

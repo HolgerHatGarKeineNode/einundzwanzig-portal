@@ -61,27 +61,27 @@ class ReadAndSyncPodcastFeeds extends Command
 
         foreach ($feedIds as $feedId) {
             $podcast = $client->podcasts->byFeedId($feedId)
-                                        ->json();
+                ->json();
             $this->info('Importing: '.$podcast->feed->title);
             $importPodcast = Podcast::query()
-                                    ->updateOrCreate(['guid' => $podcast->feed->podcastGuid], [
-                                        'title' => $podcast->feed->title,
-                                        'link' => $podcast->feed->link,
-                                        'language_code' => $podcast->feed->language,
-                                        'data' => $podcast->feed,
-                                        'created_by' => 1,
-                                    ]);
+                ->updateOrCreate(['guid' => $podcast->feed->podcastGuid], [
+                    'title' => $podcast->feed->title,
+                    'link' => $podcast->feed->link,
+                    'language_code' => $podcast->feed->language,
+                    'data' => $podcast->feed,
+                    'created_by' => 1,
+                ]);
             $episodes = $client->episodes->withParameters(['max' => 10000])
-                                         ->byFeedId($feedId)
-                                         ->json();
+                ->byFeedId($feedId)
+                ->json();
             foreach ($episodes->items as $item) {
                 Episode::query()
-                       ->updateOrCreate(['guid' => $item->guid], [
-                           'podcast_id' => $importPodcast->id,
-                           'data' => $item,
-                           'created_by' => 1,
-                           'created_at' => Carbon::parse($item->datePublished),
-                       ]);
+                    ->updateOrCreate(['guid' => $item->guid], [
+                        'podcast_id' => $importPodcast->id,
+                        'data' => $item,
+                        'created_by' => 1,
+                        'created_at' => Carbon::parse($item->datePublished),
+                    ]);
             }
             if (app()->environment('local')) {
                 break;

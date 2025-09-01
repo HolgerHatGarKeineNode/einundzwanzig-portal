@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::table('meetup_events', function (Blueprint $table) {
             $table->json('attendees')
-                  ->nullable();
+                ->nullable();
             $table->json('might_attendees')
-                  ->nullable();
+                ->nullable();
         });
     }
 

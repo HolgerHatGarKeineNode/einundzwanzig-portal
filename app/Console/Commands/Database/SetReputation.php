@@ -28,8 +28,8 @@ class SetReputation extends Command
     public function handle(): int
     {
         foreach (User::query()
-                     ->with(['orangePills'])
-                     ->get() as $item) {
+            ->with(['orangePills'])
+            ->get() as $item) {
             foreach ($item->orangePills as $orangePill) {
                 $orangePill->user->givePoint(new BookCaseOrangePilled($orangePill));
             }

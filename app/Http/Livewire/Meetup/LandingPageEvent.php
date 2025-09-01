@@ -47,7 +47,7 @@ class LandingPageEvent extends Component
 
         if (auth()->check() && $attendees->contains(fn ($value) => str($value)->contains('id_'.auth()->id()))) {
             $this->name = str($attendees->filter(fn ($value) => str($value)->contains('id_'.auth()->id()))
-                                        ->first())
+                ->first())
                 ->after('|')
                 ->toString();
             $this->willShowUp = true;
@@ -55,7 +55,7 @@ class LandingPageEvent extends Component
 
         if (! auth()->check() && $attendees->contains(fn ($value) => str($value)->contains('anon_'.session()->getId()))) {
             $this->name = str($attendees->filter(fn ($value) => str($value)->contains('anon_'.session()->getId()))
-                                        ->first())
+                ->first())
                 ->after('|')
                 ->toString();
             $this->willShowUp = true;
@@ -63,16 +63,16 @@ class LandingPageEvent extends Component
 
         if (auth()->check() && $mightAttendees->contains(fn ($value) => str($value)->contains('id_'.auth()->id()))) {
             $this->name = str($mightAttendees->filter(fn ($value) => str($value)->contains('id_'.auth()->id()))
-                                             ->first())
+                ->first())
                 ->after('|')
                 ->toString();
             $this->perhapsShowUp = true;
         }
 
         if (! auth()->check() && $mightAttendees->contains(fn ($value
-            ) => str($value)->contains('anon_'.session()->getId()))) {
+        ) => str($value)->contains('anon_'.session()->getId()))) {
             $this->name = str($mightAttendees->filter(fn ($value) => str($value)->contains('anon_'.session()->getId()))
-                                             ->first())
+                ->first())
                 ->after('|')
                 ->toString();
             $this->perhapsShowUp = true;
@@ -100,7 +100,7 @@ class LandingPageEvent extends Component
         }
 
         if (! auth()->check() && $mightAttendees->contains(fn ($value
-            ) => str($value)->contains('anon_'.session()->getId()))) {
+        ) => str($value)->contains('anon_'.session()->getId()))) {
             $mightAttendees = $mightAttendees->filter(fn ($value) => ! str($value)->contains('anon_'.session()->getId()));
             $this->perhapsShowUp = false;
         }

@@ -25,18 +25,18 @@ class UniqueAttendeeName implements InvokableRule
         $mightAttendees = collect($this->meetupEvent->might_attendees);
         $isInAttendees = $attendees
             ->contains(fn ($v) => str($v)
-                                     ->after('|')
-                                     ->lower()
-                                     ->toString() === str($value)
-                                     ->lower()
-                                     ->toString());
+                ->after('|')
+                ->lower()
+                ->toString() === str($value)
+                ->lower()
+                ->toString());
         $isInMightAttendees = $mightAttendees
             ->contains(fn ($v) => str($v)
-                                     ->after('|')
-                                     ->lower()
-                                     ->toString() === str($value)
-                                     ->lower()
-                                     ->toString());
+                ->after('|')
+                ->lower()
+                ->toString() === str($value)
+                ->lower()
+                ->toString());
         if ($isInAttendees) {
             $fail('The name is already taken.');
         }

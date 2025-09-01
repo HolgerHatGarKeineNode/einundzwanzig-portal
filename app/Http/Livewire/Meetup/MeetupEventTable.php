@@ -29,33 +29,33 @@ class MeetupEventTable extends Component
     {
         return view('livewire.meetup.meetup-event-table', [
             'markers' => MeetupEvent::query()
-                                    ->with([
-                                        'meetup.city.country',
-                                    ])
-                                    ->where('meetup_events.start', '>=', now())
-                                    ->whereHas('meetup.city.country',
-                                        fn ($query) => $query->where('countries.code', $this->country->code))
-                                    ->get()
-                                    ->map(fn ($event) => [
-                                        'id' => $event->id,
-                                        'name' => $event->meetup->name.': '.$event->location,
-                                        'coords' => [$event->meetup->city->latitude, $event->meetup->city->longitude],
-                                    ]),
+                ->with([
+                    'meetup.city.country',
+                ])
+                ->where('meetup_events.start', '>=', now())
+                ->whereHas('meetup.city.country',
+                    fn ($query) => $query->where('countries.code', $this->country->code))
+                ->get()
+                ->map(fn ($event) => [
+                    'id' => $event->id,
+                    'name' => $event->meetup->name.': '.$event->location,
+                    'coords' => [$event->meetup->city->latitude, $event->meetup->city->longitude],
+                ]),
             'events' => MeetupEvent::query()
-                                    ->with([
-                                        'meetup.city.country',
-                                    ])
-                                    ->where('meetup_events.start', '>=', now())
-                                    ->whereHas('meetup.city.country',
-                                        fn ($query) => $query->where('countries.code', $this->country->code))
-                                    ->get()
-                                    ->map(fn ($event) => [
-                                        'id' => $event->id,
-                                        'startDate' => $event->start,
-                                        'endDate' => $event->start->addHours(1),
-                                        'location' => $event->location,
-                                        'description' => $event->description,
-                                    ]),
+                ->with([
+                    'meetup.city.country',
+                ])
+                ->where('meetup_events.start', '>=', now())
+                ->whereHas('meetup.city.country',
+                    fn ($query) => $query->where('countries.code', $this->country->code))
+                ->get()
+                ->map(fn ($event) => [
+                    'id' => $event->id,
+                    'startDate' => $event->start,
+                    'endDate' => $event->start->addHours(1),
+                    'location' => $event->location,
+                    'description' => $event->description,
+                ]),
         ])->layout('layouts.app', [
             'SEOData' => new SEOData(
                 title: __('Meetup dates'),

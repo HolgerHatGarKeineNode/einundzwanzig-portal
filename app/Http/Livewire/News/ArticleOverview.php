@@ -16,13 +16,13 @@ class ArticleOverview extends Component
     public function tweet($id)
     {
         $libraryItem = LibraryItem::query()
-                                  ->with([
-                                      'lecturer',
-                                  ])
-                                  ->find($id);
+            ->with([
+                'lecturer',
+            ])
+            ->find($id);
         if ($libraryItem->tweet) {
             $this->notification()
-                 ->error(__('Article already tweeted'));
+                ->error(__('Article already tweeted'));
 
             return;
         }
@@ -41,7 +41,7 @@ class ArticleOverview extends Component
 
                 if (! $libraryItem->approved) {
                     $this->notification()
-                         ->error(__('Article not approved yet'));
+                        ->error(__('Article not approved yet'));
 
                     return;
                 }
@@ -58,13 +58,13 @@ class ArticleOverview extends Component
                 $libraryItem->save();
 
                 $this->notification()
-                     ->success(__('Article tweeted'));
+                    ->success(__('Article tweeted'));
 
                 $this->emit('$refresh');
             }
         } catch (\Exception $e) {
             $this->notification()
-                 ->error(__('Error tweeting article', $e->getMessage()));
+                ->error(__('Error tweeting article', $e->getMessage()));
         }
     }
 
@@ -75,7 +75,7 @@ class ArticleOverview extends Component
         $libraryItem->save();
 
         $this->notification()
-             ->success(__('Article approved'));
+            ->success(__('Article approved'));
 
         $this->emit('$refresh');
     }
@@ -84,15 +84,15 @@ class ArticleOverview extends Component
     {
         return view('livewire.news.article-overview', [
             'libraryItems' => LibraryItem::query()
-                                         ->with([
-                                             'createdBy.roles',
-                                             'lecturer',
-                                             'tags',
-                                         ])
-                                         ->where('type', 'markdown_article')
-                                         ->where('news', true)
-                                         ->orderByDesc('created_at')
-                                         ->get(),
+                ->with([
+                    'createdBy.roles',
+                    'lecturer',
+                    'tags',
+                ])
+                ->where('type', 'markdown_article')
+                ->where('news', true)
+                ->orderByDesc('created_at')
+                ->get(),
         ])->layout('layouts.app', [
             'SEOData' => new SEOData(
                 title: __('News'),

@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::table('twitter_accounts', function (Blueprint $table) {
             $table->text('token')
-                  ->nullable()
-                  ->change();
+                ->nullable()
+                ->change();
             $table->text('refresh_token')
-                  ->nullable();
+                ->nullable();
         });
     }
 

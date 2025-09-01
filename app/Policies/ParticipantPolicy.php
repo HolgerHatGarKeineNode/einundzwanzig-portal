@@ -30,7 +30,7 @@ class ParticipantPolicy extends BasePolicy
         if ($participant->registrations) {
             return $participant->whereHas('registrations.event.course.lecturer',
                 fn ($q) => $q->where('team_id', $user->current_team_id))
-                               ->exists();
+                ->exists();
         }
 
         return false;

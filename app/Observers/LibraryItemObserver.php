@@ -34,7 +34,7 @@ class LibraryItemObserver
                 if ($libraryItem->type !== 'markdown_article') {
                     if ($libraryItem->whereDoesntHave('libraries',
                         fn ($query) => $query->where('libraries.is_public', false))
-                                    ->exists()) {
+                        ->exists()) {
                         $text = sprintf("Es gibt was Neues zum Lesen oder Anhören:\n\n%s\n\n%s\n\n#Bitcoin #Wissen #Einundzwanzig #gesundesgeld",
                             $libraryItemName,
                             url()->route('article.view',

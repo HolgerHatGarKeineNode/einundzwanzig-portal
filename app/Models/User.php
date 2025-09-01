@@ -19,18 +19,18 @@ use Spatie\LaravelCipherSweet\Concerns\UsesCipherSweet;
 use Spatie\LaravelCipherSweet\Contracts\CipherSweetEncrypted;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements MustVerifyEmail, CanComment, CipherSweetEncrypted
+class User extends Authenticatable implements CanComment, CipherSweetEncrypted, MustVerifyEmail
 {
-    use UsesCipherSweet;
+    use Gamify;
     use HasApiTokens;
     use HasFactory;
     use HasProfilePhoto;
+    use HasRoles;
     use HasTeams;
+    use InteractsWithComments;
     use Notifiable;
     use TwoFactorAuthenticatable;
-    use HasRoles;
-    use InteractsWithComments;
-    use Gamify;
+    use UsesCipherSweet;
 
     protected $guarded = [];
 

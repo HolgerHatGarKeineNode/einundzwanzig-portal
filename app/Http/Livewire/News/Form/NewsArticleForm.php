@@ -76,7 +76,7 @@ class NewsArticleForm extends Component
 
         if ($this->image) {
             $this->libraryItem->addMedia($this->image)
-                              ->toMediaCollection('main');
+                ->toMediaCollection('main');
         }
 
         return to_route('article.overview', ['country' => null]);

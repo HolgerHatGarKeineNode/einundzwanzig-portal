@@ -9,8 +9,8 @@ use Spatie\Comments\Models\Concerns\HasComments;
 
 class MeetupEvent extends Model
 {
-    use HasFactory;
     use HasComments;
+    use HasFactory;
 
     /**
      * The attributes that aren't mass assignable.

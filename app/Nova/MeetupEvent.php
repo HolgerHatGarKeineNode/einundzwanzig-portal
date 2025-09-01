@@ -53,19 +53,19 @@ class MeetupEvent extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     public static function relatableMeetups(NovaRequest $request, $query, Field $field)
     {
         if ($field instanceof BelongsTo) {
             $query->whereIn('meetups.id', $request->user()
-                                                  ->meetups()
-                                                  ->pluck('id')
-                                                  ->toArray());
+                ->meetups()
+                ->pluck('id')
+                ->toArray());
         }
 
         return $query;
@@ -83,11 +83,11 @@ class MeetupEvent extends Resource
     {
         return [
             ID::make()
-              ->sortable(),
+                ->sortable(),
 
             DateTime::make(__('Start'), 'start')
-                    ->step(CarbonInterval::minutes(15))
-                    ->displayUsing(fn ($value) => $value->asDateTime()),
+                ->step(CarbonInterval::minutes(15))
+                ->displayUsing(fn ($value) => $value->asDateTime()),
 
             Text::make(__('Location'), 'location'),
 
@@ -102,16 +102,16 @@ class MeetupEvent extends Resource
                 ->help(__('For example, a link to a location on Google Maps or a link to a website. (not your Telegram group link)')),
 
             BelongsTo::make('Meetup')
-                     ->searchable()
-                     ->withSubtitles(),
+                ->searchable()
+                ->withSubtitles(),
 
             BelongsTo::make(__('Created By'), 'createdBy', User::class)
-                     ->canSee(function ($request) {
-                         return $request->user()
-                                        ->hasRole('super-admin');
-                     })
-                     ->searchable()
-                     ->withSubtitles(),
+                ->canSee(function ($request) {
+                    return $request->user()
+                        ->hasRole('super-admin');
+                })
+                ->searchable()
+                ->withSubtitles(),
 
         ];
     }

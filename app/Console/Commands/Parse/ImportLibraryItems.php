@@ -123,7 +123,7 @@ class ImportLibraryItems extends Command
                 if (isset($matches[1])) {
                     $image = $matches[1];
                     $libraryItem->addMediaFromUrl($image)
-                                ->toMediaCollection('main');
+                        ->toMediaCollection('main');
                 } else {
                     $image = null;
                 }
@@ -132,7 +132,7 @@ class ImportLibraryItems extends Command
             }
 
             $libraryItem->libraries()
-                        ->sync([$library->id]);
+                ->sync([$library->id]);
 
             $this->info('Name: '.$name.' Author: '.$author.' Link: '.$link);
         }

@@ -49,7 +49,7 @@ class Lecturer extends Resource
     public static function relatableTeams(NovaRequest $request, $query, Field $field)
     {
         if ($field instanceof BelongsTo && ! $request->user()
-                                                    ->hasRole('super-admin')) {
+            ->hasRole('super-admin')) {
             $query->where('id', $request->user()->current_team_id);
         }
 
@@ -59,10 +59,10 @@ class Lecturer extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     public function subtitle()
@@ -77,18 +77,18 @@ class Lecturer extends Resource
     {
         return [
             ID::make()
-              ->sortable(),
+                ->sortable(),
 
             Images::make('Avatar', 'avatar')
-                  ->showStatistics()
-                  ->conversionOnIndexView('thumb')
-                  ->setFileName(fn ($originalFilename, $extension, $model) => md5($originalFilename).'.'.$extension),
+                ->showStatistics()
+                ->conversionOnIndexView('thumb')
+                ->setFileName(fn ($originalFilename, $extension, $model) => md5($originalFilename).'.'.$extension),
 
             Images::make(__('Images'), 'images')
-                  ->showStatistics()
-                  ->conversionOnIndexView('thumb')
-                  ->help('Upload images here to insert them later in the Markdown Description. But you have to save before.')
-                  ->setFileName(fn ($originalFilename, $extension, $model) => md5($originalFilename).'.'.$extension),
+                ->showStatistics()
+                ->conversionOnIndexView('thumb')
+                ->help('Upload images here to insert them later in the Markdown Description. But you have to save before.')
+                ->setFileName(fn ($originalFilename, $extension, $model) => md5($originalFilename).'.'.$extension),
 
             Text::make('Name')
                 ->rules('required', 'string'),
@@ -119,29 +119,29 @@ class Lecturer extends Resource
                 ->rules('nullable', 'url'),
 
             Markdown::make(__('Subtitle'), 'subtitle')
-                    ->help(__('This is the subtitle on the landing page.')),
+                ->help(__('This is the subtitle on the landing page.')),
 
             Markdown::make(__('Intro'), 'intro')
-                    ->help(__('This is the introduction text that is shown on the landing page.')),
+                ->help(__('This is the introduction text that is shown on the landing page.')),
 
             Boolean::make('Active')
-                   ->rules('required')
-                   ->default(true),
+                ->rules('required')
+                ->default(true),
 
             Markdown::make('Description')
-                    ->alwaysShow()
-                    ->help('Markdown is allowed. You can paste images from the "Images" field here. Use the link icon of the images for the urls after clicking "Update and continue".'),
+                ->alwaysShow()
+                ->help('Markdown is allowed. You can paste images from the "Images" field here. Use the link icon of the images for the urls after clicking "Update and continue".'),
 
             BelongsTo::make('Team')
-                     ->onlyOnDetail(),
+                ->onlyOnDetail(),
 
             BelongsTo::make(__('Created By'), 'createdBy', User::class)
-                     ->canSee(function ($request) {
-                         return $request->user()
-                                        ->hasRole('super-admin');
-                     })
-                     ->searchable()
-                     ->withSubtitles(),
+                ->canSee(function ($request) {
+                    return $request->user()
+                        ->hasRole('super-admin');
+                })
+                ->searchable()
+                ->withSubtitles(),
 
             HasMany::make(__('Library Items'), 'libraryItems', LibraryItem::class),
 

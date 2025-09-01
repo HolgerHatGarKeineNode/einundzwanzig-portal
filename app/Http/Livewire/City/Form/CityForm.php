@@ -30,7 +30,7 @@ class CityForm extends Component
     public function mount()
     {
         if (! $this->city) {
-            $this->city = new City();
+            $this->city = new City;
         }
         if (! $this->fromUrl) {
             $this->fromUrl = url()->previous();

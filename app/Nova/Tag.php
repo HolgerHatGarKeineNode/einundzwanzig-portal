@@ -23,10 +23,10 @@ class Tag extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     public function fields(Request $request)
@@ -40,10 +40,10 @@ class Tag extends Resource
                 ->help('<a href="https://fontawesome.com/icons" target="_blank">https://fontawesome.com/icons</a>'),
 
             Select::make('Type')
-                  ->options([
-                      'course' => 'course',
-                      'library_item' => 'library_item',
-                  ]),
+                ->options([
+                    'course' => 'course',
+                    'library_item' => 'library_item',
+                ]),
 
         ];
     }

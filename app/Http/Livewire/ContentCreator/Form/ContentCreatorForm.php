@@ -57,7 +57,7 @@ class ContentCreatorForm extends Component
 
         if ($this->image) {
             $this->lecturer->addMedia($this->image)
-                           ->toMediaCollection('avatar');
+                ->toMediaCollection('avatar');
         }
 
         return redirect($this->fromUrl ?? url()->route('welcome'));

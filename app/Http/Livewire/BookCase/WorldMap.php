@@ -15,21 +15,21 @@ class WorldMap extends Component
     {
         return view('livewire.book-case.world-map', [
             'mapData' => BookCase::query()
-                                 ->select(['id', 'latitude', 'longitude'])
-                                 ->withCount('orangePills')
-                                 ->active()
-                                 ->get()
-                                 ->map(fn ($bookCase) => [
-                                     'lat' => $bookCase->latitude,
-                                     'lng' => $bookCase->longitude,
-                                     'url' => url()->route('bookCases.comment.bookcase',
-                                         [
-                                             'country' => $this->country,
-                                             'bookCase' => $bookCase,
-                                         ]),
-                                     'op' => $bookCase->orange_pills_count,
-                                 ])
-                                 ->toArray(),
+                ->select(['id', 'latitude', 'longitude'])
+                ->withCount('orangePills')
+                ->active()
+                ->get()
+                ->map(fn ($bookCase) => [
+                    'lat' => $bookCase->latitude,
+                    'lng' => $bookCase->longitude,
+                    'url' => url()->route('bookCases.comment.bookcase',
+                        [
+                            'country' => $this->country,
+                            'bookCase' => $bookCase,
+                        ]),
+                    'op' => $bookCase->orange_pills_count,
+                ])
+                ->toArray(),
         ])->layout('layouts.app', [
             'SEOData' => new SEOData(
                 title: __('World Map of Bookcases'),

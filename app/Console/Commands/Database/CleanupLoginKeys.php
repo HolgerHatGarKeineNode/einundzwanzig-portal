@@ -27,8 +27,8 @@ class CleanupLoginKeys extends Command
     public function handle(): int
     {
         DB::table('login_keys')
-          ->where('created_at', '<', now()->subDays(1))
-          ->delete();
+            ->where('created_at', '<', now()->subDays(1))
+            ->delete();
 
         return Command::SUCCESS;
     }

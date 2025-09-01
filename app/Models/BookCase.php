@@ -15,10 +15,10 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class BookCase extends Model implements HasMedia
 {
-    use HasFactory;
-    use HasComments;
-    use InteractsWithMedia;
     use Geoly;
+    use HasComments;
+    use HasFactory;
+    use InteractsWithMedia;
 
     /**
      * The attributes that aren't mass assignable.
@@ -54,16 +54,16 @@ class BookCase extends Model implements HasMedia
         return $query->where('deactivated', false);
     }
 
-    public function registerMediaConversions(Media $media = null): void
+    public function registerMediaConversions(?Media $media = null): void
     {
         $this
             ->addMediaConversion('preview')
             ->fit(Manipulations::FIT_CROP, 300, 300)
             ->nonQueued();
         $this->addMediaConversion('thumb')
-             ->fit(Manipulations::FIT_CROP, 130, 130)
-             ->width(130)
-             ->height(130);
+            ->fit(Manipulations::FIT_CROP, 130, 130)
+            ->width(130)
+            ->height(130);
     }
 
     public function registerMediaCollections(): void

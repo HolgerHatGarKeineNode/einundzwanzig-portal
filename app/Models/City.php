@@ -13,9 +13,9 @@ use Spatie\Sluggable\SlugOptions;
 
 class City extends Model
 {
+    use Geoly;
     use HasFactory;
     use HasSlug;
-    use Geoly;
 
     /**
      * The attributes that aren't mass assignable.
@@ -51,9 +51,9 @@ class City extends Model
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
-                          ->generateSlugsFrom(['country.code', 'name'])
-                          ->saveSlugsTo('slug')
-                          ->usingLanguage(Cookie::get('lang', config('app.locale')));
+            ->generateSlugsFrom(['country.code', 'name'])
+            ->saveSlugsTo('slug')
+            ->usingLanguage(Cookie::get('lang', config('app.locale')));
     }
 
     public function createdBy(): BelongsTo

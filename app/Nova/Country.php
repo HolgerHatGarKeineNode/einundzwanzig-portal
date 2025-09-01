@@ -43,10 +43,10 @@ class Country extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     public function subtitle()
@@ -61,7 +61,7 @@ class Country extends Resource
     {
         return [
             ID::make()
-              ->sortable(),
+                ->sortable(),
 
             Text::make(__('Name'), 'name')
                 ->rules('required', 'string'),
@@ -70,22 +70,22 @@ class Country extends Resource
                 ->rules('required', 'string'),
 
             MultiSelect::make(__('Languages'), 'language_codes')
-                       ->options(
-                           config('languages.languages'),
-                       ),
+                ->options(
+                    config('languages.languages'),
+                ),
 
             Text::make(__('Code'), 'code')
                 ->rules('required', 'string'),
 
             Number::make(__('Latitude'), 'latitude')
-                  ->rules('required', 'numeric')
-                  ->step(0.000001)
-                  ->help('<a target="_blank" href="https://www.latlong.net/">https://www.latlong.net/</a>'),
+                ->rules('required', 'numeric')
+                ->step(0.000001)
+                ->help('<a target="_blank" href="https://www.latlong.net/">https://www.latlong.net/</a>'),
 
             Number::make(__('Longitude'), 'longitude')
-                  ->rules('required', 'numeric')
-                  ->step(0.000001)
-                  ->help('<a target="_blank" href="https://www.latlong.net/">https://www.latlong.net/</a>'),
+                ->rules('required', 'numeric')
+                ->step(0.000001)
+                ->help('<a target="_blank" href="https://www.latlong.net/">https://www.latlong.net/</a>'),
 
             HasMany::make(__('Cities'), 'cities', City::class),
         ];

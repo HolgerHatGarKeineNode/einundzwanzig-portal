@@ -53,16 +53,16 @@ class Welcome extends Component
 
         return view('livewire.frontend.welcome', [
             'countries' => Country::query()
-                                  ->select('id', 'name', 'code')
-                                  ->orderBy('name')
-                                  ->get()
-                                  ->map(function (Country $country) {
-                                      $country->name = config('countries.emoji_flags')[str($country->code)
-                                              ->upper()
-                                              ->toString()].' '.$country->name;
+                ->select('id', 'name', 'code')
+                ->orderBy('name')
+                ->get()
+                ->map(function (Country $country) {
+                    $country->name = config('countries.emoji_flags')[str($country->code)
+                        ->upper()
+                        ->toString()].' '.$country->name;
 
-                                      return $country;
-                                  }),
+                    return $country;
+                }),
         ])->layout('layouts.guest', [
             'SEOData' => new SEOData(
                 title: __('Welcome'),

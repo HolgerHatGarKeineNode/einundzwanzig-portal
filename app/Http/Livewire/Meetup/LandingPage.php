@@ -29,28 +29,28 @@ class LandingPage extends Component
     {
         return view('livewire.meetup.landing-page', [
             'meetupEvents' => MeetupEvent::query()
-                                         ->with([
-                                             'meetup.city.country',
-                                         ])
-                                         ->where('meetup_events.meetup_id', $this->meetup->id)
-                                         ->where('meetup_events.start', '>=', now())
-                                         ->orderBy('start')
-                                         ->get(),
+                ->with([
+                    'meetup.city.country',
+                ])
+                ->where('meetup_events.meetup_id', $this->meetup->id)
+                ->where('meetup_events.start', '>=', now())
+                ->orderBy('start')
+                ->get(),
             'events' => MeetupEvent::query()
-                                         ->with([
-                                             'meetup.city.country',
-                                         ])
-                                         ->where('meetup_events.meetup_id', $this->meetup->id)
-                                         ->where('meetup_events.start', '>=', now())
-                                         ->orderBy('start')
-                                         ->get()
-                                         ->map(fn ($event) => [
-                                             'id' => $event->id,
-                                             'startDate' => $event->start,
-                                             'endDate' => $event->start->addHours(1),
-                                             'location' => $event->location,
-                                             'description' => $event->description,
-                                         ]),
+                ->with([
+                    'meetup.city.country',
+                ])
+                ->where('meetup_events.meetup_id', $this->meetup->id)
+                ->where('meetup_events.start', '>=', now())
+                ->orderBy('start')
+                ->get()
+                ->map(fn ($event) => [
+                    'id' => $event->id,
+                    'startDate' => $event->start,
+                    'endDate' => $event->start->addHours(1),
+                    'location' => $event->location,
+                    'description' => $event->description,
+                ]),
         ])
             ->layout('layouts.guest', [
                 'SEOData' => new SEOData(

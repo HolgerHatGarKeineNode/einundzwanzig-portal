@@ -16,16 +16,16 @@ return new class extends Migration
         Schema::create('bitcoin_events', function (Blueprint $table) {
             $table->id();
             $table->foreignId('venue_id')
-                  ->constrained()
-                  ->cascadeOnDelete()
-                  ->cascadeOnUpdate();
+                ->constrained()
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
             $table->dateTime('from');
             $table->dateTime('to');
             $table->string('title');
             $table->text('description')
-                  ->nullable();
+                ->nullable();
             $table->string('link')
-                  ->nullable();
+                ->nullable();
             $table->timestamps();
         });
 

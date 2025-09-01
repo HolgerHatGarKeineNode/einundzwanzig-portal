@@ -34,13 +34,13 @@ class Meetups extends Component
         }
 
         $this->meetups = Meetup::query()
-                               ->with([
-                                   'city',
-                               ])
-                               ->where('name', 'ilike', '%'.$this->search.'%')
-                               ->orderBy('name')
-                               ->limit(10)
-                               ->get();
+            ->with([
+                'city',
+            ])
+            ->where('name', 'ilike', '%'.$this->search.'%')
+            ->orderBy('name')
+            ->limit(10)
+            ->get();
         $this->myMeetups = auth()
             ->user()
             ->meetups()
@@ -64,10 +64,10 @@ class Meetups extends Component
     public function updatedSearch($value)
     {
         $this->meetups = Meetup::query()
-                               ->where('name', 'ilike', '%'.$value.'%')
-                               ->orderBy('name')
-                               ->limit(10)
-                               ->get();
+            ->where('name', 'ilike', '%'.$value.'%')
+            ->orderBy('name')
+            ->limit(10)
+            ->get();
     }
 
     public function render()
@@ -79,7 +79,7 @@ class Meetups extends Component
     {
         $user = auth()->user();
         $user->meetups()
-             ->toggle($id);
+            ->toggle($id);
         $this->myMeetups = auth()
             ->user()
             ->meetups()
@@ -96,6 +96,6 @@ class Meetups extends Component
             ->pluck('meetups.name', 'meetups.id')
             ->toArray();
         $this->notification()
-             ->success(__('Saved.'));
+            ->success(__('Saved.'));
     }
 }

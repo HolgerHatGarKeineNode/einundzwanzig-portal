@@ -44,10 +44,10 @@ class BitcoinEvent extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     public function subtitle()
@@ -62,49 +62,49 @@ class BitcoinEvent extends Resource
     {
         return [
             ID::make()
-              ->sortable(),
+                ->sortable(),
 
             Images::make(__('Logo'), 'logo')
-                  ->showStatistics()
-                  ->conversionOnIndexView('thumb')
-                  ->setFileName(fn ($originalFilename, $extension, $model) => md5($originalFilename).'.'.$extension),
+                ->showStatistics()
+                ->conversionOnIndexView('thumb')
+                ->setFileName(fn ($originalFilename, $extension, $model) => md5($originalFilename).'.'.$extension),
 
             Boolean::make(__('Show worldwide'), 'show_worldwide')
-                   ->help(__('If checked, the event will be shown everywhere.')),
+                ->help(__('If checked, the event will be shown everywhere.')),
 
             DateTime::make(__('From'), 'from')
-                    ->step(CarbonInterval::minutes(15))
-                    ->displayUsing(fn ($value) => $value->asDateTime())
-                    ->rules('required'),
+                ->step(CarbonInterval::minutes(15))
+                ->displayUsing(fn ($value) => $value->asDateTime())
+                ->rules('required'),
 
             DateTime::make(__('To'), 'to')
-                    ->step(CarbonInterval::minutes(15))
-                    ->displayUsing(fn ($value) => $value->asDateTime())
-                    ->rules('required'),
+                ->step(CarbonInterval::minutes(15))
+                ->displayUsing(fn ($value) => $value->asDateTime())
+                ->rules('required'),
 
             Text::make(__('Title'), 'title')
                 ->rules('required', 'string'),
 
             Markdown::make(__('Description'), 'description')
-                    ->rules('required', 'string')
-                    ->hideFromIndex(),
+                ->rules('required', 'string')
+                ->hideFromIndex(),
 
             Text::make('Link')
                 ->rules('required', 'string')
                 ->hideFromIndex(),
 
             BelongsTo::make(__('Venue'), 'venue', Venue::class)
-                     ->searchable()
-                     ->showCreateRelationButton()
-                     ->withSubtitles(),
+                ->searchable()
+                ->showCreateRelationButton()
+                ->withSubtitles(),
 
             BelongsTo::make(__('Created By'), 'createdBy', User::class)
-                     ->canSee(function ($request) {
-                         return $request->user()
-                                        ->hasRole('super-admin');
-                     })
-                     ->searchable()
-                     ->withSubtitles(),
+                ->canSee(function ($request) {
+                    return $request->user()
+                        ->hasRole('super-admin');
+                })
+                ->searchable()
+                ->withSubtitles(),
 
         ];
     }

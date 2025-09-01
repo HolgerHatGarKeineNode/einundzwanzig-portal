@@ -60,7 +60,7 @@ class HighscoreChat extends Component
             ->take(-21)
             ->toArray();
         cache()->set('highscore_chat_messages', $newMessages);
-        event(new ChatMessageSentEvent());
+        event(new ChatMessageSentEvent);
         $this->messages = $newMessages;
         $this->myNewMessage = '';
     }

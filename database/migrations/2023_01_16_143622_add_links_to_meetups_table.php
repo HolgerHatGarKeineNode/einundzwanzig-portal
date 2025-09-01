@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::table('meetups', function (Blueprint $table) {
             $table->renameColumn('link', 'telegram_link');
             $table->string('webpage')
-                  ->nullable();
+                ->nullable();
             $table->string('twitter_username')
-                  ->nullable();
+                ->nullable();
         });
     }
 

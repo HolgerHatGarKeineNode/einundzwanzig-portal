@@ -43,18 +43,18 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
         Nova::mainMenu(function (Request $request) {
             $comments = $request->user()
-                                ->hasRole('super-admin') || $request->user()
-                                                                    ->can('CommentPolicy.viewAny') ? [
+                ->hasRole('super-admin') || $request->user()
+                ->can('CommentPolicy.viewAny') ? [
                                                                         MenuSection::make('Comments', [
                                                                             MenuItem::resource(Comment::class),
                                                                         ])
-                                                                                   ->icon('chat')
-                                                                                   ->collapsable(),
+                                                                            ->icon('chat')
+                                                                            ->collapsable(),
                                                                     ] : [];
 
             $adminItems = $request->user()
-                                  ->hasRole('super-admin') || $request->user()
-                                                                      ->can('NovaAdminPolicy.viewAny') ?
+                ->hasRole('super-admin') || $request->user()
+                ->can('NovaAdminPolicy.viewAny') ?
                 [
                     MenuSection::make('Admin', [
                         MenuItem::resource(Category::class),
@@ -64,53 +64,53 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                         MenuItem::resource(User::class),
                         MenuItem::resource(Tag::class),
                     ])
-                               ->icon('key')
-                               ->collapsable(),
+                        ->icon('key')
+                        ->collapsable(),
 
                 ]
                 : [];
 
             $permissions = $request->user()
-                                   ->hasRole('super-admin') || $request->user()
-                                                                       ->can('PermissionPolicy.viewAny') ? [
+                ->hasRole('super-admin') || $request->user()
+                ->can('PermissionPolicy.viewAny') ? [
                                                                            MenuSection::make(__('nova-spatie-permissions::lang.sidebar_label'), [
                                                                                MenuItem::link(__('nova-spatie-permissions::lang.sidebar_label_roles'), 'resources/roles'),
                                                                                MenuItem::link(__('nova-spatie-permissions::lang.sidebar_label_permissions'),
                                                                                    'resources/permissions'),
                                                                            ])
-                                                                                      ->icon('key')
-                                                                                      ->collapsable(),
+                                                                               ->icon('key')
+                                                                               ->collapsable(),
                                                                        ] : [];
 
             return array_merge([
                 MenuSection::dashboard(Main::class)
-                           ->icon('lightning-bolt'),
+                    ->icon('lightning-bolt'),
 
                 MenuSection::make(__('Locations'), [
                     MenuItem::resource(City::class),
                     MenuItem::resource(Venue::class),
                 ])
-                           ->icon('map')
-                           ->collapsable(),
+                    ->icon('map')
+                    ->collapsable(),
 
                 MenuSection::make('Bitcoiner', [
                     MenuItem::resource(Lecturer::class),
                 ])
-                           ->icon('user-group')
-                           ->collapsable(),
+                    ->icon('user-group')
+                    ->collapsable(),
 
                 MenuSection::make('Meetups', [
                     MenuItem::resource(Meetup::class),
                     MenuItem::resource(MeetupEvent::class),
                 ])
-                           ->icon('calendar')
-                           ->collapsable(),
+                    ->icon('calendar')
+                    ->collapsable(),
 
                 MenuSection::make('Events', [
                     MenuItem::resource(BitcoinEvent::class),
                 ])
-                           ->icon('star')
-                           ->collapsable(),
+                    ->icon('star')
+                    ->collapsable(),
 
                 MenuSection::make('Schule', [
                     MenuItem::resource(Course::class),
@@ -118,29 +118,29 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                     // MenuItem::resource(Participant::class),
                     // MenuItem::resource(Registration::class),
                 ])
-                           ->icon('academic-cap')
-                           ->collapsable(),
+                    ->icon('academic-cap')
+                    ->collapsable(),
 
                 MenuSection::make('Bibliothek', [
                     MenuItem::resource(Library::class),
                     MenuItem::resource(LibraryItem::class),
                 ])
-                           ->icon('library')
-                           ->collapsable(),
+                    ->icon('library')
+                    ->collapsable(),
 
                 MenuSection::make('Podcasts', [
                     MenuItem::resource(Podcast::class),
                     MenuItem::resource(Episode::class),
                 ])
-                           ->icon('microphone')
-                           ->collapsable(),
+                    ->icon('microphone')
+                    ->collapsable(),
 
                 MenuSection::make('Book-Cases', [
                     MenuItem::resource(BookCase::class),
                     MenuItem::resource(OrangePill::class),
                 ])
-                           ->icon('book-open')
-                           ->collapsable(),
+                    ->icon('book-open')
+                    ->collapsable(),
 
             ], $comments, $adminItems, $permissions);
         });
@@ -151,9 +151,9 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
         Nova::withoutThemeSwitcher();
 
         // login with user id 1, if we are in local environment
-//        if (app()->environment('local')) {
-//            auth()->loginUsingId(1);
-//        }
+        //        if (app()->environment('local')) {
+        //            auth()->loginUsingId(1);
+        //        }
 
         Nova::footer(function ($request) {
             // return MIT license and date

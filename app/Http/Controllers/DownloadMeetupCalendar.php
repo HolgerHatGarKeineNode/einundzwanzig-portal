@@ -18,34 +18,34 @@ class DownloadMeetupCalendar extends Controller
     {
         if ($request->has('meetup')) {
             $meetup = Meetup::query()
-                            ->with([
-                                'meetupEvents',
-                            ])
-                            ->findOrFail($request->input('meetup'));
+                ->with([
+                    'meetupEvents',
+                ])
+                ->findOrFail($request->input('meetup'));
             $events = $meetup->meetupEvents;
             $image = $meetup->getFirstMediaUrl('logo');
         } else {
             $events = MeetupEvent::query()
-                                 ->with([
-                                     'meetup',
-                                 ])
-                                 ->get();
+                ->with([
+                    'meetup',
+                ])
+                ->get();
             $image = asset('img/einundzwanzig-horizontal.png');
         }
 
         $entries = [];
         foreach ($events as $event) {
             $entries[] = Event::create($event->meetup->name)
-                              ->uniqueIdentifier(str($event->meetup->name)->slug().$event->id)
-                              ->address($event->location ?? __('no location set'))
-                              ->description(str_replace(["\r", "\n"], '', $event->description).' Link: '.$event->link)
-                              ->image($image)
-                              ->startsAt($event->start);
+                ->uniqueIdentifier(str($event->meetup->name)->slug().$event->id)
+                ->address($event->location ?? __('no location set'))
+                ->description(str_replace(["\r", "\n"], '', $event->description).' Link: '.$event->link)
+                ->image($image)
+                ->startsAt($event->start);
         }
 
         $calendar = Calendar::create()
-                            ->refreshInterval(5)
-                            ->event($entries);
+            ->refreshInterval(5)
+            ->event($entries);
 
         return response($calendar->get())
             ->header('Content-Type', 'text/calendar; charset=utf-8');

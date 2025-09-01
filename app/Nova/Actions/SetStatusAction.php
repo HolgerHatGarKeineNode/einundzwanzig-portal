@@ -35,11 +35,11 @@ class SetStatusAction extends Action
     {
         return [
             Select::make('Status')
-                  ->options([
-                      'draft' => 'DRAFT',
-                      'published' => 'PUBLISHED',
-                  ])
-                  ->displayUsingLabels(),
+                ->options([
+                    'draft' => 'DRAFT',
+                    'published' => 'PUBLISHED',
+                ])
+                ->displayUsingLabels(),
         ];
     }
 }

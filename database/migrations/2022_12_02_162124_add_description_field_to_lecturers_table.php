@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::table('lecturers', function (Blueprint $table) {
             $table->longText('description')
-                  ->fulltext()
-                  ->nullable();
+                ->fulltext()
+                ->nullable();
         });
     }
 

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('nova_pending_trix_attachments', function (Blueprint $table) {
             $table->increments('id');
             $table->string('draft_id')
-                  ->index();
+                ->index();
             $table->string('attachment');
             $table->string('disk');
             $table->timestamps();
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->string('attachment');
             $table->string('disk');
             $table->string('url')
-                  ->index();
+                ->index();
             $table->timestamps();
 
             $table->index(['attachable_type', 'attachable_id']);

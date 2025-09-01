@@ -43,10 +43,10 @@ class User extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     /**
@@ -56,10 +56,10 @@ class User extends Resource
     {
         return [
             ID::make()
-              ->sortable(),
+                ->sortable(),
 
             Gravatar::make()
-                    ->maxWidth(50),
+                ->maxWidth(50),
 
             Text::make('Name')
                 ->sortable()

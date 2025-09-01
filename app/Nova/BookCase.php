@@ -48,10 +48,10 @@ class BookCase extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     public function subtitle()
@@ -66,20 +66,20 @@ class BookCase extends Resource
     {
         return [
             ID::make()
-              ->sortable(),
+                ->sortable(),
 
             Text::make(__('Title'), 'title')
                 ->rules('required', 'string'),
 
             Number::make(__('Latitude'), 'latitude')
-                  ->rules('required', 'numeric')
-                  ->step(0.000001)
-                  ->hideFromIndex(),
+                ->rules('required', 'numeric')
+                ->step(0.000001)
+                ->hideFromIndex(),
 
             Number::make(__('Longitude'), 'longitude')
-                  ->rules('required', 'numeric')
-                  ->step(0.000001)
-                  ->hideFromIndex(),
+                ->rules('required', 'numeric')
+                ->step(0.000001)
+                ->hideFromIndex(),
 
             Text::make(__('Address'), 'address')
                 ->rules('required', 'string'),
@@ -104,15 +104,15 @@ class BookCase extends Resource
                 ->hideFromIndex(),
 
             Boolean::make(__('Digital'), 'digital')
-                   ->rules('required')
-                   ->hideFromIndex(),
+                ->rules('required')
+                ->hideFromIndex(),
 
             Text::make(__('Icontype'), 'icontype')
                 ->rules('required', 'string')
                 ->hideFromIndex(),
 
             Boolean::make(__('Deactivated'), 'deactivated')
-                   ->rules('required'),
+                ->rules('required'),
 
             Text::make(__('Deactreason'), 'deactreason')
                 ->rules('required', 'string')
@@ -131,11 +131,11 @@ class BookCase extends Resource
             MorphMany::make(__('Comments'), 'comments', Comment::class),
 
             BelongsTo::make(__('Created By'), 'createdBy', User::class)
-                     ->canSee(function ($request) {
-                         return $request->user()
-                                        ->hasRole('super-admin');
-                     })
-                     ->searchable()->withSubtitles(),
+                ->canSee(function ($request) {
+                    return $request->user()
+                        ->hasRole('super-admin');
+                })
+                ->searchable()->withSubtitles(),
 
         ];
     }

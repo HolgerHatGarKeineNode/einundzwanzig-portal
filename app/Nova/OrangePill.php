@@ -45,10 +45,10 @@ class OrangePill extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     /**
@@ -58,14 +58,14 @@ class OrangePill extends Resource
     {
         return [
             ID::make()
-              ->sortable(),
+                ->sortable(),
 
             DateTime::make('Date')
-                    ->step(CarbonInterval::minutes(15))
-                    ->rules('required'),
+                ->step(CarbonInterval::minutes(15))
+                ->rules('required'),
 
             Number::make('Amount')
-                  ->rules('required', 'integer'),
+                ->rules('required', 'integer'),
 
             BelongsTo::make('User'),
 

@@ -16,20 +16,20 @@ return new class extends Migration
         Schema::create('library_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('lecturer_id')
-                  ->constrained()
-                  ->cascadeOnDelete()
-                  ->cascadeOnUpdate();
+                ->constrained()
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
             $table->foreignId('episode_id')
-                  ->nullable()
-                  ->constrained()
-                  ->cascadeOnDelete()
-                  ->cascadeOnUpdate();
+                ->nullable()
+                ->constrained()
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
             $table->unsignedInteger('order_column');
             $table->string('name');
             $table->string('type');
             $table->string('language_code');
             $table->longText('value')
-                  ->nullable();
+                ->nullable();
             $table->timestamps();
         });
 

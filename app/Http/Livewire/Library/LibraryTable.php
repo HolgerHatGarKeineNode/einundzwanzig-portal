@@ -56,10 +56,10 @@ class LibraryTable extends Component
     {
         $shouldBePublic = ! $this->isLecturerPage;
         $libraries = \App\Models\Library::query()
-                                        ->whereNull('parent_id')
-                                        ->where('is_public', $shouldBePublic)
-                                        ->orderBy('name')
-                                        ->get();
+            ->whereNull('parent_id')
+            ->where('is_public', $shouldBePublic)
+            ->orderBy('name')
+            ->get();
         $tabs = collect([
             [
                 'name' => '*',
@@ -73,45 +73,45 @@ class LibraryTable extends Component
 
         if ($this->currentTab !== '*') {
             $parentLibrary = Library::query()
-                                    ->where('name', $this->currentTab)
-                                    ->first();
+                ->where('name', $this->currentTab)
+                ->first();
         }
         $searchTags = [];
         if ($this->search) {
             $searchTags = Tag::where('name', 'ilike', '%'.$this->search.'%')
-                             ->pluck('id')
-                             ->toArray();
+                ->pluck('id')
+                ->toArray();
         }
 
         return view('livewire.library.library-table', [
             'libraries' => $tabs,
             'libraryItems' => LibraryItem::query()
-                                         ->with([
-                                             'lecturer',
-                                             'tags',
-                                         ])
-                                         ->when($this->search, fn ($query) => $query
-                                             ->where('name', 'ilike', '%'.$this->search.'%')
-                                             ->orWhere(fn ($query) => $query
-                                                 ->when(count($searchTags) > 0 && count($this->filters) < 1,
-                                                     fn ($query) => $query->whereHas('tags',
-                                                         fn ($query) => $query->whereIn('tags.id', $searchTags)))
-                                             )
-                                         )
-                                         ->when($this->currentTab !== '*', fn ($query) => $query
-                                             ->whereHas('libraries',
-                                                 fn ($query) => $query
-                                                     ->where('libraries.name', $this->currentTab)
-                                             )
-                                         )
-                                         ->when(isset($this->filters['tag']), fn ($query) => $query->whereHas('tags',
-                                             fn ($query) => $query->whereIn('tags.id', $this->filters['tag'])))
-                                         ->when(isset($this->filters['language']),
-                                             fn ($query) => $query->whereIn('language_code', $this->filters['language']))
-                                         ->whereHas('libraries',
-                                             fn ($query) => $query->where('libraries.is_public', $shouldBePublic))
-                                         ->orderByDesc('library_items.created_at')
-                                         ->paginate($this->perPage),
+                ->with([
+                    'lecturer',
+                    'tags',
+                ])
+                ->when($this->search, fn ($query) => $query
+                    ->where('name', 'ilike', '%'.$this->search.'%')
+                    ->orWhere(fn ($query) => $query
+                        ->when(count($searchTags) > 0 && count($this->filters) < 1,
+                            fn ($query) => $query->whereHas('tags',
+                                fn ($query) => $query->whereIn('tags.id', $searchTags)))
+                    )
+                )
+                ->when($this->currentTab !== '*', fn ($query) => $query
+                    ->whereHas('libraries',
+                        fn ($query) => $query
+                            ->where('libraries.name', $this->currentTab)
+                    )
+                )
+                ->when(isset($this->filters['tag']), fn ($query) => $query->whereHas('tags',
+                    fn ($query) => $query->whereIn('tags.id', $this->filters['tag'])))
+                ->when(isset($this->filters['language']),
+                    fn ($query) => $query->whereIn('language_code', $this->filters['language']))
+                ->whereHas('libraries',
+                    fn ($query) => $query->where('libraries.is_public', $shouldBePublic))
+                ->orderByDesc('library_items.created_at')
+                ->paginate($this->perPage),
         ])->layout('layouts.app', [
             'SEOData' => new SEOData(
                 title: __('Library'),

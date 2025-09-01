@@ -50,7 +50,7 @@ class CommentBookCase extends Component
     public function deletePhoto($id)
     {
         Media::find($id)
-             ->delete();
+            ->delete();
 
         return to_route('bookCases.comment.bookcase', ['country' => $this->country, 'bookCase' => $this->bookCase->id]);
     }

@@ -17,25 +17,25 @@ class CountryController extends Controller
     public function index(Request $request)
     {
         return Country::query()
-                   ->select('id', 'name', 'code')
-                   ->orderBy('name')
-                   ->when(
-                       $request->search,
-                       fn (Builder $query) => $query
-                           ->where('name', 'ilike', "%{$request->search}%")
-                           ->orWhere('code', 'ilike', "%{$request->search}%")
-                   )
-                   ->when(
-                       $request->exists('selected'),
-                       fn (Builder $query) => $query->whereIn('code', $request->input('selected', [])),
-                       fn (Builder $query) => $query->limit(10)
-                   )
-                   ->get()
-                   ->map(function (Country $country) {
-                       $country->flag = asset('vendor/blade-country-flags/4x3-'.$country->code.'.svg');
+            ->select('id', 'name', 'code')
+            ->orderBy('name')
+            ->when(
+                $request->search,
+                fn (Builder $query) => $query
+                    ->where('name', 'ilike', "%{$request->search}%")
+                    ->orWhere('code', 'ilike', "%{$request->search}%")
+            )
+            ->when(
+                $request->exists('selected'),
+                fn (Builder $query) => $query->whereIn('code', $request->input('selected', [])),
+                fn (Builder $query) => $query->limit(10)
+            )
+            ->get()
+            ->map(function (Country $country) {
+                $country->flag = asset('vendor/blade-country-flags/4x3-'.$country->code.'.svg');
 
-                       return $country;
-                   });
+                return $country;
+            });
     }
 
     /**

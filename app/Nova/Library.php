@@ -51,10 +51,10 @@ class Library extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     public function subtitle()
@@ -69,7 +69,7 @@ class Library extends Resource
     {
         return [
             ID::make()
-              ->sortable(),
+                ->sortable(),
 
             /*BelongsTo::make(__('Parent'), 'parent', __CLASS__)
                      ->searchable()
@@ -79,22 +79,22 @@ class Library extends Resource
                 ->rules('required', 'string'),
 
             Boolean::make(__('Is public'), 'is_public')
-                   ->rules('required', 'boolean'),
+                ->rules('required', 'boolean'),
 
             MultiSelect::make(__('Languages'), 'language_codes')
-                       ->options(
-                           config('languages.languages'),
-                       ),
+                ->options(
+                    config('languages.languages'),
+                ),
 
             BelongsToMany::make('Library Items'),
 
             BelongsTo::make(__('Created By'), 'createdBy', User::class)
-                     ->canSee(function ($request) {
-                         return $request->user()
-                                        ->hasRole('super-admin');
-                     })
-                     ->searchable()
-                     ->withSubtitles(),
+                ->canSee(function ($request) {
+                    return $request->user()
+                        ->hasRole('super-admin');
+                })
+                ->searchable()
+                ->withSubtitles(),
 
         ];
     }

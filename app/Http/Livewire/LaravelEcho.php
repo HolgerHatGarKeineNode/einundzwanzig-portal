@@ -15,16 +15,16 @@ class LaravelEcho extends Component
     {
         if (auth()->check()) {
             $this->notification()
-                 ->confirm([
-                     'img' => $data['img'],
-                     'title' => 'Pleb alert!',
-                     'description' => $data['name'].' logged in',
-                     'icon' => 'bell',
-                     'acceptLabel' => '',
-                     'rejectLabel' => '',
-                     'iconColor' => 'primary',
-                     'timeout' => 60000,
-                 ]);
+                ->confirm([
+                    'img' => $data['img'],
+                    'title' => 'Pleb alert!',
+                    'description' => $data['name'].' logged in',
+                    'icon' => 'bell',
+                    'acceptLabel' => '',
+                    'rejectLabel' => '',
+                    'iconColor' => 'primary',
+                    'timeout' => 60000,
+                ]);
         }
     }
 }
