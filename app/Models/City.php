@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Akuechler\Geoly;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -74,12 +75,12 @@ class City extends Model
         return $this->hasMany(Venue::class);
     }
 
-    public function courseEvents()
+    public function courseEvents(): HasManyThrough
     {
         return $this->hasManyThrough(CourseEvent::class, Venue::class);
     }
 
-    public function meetups()
+    public function meetups(): HasMany
     {
         return $this->hasMany(Meetup::class);
     }

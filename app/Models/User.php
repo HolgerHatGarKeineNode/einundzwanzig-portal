@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -82,17 +85,17 @@ class User extends Authenticatable implements CanComment, CipherSweetEncrypted, 
             ->addBlindIndex('email', new BlindIndex('email_index'));
     }
 
-    public function orangePills()
+    public function orangePills(): HasMany
     {
         return $this->hasMany(OrangePill::class);
     }
 
-    public function meetups()
+    public function meetups(): BelongsToMany
     {
         return $this->belongsToMany(Meetup::class);
     }
 
-    public function reputations()
+    public function reputations(): MorphMany
     {
         return $this->morphMany('QCod\Gamify\Reputation', 'subject');
     }
