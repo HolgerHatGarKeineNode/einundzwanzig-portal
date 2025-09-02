@@ -7,11 +7,11 @@ use Illuminate\Http\Client\Pool;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions;
 
 class PrepareForBtcMapItem extends Component
 {
-    use Actions;
+    use WireUiActions;
 
     public Meetup $meetup;
 
