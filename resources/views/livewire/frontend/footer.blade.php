@@ -28,7 +28,7 @@
                 {{ __('Built with ❤️ by our team.') }}
             </p>
             <ul class="flex flex-col space-y-2 sm:space-y-0 sm:flex-row justify-center pb-3 -ml-4 -mr-4 text-sm">
-                <li>
+                {{--<li>
                     <a href="https://gitworkshop.dev/r/naddr1qq2x26tww4hxg7nhv9h856t894cx7un5v9kqzrthwden5te0dehhxtnvdakqygq2man5whxvtjj9dlfsytjx7h2jd6c27c5yh7z5jnqd67z870jsxvpsgqqqw7vs969w83" target="_blank"
                        class="px-4 text-gray-500 hover:text-white">
                         <i class="fa fab fa-github mr-1"></i>
@@ -41,7 +41,7 @@
                         <i class="fa fa-thin fa-thought-bubble mr-1"></i>
                         {{ __('Proposals') }}
                     </a>
-                </li>
+                </li>--}}
                 {{--<li>
                     <a href="/languages/{{ $language->language }}/translations" target="_blank"
                        class="px-4 text-gray-500 hover:text-white">
