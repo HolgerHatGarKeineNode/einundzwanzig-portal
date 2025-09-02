@@ -45,15 +45,6 @@ class User extends Authenticatable implements CipherSweetEncrypted, MustVerifyEm
     ];
 
     /**
-     * The attributes that should be cast.
-     *
-     * @var array
-     */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-    ];
-
-    /**
      * The accessors to append to the model's array form.
      *
      * @var array
@@ -61,6 +52,18 @@ class User extends Authenticatable implements CipherSweetEncrypted, MustVerifyEm
     protected $appends = [
         'profile_photo_url',
     ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+        ];
+    }
 
     public static function configureCipherSweet(EncryptedRow $encryptedRow): void
     {

@@ -35,15 +35,18 @@ class LibraryItem extends Model implements Feedable, HasMedia, Sortable
     protected $guarded = [];
 
     /**
-     * The attributes that should be cast to native types.
+     * Get the attributes that should be cast.
      *
-     * @var array
+     * @return array<string, string>
      */
-    protected $casts = [
-        'id' => 'integer',
-        'lecturer_id' => 'integer',
-        'library_id' => 'integer',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'id' => 'integer',
+            'lecturer_id' => 'integer',
+            'library_id' => 'integer',
+        ];
+    }
 
     public static function getFeedItems()
     {

@@ -18,16 +18,19 @@ class Vote extends Model
     protected $guarded = [];
 
     /**
-     * The attributes that should be cast to native types.
+     * Get the attributes that should be cast.
      *
-     * @var array
+     * @return array<string, string>
      */
-    protected $casts = [
-        'id' => 'integer',
-        'user_id' => 'integer',
-        'project_proposal_id' => 'integer',
-        'value' => 'bool',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'id' => 'integer',
+            'user_id' => 'integer',
+            'project_proposal_id' => 'integer',
+            'value' => 'bool',
+        ];
+    }
 
     public function user(): BelongsTo
     {

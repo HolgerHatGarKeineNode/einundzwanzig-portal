@@ -26,17 +26,20 @@ class BookCase extends Model implements HasMedia
     protected $guarded = [];
 
     /**
-     * The attributes that should be cast to native types.
+     * Get the attributes that should be cast.
      *
-     * @var array
+     * @return array<string, string>
      */
-    protected $casts = [
-        'id' => 'integer',
-        'lat' => 'double',
-        'lon' => 'array',
-        'digital' => 'boolean',
-        'deactivated' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'id' => 'integer',
+            'lat' => 'double',
+            'lon' => 'array',
+            'digital' => 'boolean',
+            'deactivated' => 'boolean',
+        ];
+    }
 
     protected static function booted()
     {
