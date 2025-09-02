@@ -2,7 +2,7 @@ const defaultTheme = require('tailwindcss/defaultTheme')
 const colors = require('tailwindcss/colors')
 
 module.exports = {
-    content:  [
+    content: [
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './vendor/laravel/jetstream/**/*.blade.php',
         './resources/views/**/*.blade.php',
@@ -16,12 +16,12 @@ module.exports = {
         './vendor/wireui/wireui/src/View/**/*.php'
     ],
     darkMode: 'class',
-    theme:    {
+    theme: {
         extend: {
-            colors:     {
+            colors: {
                 '21gray': '#222',
-                'gray':   {
-                    '50':  '#f7f7f7',
+                'gray': {
+                    '50': '#f7f7f7',
                     '100': '#e3e3e3',
                     '200': '#c8c8c8',
                     '300': '#a4a4a4',
@@ -32,8 +32,8 @@ module.exports = {
                     '800': '#383838',
                     '900': '#151515',
                 },
-                'amber':  {
-                    '50':  '#FEF3E6',
+                'amber': {
+                    '50': '#FEF3E6',
                     '100': '#FDEAD3',
                     '200': '#FCD3A1',
                     '300': '#FABE75',
@@ -44,8 +44,8 @@ module.exports = {
                     '800': '#673B04',
                     '900': '#361F02'
                 },
-                'yellow':  {
-                    '50':  '#FEF3E6',
+                'yellow': {
+                    '50': '#FEF3E6',
                     '100': '#FDEAD3',
                     '200': '#FCD3A1',
                     '300': '#FABE75',
@@ -57,7 +57,7 @@ module.exports = {
                     '900': '#361F02'
                 },
                 primary: {
-                    '50':  '#FEF3E6',
+                    '50': '#FEF3E6',
                     '100': '#FDEAD3',
                     '200': '#FCD3A1',
                     '300': '#FABE75',
@@ -69,7 +69,7 @@ module.exports = {
                     '900': '#361F02'
                 },
                 secondary: {
-                    '50':  '#f7f7f7',
+                    '50': '#f7f7f7',
                     '100': '#e3e3e3',
                     '200': '#c8c8c8',
                     '300': '#a4a4a4',
@@ -101,9 +101,4 @@ module.exports = {
             },
         },
     },
-    plugins:  [
-        require('@tailwindcss/forms'),
-        require('@tailwindcss/typography'),
-        require('@tailwindcss/line-clamp'),
-    ],
 }
