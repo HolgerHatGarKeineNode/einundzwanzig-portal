@@ -42,7 +42,7 @@ class LibraryItemForm extends Component
     public function rules()
     {
         return [
-            'image' => [Rule::requiredIf(!$this->libraryItem->id), 'nullable', 'mimes:jpeg,png,jpg,gif', 'max:10240'],
+            'image' => [Rule::requiredIf(! $this->libraryItem->id), 'nullable', 'mimes:jpeg,png,jpg,gif', 'max:10240'],
 
             'library' => 'required',
 
@@ -59,51 +59,46 @@ class LibraryItemForm extends Component
                     && $this->libraryItem->type !== LibraryItemType::MarkdownArticleExtern(), ['url']
                 ),
             ],
-            'libraryItem.subtitle' =>
-                [
-                    Rule::when(
-                        $this->libraryItem->type !== 'bindle',
-                        'required',
-                    )
-                ],
-            'libraryItem.excerpt' =>
-                [
-                    Rule::when(
-                        $this->libraryItem->type !== 'bindle',
-                        'required',
-                    )
-                ],
-            'libraryItem.main_image_caption' =>
-                [
-                    Rule::when(
-                        $this->libraryItem->type !== 'bindle',
-                        'required',
-                    )
-                ],
-            'libraryItem.read_time' =>
-                [
-                    Rule::when(
-                        $this->libraryItem->type !== 'bindle',
-                        'required',
-                    )
-                ],
-            'libraryItem.approved' =>
-                [
-                    Rule::when(
-                        $this->libraryItem->type !== 'bindle',
-                        'required',
-                    )
-                ],
+            'libraryItem.subtitle' => [
+                Rule::when(
+                    $this->libraryItem->type !== 'bindle',
+                    'required',
+                ),
+            ],
+            'libraryItem.excerpt' => [
+                Rule::when(
+                    $this->libraryItem->type !== 'bindle',
+                    'required',
+                ),
+            ],
+            'libraryItem.main_image_caption' => [
+                Rule::when(
+                    $this->libraryItem->type !== 'bindle',
+                    'required',
+                ),
+            ],
+            'libraryItem.read_time' => [
+                Rule::when(
+                    $this->libraryItem->type !== 'bindle',
+                    'required',
+                ),
+            ],
+            'libraryItem.approved' => [
+                Rule::when(
+                    $this->libraryItem->type !== 'bindle',
+                    'required',
+                ),
+            ],
         ];
     }
 
     public function mount()
     {
-        if (!$this->libraryItem) {
+        if (! $this->libraryItem) {
             $this->libraryItem = new LibraryItem([
                 'approved' => true,
                 'read_time' => 1,
-                'value' => ''
+                'value' => '',
             ]);
             if ($this->lecturer) {
                 $this->library = Library::query()
@@ -113,13 +108,13 @@ class LibraryItemForm extends Component
             $this->selectedTags = $this->libraryItem->tags()
                 ->where('type', 'library_item')
                 ->get()
-                ->map(fn($tag) => $tag->name)
+                ->map(fn ($tag) => $tag->name)
                 ->toArray();
             $this->library = $this->libraryItem->libraries()
                 ->first()
                 ->id;
         }
-        if (!$this->fromUrl) {
+        if (! $this->fromUrl) {
             $this->fromUrl = url()->previous();
         }
         if ($this->isBindle) {
@@ -144,18 +139,18 @@ class LibraryItemForm extends Component
 
         if ($this->image) {
             $this->libraryItem->addMedia($this->image)
-                ->usingFileName(md5($this->image->getClientOriginalName()) . '.' . $this->image->getClientOriginalExtension())
+                ->usingFileName(md5($this->image->getClientOriginalName()).'.'.$this->image->getClientOriginalExtension())
                 ->toMediaCollection('main');
         }
 
         if ($this->file) {
             $this->libraryItem->addMedia($this->file)
-                ->usingFileName(md5($this->file->getClientOriginalName()) . '.' . $this->file->getClientOriginalExtension())
+                ->usingFileName(md5($this->file->getClientOriginalName()).'.'.$this->file->getClientOriginalExtension())
                 ->toMediaCollection('single_file');
         }
 
         $this->libraryItem->libraries()
-            ->syncWithoutDetaching([(int)$this->library]);
+            ->syncWithoutDetaching([(int) $this->library]);
 
         if ($this->libraryItem->type === 'bindle') {
             return to_route('bindles');
@@ -168,16 +163,16 @@ class LibraryItemForm extends Component
     {
         $types = Options::forEnum(LibraryItemType::class)
             ->filter(
-                fn($type) => $type !== LibraryItemType::PodcastEpisode
+                fn ($type) => $type !== LibraryItemType::PodcastEpisode
                     && $type !== LibraryItemType::MarkdownArticle
             )
             ->toArray();
         $libaries = Library::query()
             ->when(auth()->id() != config('portal.bonus.fiat-tracker-user-id'),
-                fn($query) => $query->where('name', '!=', 'Bindle')
+                fn ($query) => $query->where('name', '!=', 'Bindle')
             )
             ->get()
-            ->map(fn($library) => [
+            ->map(fn ($library) => [
                 'id' => $library->id,
                 'name' => $library->name,
             ])

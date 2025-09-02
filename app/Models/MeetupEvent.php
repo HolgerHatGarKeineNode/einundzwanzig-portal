@@ -33,7 +33,7 @@ class MeetupEvent extends Model
     protected static function booted()
     {
         static::creating(function ($model) {
-            if (!$model->created_by) {
+            if (! $model->created_by) {
                 $model->created_by = auth()->id();
             }
         });

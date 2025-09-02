@@ -10,8 +10,8 @@ use WireUi\Traits\Actions;
 
 class MeetupForm extends Component
 {
-    use WithFileUploads;
     use Actions;
+    use WithFileUploads;
 
     public string $country;
 
@@ -30,7 +30,7 @@ class MeetupForm extends Component
     public function rules()
     {
         return [
-            'image' => [Rule::requiredIf(!$this->meetup->id), 'nullable', 'mimes:jpeg,png,jpg,gif', 'max:10240'],
+            'image' => [Rule::requiredIf(! $this->meetup->id), 'nullable', 'mimes:jpeg,png,jpg,gif', 'max:10240'],
 
             'meetup.city_id' => 'required',
             'meetup.name' => [
@@ -52,18 +52,18 @@ class MeetupForm extends Component
 
     public function mount()
     {
-        if (!$this->meetup) {
+        if (! $this->meetup) {
             $this->meetup = new Meetup([
                 'community' => 'einundzwanzig',
             ]);
         } elseif (
-            !auth()
+            ! auth()
                 ->user()
                 ->can('update', $this->meetup)
         ) {
             abort(403);
         }
-        if (!$this->fromUrl) {
+        if (! $this->fromUrl) {
             $this->fromUrl = url()->previous();
         }
     }
@@ -75,7 +75,7 @@ class MeetupForm extends Component
 
         if ($this->image) {
             $this->meetup->addMedia($this->image)
-                ->usingFileName(md5($this->image->getClientOriginalName()) . '.' . $this->image->getClientOriginalExtension())
+                ->usingFileName(md5($this->image->getClientOriginalName()).'.'.$this->image->getClientOriginalExtension())
                 ->toMediaCollection('logo');
         }
 

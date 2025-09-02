@@ -166,6 +166,7 @@ class Database extends Translation implements DriverInterface
         // update to 'single'. We do this here so it only happens once.
         if ($this->hasLegacyGroups($translations->keys())) {
             TranslationModel::whereNull('group')->update(['group' => 'single']);
+
             // if any legacy groups exist, rerun the method so we get the
             // updated keys.
             return $this->getSingleTranslationsFor($language);

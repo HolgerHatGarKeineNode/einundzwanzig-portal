@@ -10,8 +10,11 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 class LightningWallet extends Component
 {
     public ?string $k1 = null;
+
     public ?string $url = null;
+
     public ?string $lnurl = null;
+
     public ?string $qrCode = null;
 
     public bool $confirmed = false;
@@ -19,9 +22,9 @@ class LightningWallet extends Component
     public function rules()
     {
         return [
-            'k1'     => 'required',
-            'url'    => 'required',
-            'lnurl'  => 'required',
+            'k1' => 'required',
+            'url' => 'required',
+            'lnurl' => 'required',
             'qrCode' => 'required',
         ];
     }
@@ -36,10 +39,10 @@ class LightningWallet extends Component
         }
         $this->lnurl = lnurl\encodeUrl($this->url);
         $this->qrCode = base64_encode(QrCode::format('png')
-                                            ->size(300)
-                                            ->merge('/public/android-chrome-192x192.png', .3)
-                                            ->errorCorrection('H')
-                                            ->generate($this->lnurl));
+            ->size(300)
+            ->merge('/public/android-chrome-192x192.png', .3)
+            ->errorCorrection('H')
+            ->generate($this->lnurl));
     }
 
     public function confirm()
@@ -54,9 +57,9 @@ class LightningWallet extends Component
     public function checkAuth()
     {
         $loginKey = LoginKey::query()
-                            ->where('k1', $this->k1)
-                            ->whereDate('created_at', '>=', now()->subMinutes(5))
-                            ->first();
+            ->where('k1', $this->k1)
+            ->whereDate('created_at', '>=', now()->subMinutes(5))
+            ->first();
         // you should also restrict this 👆🏻 by time, and find only the $k1 that were created in the last 5 minutes
 
         if ($loginKey) {

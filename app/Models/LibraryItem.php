@@ -19,47 +19,49 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use Spatie\Tags\HasTags;
 
-class LibraryItem extends Model implements HasMedia, Sortable, Feedable
+class LibraryItem extends Model implements Feedable, HasMedia, Sortable
 {
-    use InteractsWithMedia;
-    use HasTags;
-    use SortableTrait;
-    use HasStatuses;
     use HasSlug;
+    use HasStatuses;
+    use HasTags;
+    use InteractsWithMedia;
+    use SortableTrait;
 
     /**
      * The attributes that aren't mass assignable.
+     *
      * @var array
      */
     protected $guarded = [];
 
     /**
      * The attributes that should be cast to native types.
+     *
      * @var array
      */
     protected $casts = [
-        'id'          => 'integer',
+        'id' => 'integer',
         'lecturer_id' => 'integer',
-        'library_id'  => 'integer',
+        'library_id' => 'integer',
     ];
 
     public static function getFeedItems()
     {
         return self::query()
-                   ->with([
-                       'media',
-                       'lecturer',
-                   ])
-                   ->where('news', true)
-                   ->where('approved', true)
-                   ->orderByDesc('created_at')
-                   ->get();
+            ->with([
+                'media',
+                'lecturer',
+            ])
+            ->where('news', true)
+            ->where('approved', true)
+            ->orderByDesc('created_at')
+            ->get();
     }
 
     protected static function booted()
     {
         static::creating(function ($model) {
-            if (!$model->created_by) {
+            if (! $model->created_by) {
                 $model->created_by = auth()->id();
             }
         });
@@ -68,39 +70,39 @@ class LibraryItem extends Model implements HasMedia, Sortable, Feedable
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
-                          ->generateSlugsFrom(['name'])
-                          ->saveSlugsTo('slug')
-                          ->usingLanguage(Cookie::get('lang', config('app.locale')));
+            ->generateSlugsFrom(['name'])
+            ->saveSlugsTo('slug')
+            ->usingLanguage(Cookie::get('lang', config('app.locale')));
     }
 
-    public function registerMediaConversions(Media $media = null): void
+    public function registerMediaConversions(?Media $media = null): void
     {
         $this
             ->addMediaConversion('preview')
             ->fit(Manipulations::FIT_CROP, 300, 300)
             ->nonQueued();
         $this->addMediaConversion('seo')
-             ->fit(Manipulations::FIT_CROP, 1200, 630)
-             ->nonQueued();
+            ->fit(Manipulations::FIT_CROP, 1200, 630)
+            ->nonQueued();
         $this->addMediaConversion('thumb')
-             ->fit(Manipulations::FIT_CROP, 130, 130)
-             ->width(130)
-             ->height(130);
+            ->fit(Manipulations::FIT_CROP, 130, 130)
+            ->width(130)
+            ->height(130);
     }
 
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('main')
-             ->singleFile()
-             ->useFallbackUrl(asset('img/einundzwanzig.png'));
+            ->singleFile()
+            ->useFallbackUrl(asset('img/einundzwanzig.png'));
         $this->addMediaCollection('single_file')
-             ->acceptsMimeTypes([
-                 'application/pdf', 'application/zip', 'application/octet-stream', 'application/x-zip-compressed',
-                 'multipart/x-zip',
-             ])
-             ->singleFile();
+            ->acceptsMimeTypes([
+                'application/pdf', 'application/zip', 'application/octet-stream', 'application/x-zip-compressed',
+                'multipart/x-zip',
+            ])
+            ->singleFile();
         $this->addMediaCollection('images')
-             ->useFallbackUrl(asset('img/einundzwanzig.png'));
+            ->useFallbackUrl(asset('img/einundzwanzig.png'));
     }
 
     public function createdBy(): BelongsTo
@@ -131,17 +133,17 @@ class LibraryItem extends Model implements HasMedia, Sortable, Feedable
     public function toFeedItem(): CustomFeedItem
     {
         return CustomFeedItem::create()
-                             ->id('news/'.$this->slug)
-                             ->title($this->name)
-                             ->content($this->value)
-                             ->enclosure($this->getFirstMediaUrl('main'))
-                             ->enclosureLength($this->getFirstMedia('main')->size)
-                             ->enclosureType($this->getFirstMedia('main')->mime_type)
-                             ->summary($this->excerpt)
-                             ->updated($this->updated_at)
-                             ->image($this->getFirstMediaUrl('main'))
-                             ->link(url()->route('article.view', ['libraryItem' => $this]))
-                             ->authorName($this->lecturer->name);
+            ->id('news/'.$this->slug)
+            ->title($this->name)
+            ->content($this->value)
+            ->enclosure($this->getFirstMediaUrl('main'))
+            ->enclosureLength($this->getFirstMedia('main')->size)
+            ->enclosureType($this->getFirstMedia('main')->mime_type)
+            ->summary($this->excerpt)
+            ->updated($this->updated_at)
+            ->image($this->getFirstMediaUrl('main'))
+            ->link(url()->route('article.view', ['libraryItem' => $this]))
+            ->authorName($this->lecturer->name);
     }
 
     public static function searchLibraryItems($type, $value = null)

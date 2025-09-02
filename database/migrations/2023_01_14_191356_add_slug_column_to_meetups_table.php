@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::table('meetups', function (Blueprint $table) {
             $table->string('slug')
-                  ->nullable()
-                  ->after('id');
+                ->nullable()
+                ->after('id');
         });
     }
 

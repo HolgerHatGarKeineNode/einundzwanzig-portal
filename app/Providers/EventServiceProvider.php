@@ -4,7 +4,6 @@ namespace App\Providers;
 
 use App\Listeners\AddLoginReputation;
 use App\Models\BitcoinEvent;
-use App\Models\Course;
 use App\Models\CourseEvent;
 use App\Models\LibraryItem;
 use App\Models\Meetup;
@@ -12,7 +11,6 @@ use App\Models\MeetupEvent;
 use App\Models\OrangePill;
 use App\Observers\BitcoinEventObserver;
 use App\Observers\CourseEventObserver;
-use App\Observers\CourseObserver;
 use App\Observers\LibraryItemObserver;
 use App\Observers\MeetupEventObserver;
 use App\Observers\MeetupObserver;
@@ -26,10 +24,11 @@ class EventServiceProvider extends ServiceProvider
 {
     /**
      * The event to listener mappings for the application.
+     *
      * @var array<class-string, array<int, class-string>>
      */
     protected $listen = [
-        Login::class      => [
+        Login::class => [
             AddLoginReputation::class,
         ],
         Registered::class => [

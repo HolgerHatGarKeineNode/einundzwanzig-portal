@@ -11,12 +11,14 @@ class PublishUnpublishedItems extends Command
 
     /**
      * The name and signature of the console command.
+     *
      * @var string
      */
     protected $signature = 'nostr:publish {--model=}';
 
     /**
      * The console command description.
+     *
      * @var string
      */
     protected $description = 'Command description';
@@ -28,13 +30,13 @@ class PublishUnpublishedItems extends Command
     {
         config(['app.user-timezone' => 'Europe/Berlin']);
         $modelName = $this->option('model');
-        $className = '\\App\Models\\' . $modelName;
+        $className = '\\App\Models\\'.$modelName;
         $model = $className::query()
             ->whereNull('nostr_status')
-            ->when($modelName === 'BitcoinEvent', fn($q) => $q->where('from', '>', now()))
-            ->when($modelName === 'CourseEvent', fn($q) => $q->where('from', '>', now()))
-            ->when($modelName === 'MeetupEvent', fn($q) => $q->where('start', '>', now()))
-            ->when($modelName === 'LibraryItem', fn($q) => $q
+            ->when($modelName === 'BitcoinEvent', fn ($q) => $q->where('from', '>', now()))
+            ->when($modelName === 'CourseEvent', fn ($q) => $q->where('from', '>', now()))
+            ->when($modelName === 'MeetupEvent', fn ($q) => $q->where('start', '>', now()))
+            ->when($modelName === 'LibraryItem', fn ($q) => $q
                 ->where('type', '<>', 'markdown_article')
                 ->where('type', '<>', 'bindle')
             )

@@ -65,14 +65,14 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             $permissions = $request->user()
                 ->hasRole('super-admin') || $request->user()
                 ->can('PermissionPolicy.viewAny') ? [
-                MenuSection::make(__('nova-spatie-permissions::lang.sidebar_label'), [
-                    MenuItem::link(__('nova-spatie-permissions::lang.sidebar_label_roles'), 'resources/roles'),
-                    MenuItem::link(__('nova-spatie-permissions::lang.sidebar_label_permissions'),
-                        'resources/permissions'),
-                ])
-                    ->icon('key')
-                    ->collapsable(),
-            ] : [];
+                    MenuSection::make(__('nova-spatie-permissions::lang.sidebar_label'), [
+                        MenuItem::link(__('nova-spatie-permissions::lang.sidebar_label_roles'), 'resources/roles'),
+                        MenuItem::link(__('nova-spatie-permissions::lang.sidebar_label_permissions'),
+                            'resources/permissions'),
+                    ])
+                        ->icon('key')
+                        ->collapsable(),
+                ] : [];
 
             return array_merge([
                 MenuSection::dashboard(Main::class)
@@ -150,9 +150,9 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
         Nova::withoutThemeSwitcher();
 
         // login with user id 1, if we are in local environment
-//        if (app()->environment('local')) {
-//            auth()->loginUsingId(1);
-//        }
+        //        if (app()->environment('local')) {
+        //            auth()->loginUsingId(1);
+        //        }
 
         Nova::footer(function ($request) {
             // return MIT license and date

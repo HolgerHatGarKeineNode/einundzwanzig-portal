@@ -16,16 +16,16 @@ return new class extends Migration
         Schema::create('meetup_events', function (Blueprint $table) {
             $table->id();
             $table->foreignId('meetup_id')
-                  ->constrained()
-                  ->cascadeOnDelete()
-                  ->cascadeOnUpdate();
+                ->constrained()
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
             $table->dateTime('start');
             $table->string('location')
-                  ->nullable();
+                ->nullable();
             $table->text('description')
-                  ->nullable();
+                ->nullable();
             $table->string('link')
-                  ->nullable();
+                ->nullable();
             $table->timestamps();
         });
 

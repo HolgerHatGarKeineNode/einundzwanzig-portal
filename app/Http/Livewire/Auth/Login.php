@@ -43,7 +43,7 @@ class Login extends Component
                 $user = User::create([
                     'is_lecturer' => true,
                     'name' => $fakeName,
-                    'email' => str($fakeName)->slug() . '@portal.einundzwanzig.space',
+                    'email' => str($fakeName)->slug().'@portal.einundzwanzig.space',
                     'email_verified_at' => now(),
                     'lnbits' => [
                         'read_key' => null,
@@ -55,7 +55,7 @@ class Login extends Component
                 $user->ownedTeams()
                     ->save(Team::forceCreate([
                         'user_id' => $user->id,
-                        'name' => $fakeName . "'s Team",
+                        'name' => $fakeName."'s Team",
                         'personal_team' => true,
                     ]));
                 auth()->login($user, true);

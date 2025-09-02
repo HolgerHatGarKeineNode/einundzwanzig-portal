@@ -71,10 +71,10 @@ class Course extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     public function subtitle()
@@ -89,19 +89,19 @@ class Course extends Resource
     {
         return [
             ID::make()
-              ->sortable(),
+                ->sortable(),
 
             Images::make(__('Main picture'), 'logo')
-                  ->showStatistics()
-                  ->conversionOnIndexView('thumb')
-                  ->setFileName(fn ($originalFilename, $extension, $model) => md5($originalFilename).'.'.$extension),
+                ->showStatistics()
+                ->conversionOnIndexView('thumb')
+                ->setFileName(fn ($originalFilename, $extension, $model) => md5($originalFilename).'.'.$extension),
 
             // todo: english
             Images::make(__('Images'), 'images')
-                  ->showStatistics()
-                  ->conversionOnIndexView('thumb')
-                  ->help(__('Upload images here to insert them later in the Markdown Description. But you have to save before.'))
-                  ->setFileName(fn ($originalFilename, $extension, $model) => md5($originalFilename).'.'.$extension),
+                ->showStatistics()
+                ->conversionOnIndexView('thumb')
+                ->help(__('Upload images here to insert them later in the Markdown Description. But you have to save before.'))
+                ->setFileName(fn ($originalFilename, $extension, $model) => md5($originalFilename).'.'.$extension),
 
             Tags::make(__('Tags'))
                 ->type('course')
@@ -111,25 +111,25 @@ class Course extends Resource
                 ->rules('required', 'string'),
 
             Markdown::make(__('Description'), 'description')
-                    ->alwaysShow()
-                    ->help(__('Markdown is allowed. You can paste images from the "Images" field here. Use the link icon of the images for the urls after clicking "Update and continue".')),
+                ->alwaysShow()
+                ->help(__('Markdown is allowed. You can paste images from the "Images" field here. Use the link icon of the images for the urls after clicking "Update and continue".')),
 
             BelongsTo::make(__('Lecturer'), 'lecturer', Lecturer::class)
-                     ->searchable()
-                     ->help(__('Select here the lecturer who holds the course. If the lecturer is not in the list, create it first under "Lecturers".'))->withSubtitles(),
+                ->searchable()
+                ->help(__('Select here the lecturer who holds the course. If the lecturer is not in the list, create it first under "Lecturers".'))->withSubtitles(),
 
             SelectPlus::make(__('Categories'), 'categories', Category::class)
-                      ->usingIndexLabel('name'),
+                ->usingIndexLabel('name'),
 
             BelongsToMany::make(__('Categories'), 'categories', Category::class)
-                         ->onlyOnDetail(),
+                ->onlyOnDetail(),
 
             BelongsTo::make(__('Created By'), 'createdBy', User::class)
-                     ->canSee(function ($request) {
-                         return $request->user()
-                                        ->hasRole('super-admin');
-                     })
-                     ->searchable()->withSubtitles(),
+                ->canSee(function ($request) {
+                    return $request->user()
+                        ->hasRole('super-admin');
+                })
+                ->searchable()->withSubtitles(),
 
         ];
     }

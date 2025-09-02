@@ -11,8 +11,8 @@ use WireUi\Traits\Actions;
 
 class CourseForm extends Component
 {
-    use WithFileUploads;
     use Actions;
+    use WithFileUploads;
 
     public ?Course $course = null;
 
@@ -31,10 +31,10 @@ class CourseForm extends Component
     public function rules()
     {
         return [
-            'image' => [Rule::requiredIf(!$this->course->id), 'nullable', 'mimes:jpeg,png,jpg,gif', 'max:10240'],
+            'image' => [Rule::requiredIf(! $this->course->id), 'nullable', 'mimes:jpeg,png,jpg,gif', 'max:10240'],
 
             'course.lecturer_id' => 'required',
-            'course.name'        => [
+            'course.name' => [
                 'required',
                 Rule::unique('courses', 'name')
                     ->ignore($this->course),
@@ -45,24 +45,24 @@ class CourseForm extends Component
 
     public function mount()
     {
-        if (!$this->course) {
+        if (! $this->course) {
             $this->course = new Course([
                 'description' => '',
             ]);
         } elseif (
-            !auth()
+            ! auth()
                 ->user()
                 ->can('update', $this->course)
         ) {
             abort(403);
         } else {
             $this->selectedTags = $this->course->tags()
-                                                    ->where('type', 'course')
-                                                    ->get()
-                                                    ->map(fn($tag) => $tag->name)
-                                                    ->toArray();
+                ->where('type', 'course')
+                ->get()
+                ->map(fn ($tag) => $tag->name)
+                ->toArray();
         }
-        if (!$this->fromUrl) {
+        if (! $this->fromUrl) {
             $this->fromUrl = url()->previous();
         }
     }
@@ -79,8 +79,8 @@ class CourseForm extends Component
 
         if ($this->image) {
             $this->course->addMedia($this->image)
-                         ->usingFileName(md5($this->image->getClientOriginalName()).'.'.$this->image->getClientOriginalExtension())
-                         ->toMediaCollection('logo');
+                ->usingFileName(md5($this->image->getClientOriginalName()).'.'.$this->image->getClientOriginalExtension())
+                ->toMediaCollection('logo');
         }
 
         return redirect($this->fromUrl);
@@ -90,20 +90,20 @@ class CourseForm extends Component
     {
         $selectedTags = collect($this->selectedTags);
         if ($selectedTags->contains($name)) {
-            $selectedTags = $selectedTags->filter(fn($tag) => $tag !== $name);
+            $selectedTags = $selectedTags->filter(fn ($tag) => $tag !== $name);
         } else {
             $selectedTags->push($name);
         }
         $this->selectedTags = $selectedTags->values()
-                                           ->toArray();
+            ->toArray();
     }
 
     public function render()
     {
         return view('livewire.school.form.course-form', [
             'tags' => Tag::query()
-                         ->where('type', 'course')
-                         ->get(),
+                ->where('type', 'course')
+                ->get(),
         ]);
     }
 }

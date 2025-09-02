@@ -10,9 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class EmailCampaignGeneratorController extends Controller
 {
-    public function __construct(public $model = 'openai/gpt-4', public $maxTokens = 8191)
-    {
-    }
+    public function __construct(public $model = 'openai/gpt-4', public $maxTokens = 8191) {}
 
     public function __invoke(Request $request)
     {
@@ -22,7 +20,7 @@ class EmailCampaignGeneratorController extends Controller
         $campaign = \App\Models\EmailCampaign::query()->find($campaignId);
 
         $subject = $this->generateSubject($campaign);
-        //check if subject exists in database
+        // check if subject exists in database
         $subjectExists = EmailTexts::query()->where('subject', $subject)->exists();
         // loop until subject is unique
         while ($subjectExists) {
@@ -46,7 +44,7 @@ class EmailCampaignGeneratorController extends Controller
     public function generateSubject(\Illuminate\Database\Eloquent\Model|\Illuminate\Database\Eloquent\Collection|\Illuminate\Database\Eloquent\Builder|array|null $campaign): string
     {
         $result = Http::timeout(120)->withHeaders([
-            'Authorization' => 'Bearer ' . config('openai.api_key'),
+            'Authorization' => 'Bearer '.config('openai.api_key'),
             'HTTP-Referer' => 'http://localhost',
         ])->post('https://openrouter.ai/api/v1/chat/completions', [
             'model' => $this->model,
@@ -68,7 +66,7 @@ class EmailCampaignGeneratorController extends Controller
     public function generateText(\Illuminate\Database\Eloquent\Model|\Illuminate\Database\Eloquent\Collection|\Illuminate\Database\Eloquent\Builder|array|null $campaign): mixed
     {
         $result = Http::timeout(120)->withHeaders([
-            'Authorization' => 'Bearer ' . config('openai.api_key'),
+            'Authorization' => 'Bearer '.config('openai.api_key'),
             'HTTP-Referer' => 'http://localhost',
         ])->post('https://openrouter.ai/api/v1/chat/completions', [
             'model' => $this->model,
@@ -86,5 +84,4 @@ class EmailCampaignGeneratorController extends Controller
 
         return $result->json()['choices'][0]['message']['content'];
     }
-
 }

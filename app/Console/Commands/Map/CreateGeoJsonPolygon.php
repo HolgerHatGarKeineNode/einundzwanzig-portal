@@ -27,10 +27,10 @@ class CreateGeoJsonPolygon extends Command
     public function handle(): int
     {
         $meetups = Meetup::query()
-                         ->with([
-                             'city',
-                         ])
-                         ->get();
+            ->with([
+                'city',
+            ])
+            ->get();
 
         foreach ($meetups as $meetup) {
             dd($meetup->city->name);

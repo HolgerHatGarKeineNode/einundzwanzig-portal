@@ -27,25 +27,25 @@ class ProjectProposalForm extends Component
     {
         return [
             'image' => [
-                'nullable', 'mimes:jpeg,png,jpg,gif', 'max:10240'
+                'nullable', 'mimes:jpeg,png,jpg,gif', 'max:10240',
             ],
 
-            'projectProposal.user_id'         => 'required',
-            'projectProposal.name'            => 'required',
+            'projectProposal.user_id' => 'required',
+            'projectProposal.name' => 'required',
             'projectProposal.support_in_sats' => 'required|numeric',
-            'projectProposal.description'     => 'required',
+            'projectProposal.description' => 'required',
         ];
     }
 
     public function mount()
     {
-        if (!$this->projectProposal) {
+        if (! $this->projectProposal) {
             $this->projectProposal = new ProjectProposal([
                 'user_id' => auth()->id(),
                 'description' => '',
             ]);
         }
-        if (!$this->fromUrl) {
+        if (! $this->fromUrl) {
             $this->fromUrl = url()->previous();
         }
     }
@@ -57,8 +57,8 @@ class ProjectProposalForm extends Component
 
         if ($this->image) {
             $this->projectProposal->addMedia($this->image)
-                              ->usingFileName(md5($this->image->getClientOriginalName()).'.'.$this->image->getClientOriginalExtension())
-                              ->toMediaCollection('main');
+                ->usingFileName(md5($this->image->getClientOriginalName()).'.'.$this->image->getClientOriginalExtension())
+                ->toMediaCollection('main');
         }
 
         return redirect($this->fromUrl);

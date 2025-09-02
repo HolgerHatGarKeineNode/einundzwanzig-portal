@@ -11,5 +11,4 @@ class EmailCampaignController extends Controller
     {
         return EmailCampaign::query()->get();
     }
-
 }

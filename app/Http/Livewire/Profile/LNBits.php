@@ -12,17 +12,17 @@ class LNBits extends Component
     use LNBitsTrait;
 
     public array $settings = [
-        'url'       => 'https://legend.lnbits.com',
+        'url' => 'https://legend.lnbits.com',
         'wallet_id' => '',
-        'read_key'  => '',
+        'read_key' => '',
     ];
 
     public function rules()
     {
         return [
-            'settings.url'       => 'required|url',
+            'settings.url' => 'required|url',
             'settings.wallet_id' => 'required',
-            'settings.read_key'  => 'required',
+            'settings.read_key' => 'required',
         ];
     }
 
@@ -38,7 +38,7 @@ class LNBits extends Component
         $this->validate();
         if ($this->checkLnbitsSettings($this->settings['read_key'], $this->settings['url'], $this->settings['wallet_id']) === false) {
             $this->notification()
-                 ->error(__('LNBits settings are not valid!'));
+                ->error(__('LNBits settings are not valid!'));
 
             return;
         }
@@ -47,7 +47,7 @@ class LNBits extends Component
         $user->save();
 
         $this->notification()
-             ->success(__('LNBits settings saved successfully!'));
+            ->success(__('LNBits settings saved successfully!'));
     }
 
     public function render()

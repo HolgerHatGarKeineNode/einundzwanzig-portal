@@ -22,7 +22,7 @@ class DatabaseDriverTest extends TestCase
     /**
      * Setup the test environment.
      */
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
         $this->withFactories(__DIR__.'/../database/factories');

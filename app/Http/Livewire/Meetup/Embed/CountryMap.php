@@ -19,23 +19,23 @@ class CountryMap extends Component
     {
         return view('livewire.meetup.embed.country-map', [
             'markers' => Meetup::query()
-                               ->with([
-                                   'city.country',
-                               ])
-                               ->whereHas('city.country',
-                                   fn($query) => $query->where('countries.code', $this->country->code))
-                               ->get()
-                               ->map(fn($meetup) => [
-                                   'id'     => $meetup->id,
-                                   'name'   => $meetup->name,
-                                   'coords' => [$meetup->city->latitude, $meetup->city->longitude],
-                                   'url'    => url()->route('meetup.landing', [
-                                       'country' => $meetup->city->country->code,
-                                       'meetup'  => $meetup,
-                                   ]),
-                               ]),
+                ->with([
+                    'city.country',
+                ])
+                ->whereHas('city.country',
+                    fn ($query) => $query->where('countries.code', $this->country->code))
+                ->get()
+                ->map(fn ($meetup) => [
+                    'id' => $meetup->id,
+                    'name' => $meetup->name,
+                    'coords' => [$meetup->city->latitude, $meetup->city->longitude],
+                    'url' => url()->route('meetup.landing', [
+                        'country' => $meetup->city->country->code,
+                        'meetup' => $meetup,
+                    ]),
+                ]),
         ])->layout('layouts.app', [
-            'darkModeDisabled' => !$this->darkMode,
+            'darkModeDisabled' => ! $this->darkMode,
             'SEOData' => new SEOData(
                 title: __('Meetups'),
                 description: __('Bitcoiner Meetups are a great way to meet other Bitcoiners in your area. You can learn from each other, share ideas, and have fun!'),

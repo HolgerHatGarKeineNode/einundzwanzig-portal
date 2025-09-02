@@ -44,36 +44,36 @@ class Episode extends Resource
                 ]);
                 if ($model->podcast->data['image']) {
                     $lecturer->addMediaFromUrl($model->podcast->data['image'])
-                             ->toMediaCollection('avatar');
+                        ->toMediaCollection('avatar');
                 }
                 $library = \App\Models\Library::firstOrCreate(
                     [
                         'name' => 'Podcasts',
                     ]);
                 $libraryItem = $model->libraryItem()
-                                     ->firstOrCreate([
-                                         'lecturer_id' => $lecturer->id,
-                                         'episode_id' => $model->id,
-                                         'name' => $model->data['title'],
-                                         'type' => 'podcast_episode',
-                                         'language_code' => str($model->podcast->language_code)
-                                             ->before('-')
-                                             ->toString(),
-                                         'value' => null,
-                                         'excerpt' => $model->data['description'],
-                                         'subtitle' => $model->data['description'],
-                                     ]);
+                    ->firstOrCreate([
+                        'lecturer_id' => $lecturer->id,
+                        'episode_id' => $model->id,
+                        'name' => $model->data['title'],
+                        'type' => 'podcast_episode',
+                        'language_code' => str($model->podcast->language_code)
+                            ->before('-')
+                            ->toString(),
+                        'value' => null,
+                        'excerpt' => $model->data['description'],
+                        'subtitle' => $model->data['description'],
+                    ]);
                 $libraryItem->syncTagsWithType(is_array($request->tags) ? $request->tags : str($request->tags)->explode('-----'),
                     'library_item');
                 if ($model->data['image']) {
                     $libraryItem->addMediaFromUrl($model->data['image'])
-                                ->toMediaCollection('main');
+                        ->toMediaCollection('main');
                 } else {
                     $libraryItem->addMediaFromUrl($model->podcast->data['image'])
-                                ->toMediaCollection('main');
+                        ->toMediaCollection('main');
                 }
                 $library->libraryItems()
-                        ->attach($libraryItem);
+                    ->attach($libraryItem);
             }
         }
     }
@@ -81,10 +81,10 @@ class Episode extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     protected static function applyOrderings($query, array $orderings)
@@ -113,14 +113,14 @@ class Episode extends Resource
     {
         return [
             ID::make()
-              ->sortable(),
+                ->sortable(),
 
             Avatar::make(__('Image'))
-                  ->squared()
-                  ->thumbnail(function () {
-                      return $this->data['image'];
-                  })
-                  ->exceptOnForms(),
+                ->squared()
+                ->thumbnail(function () {
+                    return $this->data['image'];
+                })
+                ->exceptOnForms(),
 
             Tags::make(__('Tags'))
                 ->type('library_item')
@@ -136,14 +136,14 @@ class Episode extends Resource
                 ->json(),
 
             BelongsTo::make(__('Podcast'), 'podcast', Podcast::class)
-                     ->readonly(),
+                ->readonly(),
 
             BelongsTo::make(__('Created By'), 'createdBy', User::class)
-                     ->canSee(function ($request) {
-                         return $request->user()
-                                        ->hasRole('super-admin');
-                     })
-                     ->searchable(),
+                ->canSee(function ($request) {
+                    return $request->user()
+                        ->hasRole('super-admin');
+                })
+                ->searchable(),
 
         ];
     }

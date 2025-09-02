@@ -29,6 +29,7 @@ Route::middleware([])
     ->group(function () {
         Route::get('email-list/{id}', function ($id) {
             $campaign = EmailCampaign::query()->find($id);
+
             return \Illuminate\Support\Facades\Storage::disk('lists')->download($campaign->list_file_name);
         });
         Route::get('email-campaigns', \App\Http\Controllers\Api\EmailCampaignController::class);
@@ -69,11 +70,10 @@ Route::middleware([])
                 ])
                 ->orderByDesc('id')
                 ->get()
-                ->map(fn($item)
-                    => [
+                ->map(fn ($item) => [
                     'id' => $item->id,
                     'name' => $item->name,
-                    'link' => strtok($item->value, "?"),
+                    'link' => strtok($item->value, '?'),
                     'image' => $item->getFirstMediaUrl('main'),
                 ]);
         });
@@ -86,8 +86,7 @@ Route::middleware([])
                     'media',
                 ])
                 ->get()
-                ->map(fn($meetup)
-                    => [
+                ->map(fn ($meetup) => [
                     'name' => $meetup->name,
                     'portalLink' => url()->route(
                         'meetup.landing',
@@ -99,8 +98,8 @@ Route::middleware([])
                     'country' => str($meetup->city->country->code)->upper(),
                     'state' => $meetup->github_data['state'] ?? null,
                     'city' => $meetup->city->name,
-                    'longitude' => (float)$meetup->city->longitude,
-                    'latitude' => (float)$meetup->city->latitude,
+                    'longitude' => (float) $meetup->city->longitude,
+                    'latitude' => (float) $meetup->city->latitude,
                     'twitter_username' => $meetup->twitter_username,
                     'website' => $meetup->webpage,
                     'simplex' => $meetup->simplex,
@@ -122,15 +121,13 @@ Route::middleware([])
                 ])
                 ->when(
                     $date,
-                    fn($query)
-                        => $query
+                    fn ($query) => $query
                         ->where('start', '>=', $date)
                         ->where('start', '<=', $date->copy()->endOfMonth()),
                 )
                 ->get();
 
-            return $events->map(fn($event)
-                => [
+            return $events->map(fn ($event) => [
                 'start' => $event->start->format('Y-m-d H:i'),
                 'location' => $event->location,
                 'description' => $event->description,
@@ -146,8 +143,8 @@ Route::middleware([])
                 'meetup.url' => $event->meetup->telegram_link ?? $event->meetup->webpage,
                 'meetup.country' => str($event->meetup->city->country->code)->upper(),
                 'meetup.city' => $event->meetup->city->name,
-                'meetup.longitude' => (float)$event->meetup->city->longitude,
-                'meetup.latitude' => (float)$event->meetup->city->latitude,
+                'meetup.longitude' => (float) $event->meetup->city->longitude,
+                'meetup.latitude' => (float) $event->meetup->city->latitude,
                 'meetup.twitter_username' => $event->meetup->twitter_username,
                 'meetup.website' => $event->meetup->webpage,
                 'meetup.simplex' => $event->meetup->simplex,
@@ -167,31 +164,28 @@ Route::middleware([])
                     ->where('community', '=', 'einundzwanzig')
                     ->when(
                         app()->environment('production'),
-                        fn($query)
-                            => $query->whereHas(
+                        fn ($query) => $query->whereHas(
                             'city',
-                            fn($query)
-                                => $query
+                            fn ($query) => $query
                                 ->whereNotNull('cities.simplified_geojson')
                                 ->whereNotNull('cities.population')
                                 ->whereNotNull('cities.population_date'),
                         ),
                     )
                     ->get()
-                    ->map(fn($meetup)
-                        => [
+                    ->map(fn ($meetup) => [
                         'id' => $meetup->slug,
                         'tags' => [
                             'type' => 'community',
                             'name' => $meetup->name,
                             'continent' => 'europe',
                             'icon:square' => $meetup->logoSquare,
-                            //'contact:email'          => null,
-                            'contact:twitter' => $meetup->twitter_username ? 'https://twitter.com/' . $meetup->twitter_username : null,
+                            // 'contact:email'          => null,
+                            'contact:twitter' => $meetup->twitter_username ? 'https://twitter.com/'.$meetup->twitter_username : null,
                             'contact:website' => $meetup->webpage,
                             'contact:telegram' => $meetup->telegram_link,
                             'contact:nostr' => $meetup->nostr,
-                            //'tips:lightning_address' => null,
+                            // 'tips:lightning_address' => null,
                             'organization' => 'einundzwanzig',
                             'language' => $meetup->city->country->language_codes[0] ?? 'de',
                             'geo_json' => $meetup->city->simplified_geojson,
@@ -223,14 +217,14 @@ Route::get('/lnurl-auth-callback', function (Request $request) {
                 ->whereBlind('public_key', 'public_key_index', $request->key)
                 ->first();
         }
-        if (!$user) {
+        if (! $user) {
             $fakeName = str()->random(10);
             // create User
             $user = User::create([
                 'public_key' => $request->key,
                 'is_lecturer' => true,
                 'name' => $fakeName,
-                'email' => str($request->key)->substr(-12) . '@portal.einundzwanzig.space',
+                'email' => str($request->key)->substr(-12).'@portal.einundzwanzig.space',
                 'lnbits' => [
                     'read_key' => null,
                     'url' => null,
@@ -242,7 +236,7 @@ Route::get('/lnurl-auth-callback', function (Request $request) {
                 ->save(
                     Team::forceCreate([
                         'user_id' => $user->id,
-                        'name' => $fakeName . "'s Team",
+                        'name' => $fakeName."'s Team",
                         'personal_team' => true,
                     ]),
                 );
@@ -250,7 +244,7 @@ Route::get('/lnurl-auth-callback', function (Request $request) {
         // check if $k1 is in the database, if not, add it
         $loginKey = LoginKey::where('k1', $request->k1)
             ->first();
-        if (!$loginKey) {
+        if (! $loginKey) {
             LoginKey::create([
                 'k1' => $request->k1,
                 'user_id' => $user->id,

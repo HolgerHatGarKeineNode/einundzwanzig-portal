@@ -40,10 +40,10 @@ class MapsServiceProvider extends BaseServiceProvider
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'maps');
 
         view()->composer('maps::*', function ($view) {
-            if (!isset($view->service)) {
+            if (! isset($view->service)) {
                 $view->with('service', config('vendor.maps.default'));
             }
-            if (!isset($view->enabled)) {
+            if (! isset($view->enabled)) {
                 $view->with('enabled', config('vendor.maps.enabled'));
             }
 

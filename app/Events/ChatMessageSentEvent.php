@@ -24,7 +24,6 @@ class ChatMessageSentEvent implements ShouldBroadcast
 
     /**
      * Get the channels the event should broadcast on.
-     *
      */
     public function broadcastOn(): \Illuminate\Broadcasting\Channel|array
     {

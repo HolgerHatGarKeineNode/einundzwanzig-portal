@@ -28,15 +28,15 @@ class MeetupController extends Controller
             ->orderBy('name')
             ->when(
                 $request->search,
-                fn(Builder $query) => $query
+                fn (Builder $query) => $query
                     ->where('name', 'like', "%{$request->search}%")
                     ->orWhereHas('city',
-                        fn(Builder $query) => $query->where('cities.name', 'ilike', "%{$request->search}%"))
+                        fn (Builder $query) => $query->where('cities.name', 'ilike', "%{$request->search}%"))
             )
             ->when(
                 $request->exists('selected'),
-                fn(Builder $query) => $query->whereIn('id', $request->input('selected', [])),
-                fn(Builder $query) => $query->limit(10)
+                fn (Builder $query) => $query->whereIn('id', $request->input('selected', [])),
+                fn (Builder $query) => $query->limit(10)
             )
             ->get()
             ->map(function (Meetup $meetup) {

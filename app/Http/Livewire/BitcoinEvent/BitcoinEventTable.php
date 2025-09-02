@@ -26,36 +26,36 @@ class BitcoinEventTable extends Component
     {
         return view('livewire.bitcoin-event.bitcoin-event-table', [
             'markers' => BitcoinEvent::query()
-                                     ->with([
-                                         'venue.city.country',
-                                     ])
-                                     ->where('bitcoin_events.from', '>=', now())
-                                     ->where(fn ($query) => $query
-                                         ->whereHas('venue.city.country',
-                                             fn ($query) => $query->where('countries.code', $this->country->code))
-                                         ->orWhere('show_worldwide', true)
-                                     )
-                                     ->get()
-                                     ->map(fn ($event) => [
-                                         'id' => $event->id,
-                                         'name' => $event->title,
-                                         'coords' => [$event->venue->city->latitude, $event->venue->city->longitude],
-                                     ]),
+                ->with([
+                    'venue.city.country',
+                ])
+                ->where('bitcoin_events.from', '>=', now())
+                ->where(fn ($query) => $query
+                    ->whereHas('venue.city.country',
+                        fn ($query) => $query->where('countries.code', $this->country->code))
+                    ->orWhere('show_worldwide', true)
+                )
+                ->get()
+                ->map(fn ($event) => [
+                    'id' => $event->id,
+                    'name' => $event->title,
+                    'coords' => [$event->venue->city->latitude, $event->venue->city->longitude],
+                ]),
             'events' => BitcoinEvent::query()
-                                     ->where('bitcoin_events.from', '>=', now())
-                                     ->where(fn ($query) => $query
-                                         ->whereHas('venue.city.country',
-                                             fn ($query) => $query->where('countries.code', $this->country->code))
-                                         ->orWhere('show_worldwide', true)
-                                     )
-                                     ->get()
-                                     ->map(fn ($event) => [
-                                         'id' => $event->id,
-                                         'startDate' => $event->from,
-                                         'endDate' => $event->to,
-                                         'location' => $event->title,
-                                         'description' => $event->description,
-                                     ]),
+                ->where('bitcoin_events.from', '>=', now())
+                ->where(fn ($query) => $query
+                    ->whereHas('venue.city.country',
+                        fn ($query) => $query->where('countries.code', $this->country->code))
+                    ->orWhere('show_worldwide', true)
+                )
+                ->get()
+                ->map(fn ($event) => [
+                    'id' => $event->id,
+                    'startDate' => $event->from,
+                    'endDate' => $event->to,
+                    'location' => $event->title,
+                    'description' => $event->description,
+                ]),
         ])->layout('layouts.app', [
             'SEOData' => new SEOData(
                 title: __('Bitcoin Events'),

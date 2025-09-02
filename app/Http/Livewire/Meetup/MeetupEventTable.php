@@ -22,7 +22,7 @@ class MeetupEventTable extends Component
 
     public function mount()
     {
-        if (!$this->year) {
+        if (! $this->year) {
             $this->year = now()->year;
         }
     }
@@ -36,11 +36,11 @@ class MeetupEventTable extends Component
                 ])
                 ->where('meetup_events.start', '>=', now()->subDay())
                 ->whereHas('meetup.city.country',
-                    fn($query) => $query->where('countries.code', $this->country->code))
+                    fn ($query) => $query->where('countries.code', $this->country->code))
                 ->get()
-                ->map(fn($event) => [
+                ->map(fn ($event) => [
                     'id' => $event->id,
-                    'name' => $event->meetup->name . ': ' . $event->location,
+                    'name' => $event->meetup->name.': '.$event->location,
                     'coords' => [$event->meetup->city->latitude, $event->meetup->city->longitude],
                 ]),
             'events' => MeetupEvent::query()
@@ -49,9 +49,9 @@ class MeetupEventTable extends Component
                 ])
                 ->where('meetup_events.start', '>=', now()->subDay())
                 ->whereHas('meetup.city.country',
-                    fn($query) => $query->where('countries.code', $this->country->code))
+                    fn ($query) => $query->where('countries.code', $this->country->code))
                 ->get()
-                ->map(fn($event) => [
+                ->map(fn ($event) => [
                     'id' => $event->id,
                     'startDate' => $event->start,
                     'endDate' => $event->start->addHours(1),

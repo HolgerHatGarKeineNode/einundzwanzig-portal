@@ -18,8 +18,8 @@ use Spatie\Sluggable\SlugOptions;
 class Meetup extends Model implements HasMedia
 {
     use HasFactory;
-    use InteractsWithMedia;
     use HasSlug;
+    use InteractsWithMedia;
 
     /**
      * The attributes that aren't mass assignable.
@@ -43,7 +43,7 @@ class Meetup extends Model implements HasMedia
     protected static function booted()
     {
         static::creating(function ($model) {
-            if (!$model->created_by) {
+            if (! $model->created_by) {
                 $model->created_by = auth()->id();
             }
         });
@@ -57,7 +57,7 @@ class Meetup extends Model implements HasMedia
             ->usingLanguage(Cookie::get('lang', config('app.locale')));
     }
 
-    public function registerMediaConversions(Media $media = null): void
+    public function registerMediaConversions(?Media $media = null): void
     {
         $this
             ->addMediaConversion('preview')
@@ -101,7 +101,7 @@ class Meetup extends Model implements HasMedia
         }
 
         return Attribute::make(
-            get: fn() => url()->route('img',
+            get: fn () => url()->route('img',
                 [
                     'path' => $path,
                     'w' => 900,
@@ -117,7 +117,7 @@ class Meetup extends Model implements HasMedia
         $nextEvent = $this->meetupEvents()->where('start', '>=', now())->orderBy('start')->first();
 
         return Attribute::make(
-            get: fn() => $nextEvent ? [
+            get: fn () => $nextEvent ? [
                 'start' => $nextEvent->start->toDateTimeString(),
                 'portalLink' => url()->route('meetup.event.landing', ['country' => $this->city->country, 'meetupEvent' => $nextEvent]),
                 'location' => $nextEvent->location,

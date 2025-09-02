@@ -44,10 +44,10 @@ class Podcast extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     public function subtitle()
@@ -64,14 +64,14 @@ class Podcast extends Resource
 
         return [
             ID::make()
-              ->sortable(),
+                ->sortable(),
 
             Avatar::make(__('Image'))
-                  ->squared()
-                  ->thumbnail(function () {
-                      return $this?->data['image'] ?? '';
-                  })
-                  ->exceptOnForms(),
+                ->squared()
+                ->thumbnail(function () {
+                    return $this?->data['image'] ?? '';
+                })
+                ->exceptOnForms(),
 
             Boolean::make(__('Locked'), 'locked', fn ($value) => $value ?? false),
 
@@ -99,11 +99,11 @@ class Podcast extends Resource
             HasMany::make(__('Episodes'), 'episodes', Episode::class),
 
             BelongsTo::make(__('Created By'), 'createdBy', User::class)
-                     ->canSee(function ($request) {
-                         return $request->user()
-                                        ->hasRole('super-admin');
-                     })
-                     ->searchable()->withSubtitles(),
+                ->canSee(function ($request) {
+                    return $request->user()
+                        ->hasRole('super-admin');
+                })
+                ->searchable()->withSubtitles(),
 
         ];
     }

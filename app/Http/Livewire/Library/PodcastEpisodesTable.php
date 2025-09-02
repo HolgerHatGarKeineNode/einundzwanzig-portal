@@ -21,7 +21,7 @@ class PodcastEpisodesTable extends Component
 
     protected $queryString = [
         'filters' => ['except' => ''],
-        'search'  => ['except' => ''],
+        'search' => ['except' => ''],
     ];
 
     public function loadMore()
@@ -38,17 +38,17 @@ class PodcastEpisodesTable extends Component
     {
         return view('livewire.library.podcast-episodes-table', [
             'episodes' => Episode::query()
-                                 ->with(['podcast'])
-                                 ->whereNot('data->link', '=', '')
-                                 ->when($this->search,
-                                     fn($query, $search) => $query
-                                         ->where('data->title', 'ilike', "%{$search}%")
-                                         ->orWhere('data->description', 'ilike', "%{$search}%")
-                                         ->orWhereHas('podcast',
-                                             fn($query) => $query->where('data->title', 'ilike', "%{$search}%"))
-                                 )
-                                 ->orderByDesc('data->datePublished')
-                                 ->paginate($this->perPage),
+                ->with(['podcast'])
+                ->whereNot('data->link', '=', '')
+                ->when($this->search,
+                    fn ($query, $search) => $query
+                        ->where('data->title', 'ilike', "%{$search}%")
+                        ->orWhere('data->description', 'ilike', "%{$search}%")
+                        ->orWhereHas('podcast',
+                            fn ($query) => $query->where('data->title', 'ilike', "%{$search}%"))
+                )
+                ->orderByDesc('data->datePublished')
+                ->paginate($this->perPage),
         ])->layout('layouts.app', [
             'SEOData' => new SEOData(
                 title: __('Podcast Episodes'),

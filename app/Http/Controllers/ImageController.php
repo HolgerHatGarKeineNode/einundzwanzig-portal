@@ -14,7 +14,6 @@ class ImageController extends Controller
     /**
      * Handle the incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
      *
      * @return \Illuminate\Http\Response
      */
@@ -23,12 +22,12 @@ class ImageController extends Controller
         $filesystemPublic = Storage::disk('publicDisk');
 
         $server = ServerFactory::create([
-            'response'          => new LaravelResponseFactory(app('request')),
-            'source'            => str($request->path())->contains('img-public') ? $filesystemPublic->getDriver() : $filesystem->getDriver(),
-            'cache'             => $filesystem->getDriver(),
+            'response' => new LaravelResponseFactory(app('request')),
+            'source' => str($request->path())->contains('img-public') ? $filesystemPublic->getDriver() : $filesystem->getDriver(),
+            'cache' => $filesystem->getDriver(),
             'cache_path_prefix' => '.cache',
-            'base_url'          => $request->route()
-                                           ->getName() === 'imgPublic' ? '' : 'img',
+            'base_url' => $request->route()
+                ->getName() === 'imgPublic' ? '' : 'img',
         ]);
         try {
             return $server->getImageResponse($path, request()->all());

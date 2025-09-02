@@ -12,14 +12,14 @@ class AuthorsOverview extends Component
     {
         return view('livewire.news.authors-overview', [
             'authors' => Lecturer::query()
-                                 ->whereHas('libraryItems', function ($query) {
-                                     $query->where('library_items.news', true);
-                                 })
-                                 ->withCount([
-                                     'libraryItems' => fn($query) => $query->where('library_items.news', true),
-                                 ])
-                                 ->orderByDesc('library_items_count')
-                                 ->get(),
+                ->whereHas('libraryItems', function ($query) {
+                    $query->where('library_items.news', true);
+                })
+                ->withCount([
+                    'libraryItems' => fn ($query) => $query->where('library_items.news', true),
+                ])
+                ->orderByDesc('library_items_count')
+                ->get(),
         ])->layout('layouts.app', [
             'SEOData' => new SEOData(
                 title: __('News articles writer'),

@@ -51,6 +51,7 @@ class Scanner
                     if (preg_match("/(^[a-zA-Z0-9:_-]+([.][^\1)\ ]+)+$)/siU", $key, $arrayMatches)) {
                         [$file, $k] = explode('.', $arrayMatches[0], 2);
                         $results['group'][$file][$k] = '';
+
                         continue;
                     } else {
                         $results['single']['single'][$key] = '';

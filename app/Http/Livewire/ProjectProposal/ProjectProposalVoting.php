@@ -2,7 +2,6 @@
 
 namespace App\Http\Livewire\ProjectProposal;
 
-use App\Models\Country;
 use App\Models\ProjectProposal;
 use App\Models\User;
 use App\Models\Vote;
@@ -13,6 +12,7 @@ use RalphJSmit\Laravel\SEO\Support\SEOData;
 class ProjectProposalVoting extends Component
 {
     public ?ProjectProposal $projectProposal = null;
+
     public ?Vote $vote = null;
 
     public ?string $fromUrl = '';
@@ -24,12 +24,12 @@ class ProjectProposalVoting extends Component
     public function rules()
     {
         return [
-            'vote.user_id'             => 'required',
+            'vote.user_id' => 'required',
             'vote.project_proposal_id' => 'required',
-            'vote.value'               => 'required|boolean',
-            'vote.reason'              => [
-                Rule::requiredIf(!$this->vote->value),
-            ]
+            'vote.value' => 'required|boolean',
+            'vote.reason' => [
+                Rule::requiredIf(! $this->vote->value),
+            ],
         ];
     }
 
@@ -37,18 +37,18 @@ class ProjectProposalVoting extends Component
     {
         $this->projectProposal->load('votes');
         $vote = Vote::query()
-                    ->where('user_id', auth()->id())
-                    ->where('project_proposal_id', $this->projectProposal->id)
-                    ->first();
+            ->where('user_id', auth()->id())
+            ->where('project_proposal_id', $this->projectProposal->id)
+            ->first();
         if ($vote) {
             $this->vote = $vote;
         } else {
-            $this->vote = new Vote();
+            $this->vote = new Vote;
             $this->vote->user_id = auth()->id();
             $this->vote->project_proposal_id = $this->projectProposal->id;
             $this->vote->value = false;
         }
-        if (!$this->fromUrl) {
+        if (! $this->fromUrl) {
             $this->fromUrl = url()->previous();
         }
     }
@@ -77,33 +77,33 @@ class ProjectProposalVoting extends Component
     {
         return view('livewire.project-proposal.project-proposal-voting', [
             'entitledVoters' => User::query()
-                                    ->with([
-                                        'votes' => fn($query) => $query->where('project_proposal_id',
-                                            $this->projectProposal->id)
-                                    ])
-                                    ->withCount([
-                                        'votes' => fn($query) => $query->where('project_proposal_id',
-                                            $this->projectProposal->id)
-                                    ])
-                                    ->whereHas('roles', function ($query) {
-                                        return $query->where('roles.name', 'entitled-voter');
-                                    })
-                                    ->orderByDesc('votes_count')
-                                    ->get(),
-            'otherVoters'    => User::query()
-                                    ->with([
-                                        'votes' => fn($query) => $query->where('project_proposal_id',
-                                            $this->projectProposal->id)
-                                    ])
-                                    ->withCount([
-                                        'votes' => fn($query) => $query->where('project_proposal_id',
-                                            $this->projectProposal->id)
-                                    ])
-                                    ->whereDoesntHave('roles', function ($query) {
-                                        return $query->where('roles.name', 'entitled-voter');
-                                    })
-                                    ->orderByDesc('votes_count')
-                                    ->get(),
+                ->with([
+                    'votes' => fn ($query) => $query->where('project_proposal_id',
+                        $this->projectProposal->id),
+                ])
+                ->withCount([
+                    'votes' => fn ($query) => $query->where('project_proposal_id',
+                        $this->projectProposal->id),
+                ])
+                ->whereHas('roles', function ($query) {
+                    return $query->where('roles.name', 'entitled-voter');
+                })
+                ->orderByDesc('votes_count')
+                ->get(),
+            'otherVoters' => User::query()
+                ->with([
+                    'votes' => fn ($query) => $query->where('project_proposal_id',
+                        $this->projectProposal->id),
+                ])
+                ->withCount([
+                    'votes' => fn ($query) => $query->where('project_proposal_id',
+                        $this->projectProposal->id),
+                ])
+                ->whereDoesntHave('roles', function ($query) {
+                    return $query->where('roles.name', 'entitled-voter');
+                })
+                ->orderByDesc('votes_count')
+                ->get(),
         ])->layout('layouts.app', [
             'SEOData' => new SEOData(
                 title: __('Project Proposal'),

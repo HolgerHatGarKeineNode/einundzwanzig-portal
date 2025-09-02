@@ -11,7 +11,7 @@ trait LNBitsTrait
         $response = Http::withHeaders([
             'X-Api-Key' => $read_key,
         ])
-                        ->get($uri.'/api/v1/wallet');
+            ->get($uri.'/api/v1/wallet');
 
         return $response->status() === 200;
     }
@@ -22,9 +22,9 @@ trait LNBitsTrait
             'X-Api-Key' => $lnbits['read_key'],
         ])
             ->post($lnbits['url'].'/api/v1/payments', [
-                'out'    => false,
+                'out' => false,
                 'amount' => $sats,
-                'memo'   => $memo,
+                'memo' => $memo,
             ])->throw();
 
         return $response->json();
@@ -35,7 +35,7 @@ trait LNBitsTrait
         $response = Http::withHeaders([
             'X-Api-Key' => $lnbits['read_key'],
         ])
-                        ->get($lnbits['url'].'/api/v1/payments/' . $paymentHash);
+            ->get($lnbits['url'].'/api/v1/payments/'.$paymentHash);
 
         return $response->json();
     }

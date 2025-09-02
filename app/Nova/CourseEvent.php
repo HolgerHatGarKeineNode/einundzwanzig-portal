@@ -50,10 +50,10 @@ class CourseEvent extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     public function subtitle()
@@ -68,33 +68,33 @@ class CourseEvent extends Resource
     {
         return [
             ID::make()
-              ->sortable(),
+                ->sortable(),
 
             URL::make('Link')
-               ->rules('required', 'url'),
+                ->rules('required', 'url'),
 
             DateTime::make(__('From'), 'from')
-                    ->step(CarbonInterval::minutes(15))
-                    ->rules('required')
-                    ->displayUsing(fn ($value) => $value->asDateTime()),
+                ->step(CarbonInterval::minutes(15))
+                ->rules('required')
+                ->displayUsing(fn ($value) => $value->asDateTime()),
 
             DateTime::make(__('To'), 'to')
-                    ->step(CarbonInterval::minutes(15))
-                    ->rules('required')
-                    ->displayUsing(fn ($value) => $value->asDateTime()),
+                ->step(CarbonInterval::minutes(15))
+                ->rules('required')
+                ->displayUsing(fn ($value) => $value->asDateTime()),
 
             BelongsTo::make(__('Course'), 'course', Course::class)
-                     ->searchable()->showCreateRelationButton()->withSubtitles(),
+                ->searchable()->showCreateRelationButton()->withSubtitles(),
 
             BelongsTo::make(__('Venue'), 'venue', Venue::class)
-                     ->searchable()->showCreateRelationButton()->withSubtitles(),
+                ->searchable()->showCreateRelationButton()->withSubtitles(),
 
             BelongsTo::make(__('Created By'), 'createdBy', User::class)
-                     ->canSee(function ($request) {
-                         return $request->user()
-                                        ->hasRole('super-admin');
-                     })
-                     ->searchable()->withSubtitles(),
+                ->canSee(function ($request) {
+                    return $request->user()
+                        ->hasRole('super-admin');
+                })
+                ->searchable()->withSubtitles(),
 
         ];
     }

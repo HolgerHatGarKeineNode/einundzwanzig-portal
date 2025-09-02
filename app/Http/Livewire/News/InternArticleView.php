@@ -6,11 +6,9 @@ use App\Models\LibraryItem;
 use App\Traits\LNBitsTrait;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
-use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
 use Livewire\Component;
 use RalphJSmit\Laravel\SEO\Support\SEOData;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use Spatie\CommonMarkShikiHighlighter\HighlightCodeExtension;
 use WireUi\Traits\Actions;
 
 class InternArticleView extends Component
@@ -21,11 +19,17 @@ class InternArticleView extends Component
     public LibraryItem $libraryItem;
 
     public $qrCode = '';
+
     public $invoice = '';
+
     public $paymentHash = '';
+
     public $checkid = null;
+
     public $checkThisPaymentHash = '';
+
     public bool $invoicePaid = false;
+
     public bool $alreadyPaid = false;
 
     public ?string $payNymQrCode = '';
@@ -36,31 +40,31 @@ class InternArticleView extends Component
             'libraries',
         ]);
         if ($this->libraryItem->libraries->where('is_public', false)
-                                         ->count() > 0 && !auth()->check()) {
+            ->count() > 0 && ! auth()->check()) {
             abort(403, __('Sorry! You are not authorized to perform this action.'));
         }
         if (auth()->check() && auth()
-                                   ->user()
-                                   ->paidArticles()
-                                   ->where('library_item_id', $this->libraryItem->id)
-                                   ->count() > 0) {
+            ->user()
+            ->paidArticles()
+            ->where('library_item_id', $this->libraryItem->id)
+            ->count() > 0) {
             $this->invoicePaid = true;
         }
         if ($this->libraryItem->lecturer->paynym) {
             $this->payNymQrCode = base64_encode(QrCode::format('png')
-                                                      ->size(300)
-                                                      ->merge($this->libraryItem->lecturer->getFirstMedia('avatar')
-                                                          ? str(
-                                                              $this->libraryItem
-                                                                  ->lecturer
-                                                                  ->getFirstMediaPath('avatar'))
-                                                              ->replace('/home/einundzwanzig/portal.einundzwanzig.space',
-                                                                  ''
-                                                              )
-                                                          : '/public/img/einundzwanzig.png',
-                                                          .3)
-                                                      ->errorCorrection('H')
-                                                      ->generate($this->libraryItem->lecturer->paynym));
+                ->size(300)
+                ->merge($this->libraryItem->lecturer->getFirstMedia('avatar')
+                    ? str(
+                        $this->libraryItem
+                            ->lecturer
+                            ->getFirstMediaPath('avatar'))
+                        ->replace('/home/einundzwanzig/portal.einundzwanzig.space',
+                            ''
+                        )
+                    : '/public/img/einundzwanzig.png',
+                    .3)
+                ->errorCorrection('H')
+                ->generate($this->libraryItem->lecturer->paynym));
         }
     }
 
@@ -74,26 +78,26 @@ class InternArticleView extends Component
             );
         } catch (\Exception $e) {
             $this->notification()
-                 ->error('LNBits error: '.$e->getMessage());
+                ->error('LNBits error: '.$e->getMessage());
 
             return;
         }
         session('payment_hash_article_'.$this->libraryItem->id, $invoice['payment_hash']);
         $this->paymentHash = $invoice['payment_hash'];
         $this->qrCode = base64_encode(QrCode::format('png')
-                                            ->size(300)
-                                            ->merge($this->libraryItem->lecturer->getFirstMedia('avatar')
-                                                ? str(
-                                                    $this->libraryItem
-                                                        ->lecturer
-                                                        ->getFirstMediaPath('avatar'))
-                                                    ->replace('/home/einundzwanzig/portal.einundzwanzig.space',
-                                                        ''
-                                                    )
-                                                : '/public/img/einundzwanzig.png',
-                                                .3)
-                                            ->errorCorrection('H')
-                                            ->generate($invoice['payment_request']));
+            ->size(300)
+            ->merge($this->libraryItem->lecturer->getFirstMedia('avatar')
+                ? str(
+                    $this->libraryItem
+                        ->lecturer
+                        ->getFirstMediaPath('avatar'))
+                    ->replace('/home/einundzwanzig/portal.einundzwanzig.space',
+                        ''
+                    )
+                : '/public/img/einundzwanzig.png',
+                .3)
+            ->errorCorrection('H')
+            ->generate($invoice['payment_request']));
         $this->invoice = $invoice['payment_request'];
         $this->checkid = $invoice['checking_id'];
     }
@@ -105,7 +109,7 @@ class InternArticleView extends Component
                 $this->libraryItem->createdBy->lnbits);
         } catch (\Exception $e) {
             $this->notification()
-                 ->error('LNBits error: '.$e->getMessage());
+                ->error('LNBits error: '.$e->getMessage());
 
             return;
         }
@@ -132,7 +136,7 @@ class InternArticleView extends Component
                 image: $this->libraryItem->getFirstMedia('main')
                     ? $this->libraryItem->getFirstMediaUrl('main', 'seo')
                     : url()->route('imgPublic', [
-                        'path' => 'img/einundzwanzig-wallpaper-benrath.png', 'h' => 630, 'w' => 1200, 'fit' => 'crop'
+                        'path' => 'img/einundzwanzig-wallpaper-benrath.png', 'h' => 630, 'w' => 1200, 'fit' => 'crop',
                     ]),
                 published_time: Carbon::parse($this->libraryItem->created_at),
                 type: 'article',

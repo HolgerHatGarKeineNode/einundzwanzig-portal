@@ -37,10 +37,10 @@ class Participant extends Resource
     public static function afterCreate(NovaRequest $request, Model $model)
     {
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     /**
@@ -50,7 +50,7 @@ class Participant extends Resource
     {
         return [
             ID::make()
-              ->sortable(),
+                ->sortable(),
 
             Text::make('First name')
                 ->rules('required', 'string'),

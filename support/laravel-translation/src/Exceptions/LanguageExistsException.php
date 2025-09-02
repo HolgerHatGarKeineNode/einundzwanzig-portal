@@ -2,6 +2,4 @@
 
 namespace JoeDixon\Translation\Exceptions;
 
-class LanguageExistsException extends \Exception
-{
-}
+class LanguageExistsException extends \Exception {}

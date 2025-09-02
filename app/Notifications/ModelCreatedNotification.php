@@ -13,6 +13,7 @@ class ModelCreatedNotification extends Notification implements ShouldQueue
 
     /**
      * Create a new notification instance.
+     *
      * @return void
      */
     public function __construct(public $model, public string $resource)

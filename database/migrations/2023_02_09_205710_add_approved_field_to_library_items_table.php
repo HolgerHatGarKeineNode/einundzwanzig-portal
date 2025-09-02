@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('library_items', function (Blueprint $table) {
             $table->boolean('approved')
-                  ->default(true);
+                ->default(true);
         });
     }
 

@@ -39,25 +39,25 @@ class LNUrlAuth extends Component
         }
         $this->lnurl = lnurl\encodeUrl($this->url);
         $this->qrCode = base64_encode(QrCode::format('png')
-                              ->size(300)
-                              ->merge('/public/android-chrome-192x192.png', .3)
-                              ->errorCorrection('H')
-                              ->generate($this->lnurl));
+            ->size(300)
+            ->merge('/public/android-chrome-192x192.png', .3)
+            ->errorCorrection('H')
+            ->generate($this->lnurl));
     }
 
     public function checkAuth()
     {
         $loginKey = LoginKey::query()
-                            ->where('k1', $this->k1)
-                            ->whereDate('created_at', '>=', now()->subMinutes(5))
-                            ->first();
+            ->where('k1', $this->k1)
+            ->whereDate('created_at', '>=', now()->subMinutes(5))
+            ->first();
         // you should also restrict this 👆🏻 by time, and find only the $k1 that were created in the last 5 minutes
 
         if ($loginKey) {
             $user = User::find($loginKey->user_id);
 
             \App\Models\User::find(1)
-                            ->notify(new ModelCreatedNotification($user, 'users'));
+                ->notify(new ModelCreatedNotification($user, 'users'));
             auth()->login($user);
 
             return to_route('welcome');

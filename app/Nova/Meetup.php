@@ -58,10 +58,10 @@ class Meetup extends Resource
             ->meetups()
             ->attach($model);
         \App\Models\User::find(1)
-                        ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
-                            ->after('/nova-api/')
-                            ->before('?')
-                            ->toString()));
+            ->notify(new ModelCreatedNotification($model, str($request->getRequestUri())
+                ->after('/nova-api/')
+                ->before('?')
+                ->toString()));
     }
 
     public function subtitle()
@@ -76,24 +76,24 @@ class Meetup extends Resource
     {
         return [
             ID::make()
-              ->sortable(),
+                ->sortable(),
 
             Images::make(__('Logo'), 'logo')
-                  ->conversionOnIndexView('thumb')
-                  ->showStatistics()
-                  ->setFileName(fn ($originalFilename, $extension, $model) => md5($originalFilename).'.'.$extension),
+                ->conversionOnIndexView('thumb')
+                ->showStatistics()
+                ->setFileName(fn ($originalFilename, $extension, $model) => md5($originalFilename).'.'.$extension),
 
             Select::make(__('Community'), 'community')
-                  ->options(
-                      [
-                          'einundzwanzig' => 'Einundzwanzig',
-                          'bitcoin' => 'Bitcoin',
-                          'satoshis_coffeeshop' => 'Satoshis Coffeeshop',
-                      ]
-                  )
-                  ->rules('required', 'string')
-                  ->help(__('This is the community that the meetup belongs to. If a community is not listed, please contact the administrator.'))
-                  ->hideFromIndex(),
+                ->options(
+                    [
+                        'einundzwanzig' => 'Einundzwanzig',
+                        'bitcoin' => 'Bitcoin',
+                        'satoshis_coffeeshop' => 'Satoshis Coffeeshop',
+                    ]
+                )
+                ->rules('required', 'string')
+                ->help(__('This is the community that the meetup belongs to. If a community is not listed, please contact the administrator.'))
+                ->hideFromIndex(),
 
             Text::make('Name')
                 ->rules('required', 'string')
@@ -127,20 +127,20 @@ class Meetup extends Resource
                 ->hideFromIndex(),
 
             BelongsTo::make(__('City'), 'city', City::class)
-                     ->searchable()
-                     ->withSubtitles()
-                     ->help(__('If your city is not listed, please create it first.')),
+                ->searchable()
+                ->withSubtitles()
+                ->help(__('If your city is not listed, please create it first.')),
 
             Markdown::make(__('Intro'), 'intro')
-                    ->help(__('This is the introduction text that is shown on the landing page.')),
+                ->help(__('This is the introduction text that is shown on the landing page.')),
 
             BelongsTo::make(__('Created By'), 'createdBy', User::class)
-                     ->canSee(function ($request) {
-                         return $request->user()
-                                        ->hasRole('super-admin');
-                     })
-                     ->searchable()
-                     ->withSubtitles(),
+                ->canSee(function ($request) {
+                    return $request->user()
+                        ->hasRole('super-admin');
+                })
+                ->searchable()
+                ->withSubtitles(),
 
         ];
     }

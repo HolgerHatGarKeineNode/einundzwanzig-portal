@@ -19,14 +19,14 @@ class SearchByTagComponent extends Component
     {
         return view('livewire.school.search-by-tag-component', [
             'tags' => Tag::query()
-                         ->where('type', 'course')
-                         ->with([
-                             'courses.lecturer',
-                         ])
-                         ->withCount([
-                             'courses',
-                         ])
-                         ->get(),
+                ->where('type', 'course')
+                ->with([
+                    'courses.lecturer',
+                ])
+                ->withCount([
+                    'courses',
+                ])
+                ->get(),
         ]);
     }
 }

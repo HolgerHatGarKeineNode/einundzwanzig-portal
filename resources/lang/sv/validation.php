@@ -1,7 +1,7 @@
 <?php
 
-return array (
-  'can' => '',
-  'enum' => '',
-  'uploaded' => '',
-);
+return [
+    'can' => '',
+    'enum' => '',
+    'uploaded' => '',
+];

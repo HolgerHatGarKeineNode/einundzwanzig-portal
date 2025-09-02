@@ -9,8 +9,11 @@ class TranslationAdded
     use Dispatchable;
 
     public $key;
+
     public $group;
+
     public $value;
+
     public $language;
 
     /**

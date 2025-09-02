@@ -38,7 +38,7 @@ class CommentBookCase extends Component
     public function deletePhoto($id)
     {
         Media::find($id)
-             ->delete();
+            ->delete();
 
         return to_route('bookCases.comment.bookcase', ['country' => $this->country, 'bookCase' => $this->bookCase->id]);
     }
@@ -60,7 +60,7 @@ class CommentBookCase extends Component
         if (str($url)->contains('http')) {
             return $url;
         }
-        if (!str($url)->contains('http')) {
+        if (! str($url)->contains('http')) {
             return str($url)->prepend('https://');
         }
     }

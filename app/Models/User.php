@@ -18,22 +18,23 @@ use Spatie\LaravelCipherSweet\Concerns\UsesCipherSweet;
 use Spatie\LaravelCipherSweet\Contracts\CipherSweetEncrypted;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements MustVerifyEmail, CipherSweetEncrypted
+class User extends Authenticatable implements CipherSweetEncrypted, MustVerifyEmail
 {
-    use UsesCipherSweet;
+    use Gamify;
     use HasApiTokens;
     use HasFactory;
     use HasProfilePhoto;
+    use HasRoles;
     use HasTeams;
     use Notifiable;
     use TwoFactorAuthenticatable;
-    use HasRoles;
-    use Gamify;
+    use UsesCipherSweet;
 
     protected $guarded = [];
 
     /**
      * The attributes that should be hidden for serialization.
+     *
      * @var array
      */
     protected $hidden = [
@@ -45,6 +46,7 @@ class User extends Authenticatable implements MustVerifyEmail, CipherSweetEncryp
 
     /**
      * The attributes that should be cast.
+     *
      * @var array
      */
     protected $casts = [
@@ -53,6 +55,7 @@ class User extends Authenticatable implements MustVerifyEmail, CipherSweetEncryp
 
     /**
      * The accessors to append to the model's array form.
+     *
      * @var array
      */
     protected $appends = [
@@ -61,7 +64,7 @@ class User extends Authenticatable implements MustVerifyEmail, CipherSweetEncryp
 
     public static function configureCipherSweet(EncryptedRow $encryptedRow): void
     {
-        $map = (new JsonFieldMap())
+        $map = (new JsonFieldMap)
             ->addTextField('url')
             ->addTextField('read_key')
             ->addTextField('wallet_id');

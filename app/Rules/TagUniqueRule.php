@@ -15,9 +15,7 @@ class TagUniqueRule implements ValidationRule
      */
     public $implicit = true;
 
-    public function __construct(public string $type = 'library_item')
-    {
-    }
+    public function __construct(public string $type = 'library_item') {}
 
     /**
      * Run the validation rule.

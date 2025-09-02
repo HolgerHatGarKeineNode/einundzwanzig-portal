@@ -8,13 +8,13 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Support\Stringable;
-use Spatie\Translatable\Facades\Translatable;
 use Maatwebsite\Excel\Events\AfterSheet;
 use Maatwebsite\Excel\Events\BeforeExport;
 use Maatwebsite\Excel\Events\BeforeSheet;
 use Maatwebsite\Excel\Events\BeforeWriting;
 use Maatwebsite\Excel\Sheet;
 use Maatwebsite\Excel\Writer;
+use Spatie\Translatable\Facades\Translatable;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -48,23 +48,20 @@ class AppServiceProvider extends ServiceProvider
                 $cellRange
             ) {
                 $sheet->getDelegate()
-                      ->setAutoFilter($cellRange);
+                    ->setAutoFilter($cellRange);
             }
         );
         Writer::listen(
             BeforeExport::class,
-            function () {
-            }
+            function () {}
         );
         Writer::listen(
             BeforeWriting::class,
-            function () {
-            }
+            function () {}
         );
         Sheet::listen(
             BeforeSheet::class,
-            function () {
-            }
+            function () {}
         );
         Sheet::listen(
             AfterSheet::class,

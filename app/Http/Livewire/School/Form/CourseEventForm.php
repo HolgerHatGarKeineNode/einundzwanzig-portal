@@ -2,7 +2,6 @@
 
 namespace App\Http\Livewire\School\Form;
 
-use App\Models\Course;
 use App\Models\CourseEvent;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -10,8 +9,8 @@ use WireUi\Traits\Actions;
 
 class CourseEventForm extends Component
 {
-    use WithFileUploads;
     use Actions;
+    use WithFileUploads;
 
     public ?CourseEvent $courseEvent = null;
 
@@ -29,25 +28,25 @@ class CourseEventForm extends Component
     {
         return [
             'courseEvent.course_id' => 'required',
-            'courseEvent.venue_id'  => 'required',
-            'courseEvent.from'      => 'required',
-            'courseEvent.to'        => 'required',
-            'courseEvent.link'      => 'required',
+            'courseEvent.venue_id' => 'required',
+            'courseEvent.from' => 'required',
+            'courseEvent.to' => 'required',
+            'courseEvent.link' => 'required',
         ];
     }
 
     public function mount()
     {
-        if (!$this->courseEvent) {
+        if (! $this->courseEvent) {
             $this->courseEvent = new CourseEvent([]);
         } elseif (
-            !auth()
+            ! auth()
                 ->user()
                 ->can('update', $this->courseEvent)
         ) {
             abort(403);
         }
-        if (!$this->fromUrl) {
+        if (! $this->fromUrl) {
             $this->fromUrl = url()->previous();
         }
     }

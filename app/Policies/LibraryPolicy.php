@@ -39,7 +39,7 @@ class LibraryPolicy extends BasePolicy
     {
         return $user->can((new \ReflectionClass($this))->getShortName().'.'.__FUNCTION__)
                && Library::query()
-                         ->count() < 8;
+                   ->count() < 8;
     }
 
     /**

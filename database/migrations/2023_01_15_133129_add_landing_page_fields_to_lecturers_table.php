@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::table('lecturers', function (Blueprint $table) {
             $table->text('subtitle')
-                  ->nullable();
+                ->nullable();
             $table->text('intro')
-                  ->nullable();
+                ->nullable();
         });
     }
 
