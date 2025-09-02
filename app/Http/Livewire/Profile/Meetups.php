@@ -4,11 +4,11 @@ namespace App\Http\Livewire\Profile;
 
 use App\Models\Meetup;
 use Livewire\Component;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions;
 
 class Meetups extends Component
 {
-    use Actions;
+    use WireUiActions;
 
     public $search = '';
 
@@ -33,7 +33,7 @@ class Meetups extends Component
 
     public function mount()
     {
-        if (!auth()->user()) {
+        if (! auth()->user()) {
             return to_route('auth.login');
         }
 
@@ -41,7 +41,7 @@ class Meetups extends Component
             ->with([
                 'city',
             ])
-            ->where('name', 'ilike', '%' . $this->search . '%')
+            ->where('name', 'ilike', '%'.$this->search.'%')
             ->orderBy('name')
             ->limit(10)
             ->get();
@@ -54,11 +54,11 @@ class Meetups extends Component
             ->user()
             ->meetups()
             ->with([
-                'city.country'
+                'city.country',
             ])
             ->select('meetups.id', 'meetups.city_id', 'meetups.name', 'meetups.slug')
             ->get()
-            ->map(fn($meetup) => [
+            ->map(fn ($meetup) => [
                 'id' => $meetup->id,
                 'name' => $meetup->name,
                 'country' => $meetup->city->country->code,
@@ -75,7 +75,7 @@ class Meetups extends Component
         if (count($this->myMeetups) > 0) {
             $this->hasMeetups = true;
         }
-        if (!$this->fromUrl) {
+        if (! $this->fromUrl) {
             $this->fromUrl = url()->previous();
         }
     }
@@ -91,7 +91,7 @@ class Meetups extends Component
             ->with([
                 'city',
             ])
-            ->where('name', 'ilike', '%' . $value . '%')
+            ->where('name', 'ilike', '%'.$value.'%')
             ->orderBy('name')
             ->limit(10)
             ->get();
@@ -116,11 +116,11 @@ class Meetups extends Component
             ->user()
             ->meetups()
             ->with([
-                'city.country'
+                'city.country',
             ])
             ->select('meetups.id', 'meetups.city_id', 'meetups.name', 'meetups.slug')
             ->get()
-            ->map(fn($meetup) => [
+            ->map(fn ($meetup) => [
                 'id' => $meetup->id,
                 'name' => $meetup->name,
                 'country' => $meetup->city->country->code,

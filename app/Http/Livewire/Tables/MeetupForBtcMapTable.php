@@ -30,25 +30,25 @@ class MeetupForBtcMapTable extends DataTableComponent
     {
         return [
             Column::make('Id', 'id')
-                  ->sortable(),
+                ->sortable(),
             Column::make('Name', 'name')
-                  ->sortable(),
+                ->sortable(),
             Column::make('City', 'city.name')
-                  ->sortable(),
+                ->sortable(),
             Column::make('Country', 'city.country.name')
-                  ->sortable(),
+                ->sortable(),
             Column::make('Actions')
-                  ->label(fn($row, Column $column) => view('columns.meetups.osm-actions', ['row' => $row])),
+                ->label(fn ($row, Column $column) => view('columns.meetups.osm-actions', ['row' => $row])),
         ];
     }
 
     public function builder(): Builder
     {
         return Meetup::query()
-                     ->with([
-                         'city.country',
-                     ])
-                     ->where('community', '=', 'einundzwanzig')
-                     ->orderBy('cities.population');
+            ->with([
+                'city.country',
+            ])
+            ->where('community', '=', 'einundzwanzig')
+            ->orderBy('cities.population');
     }
 }

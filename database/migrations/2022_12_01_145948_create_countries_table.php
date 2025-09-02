@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('code');
             $table->json('language_codes')
-                  ->default('[]');
+                ->default('[]');
             $table->timestamps();
         });
     }

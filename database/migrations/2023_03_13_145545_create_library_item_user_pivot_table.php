@@ -3,14 +3,12 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 
-class CreateLibraryItemUserPivotTable extends Migration
+return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
-    public function up()
+    public function up(): void
     {
         Schema::create('library_item_user', function (Blueprint $table) {
             $table->unsignedBigInteger('library_item_id')->index();
@@ -23,11 +21,9 @@ class CreateLibraryItemUserPivotTable extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
-    public function down()
+    public function down(): void
     {
         Schema::dropIfExists('library_item_user');
     }
-}
+};

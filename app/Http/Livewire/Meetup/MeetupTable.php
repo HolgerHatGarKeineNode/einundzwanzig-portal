@@ -36,9 +36,9 @@ class MeetupTable extends Component
                     'city.country',
                 ])
                 ->whereHas('city.country',
-                    fn($query) => $query->where('countries.code', $this->country->code))
+                    fn ($query) => $query->where('countries.code', $this->country->code))
                 ->get()
-                ->map(fn($meetup) => [
+                ->map(fn ($meetup) => [
                     'id' => $meetup->id,
                     'name' => $meetup->name,
                     'coords' => [$meetup->city->latitude, $meetup->city->longitude],

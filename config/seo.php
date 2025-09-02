@@ -75,7 +75,7 @@ return [
          * Use this setting to provide a suffix that will be added after the title on each page.
          * If you don't want a suffix, you should specify an empty string.
          */
-        'suffix' => ' - ' . env('APP_NAME'),
+        'suffix' => ' - '.env('APP_NAME'),
 
         /**
          * Use this setting to provide a custom title for the homepage. We will not use the suffix on the homepage,

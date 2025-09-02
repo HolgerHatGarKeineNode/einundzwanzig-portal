@@ -7,12 +7,12 @@ use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions;
 
 class VenueForm extends Component
 {
+    use WireUiActions;
     use WithFileUploads;
-    use Actions;
 
     public string $country;
 
@@ -29,29 +29,29 @@ class VenueForm extends Component
     public function rules()
     {
         return [
-            'images.*' => [Rule::requiredIf(!$this->venue->id), 'nullable', 'mimes:jpeg,png,jpg,gif', 'max:10240'],
+            'images.*' => [Rule::requiredIf(! $this->venue->id), 'nullable', 'mimes:jpeg,png,jpg,gif', 'max:10240'],
 
             'venue.city_id' => 'required',
-            'venue.name'              => [
+            'venue.name' => [
                 'required',
                 Rule::unique('venues', 'name')
                     ->ignore($this->venue),
             ],
-            'venue.street'  => 'required',
+            'venue.street' => 'required',
         ];
     }
 
     public function mount()
     {
-        if (!$this->venue) {
-            $this->venue = new Venue();
-        } elseif (!auth()
+        if (! $this->venue) {
+            $this->venue = new Venue;
+        } elseif (! auth()
             ->user()
             ->can('update', $this->venue)) {
             abort(403);
         }
 
-        if (!$this->fromUrl) {
+        if (! $this->fromUrl) {
             $this->fromUrl = url()->previous();
         }
     }
@@ -59,10 +59,10 @@ class VenueForm extends Component
     public function deleteMedia($id)
     {
         Media::query()
-             ->find($id)
-             ->delete();
+            ->find($id)
+            ->delete();
         $this->notification()
-             ->success(__('Image deleted!'));
+            ->success(__('Image deleted!'));
         $this->emit('refresh');
     }
 
@@ -74,8 +74,8 @@ class VenueForm extends Component
         if ($this->images && count($this->images) > 0) {
             foreach ($this->images as $item) {
                 $this->venue->addMedia($item)
-                            ->usingFileName(md5($item->getClientOriginalName()).'.'.$item->getClientOriginalExtension())
-                            ->toMediaCollection('images');
+                    ->usingFileName(md5($item->getClientOriginalName()).'.'.$item->getClientOriginalExtension())
+                    ->toMediaCollection('images');
             }
         }
 

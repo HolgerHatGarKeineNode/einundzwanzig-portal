@@ -2,21 +2,12 @@
 
 namespace Database\Factories;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 use App\Models\ProjectProposal;
 use App\Models\User;
-use App\Models\Vote;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 class VoteFactory extends Factory
 {
-    /**
-     * The name of the factory's corresponding model.
-     *
-     * @var string
-     */
-    protected $model = Vote::class;
-
     /**
      * Define the model's default state.
      */
@@ -26,7 +17,7 @@ class VoteFactory extends Factory
             'user_id' => User::factory(),
             'project_proposal_id' => ProjectProposal::factory(),
             'value' => $this->faker->randomNumber(),
-            'reason' => $this->faker->text,
+            'reason' => $this->faker->text(),
         ];
     }
 }

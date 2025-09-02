@@ -14,7 +14,6 @@
     <!-- Fonts -->
     @googlefonts
     <!-- Scripts -->
-    <script src="https://mempool.space/mempool.js"></script>
     <script src="{{ asset('dist/jquery.js') }}"></script>
     <script src="{{ asset('vendor/jvector/jquery-jvectormap-2.0.5.min.js') }}"></script>
     <script src="{{ asset('vendor/jvector/maps/world-mill.js') }}"></script>
@@ -28,35 +27,40 @@
     <script src="{{ asset('vendor/jvector/maps/pt.js') }}"></script>
     <script src="{{ asset('vendor/jvector/maps/pl.js') }}"></script>
     <script src="{{ asset('vendor/jvector/maps/se.js') }}"></script>
-    <script src="{{ asset('vendor/jvector/maps/mx.js') }}"></script>
-    <script src="{{ asset('vendor/jvector/maps/us.js') }}"></script>
     <script src="{{ asset('dist/smoothscroll.js') }}"></script>
-    <script src="https://kit.fontawesome.com/866fd3d0ab.js" crossorigin="anonymous"></script>
-    @mapstyles
-    @mapscripts
+    <script src="https://kit.fontawesome.com/03bc14bd1e.js" crossorigin="anonymous"></script>
     <script src="{{ asset('dist/heatmap.min.js') }}"></script>
     <script src="{{ asset('dist/leaflet-heatmap.js') }}"></script>
     <script src="{{ asset('dist/leaflet-providers.js') }}"></script>
-    <wireui:scripts/>
+    <wireui:scripts />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <!-- Styles -->
     <link rel="stylesheet" href="{{ asset('vendor/jvector/jquery-jvectormap-2.0.5.css') }}" type="text/css"
           media="screen"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
-    <x-embed-styles/>
+    <x-embed-styles />
     @livewireStyles
-    @include('layouts.styles')
 </head>
-<body class="font-sans antialiased {{ isset($darkModeDisabled) && $darkModeDisabled ? '' : 'bg-21gray' }} dark">
+<body class="font-sans antialiased bg-21gray dark">
 <x-notifications z-index="z-[99999]" blur="md" align="center"/>
-<x-dialog z-index="z-[99999]" blur="md" align="center"/>
+<x-dialog z-index="z-[99999]" blur="md" align="center" />
 @if(auth()->user())
     {{-- HIGHSCORE-CHAT --}}
     <livewire:chat.highscore-chat/>
 @endif
 <livewire:laravel-echo/>
-<x-jet-banner/>
 <div class="min-h-screen">
+    @auth
+        @livewire('navigation-menu')
+    @endauth
+    <!-- Page Heading -->
+    @if (isset($header))
+        <header class="bg-white shadow">
+            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                {{ $header }}
+            </div>
+        </header>
+    @endif
     <!-- Page Content -->
     <main>
         {{ $slot }}
@@ -64,5 +68,8 @@
 </div>
 @stack('modals')
 @livewireScripts
+<!-- ProductLift SDK - Include it only once -->
+<script defer src="https://bitcoin.productlift.dev/widgets_sdk"></script>
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
 </body>
 </html>

@@ -16,11 +16,11 @@ return new class extends Migration
         Schema::create('episodes', function (Blueprint $table) {
             $table->id();
             $table->string('guid')
-                  ->unique();
+                ->unique();
             $table->foreignId('podcast_id')
-                  ->constrained()
-                  ->cascadeOnDelete()
-                  ->cascadeOnUpdate();
+                ->constrained()
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
             $table->json('data');
             $table->timestamps();
         });

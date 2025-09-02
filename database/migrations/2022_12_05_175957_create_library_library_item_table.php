@@ -15,13 +15,13 @@ return new class extends Migration
 
         Schema::create('library_library_item', function (Blueprint $table) {
             $table->foreignId('library_id')
-                  ->constrained()
-                  ->cascadeOnDelete()
-                  ->cascadeOnUpdate();
+                ->constrained()
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
             $table->foreignId('library_item_id')
-                  ->constrained()
-                  ->cascadeOnDelete()
-                  ->cascadeOnUpdate();
+                ->constrained()
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
         });
 
         Schema::enableForeignKeyConstraints();

@@ -6,9 +6,10 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Cookie;
-use Spatie\Image\Manipulations;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -18,8 +19,8 @@ use Spatie\Sluggable\SlugOptions;
 class Meetup extends Model implements HasMedia
 {
     use HasFactory;
-    use InteractsWithMedia;
     use HasSlug;
+    use InteractsWithMedia;
 
     /**
      * The attributes that aren't mass assignable.
@@ -29,21 +30,24 @@ class Meetup extends Model implements HasMedia
     protected $guarded = [];
 
     /**
-     * The attributes that should be cast to native types.
+     * Get the attributes that should be cast.
      *
-     * @var array
+     * @return array<string, string>
      */
-    protected $casts = [
-        'id' => 'integer',
-        'city_id' => 'integer',
-        'github_data' => 'json',
-        'simplified_geojson' => 'array',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'id' => 'integer',
+            'city_id' => 'integer',
+            'github_data' => 'json',
+            'simplified_geojson' => 'array',
+        ];
+    }
 
     protected static function booted()
     {
         static::creating(function ($model) {
-            if (!$model->created_by) {
+            if (! $model->created_by) {
                 $model->created_by = auth()->id();
             }
         });
@@ -57,14 +61,14 @@ class Meetup extends Model implements HasMedia
             ->usingLanguage(Cookie::get('lang', config('app.locale')));
     }
 
-    public function registerMediaConversions(Media $media = null): void
+    public function registerMediaConversions(?Media $media = null): void
     {
         $this
             ->addMediaConversion('preview')
-            ->fit(Manipulations::FIT_CROP, 300, 300)
+            ->fit(Fit::Crop, 300, 300)
             ->nonQueued();
         $this->addMediaConversion('thumb')
-            ->fit(Manipulations::FIT_CROP, 130, 130)
+            ->fit(Fit::Crop, 130, 130)
             ->width(130)
             ->height(130);
     }
@@ -81,7 +85,7 @@ class Meetup extends Model implements HasMedia
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function users()
+    public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class);
     }
@@ -101,7 +105,7 @@ class Meetup extends Model implements HasMedia
         }
 
         return Attribute::make(
-            get: fn() => url()->route('img',
+            get: fn () => url()->route('img',
                 [
                     'path' => $path,
                     'w' => 900,
@@ -117,7 +121,7 @@ class Meetup extends Model implements HasMedia
         $nextEvent = $this->meetupEvents()->where('start', '>=', now())->orderBy('start')->first();
 
         return Attribute::make(
-            get: fn() => $nextEvent ? [
+            get: fn () => $nextEvent ? [
                 'start' => $nextEvent->start->toDateTimeString(),
                 'portalLink' => url()->route('meetup.event.landing', ['country' => $this->city->country, 'meetupEvent' => $nextEvent]),
                 'location' => $nextEvent->location,

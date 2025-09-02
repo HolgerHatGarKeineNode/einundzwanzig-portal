@@ -7,11 +7,11 @@ use Illuminate\Http\Client\Pool;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions;
 
 class PrepareForBtcMapItem extends Component
 {
-    use Actions;
+    use WireUiActions;
 
     public Meetup $meetup;
 
@@ -87,18 +87,18 @@ class PrepareForBtcMapItem extends Component
     {
         $responses = Http::pool(fn (Pool $pool) => [
             $pool->acceptJson()
-                 ->get(
-                     sprintf('https://nominatim.openstreetmap.org/search?q=%s&format=json&polygon_geojson=1&polygon_threshold=0.0003&email='.config('services.nominatim.email'),
-                         $this->search)
-                 ),
+                ->get(
+                    sprintf('https://nominatim.openstreetmap.org/search?q=%s&format=json&polygon_geojson=1&polygon_threshold=0.0003&email='.config('services.nominatim.email'),
+                        $this->search)
+                ),
         ]);
 
         $this->osmSearchResults = collect($responses[0]->json())
             ->filter(fn ($item
             ) => (
-                     $item['geojson']['type'] === 'Polygon'
-                     || $item['geojson']['type'] === 'MultiPolygon'
-                 )
+                $item['geojson']['type'] === 'Polygon'
+                || $item['geojson']['type'] === 'MultiPolygon'
+            )
                  && $item['osm_id']
                  && count($item['geojson']['coordinates'], COUNT_RECURSIVE) < 100000
             )
@@ -111,9 +111,9 @@ class PrepareForBtcMapItem extends Component
         try {
             // put OSM geojson to storage
             Storage::disk('geo')
-                   ->put('geojson_'.$this->selectedItemOSMPolygons['osm_id'].'.json',
-                       json_encode($this->selectedItemOSMPolygons['geojson'], JSON_THROW_ON_ERROR)
-                   );
+                ->put('geojson_'.$this->selectedItemOSMPolygons['osm_id'].'.json',
+                    json_encode($this->selectedItemOSMPolygons['geojson'], JSON_THROW_ON_ERROR)
+                );
 
             // execute mapshaper
             $input = storage_path('app/geo/geojson_'.$this->selectedItemOSMPolygons['osm_id'].'.json');
@@ -124,24 +124,24 @@ class PrepareForBtcMapItem extends Component
 
             $mapShaperOutput = str(
                 Storage::disk('geo')
-                       ->get('output_'.$this->selectedItemOSMPolygons['osm_id'].'.json')
+                    ->get('output_'.$this->selectedItemOSMPolygons['osm_id'].'.json')
             );
             if ($mapShaperOutput->contains(['Polygon', 'MultiPolygon'])) {
                 // trim geojson
                 Storage::disk('geo')
-                       ->put(
-                           'trimmed_'.$this->selectedItemOSMPolygons['osm_id'].'.json',
-                           $mapShaperOutput
-                               ->after('{"type":"GeometryCollection", "geometries": [')
-                               ->beforeLast(']}')
-                               ->toString()
-                       );
+                    ->put(
+                        'trimmed_'.$this->selectedItemOSMPolygons['osm_id'].'.json',
+                        $mapShaperOutput
+                            ->after('{"type":"GeometryCollection", "geometries": [')
+                            ->beforeLast(']}')
+                            ->toString()
+                    );
             } else {
                 $this->notification()
-                     ->warning('Warning',
-                         sprintf('Geojson is not valid. After simplification, it contains no polygons. Instead it contains: %s',
-                             $mapShaperOutput->after('{"type":')
-                                             ->before(',')));
+                    ->warning('Warning',
+                        sprintf('Geojson is not valid. After simplification, it contains no polygons. Instead it contains: %s',
+                            $mapShaperOutput->after('{"type":')
+                                ->before(',')));
 
                 return;
             }
@@ -150,7 +150,7 @@ class PrepareForBtcMapItem extends Component
             $this->model->simplified_geojson = json_decode(
                 trim(
                     Storage::disk('geo')
-                           ->get('trimmed_'.$this->selectedItemOSMPolygons['osm_id'].'.json')
+                        ->get('trimmed_'.$this->selectedItemOSMPolygons['osm_id'].'.json')
                 ),
                 false, 512, JSON_THROW_ON_ERROR
             );
@@ -159,7 +159,7 @@ class PrepareForBtcMapItem extends Component
             $this->emit('geoJsonUpdated');
         } catch (\Exception $e) {
             $this->notification()
-                 ->error('Error', $e->getMessage());
+                ->error('Error', $e->getMessage());
         }
     }
 
@@ -169,23 +169,23 @@ class PrepareForBtcMapItem extends Component
         $this->model->save();
 
         $this->notification()
-             ->success('Success', 'Simplified GeoJSON saved.');
+            ->success('Success', 'Simplified GeoJSON saved.');
     }
 
     public function submitPolygonsOSM()
     {
         $this->validate();
         $postGenerate = Http::acceptJson()
-                            ->asForm()
-                            ->post(
-                                'https://polygons.openstreetmap.fr/?id='.$this->selectedItemOSMPolygons['osm_id'],
-                                [
-                                    'x' => $this->polygonsOSMfrX,
-                                    'y' => $this->polygonsOSMfrY,
-                                    'z' => $this->polygonsOSMfrZ,
-                                    'generate' => 'Submit+Query',
-                                ]
-                            );
+            ->asForm()
+            ->post(
+                'https://polygons.openstreetmap.fr/?id='.$this->selectedItemOSMPolygons['osm_id'],
+                [
+                    'x' => $this->polygonsOSMfrX,
+                    'y' => $this->polygonsOSMfrY,
+                    'z' => $this->polygonsOSMfrZ,
+                    'generate' => 'Submit+Query',
+                ]
+            );
         if ($postGenerate->ok()) {
             $getUrl = sprintf(
                 'https://polygons.openstreetmap.fr/get_geojson.py?id=%s&params=%s-%s-%s',
@@ -210,17 +210,17 @@ class PrepareForBtcMapItem extends Component
                     ->toString(),
             );
             $response = Http::acceptJson()
-                            ->get($getUrl);
+                ->get($getUrl);
             if ($response->json()) {
                 $this->selectedItemPolygonsOSMfr = $response->json();
                 $this->emit('geoJsonUpdated');
             } else {
                 $this->notification()
-                     ->warning('No data', 'No data found for this area.');
+                    ->warning('No data', 'No data found for this area.');
             }
         } else {
             $this->notification()
-                 ->error('Error', 'Something went wrong: '.$postGenerate->status());
+                ->error('Error', 'Something went wrong: '.$postGenerate->status());
         }
     }
 
@@ -245,16 +245,16 @@ class PrepareForBtcMapItem extends Component
     {
         if ($value) {
             $response = Http::acceptJson()
-                            ->asForm()
-                            ->post('https://osm-boundaries.com/Ajax/GetBoundary', [
-                                'db' => 'osm20221205',
-                                'waterOrLand' => 'water',
-                                'osmId' => '-'.$this->selectedItemOSMPolygons['osm_id'],
-                            ]);
+                ->asForm()
+                ->post('https://osm-boundaries.com/Ajax/GetBoundary', [
+                    'db' => 'osm20221205',
+                    'waterOrLand' => 'water',
+                    'osmId' => '-'.$this->selectedItemOSMPolygons['osm_id'],
+                ]);
             if ($response->json()) {
                 if (count($response->json()['coordinates'], COUNT_RECURSIVE) > 100000) {
                     $this->notification()
-                         ->warning('Warning', 'Water boundaries are too big');
+                        ->warning('Warning', 'Water boundaries are too big');
 
                     return;
                 }
@@ -263,7 +263,7 @@ class PrepareForBtcMapItem extends Component
                 $this->emit('geoJsonUpdated');
             } else {
                 $this->notification()
-                     ->warning('Warning', 'No water boundaries found');
+                    ->warning('Warning', 'No water boundaries found');
             }
         } else {
             $this->selectedItemOSMBoundaries = null;
@@ -292,7 +292,7 @@ class PrepareForBtcMapItem extends Component
         $this->model->save();
 
         $this->notification()
-             ->success('Success', 'Population saved.');
+            ->success('Success', 'Population saved.');
     }
 
     public function updatedPopulationDate($value)
@@ -301,7 +301,7 @@ class PrepareForBtcMapItem extends Component
         $this->model->save();
 
         $this->notification()
-             ->success('Success', 'Population saved.');
+            ->success('Success', 'Population saved.');
     }
 
     public function render()

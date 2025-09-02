@@ -15,15 +15,15 @@ return new class extends Migration
 
         Schema::create('meetup_user', function (Blueprint $table) {
             $table->foreignId('meetup_id')
-                  ->constrained()
-                  ->cascadeOnDelete()
-                  ->cascadeOnUpdate();
+                ->constrained()
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
             $table->foreignId('user_id')
-                  ->constrained()
-                  ->cascadeOnDelete()
-                  ->cascadeOnUpdate();
+                ->constrained()
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
             $table->boolean('is_leader')
-                  ->default(false);
+                ->default(false);
         });
 
         Schema::enableForeignKeyConstraints();

@@ -6,11 +6,11 @@ use App\Models\LibraryItem;
 use App\Traits\NostrTrait;
 use Livewire\Component;
 use RalphJSmit\Laravel\SEO\Support\SEOData;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions;
 
 class ArticleOverview extends Component
 {
-    use Actions;
+    use WireUiActions;
     use NostrTrait;
 
     public $perPage = 9;
@@ -29,10 +29,10 @@ class ArticleOverview extends Component
     public function nostr($id)
     {
         $libraryItem = LibraryItem::query()
-                                  ->with([
-                                      'lecturer',
-                                  ])
-                                  ->find($id);
+            ->with([
+                'lecturer',
+            ])
+            ->find($id);
         $libraryItem->setStatus('published');
         $libraryItemName = $libraryItem->name;
         if ($libraryItem->lecturer->nostr) {
@@ -49,11 +49,11 @@ class ArticleOverview extends Component
         $result = $this->publishOnNostr($libraryItem, $text);
         if ($result['success']) {
             $this->notification()
-                 ->success(title: __('Published on Nostr'), description: $result['output']);
+                ->success(title: __('Published on Nostr'), description: $result['output']);
         } else {
             $this->notification()
-                 ->error(title: __('Failed'),
-                     description: 'Exit Code: '.$result['exitCode'].' Reason: '.$result['errorOutput']);
+                ->error(title: __('Failed'),
+                    description: 'Exit Code: '.$result['exitCode'].' Reason: '.$result['errorOutput']);
         }
     }
 
@@ -64,7 +64,7 @@ class ArticleOverview extends Component
         $libraryItem->save();
 
         $this->notification()
-             ->success(__('Article approved'));
+            ->success(__('Article approved'));
 
         $this->emit('$refresh');
     }
@@ -78,20 +78,20 @@ class ArticleOverview extends Component
     {
         return view('livewire.news.article-overview', [
             'libraryItems' => LibraryItem::query()
-                                         ->with([
-                                             'createdBy.roles',
-                                             'lecturer',
-                                             'tags',
-                                         ])
-                                         ->when(
-                                             isset($this->filters['author']),
-                                             fn($query) => $query->whereHas('lecturer',
-                                                 fn($query) => $query->where('lecturers.slug',
-                                                     $this->filters['author'])))
-                                         ->where('type', 'markdown_article')
-                                         ->where('news', true)
-                                         ->orderByDesc('created_at')
-                                         ->paginate($this->perPage),
+                ->with([
+                    'createdBy.roles',
+                    'lecturer',
+                    'tags',
+                ])
+                ->when(
+                    isset($this->filters['author']),
+                    fn ($query) => $query->whereHas('lecturer',
+                        fn ($query) => $query->where('lecturers.slug',
+                            $this->filters['author'])))
+                ->where('type', 'markdown_article')
+                ->where('news', true)
+                ->orderByDesc('created_at')
+                ->paginate($this->perPage),
         ])->layout('layouts.app', [
             'SEOData' => new SEOData(
                 title: __('News'),

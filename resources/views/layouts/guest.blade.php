@@ -34,7 +34,6 @@
     <script src="{{ asset('vendor/jvector/maps/us.js') }}"></script>
     <script src="{{ asset('dist/smoothscroll.js') }}"></script>
     <script src="https://kit.fontawesome.com/866fd3d0ab.js" crossorigin="anonymous"></script>
-    @mapscripts
     <script src="{{ asset('dist/heatmap.min.js') }}"></script>
     <script src="{{ asset('dist/leaflet-heatmap.js') }}"></script>
     <script src="{{ asset('dist/leaflet-providers.js') }}"></script>
@@ -53,7 +52,6 @@
     <livewire:chat.highscore-chat/>
 @endif
 <livewire:laravel-echo/>
-<x-jet-banner/>
 <div class="min-h-screen">
     <!-- Page Content -->
     <main>

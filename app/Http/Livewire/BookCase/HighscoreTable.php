@@ -19,15 +19,15 @@ class HighscoreTable extends Component
     {
         return view('livewire.book-case.highscore-table', [
             'plebs' => User::query()
-                           ->with([
-                               'reputations',
-                           ])
-                           ->withCount([
-                               'orangePills',
-                           ])
-                           ->where('reputation', '>', 0)
-                           ->orderByDesc('reputation')
-                           ->get(),
+                ->with([
+                    'reputations',
+                ])
+                ->withCount([
+                    'orangePills',
+                ])
+                ->where('reputation', '>', 0)
+                ->orderByDesc('reputation')
+                ->get(),
         ])->layout('layouts.app', [
             'SEOData' => new SEOData(
                 title: __('Highscore Table'),
@@ -45,12 +45,12 @@ class HighscoreTable extends Component
     public function openModal($id)
     {
         $this->modal = User::query()
-                           ->with([
-                               'orangePills',
-                               'reputations',
-                           ])
-                           ->where('id', $id)
-                           ->first();
+            ->with([
+                'orangePills',
+                'reputations',
+            ])
+            ->where('id', $id)
+            ->first();
 
         $this->viewingModal = true;
     }

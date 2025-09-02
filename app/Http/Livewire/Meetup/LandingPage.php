@@ -22,7 +22,7 @@ class LandingPage extends Component
     {
         $this->meetup
             ->loadCount([
-                'meetupEvents'
+                'meetupEvents',
             ])
             ->load([
                 'media',
@@ -48,7 +48,7 @@ class LandingPage extends Component
                 ->where('meetup_events.start', '>=', now()->subDay())
                 ->orderBy('start')
                 ->get()
-                ->map(fn($event) => [
+                ->map(fn ($event) => [
                     'id' => $event->id,
                     'startDate' => $event->start,
                     'endDate' => $event->start->addHours(1),

@@ -7,15 +7,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Facades\Cookie;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 class City extends Model
 {
+    use Geoly;
     use HasFactory;
     use HasSlug;
-    use Geoly;
 
     /**
      * The attributes that aren't mass assignable.
@@ -25,16 +26,19 @@ class City extends Model
     protected $guarded = [];
 
     /**
-     * The attributes that should be cast to native types.
+     * Get the attributes that should be cast.
      *
-     * @var array
+     * @return array<string, string>
      */
-    protected $casts = [
-        'id' => 'integer',
-        'country_id' => 'integer',
-        'osm_relation' => 'json',
-        'simplified_geojson' => 'json',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'id' => 'integer',
+            'country_id' => 'integer',
+            'osm_relation' => 'json',
+            'simplified_geojson' => 'json',
+        ];
+    }
 
     protected static function booted()
     {
@@ -51,9 +55,9 @@ class City extends Model
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
-                          ->generateSlugsFrom(['country.code', 'name'])
-                          ->saveSlugsTo('slug')
-                          ->usingLanguage(Cookie::get('lang', config('app.locale')));
+            ->generateSlugsFrom(['country.code', 'name'])
+            ->saveSlugsTo('slug')
+            ->usingLanguage(Cookie::get('lang', config('app.locale')));
     }
 
     public function createdBy(): BelongsTo
@@ -71,12 +75,12 @@ class City extends Model
         return $this->hasMany(Venue::class);
     }
 
-    public function courseEvents()
+    public function courseEvents(): HasManyThrough
     {
         return $this->hasManyThrough(CourseEvent::class, Venue::class);
     }
 
-    public function meetups()
+    public function meetups(): HasMany
     {
         return $this->hasMany(Meetup::class);
     }

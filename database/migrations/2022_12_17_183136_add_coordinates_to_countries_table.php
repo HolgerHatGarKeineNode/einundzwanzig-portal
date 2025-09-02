@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::table('countries', function (Blueprint $table) {
             $table->double('longitude')
-                  ->nullable();
+                ->nullable();
             $table->double('latitude')
-                  ->nullable();
+                ->nullable();
         });
     }
 

@@ -6,12 +6,12 @@ use App\Models\BitcoinEvent;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions;
 
 class BitcoinEventForm extends Component
 {
+    use WireUiActions;
     use WithFileUploads;
-    use Actions;
 
     public string $country;
 
@@ -30,34 +30,34 @@ class BitcoinEventForm extends Component
     public function rules()
     {
         return [
-            'image' => [Rule::requiredIf(!$this->bitcoinEvent->id), 'nullable', 'mimes:jpeg,png,jpg,gif', 'max:10240'],
+            'image' => [Rule::requiredIf(! $this->bitcoinEvent->id), 'nullable', 'mimes:jpeg,png,jpg,gif', 'max:10240'],
 
-            'bitcoinEvent.venue_id'       => 'required',
-            'bitcoinEvent.from'           => 'required',
-            'bitcoinEvent.to'             => 'required',
-            'bitcoinEvent.title'          => 'required',
-            'bitcoinEvent.description'    => 'required',
-            'bitcoinEvent.link'           => 'required|url',
+            'bitcoinEvent.venue_id' => 'required',
+            'bitcoinEvent.from' => 'required',
+            'bitcoinEvent.to' => 'required',
+            'bitcoinEvent.title' => 'required',
+            'bitcoinEvent.description' => 'required',
+            'bitcoinEvent.link' => 'required|url',
             'bitcoinEvent.show_worldwide' => 'bool',
         ];
     }
 
     public function mount()
     {
-        if (!$this->bitcoinEvent) {
+        if (! $this->bitcoinEvent) {
             $this->bitcoinEvent = new BitcoinEvent(
                 [
-                    'description'    => '',
+                    'description' => '',
                     'show_worldwide' => true,
                 ]
             );
-        } elseif (!auth()
+        } elseif (! auth()
             ->user()
             ->can('update', $this->bitcoinEvent)) {
             abort(403);
         }
 
-        if (!$this->fromUrl) {
+        if (! $this->fromUrl) {
             $this->fromUrl = url()->previous();
         }
     }
@@ -76,8 +76,8 @@ class BitcoinEventForm extends Component
 
         if ($this->image) {
             $this->bitcoinEvent->addMedia($this->image)
-                               ->usingFileName(md5($this->image->getClientOriginalName()).'.'.$this->image->getClientOriginalExtension())
-                               ->toMediaCollection('logo');
+                ->usingFileName(md5($this->image->getClientOriginalName()).'.'.$this->image->getClientOriginalExtension())
+                ->toMediaCollection('logo');
         }
 
         return redirect($this->fromUrl);

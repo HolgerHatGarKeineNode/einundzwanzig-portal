@@ -7,18 +7,23 @@ use App\Traits\LNBitsTrait;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions;
 
 class Hello extends Component
 {
-    use Actions;
+    use WireUiActions;
     use LNBitsTrait;
 
     public $message = '';
+
     public $qrCode = '';
+
     public $invoice = '';
+
     public $paymentHash = '';
+
     public $checkid = null;
+
     public bool $invoicePaid = false;
 
     public function rules()
@@ -36,24 +41,24 @@ class Hello extends Component
                 sats: 21,
                 memo: 'Payment for: Bitcoin im Ländle 2023 - Code is Speech',
                 lnbits: [
-                    'url'       => config('services.lnbits.url'),
+                    'url' => config('services.lnbits.url'),
                     'wallet_id' => config('services.lnbits.wallet_id'),
-                    'read_key'  => config('services.lnbits.read_key'),
+                    'read_key' => config('services.lnbits.read_key'),
                 ],
             );
         } catch (\Exception $e) {
             $this->notification()
-                 ->error('LNBits error: '.$e->getMessage());
+                ->error('LNBits error: '.$e->getMessage());
 
             return;
         }
 
         $this->paymentHash = $invoice['payment_hash'];
         $this->qrCode = base64_encode(QrCode::format('png')
-                                            ->size(300)
-                                            ->merge('/public/img/markus_turm.png', .3)
-                                            ->errorCorrection('H')
-                                            ->generate($invoice['payment_request']));
+            ->size(300)
+            ->merge('/public/img/markus_turm.png', .3)
+            ->errorCorrection('H')
+            ->generate($invoice['payment_request']));
         $this->invoice = $invoice['payment_request'];
         $this->checkid = $invoice['checking_id'];
     }
@@ -62,13 +67,13 @@ class Hello extends Component
     {
         try {
             $invoice = $this->check($this->checkid, [
-                'url'       => config('services.lnbits.url'),
+                'url' => config('services.lnbits.url'),
                 'wallet_id' => config('services.lnbits.wallet_id'),
-                'read_key'  => config('services.lnbits.read_key'),
+                'read_key' => config('services.lnbits.read_key'),
             ]);
         } catch (\Exception $e) {
             $this->notification()
-                 ->error('LNBits error: '.$e->getMessage());
+                ->error('LNBits error: '.$e->getMessage());
 
             return;
         }

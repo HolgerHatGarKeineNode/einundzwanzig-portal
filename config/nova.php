@@ -10,7 +10,7 @@ use Laravel\Nova\Http\Middleware\HandleInertiaRequests;
 return [
 
     'routes' => [
-        'login'    => '/auth/ln',
+        'login' => '/auth/ln',
         'register' => '/auth/ln',
     ],
 

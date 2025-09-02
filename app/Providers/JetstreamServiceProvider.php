@@ -43,8 +43,8 @@ class JetstreamServiceProvider extends ServiceProvider
 
         Fortify::authenticateUsing(function (Request $request) {
             $user = User::query()
-                        ->whereBlind('email', 'email_index', $request->email)
-                        ->first();
+                ->whereBlind('email', 'email_index', $request->email)
+                ->first();
 
             if ($user &&
                 Hash::check($request->password, $user->password)) {
@@ -66,13 +66,13 @@ class JetstreamServiceProvider extends ServiceProvider
             'update',
             'delete',
         ])
-                 ->description('Administrator users can perform any action.');
+            ->description('Administrator users can perform any action.');
 
         Jetstream::role('editor', 'Editor', [
             'read',
             'create',
             'update',
         ])
-                 ->description('Editor users have the ability to read, create, and update.');
+            ->description('Editor users have the ability to read, create, and update.');
     }
 }

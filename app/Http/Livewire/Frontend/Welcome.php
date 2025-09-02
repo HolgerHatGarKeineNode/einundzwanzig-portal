@@ -67,7 +67,7 @@ class Welcome extends Component
                 ->get()
                 ->map(function (Country $country) {
                     $flag = config('countries.emoji_flags')[str($country->code)->upper()->toString()] ?? '';
-                    $country->name = $flag . ' ' . $country->name;
+                    $country->name = $flag.' '.$country->name;
 
                     return $country;
                 }),

@@ -17,16 +17,16 @@ trait NostrTrait
     {
         if (app()->environment('local')) {
             return [
-                'success'     => true,
-                'output'      => 'local',
-                'exitCode'    => 0,
-                'errorOutput' => ''
+                'success' => true,
+                'output' => 'local',
+                'exitCode' => 0,
+                'errorOutput' => '',
             ];
         }
 
-        //noscl publish "Good morning!"
+        // noscl publish "Good morning!"
         $result = Process::timeout(60 * 5)
-                         ->run('noscl publish "'.$text.'"');
+            ->run('noscl publish "'.$text.'"');
 
         if ($result->successful()) {
             $model->nostr_status = $result->output();
@@ -34,10 +34,10 @@ trait NostrTrait
         }
 
         return [
-            'success'     => $result->successful(),
-            'output'      => $result->output(),
-            'exitCode'    => $result->exitCode(),
-            'errorOutput' => $result->errorOutput()
+            'success' => $result->successful(),
+            'output' => $result->output(),
+            'exitCode' => $result->exitCode(),
+            'errorOutput' => $result->errorOutput(),
         ];
     }
 

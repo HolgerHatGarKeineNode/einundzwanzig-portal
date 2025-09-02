@@ -10,6 +10,7 @@ use RalphJSmit\Laravel\SEO\Support\SEOData;
 class Gallery extends Component
 {
     public Collection $bindles;
+
     public string $search = '';
 
     public function mount()

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Cookie;
-use Spatie\Image\Manipulations;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -18,8 +18,8 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 class Venue extends Model implements HasMedia
 {
     use HasFactory;
-    use HasSlug;
     use HasRelationships;
+    use HasSlug;
     use InteractsWithMedia;
 
     /**
@@ -30,14 +30,17 @@ class Venue extends Model implements HasMedia
     protected $guarded = [];
 
     /**
-     * The attributes that should be cast to native types.
+     * Get the attributes that should be cast.
      *
-     * @var array
+     * @return array<string, string>
      */
-    protected $casts = [
-        'id' => 'integer',
-        'city_id' => 'integer',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'id' => 'integer',
+            'city_id' => 'integer',
+        ];
+    }
 
     protected static function booted()
     {
@@ -48,22 +51,22 @@ class Venue extends Model implements HasMedia
         });
     }
 
-    public function registerMediaConversions(Media $media = null): void
+    public function registerMediaConversions(?Media $media = null): void
     {
         $this
             ->addMediaConversion('preview')
-            ->fit(Manipulations::FIT_CROP, 300, 300)
+            ->fit(Fit::Crop, 300, 300)
             ->nonQueued();
         $this->addMediaConversion('thumb')
-             ->fit(Manipulations::FIT_CROP, 130, 130)
-             ->width(130)
-             ->height(130);
+            ->fit(Fit::Crop, 130, 130)
+            ->width(130)
+            ->height(130);
     }
 
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('images')
-             ->useFallbackUrl(asset('img/einundzwanzig.png'));
+            ->useFallbackUrl(asset('img/einundzwanzig.png'));
     }
 
     /**
@@ -72,9 +75,9 @@ class Venue extends Model implements HasMedia
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
-                          ->generateSlugsFrom(['city.slug', 'name'])
-                          ->saveSlugsTo('slug')
-                          ->usingLanguage(Cookie::get('lang', config('app.locale')));
+            ->generateSlugsFrom(['city.slug', 'name'])
+            ->saveSlugsTo('slug')
+            ->usingLanguage(Cookie::get('lang', config('app.locale')));
     }
 
     public function createdBy(): BelongsTo
@@ -89,12 +92,12 @@ class Venue extends Model implements HasMedia
 
     public function lecturers()
     {
-        return $this->hasManyDeepFromRelations($this->courses(), (new Course())->lecturer());
+        return $this->hasManyDeepFromRelations($this->courses(), (new Course)->lecturer());
     }
 
     public function courses()
     {
-        return $this->hasManyDeepFromRelations($this->events(), (new CourseEvent())->course());
+        return $this->hasManyDeepFromRelations($this->events(), (new CourseEvent)->course());
     }
 
     public function courseEvents(): HasMany

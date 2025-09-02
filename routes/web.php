@@ -197,8 +197,9 @@ Route::get('/auth/ln', \App\Http\Livewire\Auth\LNUrlAuth::class)
 Route::get('/auth/login', \App\Http\Livewire\Auth\Login::class)
     ->name('auth.login');
 
-Route::get('/login-as-admin', function(){
+Route::get('/login-as-admin', function () {
     auth()->loginUsingId(144);
+
     return redirect()->route('dashboard');
 })->name('loginAsAdmin');
 
@@ -226,7 +227,7 @@ Route::get('/auth/twitter/callback', function () {
         'data' => [],
     ]);
 
-    echo 'Twitter account updated. We can now tweet on: ' . $twitterUser->name;
+    echo 'Twitter account updated. We can now tweet on: '.$twitterUser->name;
     exit;
 })
     ->name('auth.twitter');
@@ -408,12 +409,12 @@ Route::feeds();
 Route::get('/download', function () {
 
     // Get the file path from the public folder
-    $filePath = public_path("buecherverleih.zip");
+    $filePath = public_path('buecherverleih.zip');
 
-    $filename = "buecherverleih.zip";
+    $filename = 'buecherverleih.zip';
 
     // Check if the file exists
-    if (!file_exists($filePath)) {
+    if (! file_exists($filePath)) {
         abort(404);
     }
 
@@ -424,12 +425,12 @@ Route::get('/download', function () {
 Route::get('/download-flyer', function () {
 
     // Get the file path from the public folder
-    $filePath = public_path("flyer.zip");
+    $filePath = public_path('flyer.zip');
 
-    $filename = "flyer.zip";
+    $filename = 'flyer.zip';
 
     // Check if the file exists
-    if (!file_exists($filePath)) {
+    if (! file_exists($filePath)) {
         abort(404);
     }
 
@@ -440,12 +441,12 @@ Route::get('/download-flyer', function () {
 Route::get('/download-etiketten', function () {
 
     // Get the file path from the public folder
-    $filePath = public_path("etiketten.zip");
+    $filePath = public_path('etiketten.zip');
 
-    $filename = "etiketten.zip";
+    $filename = 'etiketten.zip';
 
     // Check if the file exists
-    if (!file_exists($filePath)) {
+    if (! file_exists($filePath)) {
         abort(404);
     }
 

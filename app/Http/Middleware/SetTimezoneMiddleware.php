@@ -27,7 +27,7 @@ class SetTimezoneMiddleware
             config([
                 'app.country' => $request->country,
             ]);
-            Cookie::queue('country', $request->country, 60 * 24 * 365);
+            Cookie::queue('country', $request->country->code, 60 * 24 * 365);
         }
         if ($request->user()
             && $timezone = $request->user()->timezone

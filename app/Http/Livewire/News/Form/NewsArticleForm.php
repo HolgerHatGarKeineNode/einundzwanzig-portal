@@ -36,25 +36,25 @@ class NewsArticleForm extends Component
     public function rules()
     {
         return [
-            'image' => [Rule::requiredIf(!$this->libraryItem->id), 'nullable', 'mimes:jpeg,png,jpg,gif', 'max:10240'],
+            'image' => [Rule::requiredIf(! $this->libraryItem->id), 'nullable', 'mimes:jpeg,png,jpg,gif', 'max:10240'],
 
             'selectedTags' => 'array|min:1',
 
-            'libraryItem.lecturer_id'        => 'required',
-            'libraryItem.name'               => 'required',
-            'libraryItem.type'               => 'required',
-            'libraryItem.language_code'      => 'required',
-            'libraryItem.value'              => 'required',
-            'libraryItem.value_to_be_paid'   => [Rule::requiredIf($this->libraryItem->sats > 0), 'nullable', 'string',],
-            'libraryItem.sats'               => [
+            'libraryItem.lecturer_id' => 'required',
+            'libraryItem.name' => 'required',
+            'libraryItem.type' => 'required',
+            'libraryItem.language_code' => 'required',
+            'libraryItem.value' => 'required',
+            'libraryItem.value_to_be_paid' => [Rule::requiredIf($this->libraryItem->sats > 0), 'nullable', 'string'],
+            'libraryItem.sats' => [
                 Rule::requiredIf($this->libraryItem->sats > 0), 'nullable', 'numeric',
             ],
-            'libraryItem.subtitle'           => 'string|nullable',
-            'libraryItem.excerpt'            => 'required',
+            'libraryItem.subtitle' => 'string|nullable',
+            'libraryItem.excerpt' => 'required',
             'libraryItem.main_image_caption' => 'string|nullable',
-            'libraryItem.read_time'          => 'numeric|nullable',
-            'libraryItem.approved'           => 'boolean',
-            'libraryItem.news'               => 'boolean',
+            'libraryItem.read_time' => 'numeric|nullable',
+            'libraryItem.approved' => 'boolean',
+            'libraryItem.news' => 'boolean',
         ];
     }
 
@@ -63,29 +63,29 @@ class NewsArticleForm extends Component
         if ($this->type === 'paid') {
             $this->paid = true;
         }
-        if (!$this->libraryItem) {
+        if (! $this->libraryItem) {
             $this->libraryItem = new LibraryItem([
-                'type'             => 'markdown_article',
-                'value'            => '',
+                'type' => 'markdown_article',
+                'value' => '',
                 'value_to_be_paid' => '',
-                'read_time'        => 1,
-                'sats'             => $this->paid ? 21 : null,
-                'news'             => true,
-                'language_code'    => 'de',
-                'approved'         => false,
+                'read_time' => 1,
+                'sats' => $this->paid ? 21 : null,
+                'news' => true,
+                'language_code' => 'de',
+                'approved' => false,
             ]);
             $this->selectedTags[] = 'News';
         } else {
             $this->selectedTags = $this->libraryItem->tags()
-                                                    ->where('type', 'library_item')
-                                                    ->get()
-                                                    ->map(fn($tag) => $tag->name)
-                                                    ->toArray();
+                ->where('type', 'library_item')
+                ->get()
+                ->map(fn ($tag) => $tag->name)
+                ->toArray();
         }
-        if (!$this->fromUrl) {
+        if (! $this->fromUrl) {
             $this->fromUrl = url()->previous();
         }
-        if (!$this->libraryItem->value_to_be_paid) {
+        if (! $this->libraryItem->value_to_be_paid) {
             $this->libraryItem->value_to_be_paid = '';
         }
     }
@@ -113,8 +113,8 @@ class NewsArticleForm extends Component
 
         if ($this->image) {
             $this->libraryItem->addMedia($this->image)
-                              ->usingFileName(md5($this->image->getClientOriginalName()).'.'.$this->image->getClientOriginalExtension())
-                              ->toMediaCollection('main');
+                ->usingFileName(md5($this->image->getClientOriginalName()).'.'.$this->image->getClientOriginalExtension())
+                ->toMediaCollection('main');
         }
 
         return redirect($this->fromUrl);

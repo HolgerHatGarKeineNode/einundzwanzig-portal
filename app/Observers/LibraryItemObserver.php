@@ -20,11 +20,11 @@ class LibraryItemObserver
             $libraryItem->setStatus('published');
 
             if (
-                !$libraryItem->news
+                ! $libraryItem->news
                 && $libraryItem->type !== 'bindle'
                 && $libraryItem
                     ->whereDoesntHave('libraries',
-                        fn($query) => $query->where('libraries.is_public', false))
+                        fn ($query) => $query->where('libraries.is_public', false))
                     ->exists()
             ) {
                 $this->publishOnNostr($libraryItem, $this->getText($libraryItem));

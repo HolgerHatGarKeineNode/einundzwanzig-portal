@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::table('libraries', function (Blueprint $table) {
             $table->unsignedBigInteger('parent_id')
-                  ->nullable()
-                  ->after('id');
+                ->nullable()
+                ->after('id');
         });
     }
 

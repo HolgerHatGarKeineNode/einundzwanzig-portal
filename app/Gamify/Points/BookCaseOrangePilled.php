@@ -19,8 +19,6 @@ class BookCaseOrangePilled extends PointType
 
     /**
      * Point constructor
-     *
-     * @param $subject
      */
     public function __construct($subject)
     {

@@ -22,35 +22,35 @@ class ContentCreatorForm extends Component
     public function rules()
     {
         return [
-            'image' => [Rule::requiredIf(!$this->lecturer->id), 'nullable', 'mimes:jpeg,png,jpg,gif', 'max:10240'],
+            'image' => [Rule::requiredIf(! $this->lecturer->id), 'nullable', 'mimes:jpeg,png,jpg,gif', 'max:10240'],
 
-            'lecturer.name'              => [
+            'lecturer.name' => [
                 'required',
                 Rule::unique('lecturers', 'name')
                     ->ignore($this->lecturer),
             ],
-            'lecturer.active'            => 'boolean',
-            'lecturer.subtitle'          => 'nullable|string',
-            'lecturer.intro'             => 'nullable|string',
-            'lecturer.paynym'             => 'nullable|string',
-            'lecturer.nostr'             => 'nullable|string',
-            'lecturer.twitter_username'  => 'nullable|string',
-            'lecturer.website'           => 'nullable|url',
+            'lecturer.active' => 'boolean',
+            'lecturer.subtitle' => 'nullable|string',
+            'lecturer.intro' => 'nullable|string',
+            'lecturer.paynym' => 'nullable|string',
+            'lecturer.nostr' => 'nullable|string',
+            'lecturer.twitter_username' => 'nullable|string',
+            'lecturer.website' => 'nullable|url',
             'lecturer.lightning_address' => 'nullable|string',
-            'lecturer.lnurl'             => 'nullable|string',
-            'lecturer.node_id'           => 'nullable|string',
+            'lecturer.lnurl' => 'nullable|string',
+            'lecturer.node_id' => 'nullable|string',
         ];
     }
 
     public function mount()
     {
-        if (!$this->lecturer) {
+        if (! $this->lecturer) {
             $this->lecturer = new Lecturer([
-                'intro'   => '',
-                'active'  => true,
+                'intro' => '',
+                'active' => true,
             ]);
         }
-        if (!$this->fromUrl) {
+        if (! $this->fromUrl) {
             $this->fromUrl = url()->previous();
         }
     }
@@ -62,8 +62,8 @@ class ContentCreatorForm extends Component
 
         if ($this->image) {
             $this->lecturer->addMedia($this->image)
-                           ->usingFileName(md5($this->image->getClientOriginalName()).'.'.$this->image->getClientOriginalExtension())
-                           ->toMediaCollection('avatar');
+                ->usingFileName(md5($this->image->getClientOriginalName()).'.'.$this->image->getClientOriginalExtension())
+                ->toMediaCollection('avatar');
         }
 
         return redirect($this->fromUrl);

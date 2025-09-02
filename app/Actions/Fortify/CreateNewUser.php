@@ -26,7 +26,7 @@ class CreateNewUser implements CreatesNewUsers
             'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature() ? ['accepted', 'required'] : '',
             'is_lecturer' => ['required'],
         ])
-                 ->validate();
+            ->validate();
 
         return DB::transaction(function () use ($input) {
             return tap(User::create([
@@ -46,10 +46,10 @@ class CreateNewUser implements CreatesNewUsers
     protected function createTeam(User $user): void
     {
         $user->ownedTeams()
-             ->save(Team::forceCreate([
-                 'user_id' => $user->id,
-                 'name' => explode(' ', $user->name, 2)[0]."'s Team",
-                 'personal_team' => true,
-             ]));
+            ->save(Team::forceCreate([
+                'user_id' => $user->id,
+                'name' => explode(' ', $user->name, 2)[0]."'s Team",
+                'personal_team' => true,
+            ]));
     }
 }

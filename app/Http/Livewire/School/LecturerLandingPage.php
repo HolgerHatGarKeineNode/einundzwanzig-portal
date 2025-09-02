@@ -22,34 +22,34 @@ class LecturerLandingPage extends Component
     {
         return view('livewire.school.lecturer-landing-page', [
             'courseEvents' => CourseEvent::query()
-                                         ->with([
-                                             'venue.city',
-                                             'course.tags',
-                                         ])
-                                         ->where('from', '>=', now())
-                                         ->whereHas('course', function ($query) {
-                                             $query->where('lecturer_id', $this->lecturer->id);
-                                         })
-                                         ->orderBy('from')
-                                         ->get(),
-            'events'       => CourseEvent::query()
-                                         ->with([
-                                             'venue',
-                                             'course',
-                                         ])
-                                         ->where('from', '>=', now())
-                                         ->whereHas('course', function ($query) {
-                                             $query->where('lecturer_id', $this->lecturer->id);
-                                         })
-                                         ->orderBy('from')
-                                         ->get()
-                                         ->map(fn($event) => [
-                                             'id'          => $event->id,
-                                             'startDate'   => $event->from,
-                                             'endDate'     => $event->to,
-                                             'location'    => $event->course->name,
-                                             'description' => $event->venue->name,
-                                         ]),
+                ->with([
+                    'venue.city',
+                    'course.tags',
+                ])
+                ->where('from', '>=', now())
+                ->whereHas('course', function ($query) {
+                    $query->where('lecturer_id', $this->lecturer->id);
+                })
+                ->orderBy('from')
+                ->get(),
+            'events' => CourseEvent::query()
+                ->with([
+                    'venue',
+                    'course',
+                ])
+                ->where('from', '>=', now())
+                ->whereHas('course', function ($query) {
+                    $query->where('lecturer_id', $this->lecturer->id);
+                })
+                ->orderBy('from')
+                ->get()
+                ->map(fn ($event) => [
+                    'id' => $event->id,
+                    'startDate' => $event->from,
+                    'endDate' => $event->to,
+                    'location' => $event->course->name,
+                    'description' => $event->venue->name,
+                ]),
         ])
             ->layout('layouts.guest', [
                 'SEOData' => new SEOData(

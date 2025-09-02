@@ -46,7 +46,7 @@ class Header extends Component
         $this->timezone = config('app.user-timezone');
         $this->l = Cookie::get('lang') ?: config('app.locale');
         $this->c = Cookie::get('country') ?: config('app.country');
-        if (!$this->country) {
+        if (! $this->country) {
             $this->country = Country::query()
                 ->where('code', $this->c)
                 ->first();
@@ -156,7 +156,7 @@ class Header extends Component
                 ->get()
                 ->map(function (Country $country) {
                     $flag = config('countries.emoji_flags')[str($country->code)->upper()->toString()] ?? '';
-                    $country->name = $flag . ' ' . $country->name;
+                    $country->name = $flag.' '.$country->name;
 
                     return $country;
                 }),

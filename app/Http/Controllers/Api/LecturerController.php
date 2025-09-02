@@ -17,28 +17,28 @@ class LecturerController extends Controller
     public function index(Request $request)
     {
         return Lecturer::query()
-                       ->select('id', 'name', )
-                       ->orderBy('name')
+            ->select('id', 'name')
+            ->orderBy('name')
 //                       ->when($request->has('user_id'),
 //                           fn(Builder $query) => $query->where('created_by', $request->user_id))
-                       ->when(
-                           $request->search,
-                           fn (Builder $query) => $query
-                               ->where('name', 'ilike', "%{$request->search}%")
-                       )
-                       ->when(
-                           $request->exists('selected'),
-                           fn (Builder $query) => $query->whereIn('id',
-                               $request->input('selected', [])),
-                           fn (Builder $query) => $query->limit(10)
-                       )
-                       ->get()
-                       ->map(function (Lecturer $lecturer) {
-                           $lecturer->image = $lecturer->getFirstMediaUrl('avatar',
-                               'thumb');
+            ->when(
+                $request->search,
+                fn (Builder $query) => $query
+                    ->where('name', 'ilike', "%{$request->search}%")
+            )
+            ->when(
+                $request->exists('selected'),
+                fn (Builder $query) => $query->whereIn('id',
+                    $request->input('selected', [])),
+                fn (Builder $query) => $query->limit(10)
+            )
+            ->get()
+            ->map(function (Lecturer $lecturer) {
+                $lecturer->image = $lecturer->getFirstMediaUrl('avatar',
+                    'thumb');
 
-                           return $lecturer;
-                       });
+                return $lecturer;
+            });
     }
 
     /**

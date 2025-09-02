@@ -9,10 +9,10 @@ use ArchTech\Enums\Values;
 
 enum LibraryItemType: string
 {
-    use InvokableCases;
-    use Values;
-    use Options;
     use From;
+    use InvokableCases;
+    use Options;
+    use Values;
 
     case Book = 'book';
     case BlogArticle = 'blog_article';

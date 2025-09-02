@@ -28,16 +28,16 @@ class RenameFileToMd5 extends Command
     public function handle(): int
     {
         $media = Media::query()
-                      ->where('file_name', 'ilike', '%ö%')
-                      ->orWhere('file_name', 'ilike', '%ä%')
-                      ->orWhere('file_name', 'ilike', '%ü%')
-                      ->orWhere('file_name', 'ilike', '%ß%')
-                      ->get();
+            ->where('file_name', 'ilike', '%ö%')
+            ->orWhere('file_name', 'ilike', '%ä%')
+            ->orWhere('file_name', 'ilike', '%ü%')
+            ->orWhere('file_name', 'ilike', '%ß%')
+            ->get();
         foreach ($media as $item) {
             $md5FileName = md5($item->file_name).'.'.$item->extension;
             $item->file_name = $md5FileName;
             Storage::disk('public')
-                   ->move($item->getPath(), dirname($item->getPath()).'/'.$md5FileName);
+                ->move($item->getPath(), dirname($item->getPath()).'/'.$md5FileName);
             $item->save();
         }
 

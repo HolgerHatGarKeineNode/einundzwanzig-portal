@@ -4,12 +4,12 @@ namespace App\Http\Livewire\Banner;
 
 use App\Console\Commands\MempoolSpace\CacheRecommendedFees;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Http;
 use Livewire\Component;
 
 class MempoolWeather extends Component
 {
     public $weather;
+
     public $changed;
 
     public function mount()

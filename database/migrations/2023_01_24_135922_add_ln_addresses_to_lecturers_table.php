@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::table('lecturers', function (Blueprint $table) {
             $table->text('lightning_address')
-                  ->nullable();
+                ->nullable();
             $table->text('lnurl')
-                  ->nullable();
+                ->nullable();
             $table->string('node_id')
-                  ->nullable();
+                ->nullable();
         });
     }
 

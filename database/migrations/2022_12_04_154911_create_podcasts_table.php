@@ -14,14 +14,14 @@ return new class extends Migration
         Schema::create('podcasts', function (Blueprint $table) {
             $table->id();
             $table->string('guid')
-                  ->unique();
+                ->unique();
             $table->boolean('locked')
-                  ->default(true);
+                ->default(true);
             $table->string('title');
             $table->string('link');
             $table->string('language_code');
             $table->json('data')
-                  ->nullable();
+                ->nullable();
             $table->timestamps();
         });
     }

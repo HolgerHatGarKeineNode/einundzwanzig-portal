@@ -39,7 +39,7 @@ class WebLN extends Component
 
     public function logThis($text)
     {
-        Log::info('WEBLN: ' . $text);
+        Log::info('WEBLN: '.$text);
     }
 
     public function render()
