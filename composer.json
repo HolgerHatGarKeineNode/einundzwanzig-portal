@@ -61,6 +61,7 @@
         "laravel-lang/attributes": "^2.13",
         "laravel-lang/http-statuses": "^3.10",
         "laravel-lang/lang": "^15.24",
+        "laravel/boost": "^1.0",
         "laravel/pint": "^1.13",
         "laravel/sail": "^1.45",
         "mockery/mockery": "^1.6",
