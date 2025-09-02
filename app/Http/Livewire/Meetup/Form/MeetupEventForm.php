@@ -5,11 +5,11 @@ namespace App\Http\Livewire\Meetup\Form;
 use App\Models\MeetupEvent;
 use App\Support\Carbon;
 use Livewire\Component;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions;
 
 class MeetupEventForm extends Component
 {
-    use Actions;
+    use WireUiActions;
 
     public string $country;
 

@@ -4,11 +4,11 @@ namespace App\Http\Livewire\Profile;
 
 use App\Models\Meetup;
 use Livewire\Component;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions;
 
 class Meetups extends Component
 {
-    use Actions;
+    use WireUiActions;
 
     public $search = '';
 
