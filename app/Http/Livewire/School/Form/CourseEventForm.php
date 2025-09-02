@@ -5,11 +5,11 @@ namespace App\Http\Livewire\School\Form;
 use App\Models\CourseEvent;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions;
 
 class CourseEventForm extends Component
 {
-    use Actions;
+    use WireUiActions;
     use WithFileUploads;
 
     public ?CourseEvent $courseEvent = null;

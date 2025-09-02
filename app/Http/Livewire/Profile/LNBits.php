@@ -4,11 +4,11 @@ namespace App\Http\Livewire\Profile;
 
 use App\Traits\LNBitsTrait;
 use Livewire\Component;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions;
 
 class LNBits extends Component
 {
-    use Actions;
+    use WireUiActions;
     use LNBitsTrait;
 
     public array $settings = [

@@ -6,11 +6,11 @@ use App\Models\LibraryItem;
 use App\Traits\NostrTrait;
 use Livewire\Component;
 use RalphJSmit\Laravel\SEO\Support\SEOData;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions;
 
 class ArticleOverview extends Component
 {
-    use Actions;
+    use WireUiActions;
     use NostrTrait;
 
     public $perPage = 9;

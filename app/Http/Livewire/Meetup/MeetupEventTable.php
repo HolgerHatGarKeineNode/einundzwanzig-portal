@@ -7,11 +7,11 @@ use App\Models\MeetupEvent;
 use App\Traits\HasMapEmbedCodeTrait;
 use Livewire\Component;
 use RalphJSmit\Laravel\SEO\Support\SEOData;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions;
 
 class MeetupEventTable extends Component
 {
-    use Actions;
+    use WireUiActions;
     use HasMapEmbedCodeTrait;
 
     public Country $country;

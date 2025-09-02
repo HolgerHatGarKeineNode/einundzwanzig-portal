@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Cookie;
 use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
 use Spatie\Feed\Feedable;
-use Spatie\Image\Manipulations;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -82,13 +82,13 @@ class LibraryItem extends Model implements Feedable, HasMedia, Sortable
     {
         $this
             ->addMediaConversion('preview')
-            ->fit(Manipulations::FIT_CROP, 300, 300)
+            ->fit(Fit::Crop, 300, 300)
             ->nonQueued();
         $this->addMediaConversion('seo')
-            ->fit(Manipulations::FIT_CROP, 1200, 630)
+            ->fit(Fit::Crop, 1200, 630)
             ->nonQueued();
         $this->addMediaConversion('thumb')
-            ->fit(Manipulations::FIT_CROP, 130, 130)
+            ->fit(Fit::Crop, 130, 130)
             ->width(130)
             ->height(130);
     }

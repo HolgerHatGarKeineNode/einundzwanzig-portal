@@ -2,21 +2,16 @@
 
 use App\Console\Commands\Database\CleanupLoginKeys;
 use App\Console\Commands\Feed\ReadAndSyncPodcastFeeds;
-use App\Console\Commands\MempoolSpace\CacheRecommendedFees;
 use App\Console\Commands\Nostr\PublishUnpublishedItems;
 use App\Console\Commands\OpenBooks\SyncOpenBooks;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
-use Laravel\Nova\Trix\PruneStaleAttachments;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Schedule::command(CacheRecommendedFees::class)->everyFourHours();
-Schedule::call(new PruneStaleAttachments)
-    ->daily();
 Schedule::command(SyncOpenBooks::class)
     ->hourlyAt(15);
 Schedule::command(ReadAndSyncPodcastFeeds::class)

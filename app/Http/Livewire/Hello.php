@@ -7,11 +7,11 @@ use App\Traits\LNBitsTrait;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions;
 
 class Hello extends Component
 {
-    use Actions;
+    use WireUiActions;
     use LNBitsTrait;
 
     public $message = '';

@@ -9,11 +9,11 @@ use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use RalphJSmit\Laravel\SEO\Support\SEOData;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions;
 
 class InternArticleView extends Component
 {
-    use Actions;
+    use WireUiActions;
     use LNBitsTrait;
 
     public LibraryItem $libraryItem;

@@ -6,11 +6,11 @@ use App\Models\BitcoinEvent;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions;
 
 class BitcoinEventForm extends Component
 {
-    use Actions;
+    use WireUiActions;
     use WithFileUploads;
 
     public string $country;

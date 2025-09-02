@@ -7,11 +7,11 @@ use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use WireUi\Traits\Actions;
+use WireUi\Traits\WireUiActions;
 
 class VenueForm extends Component
 {
-    use Actions;
+    use WireUiActions;
     use WithFileUploads;
 
     public string $country;
