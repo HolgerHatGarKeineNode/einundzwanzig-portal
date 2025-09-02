@@ -25,7 +25,7 @@ class VoteFactory extends Factory
             'user_id' => User::factory(),
             'project_proposal_id' => ProjectProposal::factory(),
             'value' => $this->faker->randomNumber(),
-            'reason' => $this->faker->text,
+            'reason' => $this->faker->text(),
         ];
     }
 }

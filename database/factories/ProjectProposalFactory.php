@@ -22,9 +22,9 @@ class ProjectProposalFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'name' => $this->faker->name,
+            'name' => $this->faker->name(),
             'support_in_sats' => $this->faker->randomNumber(),
-            'description' => $this->faker->text,
+            'description' => $this->faker->text(),
         ];
     }
 }
