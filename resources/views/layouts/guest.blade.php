@@ -52,7 +52,7 @@
     <livewire:chat.highscore-chat/>
 @endif
 <livewire:laravel-echo/>
-<div class="min-h-screen">
+<div class="min-h-screen bg-zinc-900">
     <!-- Page Content -->
     <main>
         {{ $slot }}
@@ -60,5 +60,8 @@
 </div>
 @stack('modals')
 @livewireScripts
+<script>
+    localStorage.setItem('flux.appearance', 'dark');
+</script>
 </body>
 </html>

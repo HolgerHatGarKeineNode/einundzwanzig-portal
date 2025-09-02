@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "acfe9b6e4637ccf72230420f22cd7a01",
+    "content-hash": "ddb531d1db7080dc73f806abc982f34f",
     "packages": [
         {
             "name": "akuechler/laravel-geoly",
@@ -1080,6 +1080,74 @@
                 }
             ],
             "time": "2024-10-09T13:47:03+00:00"
+        },
+        {
+            "name": "druc/laravel-langscanner",
+            "version": "v2.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/druc/laravel-langscanner.git",
+                "reference": "c53d8495fbe9125f5dd50da9b83a071417b6fec9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/druc/laravel-langscanner/zipball/c53d8495fbe9125f5dd50da9b83a071417b6fec9",
+                "reference": "c53d8495fbe9125f5dd50da9b83a071417b6fec9",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "illuminate/contracts": "^9.0|^10.0|^11.0|^12.0",
+                "php": "^8.0",
+                "spatie/laravel-package-tools": "^1.11.3"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.3",
+                "nunomaduro/collision": "^6.2|^7|^8",
+                "orchestra/testbench": "^7.02|^9.0",
+                "phpunit/phpunit": "^9.5|^10.1|^11.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Druc\\Langscanner\\LangscannerServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Druc\\Langscanner\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Constantin Druc",
+                    "email": "druc@pinsmile.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Scan missing language translations.",
+            "homepage": "https://github.com/druc/laravel-langscanner",
+            "keywords": [
+                "druc",
+                "laravel-langscanner"
+            ],
+            "support": {
+                "issues": "https://github.com/druc/laravel-langscanner/issues",
+                "source": "https://github.com/druc/laravel-langscanner/tree/v2.3.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/druc",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-08-20T08:37:59+00:00"
         },
         {
             "name": "egulias/email-validator",
@@ -3942,6 +4010,78 @@
                 }
             ],
             "time": "2025-07-17T05:12:15+00:00"
+        },
+        {
+            "name": "livewire/volt",
+            "version": "v1.7.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/livewire/volt.git",
+                "reference": "91ba934e72bbd162442840862959ade24dbe728a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/livewire/volt/zipball/91ba934e72bbd162442840862959ade24dbe728a",
+                "reference": "91ba934e72bbd162442840862959ade24dbe728a",
+                "shasum": ""
+            },
+            "require": {
+                "laravel/framework": "^10.38.2|^11.0|^12.0",
+                "livewire/livewire": "^3.6.1",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "laravel/folio": "^1.1",
+                "mockery/mockery": "^1.6",
+                "orchestra/testbench": "^8.15.0|^9.0|^10.0",
+                "pestphp/pest": "^2.9.5|^3.0",
+                "phpstan/phpstan": "^1.10"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Livewire\\Volt\\VoltServiceProvider"
+                    ]
+                },
+                "branch-alias": {
+                    "dev-master": "1.x-dev"
+                }
+            },
+            "autoload": {
+                "files": [
+                    "functions.php"
+                ],
+                "psr-4": {
+                    "Livewire\\Volt\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Taylor Otwell",
+                    "email": "taylor@laravel.com"
+                },
+                {
+                    "name": "Nuno Maduro",
+                    "email": "nuno@laravel.com"
+                }
+            ],
+            "description": "An elegantly crafted functional API for Laravel Livewire.",
+            "homepage": "https://github.com/livewire/volt",
+            "keywords": [
+                "laravel",
+                "livewire",
+                "volt"
+            ],
+            "support": {
+                "issues": "https://github.com/livewire/volt/issues",
+                "source": "https://github.com/livewire/volt"
+            },
+            "time": "2025-08-06T15:40:50+00:00"
         },
         {
             "name": "maatwebsite/excel",

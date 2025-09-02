@@ -14,10 +14,6 @@ Route::middleware([])
     ->name('specials.bsc');
 
 Route::middleware([])
-    ->get('/', \App\Http\Livewire\Frontend\Welcome::class)
-    ->name('welcome');
-
-Route::middleware([])
     ->get('/hello', \App\Http\Livewire\Hello::class)
     ->name('hello');
 
@@ -453,3 +449,5 @@ Route::get('/download-etiketten', function () {
     // Generate a response with the file for download
     return Response::download($filePath, $filename);
 });
+
+require __DIR__.'/volt.php';

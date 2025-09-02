@@ -1,217 +1,170 @@
-<div class="min-h-screen bg-21gray flex flex-col justify-between">
+<?php
 
-    <section class="relative px-10 pt-16 pb-24 sm:py-16 sm:overflow-hidden">
-        <img class="absolute h-43 left-0 z-0 w-3/4 transform -translate-y-1/2 opacity-70 top-1/2"
-             src="{{ asset('img/gradient-blob.svg') }}">
-        <img class="absolute left-0 z-0 object-cover object-center w-full h-full opacity-50 top-24"
-             src="{{ asset('img/swirl-white.svg') }}">
-        <div class="container relative z-10 px-4 mx-auto">
-            <div class="w-full mb-8 sm:w-1/2 md:w-3/4 sm:pr-4 md:pr-12 sm:-mb-32 md:-mb-24 lg:-mb-36 xl:-mb-28">
-                <h2 class="tracking-widest text-amber-500 uppercase">{{ __('Einundzwanzig') }}</h2>
-                <p class="my-3 text-5xl font-bold tracking-tighter text-amber-500 lg:text-6xl">{{ __('Bitcoin Portal') }}</p>
-                <p class="max-w-sm text-lg text-gray-200">
-                    {{ __('A Bitcoin community for all.') }}
-                </p>
-                <div
-                    class="max-w-sm text-lg text-gray-200 space-y-2 sm:space-y-0 sm:space-x-2 flex flex-col sm:flex-row items-start sm:items-end">
-                    @feature('change.country')
-                    <x-native-select
-                        label="{{ __('Change country') }}"
-                        wire:model="c"
-                        option-label="name"
-                        option-value="code"
-                        :options="$countries"
-                    />
-                    @endfeature
-                    @feature('change.language')
-                    <x-select
-                        label="{{ __('Change language') }}"
-                        wire:model="l"
-                        :clearable="false"
-                        :searchable="true"
-                        :async-data="route('api.languages.index')"
-                        option-label="name"
-                        option-value="language"
-                    />
-                    @endfeature
-                    <div class="py-2 sm:py-0">
-                        @if(!auth()->check())
-                            <x-button secondary href="{{ route('auth.login') }}">
-                                <i class="fa-thin fa-sign-in"></i>
-                                {{ __('Login') }}
-                            </x-button>
-                        @else
-                            <form method="POST" action="{{ route('logout') }}" class="inline">
-                                @csrf
-                                <x-button secondary type="submit">
-                                    <i class="fa-thin fa-sign-out"></i>
-                                    {{ __('Logout') }}
-                                </x-button>
-                            </form>
-                        @endif
+use Livewire\Volt\Component;
+
+
+new
+#[\Livewire\Attributes\Layout('components.layouts.blank')]
+class extends Component {
+    public string $c = 'de';
+    public string $l = 'de';
+
+    protected array $queryString = ['c', 'l'];
+
+    public function rules(): array
+    {
+        return [
+            'c' => 'required',
+            'l' => 'required',
+        ];
+    }
+
+    public function mount(): void
+    {
+        $this->l = \Illuminate\Support\Facades\Cookie::get('lang') ?: config('app.locale');
+        if ($this->l === 'nl-be') {
+            $this->l = 'nl';
+        }
+        $this->c = \Illuminate\Support\Facades\Cookie::get('country') ?: config('app.country');
+        \Illuminate\Support\Facades\Cookie::queue('lang', $this->l, 60 * 24 * 365);
+        \Illuminate\Support\Facades\Cookie::queue('country', $this->c, 60 * 24 * 365);
+    }
+
+    public function updated(string $property, mixed $value): \Symfony\Component\HttpFoundation\RedirectResponse
+    {
+        $this->validate();
+        $c = $property === 'c' ? $value : $this->c;
+        $l = $property === 'l' ? $value : $this->l;
+
+        if ($this->l === 'nl-be') {
+            $this->l = 'nl';
+        }
+
+        \Illuminate\Support\Facades\Cookie::queue('lang', $this->l, 60 * 24 * 365);
+        \Illuminate\Support\Facades\Cookie::queue('country', $this->c, 60 * 24 * 365);
+
+        return to_route('welcome', ['c' => $c, 'l' => $l]);
+    }
+
+    public function with(): array
+    {
+        return [
+            'countries' => \App\Models\Country::query()
+                ->select('id', 'name', 'code')
+                ->orderBy('name')
+                ->get()
+                ->map(function (\App\Models\Country $country) {
+                    $flag = config('countries.emoji_flags')[str($country->code)->upper()->toString()] ?? '';
+                    $country->name = $flag.' '.$country->name;
+
+                    return $country;
+                }),
+        ];
+    }
+};
+?>
+
+<div class="flex min-h-screen">
+    <div class="flex-1 flex justify-center items-center p-6">
+        <div class="w-80 max-w-80 space-y-6">
+            <div class="flex justify-center opacity-50">
+                <a href="/" class="group flex items-center gap-3">
+                    <div>
+                        <img src="{{ asset('img/einundzwanzig-horizontal-inverted.svg') }}" alt="Logo" class="h-6">
                     </div>
-                </div>
+                </a>
             </div>
-            <div class="grid w-full grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
 
-                {{-- News --}}
-                @feature('news')
-                <div class="row-span-2 col-span-full sm:col-span-1 md:col-start-1 sm:row-start-2 md:row-start-3">
-                    <a href="{{ route('article.overview') }}"
-                       class="relative flex flex-col items-start justify-end w-full h-full overflow-hidden bg-black shadow-lg rounded-xl group"
-                       style="aspect-ratio: 1/1;">
-                        <div class="absolute inset-0 w-full h-full">
-                            <div
-                                class="absolute bottom-0 left-0 z-10 w-full h-full opacity-30 bg-linear-to-b from-transparent to-gray-900"></div>
-                            <img
-                                class="bg-white absolute inset-0 object-contain object-center w-full h-full transition duration-500 lg:opacity-80 group-hover:opacity-100 group-hover:scale-110"
-                                src="{{ asset('img/einundzwanzig-news-colored.png') }}" alt="">
-                        </div>
-                        <div class="relative z-10 flex flex-col items-start justify-start w-full px-6 py-7">
-                            <h4 class="text-4xl font-bold tracking-tight text-gray-100 sm:text-3xl md:text-2xl lg:text-3xl">
-                                {{ __('News') }}
-                            </h4>
-                        </div>
-                    </a>
-                </div>
+            <flux:heading class="text-center" size="xl">{{ __('Welcome back') }}</flux:heading>
+
+            <div class="space-y-4">
+                <flux:button class="w-full" href="{{ route('auth.login') }}">
+                    {{ __('Continue with Google') }}
+                </flux:button>
+
+                <flux:button class="w-full" href="{{ route('auth.login') }}">
+                    {{ __('Continue with GitHub') }}
+                </flux:button>
+            </div>
+
+            <flux:separator text="{{ __('or') }}"/>
+
+            <div class="flex flex-col gap-6">
+                <flux:input label="{{ __('Email') }}" type="email" placeholder="email@example.com"/>
+
+                <flux:field>
+                    <div class="mb-3 flex justify-between">
+                        <flux:label>{{ __('Password') }}</flux:label>
+
+                        <flux:link href="{{ route('password.request') }}" variant="subtle"
+                                   class="text-sm">{{ __('Forgot password?') }}</flux:link>
+                    </div>
+
+                    <flux:input type="password" placeholder="{{ __('Your password') }}"/>
+                </flux:field>
+
+                <flux:checkbox label="{{ __('Remember me for 30 days') }}"/>
+
+                <flux:button variant="primary" class="w-full"
+                             href="{{ route('auth.login') }}">{{ __('Log in') }}</flux:button>
+            </div>
+
+            <flux:subheading class="text-center">
+                {{ __('First time around here?') }}
+                <flux:link href="{{ route('register') }}">{{ __('Sign up for free') }}</flux:link>
+            </flux:subheading>
+
+            <div class="space-y-2">
+                @feature('change.country')
+                <flux:select label="{{ __('Change country') }}" wire:model.live="c">
+                    @foreach ($countries as $country)
+                        <flux:select.option value="{{ $country->code }}">{{ $country->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
                 @endfeature
 
-                @feature('courses')
-                <div
-                    class="row-span-2 col-span-full sm:col-span-1 md:col-start-1 xl:col-start-2 sm:row-start-4 md:row-start-5 xl:row-start-2">
-                    <a href="{{ route('school.table.course', ['country' => $c]) }}"
-                       class="relative flex flex-col items-start justify-end w-full h-full overflow-hidden bg-black shadow-lg rounded-xl group"
-                       style="aspect-ratio: 1/1;">
-                        <div class="absolute inset-0 w-full h-full">
-                            <div
-                                class="absolute bottom-0 left-0 z-10 w-full h-full opacity-30 bg-linear-to-b from-transparent to-gray-900"></div>
-                            <img
-                                class="absolute inset-0 object-cover object-center w-full h-full transition duration-500 lg:opacity-80 group-hover:opacity-100 group-hover:scale-110"
-                                src="{{ asset('img/vhs_kurs.jpg') }}" alt="">
-                        </div>
-                        <div class="relative z-10 flex flex-col items-start justify-start w-full px-6 py-7">
-                            <span
-                                class="px-2 py-1 mb-3 text-xs font-semibold tracking-tight text-white uppercase bg-amber-500 rounded-md">{{ __('Education') }}</span>
-                            <h4 class="text-4xl font-bold tracking-tight text-gray-100 sm:text-3xl md:text-2xl lg:text-3xl">
-                                {{ __('Courses') }}
-                            </h4>
-                        </div>
-                    </a>
-                </div>
+                @feature('change.language')
+                <flux:select label="{{ __('Change language') }}" wire:model.live="l">
+                    <flux:select.option value="de">Deutsch</flux:select.option>
+                    <flux:select.option value="en">English</flux:select.option>
+                    <flux:select.option value="nl">Nederlands</flux:select.option>
+                </flux:select>
                 @endfeature
-
-                @feature('library')
-                <div
-                    class="row-span-2 col-span-full sm:col-span-1 md:col-start-2 xl:col-start-2 sm:row-start-6 md:row-start-2 xl:row-start-4">
-                    <a href="{{ route('library.table.libraryItems', ['country' => $c]) }}"
-                       class="relative flex flex-col items-start justify-end w-full h-full overflow-hidden bg-black shadow-lg rounded-xl group"
-                       style="aspect-ratio: 1/1;">
-                        <div class="absolute inset-0 w-full h-full">
-                            <div
-                                class="absolute bottom-0 left-0 z-10 w-full h-full opacity-30 bg-linear-to-b from-transparent to-gray-900"></div>
-                            <img
-                                class="absolute inset-0 object-cover object-center w-full h-full transition duration-500 lg:opacity-80 group-hover:opacity-100 group-hover:scale-110"
-                                src="{{ asset('img/news_2.png') }}" alt="">
-                        </div>
-                        <div class="relative z-10 flex flex-col items-start justify-start w-full px-6 py-7">
-                            <span
-                                class="px-2 py-1 mb-3 text-xs font-semibold tracking-tight text-white uppercase bg-amber-500 rounded-md">{{ _('Content') }}</span>
-                            <h4 class="text-4xl font-bold tracking-tight text-gray-100 sm:text-3xl md:text-2xl lg:text-3xl">
-                                {{ __('Library') }}
-                            </h4>
-                        </div>
-                    </a>
-                </div>
-                @endfeature
-
-                @feature('events')
-                <div
-                    class="row-span-2 col-span-full sm:col-span-1 md:col-start-2 xl:col-start-3 sm:row-start-1 md:row-start-4 xl:row-start-1">
-                    <a href="{{ route('bitcoinEvent.table.bitcoinEvent', ['country' => $c]) }}"
-                       class="relative flex flex-col items-start justify-end w-full h-full overflow-hidden bg-black shadow-lg rounded-xl group"
-                       style="aspect-ratio: 1/1;">
-                        <div class="absolute inset-0 w-full h-full">
-                            <div
-                                class="absolute bottom-0 left-0 z-10 w-full h-full opacity-30 bg-linear-to-b from-transparent to-gray-900"></div>
-                            <img
-                                class="absolute inset-0 object-cover object-center w-full h-full transition duration-500 lg:opacity-80 group-hover:opacity-100 group-hover:scale-110"
-                                src="{{ asset('img/20220915_007_industryday.webp') }}" alt="">
-                        </div>
-                        <div class="relative z-10 flex flex-col items-start justify-start w-full px-6 py-7">
-                            <span
-                                class="px-2 py-1 mb-3 text-xs font-semibold tracking-tight text-white uppercase bg-amber-500 rounded-md">{{ __('Worldwide') }}</span>
-                            <h4 class="text-2xl sm:text-4xl font-bold tracking-tight text-gray-100 sm:text-3xl md:text-2xl lg:text-3xl">
-                                {{ __('Events') }}
-                            </h4>
-                        </div>
-                    </a>
-                </div>
-                @endfeature
-
-                @feature('bookcases')
-                <div
-                    class="row-span-2 col-span-full sm:col-span-1 md:col-start-3 xl:col-start-3 sm:row-start-3 md:row-start-1 xl:row-start-3">
-                    <a href="{{ route('bookCases.world', ['country' => $c]) }}"
-                       class="relative flex flex-col items-start justify-end w-full h-full overflow-hidden bg-black shadow-lg rounded-xl group"
-                       style="aspect-ratio: 1/1;">
-                        <div class="absolute inset-0 w-full h-full">
-                            <div
-                                class="absolute bottom-0 left-0 z-10 w-full h-full opacity-30 bg-linear-to-b from-transparent to-gray-900"></div>
-                            <img
-                                class="absolute inset-0 object-cover object-center w-full h-full transition duration-500 lg:opacity-80 group-hover:opacity-100 group-hover:scale-110"
-                                src="{{ asset('img/bookcase.jpg') }}" alt="">
-                        </div>
-                        <div class="relative z-10 flex flex-col items-start justify-start w-full px-6 py-7">
-                            <span
-                                class="px-2 py-1 mb-3 text-xs font-semibold tracking-tight text-white uppercase bg-amber-500 rounded-md">{{ __('Reading') }}</span>
-                            <h4 class="text-4xl font-bold tracking-tight text-gray-100 sm:text-3xl md:text-2xl lg:text-3xl">
-                                {{ __('Bookcases') }}
-                            </h4>
-                        </div>
-                    </a>
-                </div>
-                @endfeature
-
-                @feature('meetups')
-                <div
-                    class="row-span-2 col-span-full sm:col-span-1 md:col-start-3 xl:col-start-4 sm:row-start-5 md:row-start-3 xl:row-start-2">
-                    <a href="{{ route('meetup.table.meetup', ['country' => $c]) }}"
-                       class="relative flex flex-col items-start justify-end w-full h-full overflow-hidden bg-black shadow-lg rounded-xl group"
-                       style="aspect-ratio: 1/1;">
-                        <div class="absolute inset-0 w-full h-full">
-                            <div
-                                class="absolute bottom-0 left-0 z-10 w-full h-full bg-linear-to-b from-transparent to-gray-900 opacity-30"></div>
-                            <img
-                                class="absolute inset-0 object-cover object-center w-full h-full transition duration-500 lg:opacity-80 group-hover:opacity-100 group-hover:scale-110"
-                                src="{{ asset('img/meetup_saarland.jpg') }}" alt="">
-                        </div>
-                        <div class="relative z-10 flex flex-col items-start justify-start w-full px-6 py-7">
-                            <h4 class="text-4xl font-bold tracking-tight text-gray-100 sm:text-3xl md:text-2xl lg:text-3xl">
-                                {{ __('Meetups') }}
-                            </h4>
-                        </div>
-                    </a>
-                </div>
-                @endfeature
-
             </div>
         </div>
-    </section>
-    {{-- FOOTER --}}
-    <div class="bottom-0 w-full">
-        <livewire:frontend.footer/>
     </div>
 
-    @feature('nostr.groups')
-    <div wire:ignore class="z-50 hidden md:block">
-        <script
-            src="{{ asset('dist/einundzwanzig.chat.js') }}"
-            data-website-owner-pubkey="daf83d92768b5d0005373f83e30d4203c0b747c170449e02fea611a0da125ee6"
-            data-chat-type="GLOBAL"
-            data-chat-tags="#einundzwanzig_portal"
-            data-relays="wss://nostr.einundzwanzig.space,wss://nostr.easify.de,wss://nostr.mom,wss://relay.damus.io,wss://relay.snort.social"
-        ></script>
-        <link rel="stylesheet" href="{{ asset('dist/einundzwanzig.chat.css') }}">
+    <div class="flex-1 p-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            @feature('meetups')
+            <a href="{{ route('meetup.table.meetup', ['country' => $c]) }}"
+               class="relative flex flex-col items-start justify-end w-full overflow-hidden bg-black shadow-lg rounded-xl group"
+               style="aspect-ratio: 16/10;">
+                <img
+                    class="absolute inset-0 object-cover w-full h-full transition duration-500 lg:opacity-80 group-hover:opacity-100 group-hover:scale-110"
+                    src="{{ asset('img/meetup_saarland.jpg') }}" alt="Meetups">
+                <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/60"></div>
+                <div class="relative z-10 p-6">
+                    <flux:heading size="lg" class="text-white">{{ __('Meetups') }}</flux:heading>
+                    <flux:text class="text-zinc-300">{{ __('Find local Bitcoin meetups near you.') }}</flux:text>
+                </div>
+            </a>
+            @endfeature
+
+            @feature('events')
+            <a href="{{ route('bitcoinEvent.table.bitcoinEvent', ['country' => $c]) }}"
+               class="relative flex flex-col items-start justify-end w-full overflow-hidden bg-black shadow-lg rounded-xl group"
+               style="aspect-ratio: 16/10;">
+                <img
+                    class="absolute inset-0 object-cover w-full h-full transition duration-500 lg:opacity-80 group-hover:opacity-100 group-hover:scale-110"
+                    src="{{ asset('img/20220915_007_industryday.webp') }}" alt="Events">
+                <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/60"></div>
+                <div class="relative z-10 p-6">
+                    <flux:heading size="lg" class="text-white">{{ __('Events') }}</flux:heading>
+                    <flux:text class="text-zinc-300">{{ __('Explore upcoming Bitcoin events worldwide.') }}</flux:text>
+                </div>
+            </a>
+            @endfeature
+        </div>
     </div>
-    @endfeature
 </div>
