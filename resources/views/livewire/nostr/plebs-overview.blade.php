@@ -175,7 +175,7 @@
                 <template x-if="currentUser && currentUser.profile">
                     <div
                         x-show="currentUser && currentUser.profile.image"
-                        class="block flex-shrink-0 mt-8">
+                        class="block shrink-0 mt-8">
                         <div class="flex items-center">
                             <div>
                                 <img class="inline-block h-9 w-9 rounded-full"

@@ -62,7 +62,7 @@
                        style="aspect-ratio: 1/1;">
                         <div class="absolute inset-0 w-full h-full">
                             <div
-                                class="absolute bottom-0 left-0 z-10 w-full h-full opacity-30 bg-gradient-to-b from-transparent to-gray-900"></div>
+                                class="absolute bottom-0 left-0 z-10 w-full h-full opacity-30 bg-linear-to-b from-transparent to-gray-900"></div>
                             <img
                                 class="bg-white absolute inset-0 object-contain object-center w-full h-full transition duration-500 lg:opacity-80 group-hover:opacity-100 group-hover:scale-110"
                                 src="{{ asset('img/einundzwanzig-news-colored.png') }}" alt="">
@@ -84,7 +84,7 @@
                        style="aspect-ratio: 1/1;">
                         <div class="absolute inset-0 w-full h-full">
                             <div
-                                class="absolute bottom-0 left-0 z-10 w-full h-full opacity-30 bg-gradient-to-b from-transparent to-gray-900"></div>
+                                class="absolute bottom-0 left-0 z-10 w-full h-full opacity-30 bg-linear-to-b from-transparent to-gray-900"></div>
                             <img
                                 class="absolute inset-0 object-cover object-center w-full h-full transition duration-500 lg:opacity-80 group-hover:opacity-100 group-hover:scale-110"
                                 src="{{ asset('img/vhs_kurs.jpg') }}" alt="">
@@ -108,7 +108,7 @@
                        style="aspect-ratio: 1/1;">
                         <div class="absolute inset-0 w-full h-full">
                             <div
-                                class="absolute bottom-0 left-0 z-10 w-full h-full opacity-30 bg-gradient-to-b from-transparent to-gray-900"></div>
+                                class="absolute bottom-0 left-0 z-10 w-full h-full opacity-30 bg-linear-to-b from-transparent to-gray-900"></div>
                             <img
                                 class="absolute inset-0 object-cover object-center w-full h-full transition duration-500 lg:opacity-80 group-hover:opacity-100 group-hover:scale-110"
                                 src="{{ asset('img/news_2.png') }}" alt="">
@@ -132,7 +132,7 @@
                        style="aspect-ratio: 1/1;">
                         <div class="absolute inset-0 w-full h-full">
                             <div
-                                class="absolute bottom-0 left-0 z-10 w-full h-full opacity-30 bg-gradient-to-b from-transparent to-gray-900"></div>
+                                class="absolute bottom-0 left-0 z-10 w-full h-full opacity-30 bg-linear-to-b from-transparent to-gray-900"></div>
                             <img
                                 class="absolute inset-0 object-cover object-center w-full h-full transition duration-500 lg:opacity-80 group-hover:opacity-100 group-hover:scale-110"
                                 src="{{ asset('img/20220915_007_industryday.webp') }}" alt="">
@@ -156,7 +156,7 @@
                        style="aspect-ratio: 1/1;">
                         <div class="absolute inset-0 w-full h-full">
                             <div
-                                class="absolute bottom-0 left-0 z-10 w-full h-full opacity-30 bg-gradient-to-b from-transparent to-gray-900"></div>
+                                class="absolute bottom-0 left-0 z-10 w-full h-full opacity-30 bg-linear-to-b from-transparent to-gray-900"></div>
                             <img
                                 class="absolute inset-0 object-cover object-center w-full h-full transition duration-500 lg:opacity-80 group-hover:opacity-100 group-hover:scale-110"
                                 src="{{ asset('img/bookcase.jpg') }}" alt="">
@@ -180,7 +180,7 @@
                        style="aspect-ratio: 1/1;">
                         <div class="absolute inset-0 w-full h-full">
                             <div
-                                class="absolute bottom-0 left-0 z-10 w-full h-full bg-gradient-to-b from-transparent to-gray-900 opacity-30"></div>
+                                class="absolute bottom-0 left-0 z-10 w-full h-full bg-linear-to-b from-transparent to-gray-900 opacity-30"></div>
                             <img
                                 class="absolute inset-0 object-cover object-center w-full h-full transition duration-500 lg:opacity-80 group-hover:opacity-100 group-hover:scale-110"
                                 src="{{ asset('img/meetup_saarland.jpg') }}" alt="">

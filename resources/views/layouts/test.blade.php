@@ -19,8 +19,8 @@
     @livewireStyles
 </head>
 <body class="font-sans antialiased bg-21gray dark">
-<x-notifications z-index="z-[99999]" blur="md" align="center"/>
-<x-dialog z-index="z-[99999]" blur="md" align="center" />
+<x-notifications z-index="z-99999" blur="md" align="center"/>
+<x-dialog z-index="z-99999" blur="md" align="center" />
 <div class="min-h-screen">
     <!-- Page Content -->
     <main>

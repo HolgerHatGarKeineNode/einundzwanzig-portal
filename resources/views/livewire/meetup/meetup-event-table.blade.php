@@ -3,7 +3,7 @@
     <livewire:frontend.header :country="$country"/>
     {{-- MAIN --}}
     <section class="w-full mb-12">
-        <div class="max-w-screen-2xl mx-auto px-2 sm:px-10 space-y-4" id="table">
+        <div class="max-w-(--breakpoint-2xl) mx-auto px-2 sm:px-10 space-y-4" id="table">
             <div>
                 <div class="w-full flex justify-end my-2">
                     <div class="flex flex-col space-y-2">

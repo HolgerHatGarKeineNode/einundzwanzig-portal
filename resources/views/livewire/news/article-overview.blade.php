@@ -65,7 +65,7 @@
                                     </div>
                                 </div>
                             @endif
-                            <div class="flex-shrink-0 pt-6">
+                            <div class="shrink-0 pt-6">
                                 <a href="{{ route('article.view', ['libraryItem' => $libraryItem]) }}">
                                     <img class="h-48 w-full object-contain"
                                          src="{{ $libraryItem->getFirstMediaUrl('main', 'seo') }}"
@@ -85,7 +85,7 @@
                                     </a>
                                 </div>
                                 <div class="mt-6 flex items-center w-full">
-                                    <div class="flex-shrink-0">
+                                    <div class="shrink-0">
                                         <div>
                                             <span
                                                 class="sr-only text-gray-200">{{ $libraryItem->lecturer->name }}</span>

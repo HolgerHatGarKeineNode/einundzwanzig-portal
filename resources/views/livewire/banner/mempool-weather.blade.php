@@ -2,12 +2,12 @@
     class="relative isolate flex items-center justify-center gap-x-6 overflow-hidden bg-gray-50 px-6 py-2.5 sm:px-3.5 sm:before:flex-1 -mt-4">
     <div class="absolute left-[max(-7rem,calc(50%-52rem))] top-1/2 -z-10 -translate-y-1/2 transform-gpu blur-2xl"
          aria-hidden="true">
-        <div class="aspect-[577/310] w-[36.0625rem] bg-gradient-to-r from-[#FABE75] to-[#F7931A] opacity-30"
+        <div class="aspect-577/310 w-144.25 bg-linear-to-r from-[#FABE75] to-[#F7931A] opacity-30"
              style="clip-path: polygon(74.8% 41.9%, 97.2% 73.2%, 100% 34.9%, 92.5% 0.4%, 87.5% 0%, 75% 28.6%, 58.5% 54.6%, 50.1% 56.8%, 46.9% 44%, 48.3% 17.4%, 24.7% 53.9%, 0% 27.9%, 11.9% 74.2%, 24.9% 54.1%, 68.6% 100%, 74.8% 41.9%)"></div>
     </div>
     <div class="absolute left-[max(45rem,calc(50%+8rem))] top-1/2 -z-10 -translate-y-1/2 transform-gpu blur-2xl"
          aria-hidden="true">
-        <div class="aspect-[577/310] w-[36.0625rem] bg-gradient-to-r from-[#FABE75] to-[#F7931A] opacity-30"
+        <div class="aspect-577/310 w-144.25 bg-linear-to-r from-[#FABE75] to-[#F7931A] opacity-30"
              style="clip-path: polygon(74.8% 41.9%, 97.2% 73.2%, 100% 34.9%, 92.5% 0.4%, 87.5% 0%, 75% 28.6%, 58.5% 54.6%, 50.1% 56.8%, 46.9% 44%, 48.3% 17.4%, 24.7% 53.9%, 0% 27.9%, 11.9% 74.2%, 24.9% 54.1%, 68.6% 100%, 74.8% 41.9%)"></div>
     </div>
     <div class="w-full flex flex-col sm:flex-row items-center sm:space-x-4 justify-center">
@@ -33,11 +33,11 @@
             </span>
         </div>
         {{--@if(!empty($weather))
-            <div class="text-md leading-6 text-gray-900 text-center max-w-screen-2xl">
+            <div class="text-md leading-6 text-gray-900 text-center max-w-(--breakpoint-2xl)">
                 {{  $weather }} (um {{ \App\Support\Carbon::parse($changed)->asTime() }} Uhr aktualisiert - jede 4. Stunde)
             </div>
         @else
-            <div class="text-md leading-6 text-gray-900 text-center max-w-screen-2xl">
+            <div class="text-md leading-6 text-gray-900 text-center max-w-(--breakpoint-2xl)">
                 Wetterdaten werden in Kürze wieder verfügbar sein. (OpenAI Quota exceeded)
             </div>
         @endif--}}

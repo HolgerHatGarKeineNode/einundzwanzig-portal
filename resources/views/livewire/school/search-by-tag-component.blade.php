@@ -1,5 +1,5 @@
 <div
-    class="flex overflow-auto relative flex-wrap gap-x-5 gap-y-6 justify-center p-0 mx-auto mt-8 mb-3 w-full font-normal leading-6 text-white align-baseline border-0 border-solid md:mx-auto md:mb-0 md:max-w-screen-md"
+    class="flex overflow-auto relative flex-wrap gap-x-5 gap-y-6 justify-center p-0 mx-auto mt-8 mb-3 w-full font-normal leading-6 text-white align-baseline border-0 border-solid md:mx-auto md:mb-0 md:max-w-(--breakpoint-md)"
     style="max-width: 1350px; font-size: 128%; background-position: 0px center; max-height: 500px; list-style: outside;"
 >
     @foreach($tags->sortBy('name') as $tag)
@@ -12,14 +12,14 @@
                 $activeClass = $isActive ? 'text-amber-500 bg-amber-500' : 'bg-blue-50 text-white hover:text-amber-500';
             @endphp
             <a
-                class="{{ $activeClass }} flex relative flex-col flex-shrink-0 justify-between py-1 px-3 w-full h-20 border-0 border-solid duration-300 ease-in-out cursor-pointer bg-opacity-[0.07]"
+                class="{{ $activeClass }} flex relative flex-col shrink-0 justify-between py-1 px-3 w-full h-20 border-0 border-solid duration-300 ease-in-out cursor-pointer bg-opacity-[0.07]"
                 href="{{ $isActive ? '#table' : route('school.table.course', ['country' => $country, 'courses' => ['filters' => ['tag' => [$tag->name]]], '#table']) }}"
             >
                 <div
                     class="flex flex-1 items-center p-0 m-0 text-center align-baseline border-0 border-solid"
                 >
                     <div
-                        class="flex flex-shrink-0 justify-center p-0 my-0 mr-4 ml-0 align-baseline border-0 border-solid"
+                        class="flex shrink-0 justify-center p-0 my-0 mr-4 ml-0 align-baseline border-0 border-solid"
                     >
                         <i class="fa fa-thin fa-{{ $tag->icon }} text-4xl"></i>
                     </div>

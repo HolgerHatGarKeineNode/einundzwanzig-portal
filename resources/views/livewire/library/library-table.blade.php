@@ -1,7 +1,7 @@
 <div class="bg-21gray flex flex-col h-screen justify-between">
     {{-- HEADER --}}
     <livewire:frontend.header :country="$country"/>
-    <div class="max-w-screen-2xl mx-auto">
+    <div class="max-w-(--breakpoint-2xl) mx-auto">
         <div class="w-full mb-6 sm:my-6">
             <div class="flex w-full justify-center mb-4">
                 <x-button primary :href="route('library.libraryItem.form', ['country' => $country])">
@@ -28,7 +28,7 @@
     </div>
     {{-- MAIN --}}
     <section class="w-full mb-12">
-        <div class="max-w-screen-2xl mx-auto px-2 sm:px-10" id="table">
+        <div class="max-w-(--breakpoint-2xl) mx-auto px-2 sm:px-10" id="table">
 
             <div class="relative border-b border-gray-200 pb-5 sm:pb-0">
                 <div class="md:flex md:items-center md:justify-between">
@@ -84,7 +84,7 @@
                         @endphp
                         <div wire:key="library_item_{{ $libraryItem->id }}"
                              class="flex flex-col overflow-hidden rounded-lg  border-2 border-[#F7931A]">
-                            <div class="flex-shrink-0 pt-6">
+                            <div class="shrink-0 pt-6">
                                 <a href="{{ $link }}">
                                     <img class="h-48 w-full object-contain"
                                          src="{{ $libraryItem->getFirstMediaUrl('main', 'seo') }}"
@@ -104,7 +104,7 @@
                                     </a>
                                 </div>
                                 <div class="mt-6 flex items-center">
-                                    <div class="flex-shrink-0">
+                                    <div class="shrink-0">
                                         <div>
                                             <span
                                                 class="sr-only text-gray-200">{{ $libraryItem->lecturer->name }}</span>

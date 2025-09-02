@@ -4,7 +4,7 @@
     <section class="w-full mb-12 mt-2">
 
         @can('update', $meetupEvent)
-            <div class="max-w-screen-2xl mx-auto px-2 sm:px-10 space-y-4 flex flex-col sm:flex-row justify-end">
+            <div class="max-w-(--breakpoint-2xl) mx-auto px-2 sm:px-10 space-y-4 flex flex-col sm:flex-row justify-end">
                 <x-button
                     :href="route('meetup.event.form', ['country' => $meetup->city->country, 'meetupEvent' => $meetupEvent])"
                     primary lg class="whitespace-nowrap cursor-pointer">
@@ -14,7 +14,7 @@
             </div>
         @endcan
 
-        <div class="max-w-screen-2xl mx-auto px-2 sm:px-10 space-y-4 flex flex-col sm:flex-row">
+        <div class="max-w-(--breakpoint-2xl) mx-auto px-2 sm:px-10 space-y-4 flex flex-col sm:flex-row">
 
             <div class="relative py-4 sm:py-4">
                 <div class="lg:mx-auto lg:grid lg:max-w-7xl lg:grid-cols-2 lg:items-start lg:gap-24 lg:px-8">
@@ -28,7 +28,7 @@
                             </div>
                         </div>
                         <blockquote class="mt-8">
-                            <div class="relative text-lg font-medium text-gray-200 md:flex-grow">
+                            <div class="relative text-lg font-medium text-gray-200 md:grow">
                                 <p class="relative">{{ $meetup->intro }}</p>
                             </div>
                         </blockquote>
@@ -272,7 +272,7 @@
                                 @else
                                     <div class="rounded-md bg-red-50 p-4">
                                         <div class="flex">
-                                            <div class="flex-shrink-0">
+                                            <div class="shrink-0">
                                                 <!-- Heroicon name: mini/x-circle -->
                                                 <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg"
                                                      viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -339,7 +339,7 @@
             @else
                 <div class="rounded-md bg-transparent p-4">
                     <div class="flex">
-                        <div class="flex-shrink-0">
+                        <div class="shrink-0">
                             <!-- Heroicon name: mini/x-circle -->
                             <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg"
                                  viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

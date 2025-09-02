@@ -44,7 +44,7 @@
                                     <div class="flex flex-row w-full overflow-x-hidden">
                                         <div class="flex flex-col flex-auto">
                                             <div
-                                                class="flex flex-col h-full flex-auto flex-shrink-0 bg-21gray p-4"
+                                                class="flex flex-col h-full flex-auto shrink-0 bg-21gray p-4"
                                             >
                                                 <div
                                                     x-data="{ scroll: () => { $el.scrollTo(0, $el.scrollHeight); }}"
@@ -63,7 +63,7 @@
                                                                 <div class="{{ auth()->id() === $message['fromId'] ? $myMessageClass : $otherMessageClass }}">
                                                                     <div class="flex flex-row items-center">
                                                                         <div
-                                                                            class="flex items-center justify-center h-10 w-10 rounded-full flex-shrink-0"
+                                                                            class="flex items-center justify-center h-10 w-10 rounded-full shrink-0"
                                                                         >
                                                                             <img class="object-cover rounded" src="{{ $message['userImg'] }}" alt="{{ $message['fromName'] }}">
                                                                         </div>
@@ -88,7 +88,7 @@
                                                 <div
                                                     class="flex flex-row items-center h-16 rounded-xl bg-white w-full px-4"
                                                 >
-                                                    <div class="flex-grow ml-4">
+                                                    <div class="grow ml-4">
                                                         <form wire:submit.prevent="sendMessage">
                                                             <div class="relative w-full">
                                                                 <input
@@ -104,7 +104,7 @@
                                                     <div class="ml-4">
                                                         <button
                                                             wire:click="sendMessage"
-                                                            class="flex items-center justify-center bg-amber-500 hover:bg-amber-600 rounded-xl text-white px-4 py-1 flex-shrink-0"
+                                                            class="flex items-center justify-center bg-amber-500 hover:bg-amber-600 rounded-xl text-white px-4 py-1 shrink-0"
                                                         >
                                                             <span>{{ __('Send') }}</span>
                                                             <span class="ml-2">

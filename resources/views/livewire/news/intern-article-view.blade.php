@@ -8,7 +8,7 @@
             class="font-article overflow-hidden relative isolate bg-21gray px-6 py-24 sm:py-32 lg:overflow-visible lg:px-0">
             <div class="absolute inset-0 -z-10 opacity-10 overflow-hidden">
                 <svg
-                    class="absolute top-0 left-[max(50%,25rem)] h-[64rem] w-[128rem] -translate-x-1/2 stroke-gray-200 [mask-image:radial-gradient(64rem_64rem_at_top,white,transparent)]"
+                    class="absolute top-0 left-[max(50%,25rem)] h-256 w-512 -translate-x-1/2 stroke-gray-200 mask-[radial-gradient(64rem_64rem_at_top,white,transparent)]"
                     aria-hidden="true">
                     <defs>
                         <pattern id="e813992c-7d03-4cc4-a2bd-151760b470a0" width="200" height="200" x="50%" y="-1"
@@ -26,7 +26,7 @@
                 </svg>
             </div>
             <div
-                class="mx-auto grid max-w-screen-2xl grid-cols-1 gap-y-16 gap-x-8 lg:mx-0 lg:max-w-none lg:grid-cols-2 lg:items-start lg:gap-y-10">
+                class="mx-auto grid max-w-(--breakpoint-2xl) grid-cols-1 gap-y-16 gap-x-8 lg:mx-0 lg:max-w-none lg:grid-cols-2 lg:items-start lg:gap-y-10">
                 <div
                     class="lg:col-span-2 lg:col-start-1 lg:row-start-1 lg:mx-auto lg:grid lg:w-full lg:max-w-7xl lg:grid-cols-2 lg:gap-x-8 lg:px-8">
                     <div class="lg:pr-4">
@@ -36,7 +36,7 @@
                         </div>
                         <div class="mx-auto max-w-prose text-base lg:grid lg:max-w-none lg:grid-cols-2 lg:gap-8">
                             <div class="mt-6 flex items-center w-full">
-                                <div class="flex-shrink-0">
+                                <div class="shrink-0">
                                     <div>
                                         <span class="sr-only text-gray-200">{{ $libraryItem->lecturer->name }}</span>
                                         <img class="h-10 w-10 object-cover rounded"
@@ -63,7 +63,7 @@
                 <div
                     class="-mt-12 -ml-12 p-12 lg:sticky lg:top-4 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:overflow-hidden">
                     <img
-                        class="w-[48rem] max-w-full rounded-xl bg-gray-900 shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem]"
+                        class="w-3xl max-w-full rounded-xl bg-gray-900 shadow-xl ring-1 ring-gray-400/10 sm:w-228"
                         src="{{ $libraryItem->getFirstMediaUrl('main') }}" alt="{{ $libraryItem->name }}">
                     <figcaption class="mt-3 flex text-sm text-gray-200">
                         <!-- Heroicon name: mini/camera -->
@@ -165,7 +165,7 @@
                                         <div
                                             class="flex max-w-2xl text-3xl font-bold tracking-tight text-white sm:text-4xl justify-center items-center">
                                             <div class="mt-6 flex items-center">
-                                                <div class="flex-shrink-0">
+                                                <div class="shrink-0">
                                                     <div>
                                                 <span
                                                     class="sr-only text-gray-200">{{ $libraryItem->lecturer->name }}</span>
@@ -214,7 +214,7 @@
                                         @endif
                                         @if(!$invoice)
                                             <svg viewBox="0 0 1024 1024"
-                                                 class="absolute top-1/2 left-1/2 -z-10 h-[64rem] w-[64rem] -translate-x-1/2 [mask-image:radial-gradient(closest-side,white,transparent)]"
+                                                 class="absolute top-1/2 left-1/2 -z-10 h-256 w-5xl -translate-x-1/2 mask-[radial-gradient(closest-side,white,transparent)]"
                                                  aria-hidden="true">
                                                 <circle cx="512" cy="512" r="512"
                                                         fill="url(#827591b1-ce8c-4110-b064-7cb85a0b1217)"

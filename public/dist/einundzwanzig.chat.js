@@ -14424,7 +14424,7 @@ zoo`.split('\n');
             c() {
                 div = element("div");
                 if_block.c();
-                attr(div, "class", div_class_value = "shadow-2xl bg-white mb-5 w-96 max-w-screen-sm text-black rounded-xl p-5 overflow-scroll " + (/*minimizeChat*/ ctx[7] ? 'hidden' : '') + "" + " svelte-h3q7vr");
+                attr(div, "class", div_class_value = "shadow-2xl bg-white mb-5 w-96 max-w-(--breakpoint-sm) text-black rounded-xl p-5 overflow-scroll " + (/*minimizeChat*/ ctx[7] ? 'hidden' : '') + "" + " svelte-h3q7vr");
                 set_style(div, "max-height", "80vh");
             },
             m(target, anchor) {
@@ -14459,7 +14459,7 @@ zoo`.split('\n');
                     if_block.m(div, null);
                 }
 
-                if (!current || dirty & /*minimizeChat*/ 128 && div_class_value !== (div_class_value = "shadow-2xl bg-white mb-5 w-96 max-w-screen-sm text-black rounded-xl p-5 overflow-scroll " + (/*minimizeChat*/ ctx[7] ? 'hidden' : '') + "" + " svelte-h3q7vr")) {
+                if (!current || dirty & /*minimizeChat*/ 128 && div_class_value !== (div_class_value = "shadow-2xl bg-white mb-5 w-96 max-w-(--breakpoint-sm) text-black rounded-xl p-5 overflow-scroll " + (/*minimizeChat*/ ctx[7] ? 'hidden' : '') + "" + " svelte-h3q7vr")) {
                     attr(div, "class", div_class_value);
                 }
             },

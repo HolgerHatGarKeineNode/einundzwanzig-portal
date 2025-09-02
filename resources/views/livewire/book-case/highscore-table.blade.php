@@ -3,7 +3,7 @@
     <livewire:frontend.header :country="$country"/>
     {{-- MAIN --}}
     <section class="w-full mb-12">
-        <div class="max-w-screen-2xl mx-auto px-2 sm:px-10 space-y-4" id="table">
+        <div class="max-w-(--breakpoint-2xl) mx-auto px-2 sm:px-10 space-y-4" id="table">
 
             <livewire:book-case.stats/>
 
@@ -68,10 +68,10 @@
                         </div>
                         <div class="flex flex-1 flex-col p-8" x-show="!show"
                              wire:click="openModal({{ $pleb->id }})">
-                            <img class="mx-auto h-32 w-32 object-cover flex-shrink-0 rounded-full"
+                            <img class="mx-auto h-32 w-32 object-cover shrink-0 rounded-full"
                                  src="{{ $pleb->profile_photo_url }}" alt="{{ $pleb->name }}">
                             <h3 class="mt-6 text-sm font-medium text-gray-900 truncate">{{ $pleb->name }}</h3>
-                            <dl class="mt-1 flex flex-grow flex-col justify-between">
+                            <dl class="mt-1 flex grow flex-col justify-between">
                                 <dd class="text-sm text-gray-800">{{ $pleb->orange_pills_count }} {{ __('Bookcases') }} {{ __('Orange pilled') }}</dd>
                                 <dd class="mt-3">
                                     <span class="rounded-full bg-21gray px-2 py-1 text-xs font-medium text-gray-200">{{ __('Points') }}: {{ $pleb->getPoints() }}</span>

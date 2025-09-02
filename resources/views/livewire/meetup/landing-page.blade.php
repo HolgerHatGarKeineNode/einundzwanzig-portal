@@ -4,7 +4,7 @@
     <section class="w-full mb-12 mt-8">
 
         @can('update', $meetup)
-            <div class="max-w-screen-2xl mx-auto px-2 sm:px-10 space-y-4 flex flex-col sm:flex-row justify-end">
+            <div class="max-w-(--breakpoint-2xl) mx-auto px-2 sm:px-10 space-y-4 flex flex-col sm:flex-row justify-end">
                 <x-button
                     :href="route('meetup.meetup.form', ['meetup' => $meetup->id, 'country' =>  $meetup->city->country->code])"
                     primary lg class="whitespace-nowrap cursor-pointer">
@@ -14,14 +14,14 @@
             </div>
         @endcan
 
-        <div class="max-w-screen-2xl mx-auto px-2 sm:px-10 space-y-4 flex flex-col sm:flex-row">
+        <div class="max-w-(--breakpoint-2xl) mx-auto px-2 sm:px-10 space-y-4 flex flex-col sm:flex-row">
 
             <div class="flex flex-col sm:flex-row">
 
                 <div class="sm:w-10/12 flex flex-col">
                     <h1 class="mb-6 text-5xl font-extrabold leading-none tracking-normal text-gray-200 sm:text-6xl md:text-6xl lg:text-7xl md:tracking-tight">
                         <span
-                            class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-500 to-amber-200">{{ $meetup->name }}</span><br
+                            class="text-transparent bg-clip-text bg-linear-to-r from-amber-400 via-amber-500 to-amber-200">{{ $meetup->name }}</span><br
                             class="lg:block hidden">
                         {{ __('Plebs together strong 💪') }}
                     </h1>
@@ -103,7 +103,7 @@
             </div>
         </div>
 
-        <div class="max-w-screen-2xl mx-auto px-2 sm:px-10 space-y-4">
+        <div class="max-w-(--breakpoint-2xl) mx-auto px-2 sm:px-10 space-y-4">
 
             <section class="h-auto py-16">
                 <div class="mx-auto space-y-4 sm:text-center">
@@ -125,17 +125,17 @@
             <ul role="list" class="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                 @foreach($meetupEvents as $meetupEvent)
                     @php
-                        $activeClass = $activeEvent === $meetupEvent->id ? 'bg-gradient-to-r from-amber-800 via-amber-600 to-amber-500' : 'bg-amber-500';
+                        $activeClass = $activeEvent === $meetupEvent->id ? 'bg-linear-to-r from-amber-800 via-amber-600 to-amber-500' : 'bg-amber-500';
                     @endphp
                     <li id="meetupEventId_{{ $meetupEvent->id }}"
                         class="{{ $activeClass }} col-span-1 flex flex-col divide-y divide-gray-200 rounded-lg text-center shadow-2xl">
                         <div class="flex flex-1 flex-col p-8">
-                            {{--<img class="mx-auto h-32 w-32 object-contain flex-shrink-0 rounded"
+                            {{--<img class="mx-auto h-32 w-32 object-contain shrink-0 rounded"
                                  src="{{ $meetupEvent->meetup->getFirstMediaUrl('logo') }}"
                                  alt="{{ $meetupEvent->meetup->name }}">--}}
                             <h3 class="mt-1 text-xl font-medium text-gray-900">{{ $meetupEvent->start->asDateTime() }}</h3>
                             <h3 class="mt-1 text-xl font-medium text-gray-900">{{ $meetupEvent->location }}</h3>
-                            <dl class="mt-1 flex flex-grow flex-col justify-between">
+                            <dl class="mt-1 flex grow flex-col justify-between">
                                 <div x-data="{ active: 2 }" class="mx-auto max-w-3xl w-full space-y-4">
                                     <div x-data="{
                                         id: 1,

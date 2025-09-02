@@ -1,4 +1,4 @@
-<div class="grid min-h-full grid-cols-1 grid-rows-[1fr,auto,1fr] bg-white lg:grid-cols-[max(50%,36rem),1fr]">
+<div class="grid min-h-full grid-cols-1 grid-rows-[1fr_auto_1fr] bg-white lg:grid-cols-[max(50%,36rem)_1fr]">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vegas/2.5.4/vegas.min.css"
           integrity="sha512-fSKum0u74TzF+eAXxBS0oIp3LlON1gd++1rifA0ZnQWKP2JXbCdomS2k0BDEM7v0se7mQOpOwedRw/lRsSPAaA=="
           crossorigin="anonymous" referrerpolicy="no-referrer"/>

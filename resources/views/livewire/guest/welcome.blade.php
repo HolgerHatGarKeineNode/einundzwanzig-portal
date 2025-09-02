@@ -1,7 +1,7 @@
 <div>
     <section class="w-full">
-        <div class="max-w-screen-2xl mx-auto px-10">
-            <div class="flex flex-col flex-wrap items-center justify-between py-7 mx-auto md:flex-row max-w-screen-2xl">
+        <div class="max-w-(--breakpoint-2xl) mx-auto px-10">
+            <div class="flex flex-col flex-wrap items-center justify-between py-7 mx-auto md:flex-row max-w-(--breakpoint-2xl)">
                 <div class="relative flex flex-col md:flex-row">
                     <a href="#_"
                        class="flex items-center mb-5 font-medium text-gray-900 lg:w-auto lg:items-center lg:justify-center md:mb-0">
@@ -31,7 +31,7 @@
                     class="w-full lg:w-1/2 flex lg:px-0 px-5 flex-col md:items-center lg:items-start justify-center -mt-12">
                     <h1 class="text-white text-3xl sm:text-5xl lg:max-w-none max-w-4xl lg:text-left text-left md:text-center xl:text-7xl font-black">
                         Bitcoin <span
-                            class="bg-clip-text text-transparent bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-700 mt-1 lg:block">{{ __('School') }}</span>
+                            class="bg-clip-text text-transparent bg-linear-to-br from-yellow-400 via-yellow-500 to-yellow-700 mt-1 lg:block">{{ __('School') }}</span>
                     </h1>
                     <p class="text-gray-500 sm:text-lg md:text-xl xl:text-2xl lg:max-w-none max-w-2xl md:text-center lg:text-left lg:pr-32 mt-6">
                         {{ __('Find Bitcoin courses in your city') }}
@@ -53,7 +53,7 @@
     </section>
 
     <section class="w-full mb-12">
-        <div class="max-w-screen-2xl mx-auto px-10">
+        <div class="max-w-(--breakpoint-2xl) mx-auto px-10">
             <div class="border-b border-gray-200 pb-5 sm:pb-0 my-6">
                 <h3 class="text-lg font-medium leading-6 text-gray-200">{{ __('Search') }}</h3>
                 <div class="mt-3 sm:mt-4">

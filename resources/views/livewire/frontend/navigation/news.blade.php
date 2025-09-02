@@ -74,7 +74,7 @@
                         <div class="relative flex-none">
                             <a href="{{ route('article.view', ['libraryItem' => $item]) }}">
                                 <img
-                                    class="aspect-[2/1] w-full rounded-lg bg-gray-100 object-cover sm:aspect-[16/9] sm:h-32 lg:h-auto"
+                                    class="aspect-2/1 w-full rounded-lg bg-gray-100 object-cover sm:aspect-video sm:h-32 lg:h-auto"
                                     src="{{ $item->getFirstMediaUrl('main') }}"
                                     alt="{{ $item->name }}">
                             </a>

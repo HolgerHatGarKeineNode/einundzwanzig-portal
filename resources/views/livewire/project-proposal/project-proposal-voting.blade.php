@@ -29,7 +29,7 @@
 
                         <div class="mx-auto max-w-prose text-base lg:grid lg:max-w-none lg:grid-cols-2 lg:gap-8">
                             <div class="mt-6 flex items-center">
-                                <div class="flex-shrink-0">
+                                <div class="shrink-0">
                                     <div>
                                         <span class="sr-only text-gray-200">{{ $projectProposal->user->name }}</span>
                                         <img class="h-10 w-10 object-cover rounded"
