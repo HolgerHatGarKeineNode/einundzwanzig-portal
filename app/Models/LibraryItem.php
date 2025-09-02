@@ -7,11 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Cookie;
-use Spatie\Comments\Models\Concerns\HasComments;
 use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
 use Spatie\Feed\Feedable;
-use Spatie\Image\Manipulations;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -22,7 +21,6 @@ use Spatie\Tags\HasTags;
 
 class LibraryItem extends Model implements Feedable, HasMedia, Sortable
 {
-    use HasComments;
     use HasSlug;
     use HasStatuses;
     use HasTags;
@@ -84,10 +82,10 @@ class LibraryItem extends Model implements Feedable, HasMedia, Sortable
     {
         $this
             ->addMediaConversion('preview')
-            ->fit(Manipulations::FIT_CROP, 300, 300)
+            ->fit(Fit::Crop, 300, 300)
             ->nonQueued();
         $this->addMediaConversion('thumb')
-            ->fit(Manipulations::FIT_CROP, 130, 130)
+            ->fit(Fit::Crop, 130, 130)
             ->width(130)
             ->height(130);
     }
@@ -130,25 +128,6 @@ class LibraryItem extends Model implements Feedable, HasMedia, Sortable
     public function libraries(): BelongsToMany
     {
         return $this->belongsToMany(Library::class);
-    }
-
-    /*
-     * This URL will be used in notifications to let the user know
-     * where the comment itself can be read.
-     */
-
-    public function commentableName(): string
-    {
-        return __('Library Item');
-    }
-
-    public function commentUrl(): string
-    {
-        if ($this->type === 'markdown_article') {
-            return url()->route('article.view', ['libraryItem' => $this]);
-        } else {
-            return url()->route('libraryItem.view', ['libraryItem' => $this]);
-        }
     }
 
     public function toFeedItem(): CustomFeedItem

@@ -42,11 +42,6 @@
                                 </div>
                             </div>
                         </div>
-                        <div>
-                            @if(auth()->check())
-                                <livewire:comments :model="$meetupEvent" newest-first hide-notification-options/>
-                            @endif
-                        </div>
                     </div>
 
                     <div class="relative mx-auto max-w-md px-6 sm:max-w-3xl lg:px-0">

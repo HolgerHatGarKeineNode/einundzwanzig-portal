@@ -14,15 +14,14 @@ use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Jetstream\HasTeams;
 use Laravel\Sanctum\HasApiTokens;
 use ParagonIE\CipherSweet\BlindIndex;
+use ParagonIE\CipherSweet\Constants;
 use ParagonIE\CipherSweet\EncryptedRow;
 use QCod\Gamify\Gamify;
-use Spatie\Comments\Models\Concerns\InteractsWithComments;
-use Spatie\Comments\Models\Concerns\Interfaces\CanComment;
 use Spatie\LaravelCipherSweet\Concerns\UsesCipherSweet;
 use Spatie\LaravelCipherSweet\Contracts\CipherSweetEncrypted;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements CanComment, CipherSweetEncrypted, MustVerifyEmail
+class User extends Authenticatable implements CipherSweetEncrypted, MustVerifyEmail
 {
     use Gamify;
     use HasApiTokens;
@@ -30,7 +29,6 @@ class User extends Authenticatable implements CanComment, CipherSweetEncrypted, 
     use HasProfilePhoto;
     use HasRoles;
     use HasTeams;
-    use InteractsWithComments;
     use Notifiable;
     use TwoFactorAuthenticatable;
     use UsesCipherSweet;
@@ -73,10 +71,10 @@ class User extends Authenticatable implements CanComment, CipherSweetEncrypted, 
     public static function configureCipherSweet(EncryptedRow $encryptedRow): void
     {
         $encryptedRow
-            ->addField('public_key')
-            ->addField('lightning_address')
-            ->addField('lnurl')
-            ->addField('node_id')
+            ->addField('public_key',Constants::TYPE_OPTIONAL_TEXT)
+            ->addField('lightning_address',Constants::TYPE_OPTIONAL_TEXT)
+            ->addField('lnurl', Constants::TYPE_OPTIONAL_TEXT)
+            ->addField('node_id',Constants::TYPE_OPTIONAL_TEXT)
             ->addField('email')
             ->addBlindIndex('public_key', new BlindIndex('public_key_index'))
             ->addBlindIndex('lightning_address', new BlindIndex('lightning_address_index'))

@@ -65,11 +65,6 @@
                                 <span class="ml-2">{{ $libraryItem->main_image_caption ?? $libraryItem->name }}</span>
                             </figcaption>
                         </figure>
-                        <div class="hidden md:block my-4">
-                            @if(auth()->check())
-                                <livewire:comments :model="$libraryItem" newest-first hide-notification-options/>
-                            @endif
-                        </div>
                     </div>
                 </div>
                 <div class="mt-8 lg:mt-0">

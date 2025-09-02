@@ -23,6 +23,8 @@
         "laravel/tinker": "^2.9",
         "league/glide": "3.0.0-beta1 as 2.3.0",
         "league/glide-symfony": "^2.0",
+        "livewire/flux": "^2.2",
+        "livewire/flux-pro": "^2.2",
         "livewire/livewire": "^3.3",
         "podcastindex/podcastindex-php": "^1.0",
         "pusher/pusher-php-server": "^7.0",
@@ -35,14 +37,13 @@
         "spatie/eloquent-sortable": "^4.2",
         "spatie/icalendar-generator": "^2.5",
         "spatie/laravel-ciphersweet": "^1.6",
-        "spatie/laravel-comments": "^1.4",
-        "spatie/laravel-comments-livewire": "^2.0",
         "spatie/laravel-feed": "^4.4",
         "spatie/laravel-google-fonts": "^1.4",
         "spatie/laravel-markdown": "^2.4",
         "spatie/laravel-medialibrary": "^11.3",
         "spatie/laravel-model-status": "^1.15",
         "spatie/laravel-options": "^1.1",
+        "spatie/laravel-permission": "*",
         "spatie/laravel-ray": "^1.35",
         "spatie/laravel-sluggable": "^3.6",
         "spatie/laravel-tags": "^4.6",
@@ -82,10 +83,7 @@
             "@php artisan package:discover --ansi"
         ],
         "post-update-cmd": [
-            "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
-            "@php artisan vendor:publish --tag='wireui.resources'",
-            "@php artisan vendor:publish --tag='wireui.lang'",
-            "@php artisan nova:publish"
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
         ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
@@ -110,10 +108,14 @@
     },
     "minimum-stability": "stable",
     "prefer-stable": true,
-    "repositories": [
-        {
+    "repositories": {
+        "flux-pro": {
+            "type": "composer",
+            "url": "https://composer.fluxui.dev"
+        },
+        "0": {
             "type": "composer",
             "url": "https://satis.spatie.be"
         }
-    ]
+    }
 }
