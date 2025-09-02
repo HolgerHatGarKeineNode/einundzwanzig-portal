@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "laravel-boost": {
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i",
+        "einundzwanzig-portal-laravel.test-1",
+        "php",
+        "/var/www/html/artisan",
+        "boost:mcp"
+      ]
+    }
+  }
+}
