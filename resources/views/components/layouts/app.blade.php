@@ -19,7 +19,11 @@
     {{ $slot }}
 </main>
 
-<flux:toast/>
+@persist('toast')
+<flux:toast.group>
+    <flux:toast/>
+</flux:toast.group>
+@endpersist
 @livewireScripts
 @fluxScripts
 </body>

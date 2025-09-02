@@ -347,9 +347,6 @@ Route::middleware([])
         Route::get('world', \App\Http\Livewire\Meetup\WorldMap::class)
             ->name('world');
 
-        Route::get('overview', \App\Http\Livewire\Meetup\MeetupTable::class)
-            ->name('table.meetup');
-
         Route::get('embed', \App\Http\Livewire\Meetup\Embed\CountryMap::class)
             ->name('embed.countryMap');
 
