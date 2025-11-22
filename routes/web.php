@@ -2,9 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
-use Illuminate\Http\Request;
 
 Route::redirect('/', 'welcome');
+
+Route::get('error/{code}', function ($code) {
+    abort($code);
+});
 
 /*Route::get('/download-buecherverleih', function (Request $request) {
     $filename = $request->input('filename');
