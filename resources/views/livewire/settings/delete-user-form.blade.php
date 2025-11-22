@@ -1,11 +1,14 @@
 <?php
 
+use App\Attributes\SeoDataAttribute;
 use App\Livewire\Actions\Logout;
 use App\Traits\SeoTrait;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new
+#[SeoDataAttribute(key: 'settings_delete_user_form')]
+class extends Component {
     use SeoTrait;
 
     public string $password = '';

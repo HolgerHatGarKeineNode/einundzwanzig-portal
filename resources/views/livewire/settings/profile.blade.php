@@ -1,5 +1,6 @@
 <?php
 
+use App\Attributes\SeoDataAttribute;
 use App\Models\User;
 use App\Traits\SeoTrait;
 use Illuminate\Support\Facades\Auth;
@@ -7,7 +8,9 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rule;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new
+#[SeoDataAttribute(key: 'settings_profile')]
+class extends Component {
     use SeoTrait;
 
     public string $name = '';

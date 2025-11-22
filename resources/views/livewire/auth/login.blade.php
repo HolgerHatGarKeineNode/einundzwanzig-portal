@@ -1,25 +1,26 @@
 <?php
 
+use App\Attributes\SeoDataAttribute;
 use App\Models\LoginKey;
 use App\Models\User;
 use App\Notifications\ModelCreatedNotification;
 use App\Traits\SeoTrait;
+use eza\lnurl;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
-use Livewire\Attributes\Renderless;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use eza\lnurl;
 
-new #[Layout('components.layouts.auth')]
+new
+#[Layout('components.layouts.auth')]
+#[SeoDataAttribute(key: 'login')]
 class extends Component {
     use SeoTrait;
 
@@ -62,7 +63,8 @@ class extends Component {
         if ($user) {
             Auth::loginUsingId($user->id);
             Session::regenerate();
-            $this->redirectIntended(default: route_with_country('dashboard', absolute: false), navigate: true);
+            $this->redirectIntended(default: route_with_country('dashboard', ['country' => 'de'], absolute: false),
+                navigate: true);
             return;
         }
         return;
@@ -82,7 +84,8 @@ class extends Component {
         RateLimiter::clear($this->throttleKey());
         Session::regenerate();
 
-        $this->redirectIntended(default: route_with_country('dashboard', absolute: false), navigate: true);
+        $this->redirectIntended(default: route_with_country('dashboard', ['country' => 'de'], absolute: false),
+            navigate: true);
     }
 
     /**

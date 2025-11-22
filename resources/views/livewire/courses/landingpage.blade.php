@@ -1,11 +1,14 @@
 <?php
 
+use App\Attributes\SeoDataAttribute;
 use App\Models\Course;
 use App\Models\CourseEvent;
 use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new
+#[SeoDataAttribute(key: 'courses_landingpage')]
+class extends Component {
     use SeoTrait;
 
     public Course $course;

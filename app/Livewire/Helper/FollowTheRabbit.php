@@ -2,10 +2,12 @@
 
 namespace App\Livewire\Helper;
 
+use App\Attributes\SeoDataAttribute;
 use App\Traits\SeoTrait;
 use Livewire\Component;
 use RalphJSmit\Laravel\SEO\Support\SEOData;
 
+#[SeoDataAttribute(key: 'follow_the_rabbit')]
 class FollowTheRabbit extends Component
 {
     use SeoTrait;

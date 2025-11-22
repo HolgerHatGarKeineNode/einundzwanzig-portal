@@ -1,11 +1,14 @@
 <?php
 
+use App\Attributes\SeoDataAttribute;
 use App\Models\City;
 use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 
-new class extends Component {
+new
+#[SeoDataAttribute(key: 'cities_index')]
+class extends Component {
     use WithPagination;
     use SeoTrait;
 

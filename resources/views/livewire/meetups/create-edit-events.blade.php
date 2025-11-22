@@ -1,12 +1,15 @@
 <?php
 
+use App\Attributes\SeoDataAttribute;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Traits\SeoTrait;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new
+#[SeoDataAttribute(key: 'meetups_create_edit_events')]
+class extends Component {
     use SeoTrait;
 
     public Meetup $meetup;

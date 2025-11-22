@@ -1,5 +1,6 @@
 <?php
 
+use App\Attributes\SeoDataAttribute;
 use App\Models\Course;
 use App\Models\Lecturer;
 use App\Traits\SeoTrait;
@@ -7,7 +8,9 @@ use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 
-new class extends Component {
+new
+#[SeoDataAttribute(key: 'courses_create')]
+class extends Component {
     use WithFileUploads;
     use SeoTrait;
 

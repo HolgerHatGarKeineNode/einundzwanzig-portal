@@ -1,10 +1,13 @@
 <?php
 
+use App\Attributes\SeoDataAttribute;
 use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 use Livewire\Attributes\Layout;
 
-new #[Layout('components.layouts.auth')]
+new
+#[Layout('components.layouts.auth')]
+#[SeoDataAttribute(key: 'welcome')]
 class extends Component {
     use SeoTrait;
 

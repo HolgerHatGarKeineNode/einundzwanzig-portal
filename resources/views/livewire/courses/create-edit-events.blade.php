@@ -1,5 +1,6 @@
 <?php
 
+use App\Attributes\SeoDataAttribute;
 use App\Models\City;
 use App\Models\Course;
 use App\Models\CourseEvent;
@@ -8,7 +9,9 @@ use App\Traits\SeoTrait;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new
+#[SeoDataAttribute(key: 'courses_edit_events')]
+class extends Component {
     use SeoTrait;
 
     public Course $course;

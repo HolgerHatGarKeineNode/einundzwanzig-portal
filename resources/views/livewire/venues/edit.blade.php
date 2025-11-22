@@ -1,11 +1,14 @@
 <?php
 
+use App\Attributes\SeoDataAttribute;
 use App\Models\Venue;
 use App\Models\City;
 use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new
+#[SeoDataAttribute(key: 'venues_edit')]
+class extends Component {
     use SeoTrait;
 
     public Venue $venue;

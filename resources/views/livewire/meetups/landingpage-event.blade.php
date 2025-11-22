@@ -1,12 +1,15 @@
 <?php
 
+use App\Attributes\SeoDataAttribute;
 use App\Models\MeetupEvent;
 use App\Models\User;
 use App\Traits\SeoTrait;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new
+#[SeoDataAttribute(key: 'meetups_landingpage_event')]
+class extends Component {
     use SeoTrait;
 
     public MeetupEvent $event;

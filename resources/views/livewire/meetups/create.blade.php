@@ -1,5 +1,6 @@
 <?php
 
+use App\Attributes\SeoDataAttribute;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
@@ -8,7 +9,9 @@ use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 
-new class extends Component {
+new
+#[SeoDataAttribute(key: 'meetups_create')]
+class extends Component {
     use WithFileUploads;
     use SeoTrait;
 

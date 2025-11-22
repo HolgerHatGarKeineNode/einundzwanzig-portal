@@ -1,9 +1,12 @@
 <?php
 
+use App\Attributes\SeoDataAttribute;
 use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new
+#[SeoDataAttribute(key: 'settings_appearance')]
+class extends Component {
     use SeoTrait;
 }; ?>
 

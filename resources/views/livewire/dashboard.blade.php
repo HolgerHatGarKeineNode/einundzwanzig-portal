@@ -1,12 +1,15 @@
 <?php
 
+use App\Attributes\SeoDataAttribute;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 use Flux\Flux;
 
-new class extends Component {
+new
+#[SeoDataAttribute(key: 'dashboard')]
+class extends Component {
     use SeoTrait;
 
     public $selectedMeetupId = null;

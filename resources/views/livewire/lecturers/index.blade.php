@@ -1,11 +1,14 @@
 <?php
 
+use App\Attributes\SeoDataAttribute;
 use App\Models\Lecturer;
 use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 
-new class extends Component {
+new
+#[SeoDataAttribute(key: 'lecturers_index')]
+class extends Component {
     use WithPagination;
     use SeoTrait;
 
