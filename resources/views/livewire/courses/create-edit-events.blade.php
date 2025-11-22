@@ -4,10 +4,13 @@ use App\Models\City;
 use App\Models\Course;
 use App\Models\CourseEvent;
 use App\Models\Venue;
+use App\Traits\SeoTrait;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    use SeoTrait;
+
     public Course $course;
     public ?CourseEvent $event = null;
 
@@ -63,7 +66,8 @@ new class extends Component {
             session()->flash('status', __('Event erfolgreich erstellt!'));
         }
 
-        $this->redirect(route('courses.landingpage', ['course' => $this->course, 'country' => $this->country]), navigate: true);
+        $this->redirect(route('courses.landingpage', ['course' => $this->course, 'country' => $this->country]),
+            navigate: true);
     }
 
     public function delete(): void
@@ -71,7 +75,8 @@ new class extends Component {
         if ($this->event) {
             $this->event->delete();
             session()->flash('status', __('Event erfolgreich gelöscht!'));
-            $this->redirect(route('courses.landingpage', ['course' => $this->course, 'country' => $this->country]), navigate: true);
+            $this->redirect(route('courses.landingpage', ['course' => $this->course, 'country' => $this->country]),
+                navigate: true);
         }
     }
 
@@ -171,12 +176,14 @@ new class extends Component {
         <!-- Form Actions -->
         <div class="flex items-center justify-between pt-8 border-t border-gray-200 dark:border-gray-700">
             <div class="flex items-center gap-4">
-                <flux:button class="cursor-pointer" variant="ghost" type="button" :href="route('courses.landingpage', ['course' => $course, 'country' => $country])">
+                <flux:button class="cursor-pointer" variant="ghost" type="button"
+                             :href="route('courses.landingpage', ['course' => $course, 'country' => $country])">
                     {{ __('Abbrechen') }}
                 </flux:button>
 
                 @if($event)
-                    <flux:button class="cursor-pointer" variant="danger" type="button" wire:click="delete" wire:confirm="{{ __('Bist du sicher, dass du dieses Event löschen möchtest?') }}">
+                    <flux:button class="cursor-pointer" variant="danger" type="button" wire:click="delete"
+                                 wire:confirm="{{ __('Bist du sicher, dass du dieses Event löschen möchtest?') }}">
                         {{ __('Event löschen') }}
                     </flux:button>
                 @endif
@@ -235,10 +242,12 @@ new class extends Component {
                 <flux:spacer/>
 
                 <flux:modal.close>
-                    <flux:button class="cursor-pointer" type="button" variant="ghost">{{ __('Abbrechen') }}</flux:button>
+                    <flux:button class="cursor-pointer" type="button"
+                                 variant="ghost">{{ __('Abbrechen') }}</flux:button>
                 </flux:modal.close>
 
-                <flux:button class="cursor-pointer" type="submit" variant="primary">{{ __('Ort erstellen') }}</flux:button>
+                <flux:button class="cursor-pointer" type="submit"
+                             variant="primary">{{ __('Ort erstellen') }}</flux:button>
             </div>
         </form>
     </flux:modal>

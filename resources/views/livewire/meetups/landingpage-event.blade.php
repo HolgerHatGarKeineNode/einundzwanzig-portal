@@ -2,10 +2,13 @@
 
 use App\Models\MeetupEvent;
 use App\Models\User;
+use App\Traits\SeoTrait;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    use SeoTrait;
+
     public MeetupEvent $event;
     public $country = 'de';
 

@@ -2,9 +2,12 @@
 
 use App\Models\Venue;
 use App\Models\City;
+use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    use SeoTrait;
+
     public string $name = '';
     public ?int $city_id = null;
     public string $street = '';
@@ -45,7 +48,7 @@ new class extends Component {
             <flux:legend>{{ __('Venue Information') }}</flux:legend>
 
             <div class="space-y-6">
-                <flux:input label="{{ __('Name') }}" wire:model="name" required />
+                <flux:input label="{{ __('Name') }}" wire:model="name" required/>
 
                 <flux:select label="{{ __('City') }}" wire:model="city_id" required>
                     <option value="">{{ __('Select a city') }}</option>
@@ -59,7 +62,7 @@ new class extends Component {
                     @endforeach
                 </flux:select>
 
-                <flux:input label="{{ __('Street') }}" wire:model="street" required />
+                <flux:input label="{{ __('Street') }}" wire:model="street" required/>
             </div>
         </flux:fieldset>
 

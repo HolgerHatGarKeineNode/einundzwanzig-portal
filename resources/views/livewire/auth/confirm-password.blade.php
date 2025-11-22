@@ -1,11 +1,15 @@
 <?php
 
+use App\Traits\SeoTrait;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
-new #[Layout('components.layouts.auth')] class extends Component {
+new #[Layout('components.layouts.auth')]
+class extends Component {
+    use SeoTrait;
+
     public string $password = '';
 
     /**
@@ -17,7 +21,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::guard('web')->validate([
+        if (!Auth::guard('web')->validate([
             'email' => Auth::user()->email,
             'password' => $this->password,
         ])) {
@@ -39,7 +43,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
     />
 
     <!-- Session Status -->
-    <x-auth-session-status class="text-center" :status="session('status')" />
+    <x-auth-session-status class="text-center" :status="session('status')"/>
 
     <form wire:submit="confirmPassword" class="flex flex-col gap-6">
         <!-- Password -->

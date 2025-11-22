@@ -3,12 +3,14 @@
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
+use App\Traits\SeoTrait;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 
 new class extends Component {
     use WithFileUploads;
+    use SeoTrait;
 
     #[Validate('image|max:10240')] // 10MB Max
     public $logo;
@@ -327,10 +329,12 @@ new class extends Component {
                 <flux:spacer/>
 
                 <flux:modal.close>
-                    <flux:button class="cursor-pointer" type="button" variant="ghost">{{ __('Abbrechen') }}</flux:button>
+                    <flux:button class="cursor-pointer" type="button"
+                                 variant="ghost">{{ __('Abbrechen') }}</flux:button>
                 </flux:modal.close>
 
-                <flux:button class="cursor-pointer" type="submit" variant="primary">{{ __('Stadt erstellen') }}</flux:button>
+                <flux:button class="cursor-pointer" type="submit"
+                             variant="primary">{{ __('Stadt erstellen') }}</flux:button>
             </div>
         </form>
     </flux:modal>

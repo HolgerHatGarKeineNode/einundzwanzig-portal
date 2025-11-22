@@ -1,11 +1,13 @@
 <?php
 
 use App\Models\Course;
+use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 
 new class extends Component {
     use WithPagination;
+    use SeoTrait;
 
     public $country = 'de';
     public $search = '';
@@ -67,8 +69,9 @@ new class extends Component {
                     <flux:table.cell variant="strong">
                         <flux:tooltip content="{{ $course->name }}">
                             <div class="flex items-center gap-3">
-                                <flux:avatar :href="route('courses.landingpage', ['course' => $course, 'country' => $country])"
-                                             src="{{ $course->getFirstMedia('logo') ? $course->getFirstMediaUrl('logo', 'thumb') : asset('android-chrome-512x512.png') }}"/>
+                                <flux:avatar
+                                    :href="route('courses.landingpage', ['course' => $course, 'country' => $country])"
+                                    src="{{ $course->getFirstMedia('logo') ? $course->getFirstMediaUrl('logo', 'thumb') : asset('android-chrome-512x512.png') }}"/>
                                 <div>
                                     <a href="{{ route('courses.landingpage', ['course' => $course, 'country' => $country]) }}">
                                         <span>{{ Str::limit($course->name, 30) }}</span>

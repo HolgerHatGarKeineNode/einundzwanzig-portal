@@ -1,9 +1,10 @@
 <?php
 
+use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 
 new class extends Component {
-    //
+    use SeoTrait;
 }; ?>
 
 <section class="w-full">

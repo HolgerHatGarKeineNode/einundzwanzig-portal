@@ -2,9 +2,12 @@
 
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
+use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    use SeoTrait;
+
     public Meetup $meetup;
 
     public $country = 'de';
@@ -39,7 +42,9 @@ new class extends Component {
                     <flux:subheading class="text-gray-600 dark:text-gray-400">
                         {{ $meetup->city->name }}, {{ $meetup->city->country->name }}
                     </flux:subheading>
-                    <flux:button class="cursor-pointer" x-copy-to-clipboard="'{{ route('ics', ['meetup' => $meetup]) }}'" icon="calendar-date-range">{{ __('Kalender-Stream-URL kopieren') }}</flux:button>
+                    <flux:button class="cursor-pointer"
+                                 x-copy-to-clipboard="'{{ route('ics', ['meetup' => $meetup]) }}'"
+                                 icon="calendar-date-range">{{ __('Kalender-Stream-URL kopieren') }}</flux:button>
                 </div>
             </div>
 
@@ -194,11 +199,13 @@ new class extends Component {
             <div class="flex items-center space-x-4 mb-6">
                 <flux:heading size="xl">{{ __('Kommende Veranstaltungen') }}</flux:heading>
                 @if(auth()->user() && auth()->user()->meetups()->find($meetup->id)?->exists)
-                    <flux:button :href="route_with_country('meetups.events.create', ['meetup' => $meetup])" variant="primary" icon="calendar">
+                    <flux:button :href="route_with_country('meetups.events.create', ['meetup' => $meetup])"
+                                 variant="primary" icon="calendar">
                         {{ __('Neues Event erstellen') }}
                     </flux:button>
                 @endif
-                <flux:button class="cursor-pointer" x-copy-to-clipboard="'{{ route('ics', ['meetup' => $meetup]) }}'" icon="calendar-date-range">{{ __('Kalender-Stream-URL kopieren') }}</flux:button>
+                <flux:button class="cursor-pointer" x-copy-to-clipboard="'{{ route('ics', ['meetup' => $meetup]) }}'"
+                             icon="calendar-date-range">{{ __('Kalender-Stream-URL kopieren') }}</flux:button>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -260,7 +267,8 @@ new class extends Component {
         <div class="mt-16">
             <div class="flex items-center space-x-4 mb-6">
                 @if(auth()->user() && auth()->user()->meetups()->find($meetup->id)?->exists)
-                    <flux:button :href="route_with_country('meetups.events.create', ['meetup' => $meetup])" variant="primary" icon="calendar">
+                    <flux:button :href="route_with_country('meetups.events.create', ['meetup' => $meetup])"
+                                 variant="primary" icon="calendar">
                         {{ __('Neues Event erstellen') }}
                     </flux:button>
                 @endif

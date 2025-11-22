@@ -2,10 +2,13 @@
 
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
+use App\Traits\SeoTrait;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    use SeoTrait;
+
     public Meetup $meetup;
     public ?MeetupEvent $event = null;
 
@@ -56,7 +59,8 @@ new class extends Component {
             session()->flash('status', __('Event erfolgreich erstellt!'));
         }
 
-        $this->redirect(route('meetups.landingpage', ['meetup' => $this->meetup, 'country' => $this->country]), navigate: true);
+        $this->redirect(route('meetups.landingpage', ['meetup' => $this->meetup, 'country' => $this->country]),
+            navigate: true);
     }
 
     public function delete(): void
@@ -64,7 +68,8 @@ new class extends Component {
         if ($this->event) {
             $this->event->delete();
             session()->flash('status', __('Event erfolgreich gelöscht!'));
-            $this->redirect(route('meetups.landingpage', ['meetup' => $this->meetup, 'country' => $this->country]), navigate: true);
+            $this->redirect(route('meetups.landingpage', ['meetup' => $this->meetup, 'country' => $this->country]),
+                navigate: true);
         }
     }
 }; ?>
@@ -114,12 +119,14 @@ new class extends Component {
         <!-- Form Actions -->
         <div class="flex items-center justify-between pt-8 border-t border-gray-200 dark:border-gray-700">
             <div class="flex items-center gap-4">
-                <flux:button variant="ghost" type="button" :href="route_with_country('meetups.edit', ['meetup' => $meetup])">
+                <flux:button variant="ghost" type="button"
+                             :href="route_with_country('meetups.edit', ['meetup' => $meetup])">
                     {{ __('Abbrechen') }}
                 </flux:button>
 
                 @if($event)
-                    <flux:button variant="danger" type="button" wire:click="delete" wire:confirm="{{ __('Bist du sicher, dass du dieses Event löschen möchtest?') }}">
+                    <flux:button variant="danger" type="button" wire:click="delete"
+                                 wire:confirm="{{ __('Bist du sicher, dass du dieses Event löschen möchtest?') }}">
                         {{ __('Event löschen') }}
                     </flux:button>
                 @endif

@@ -2,9 +2,12 @@
 
 use App\Models\Course;
 use App\Models\CourseEvent;
+use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    use SeoTrait;
+
     public Course $course;
 
     public $country = 'de';
@@ -39,7 +42,8 @@ new class extends Component {
                     <flux:heading size="xl" class="mb-4">{{ $course->name }}</flux:heading>
                     @if($course->lecturer)
                         <flux:subheading class="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                            <flux:avatar size="xs" src="{{ $course->lecturer->getFirstMedia('avatar') ? $course->lecturer->getFirstMediaUrl('avatar', 'thumb') : asset('img/einundzwanzig.png') }}"/>
+                            <flux:avatar size="xs"
+                                         src="{{ $course->lecturer->getFirstMedia('avatar') ? $course->lecturer->getFirstMediaUrl('avatar', 'thumb') : asset('img/einundzwanzig.png') }}"/>
                             {{ $course->lecturer->name }}
                         </flux:subheading>
                     @endif
@@ -58,36 +62,43 @@ new class extends Component {
                     <flux:heading size="lg">{{ __('Über den Dozenten') }}</flux:heading>
 
                     <div class="flex items-start gap-4 p-4 bg-zinc-50 dark:bg-zinc-900 rounded-lg">
-                        <flux:avatar size="lg" src="{{ $course->lecturer->getFirstMedia('avatar') ? $course->lecturer->getFirstMediaUrl('avatar', 'preview') : asset('img/einundzwanzig.png') }}"/>
+                        <flux:avatar size="lg"
+                                     src="{{ $course->lecturer->getFirstMedia('avatar') ? $course->lecturer->getFirstMediaUrl('avatar', 'preview') : asset('img/einundzwanzig.png') }}"/>
                         <div class="flex-1">
                             <flux:heading size="md" class="mb-1">{{ $course->lecturer->name }}</flux:heading>
                             @if($course->lecturer->subtitle)
-                                <flux:text class="text-sm text-zinc-600 dark:text-zinc-400 mb-2">{{ $course->lecturer->subtitle }}</flux:text>
+                                <flux:text
+                                    class="text-sm text-zinc-600 dark:text-zinc-400 mb-2">{{ $course->lecturer->subtitle }}</flux:text>
                             @endif
                             @if($course->lecturer->intro)
-                                <x-markdown class="prose prose-sm whitespace-pre-wrap">{!! $course->lecturer->intro !!}</x-markdown>
+                                <x-markdown
+                                    class="prose prose-sm whitespace-pre-wrap">{!! $course->lecturer->intro !!}</x-markdown>
                             @endif
 
                             <!-- Lecturer Social Links -->
                             <div class="mt-4 flex flex-wrap gap-2">
                                 @if($course->lecturer->website)
-                                    <flux:button href="{{ $course->lecturer->website }}" target="_blank" variant="ghost" size="xs">
+                                    <flux:button href="{{ $course->lecturer->website }}" target="_blank" variant="ghost"
+                                                 size="xs">
                                         <flux:icon.globe-alt class="w-4 h-4 mr-1"/>
                                         Website
                                     </flux:button>
                                 @endif
 
                                 @if($course->lecturer->twitter_username)
-                                    <flux:button href="https://twitter.com/{{ $course->lecturer->twitter_username }}" target="_blank" variant="ghost" size="xs">
+                                    <flux:button href="https://twitter.com/{{ $course->lecturer->twitter_username }}"
+                                                 target="_blank" variant="ghost" size="xs">
                                         <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                            <path
+                                                d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                                         </svg>
                                         Twitter
                                     </flux:button>
                                 @endif
 
                                 @if($course->lecturer->nostr)
-                                    <flux:button href="https://njump.me/{{ $course->lecturer->nostr }}" target="_blank" variant="ghost" size="xs">
+                                    <flux:button href="https://njump.me/{{ $course->lecturer->nostr }}" target="_blank"
+                                                 variant="ghost" size="xs">
                                         <flux:icon.bolt class="w-4 h-4 mr-1"/>
                                         Nostr
                                     </flux:button>

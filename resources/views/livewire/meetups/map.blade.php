@@ -1,9 +1,12 @@
 <?php
 
 use App\Models\Meetup;
+use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    use SeoTrait;
+
     public function with(): array
     {
         return [
@@ -22,7 +25,7 @@ new class extends Component {
     <style>
         #map {
             height: 90vh;
-            z-index: 0!important;
+            z-index: 0 !important;
         }
 
         #map:focus {

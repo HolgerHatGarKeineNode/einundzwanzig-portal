@@ -1,12 +1,14 @@
 <?php
 
 use App\Models\Lecturer;
+use App\Traits\SeoTrait;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 
 new class extends Component {
     use WithFileUploads;
+    use SeoTrait;
 
     #[Validate('image|max:10240')] // 10MB Max
     public $avatar;

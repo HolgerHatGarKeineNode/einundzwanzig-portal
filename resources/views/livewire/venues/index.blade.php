@@ -1,11 +1,13 @@
 <?php
 
 use App\Models\Venue;
+use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 
 new class extends Component {
     use WithPagination;
+    use SeoTrait;
 
     public $country = 'de';
     public $search = '';
@@ -38,7 +40,8 @@ new class extends Component {
                 clearable
             />
             @auth
-                <flux:button class="cursor-pointer" :href="route_with_country('venues.create')" icon="plus" variant="primary">
+                <flux:button class="cursor-pointer" :href="route_with_country('venues.create')" icon="plus"
+                             variant="primary">
                     {{ __('Create Venue') }}
                 </flux:button>
             @endauth
@@ -75,7 +78,9 @@ new class extends Component {
                     <flux:table.cell>
                         <div class="flex gap-2">
                             @auth
-                                <flux:button size="xs" :href="route('venues.edit', ['venue' => $venue, 'country' => $country])" icon="pencil">
+                                <flux:button size="xs"
+                                             :href="route('venues.edit', ['venue' => $venue, 'country' => $country])"
+                                             icon="pencil">
                                     {{ __('Edit') }}
                                 </flux:button>
                             @endauth

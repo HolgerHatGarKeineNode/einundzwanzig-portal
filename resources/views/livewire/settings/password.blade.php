@@ -1,5 +1,6 @@
 <?php
 
+use App\Traits\SeoTrait;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
@@ -7,6 +8,8 @@ use Illuminate\Validation\ValidationException;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    use SeoTrait;
+
     public string $current_password = '';
     public string $password = '';
     public string $password_confirmation = '';
@@ -40,7 +43,8 @@ new class extends Component {
 <section class="w-full">
     @include('partials.settings-heading')
 
-    <x-settings.layout :heading="__('Update password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
+    <x-settings.layout :heading="__('Update password')"
+                       :subheading="__('Ensure your account is using a long, random password to stay secure')">
         <form wire:submit="updatePassword" class="mt-6 space-y-6">
             <flux:input
                 wire:model="current_password"

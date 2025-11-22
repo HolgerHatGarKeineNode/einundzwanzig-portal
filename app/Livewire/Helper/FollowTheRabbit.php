@@ -2,11 +2,14 @@
 
 namespace App\Livewire\Helper;
 
+use App\Traits\SeoTrait;
 use Livewire\Component;
 use RalphJSmit\Laravel\SEO\Support\SEOData;
 
 class FollowTheRabbit extends Component
 {
+    use SeoTrait;
+
     public function render()
     {
         return view('livewire.helper.follow-the-rabbit')->with([

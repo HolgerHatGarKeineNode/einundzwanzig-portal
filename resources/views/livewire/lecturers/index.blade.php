@@ -1,11 +1,13 @@
 <?php
 
 use App\Models\Lecturer;
+use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 
 new class extends Component {
     use WithPagination;
+    use SeoTrait;
 
     public $country = 'de';
     public $search = '';
@@ -18,7 +20,9 @@ new class extends Component {
     public function with(): array
     {
         return [
-            'lecturers' => Lecturer::with(['createdBy', 'coursesEvents' => fn($query) => $query->where('from', '>=', now())->orderBy('from', 'asc')])
+            'lecturers' => Lecturer::with([
+                'createdBy', 'coursesEvents' => fn($query) => $query->where('from', '>=', now())->orderBy('from', 'asc')
+            ])
                 ->withExists([
                     'coursesEvents as has_future_events' => fn($query) => $query->where('from', '>=', now())
                 ])
@@ -26,9 +30,10 @@ new class extends Component {
                     'coursesEvents as future_events_count' => fn($query) => $query->where('from', '>=', now())
                 ])
                 ->when($this->search, fn($query)
-                    => $query->where('name', 'ilike', '%'.$this->search.'%')
-                        ->orWhere('description', 'ilike', '%'.$this->search.'%')
-                        ->orWhere('subtitle', 'ilike', '%'.$this->search.'%'),
+                    => $query
+                    ->where('name', 'ilike', '%'.$this->search.'%')
+                    ->orWhere('description', 'ilike', '%'.$this->search.'%')
+                    ->orWhere('subtitle', 'ilike', '%'.$this->search.'%'),
                 )
                 ->orderByDesc('has_future_events')
                 ->orderBy('name', 'asc')
@@ -47,7 +52,8 @@ new class extends Component {
                 clearable
             />
             @auth
-                <flux:button class="cursor-pointer" :href="route_with_country('lecturers.create')" icon="plus" variant="primary">
+                <flux:button class="cursor-pointer" :href="route_with_country('lecturers.create')" icon="plus"
+                             variant="primary">
                     {{ __('Dozenten anlegen') }}
                 </flux:button>
             @endauth
@@ -69,7 +75,8 @@ new class extends Component {
                 <flux:table.row :key="$lecturer->id">
                     <flux:table.cell variant="strong" class="flex items-center gap-3">
                         <div class="flex items-center gap-3">
-                            <flux:avatar size="lg" src="{{ $lecturer->getFirstMedia('avatar') ? $lecturer->getFirstMediaUrl('avatar', 'thumb') : asset('img/einundzwanzig.png') }}"/>
+                            <flux:avatar size="lg"
+                                         src="{{ $lecturer->getFirstMedia('avatar') ? $lecturer->getFirstMediaUrl('avatar', 'thumb') : asset('img/einundzwanzig.png') }}"/>
                             <div>
                                 <div class="font-semibold">{{ $lecturer->name }}</div>
                                 @if($lecturer->active)
@@ -108,7 +115,8 @@ new class extends Component {
                     <flux:table.cell>
                         <div class="flex gap-2">
                             @if($lecturer->website)
-                                <flux:link :href="$lecturer->website" external variant="subtle" title="{{ __('Website') }}">
+                                <flux:link :href="$lecturer->website" external variant="subtle"
+                                           title="{{ __('Website') }}">
                                     <flux:icon.globe-alt variant="mini"/>
                                 </flux:link>
                             @endif

@@ -2,9 +2,12 @@
 
 use App\Models\City;
 use App\Models\Country;
+use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    use SeoTrait;
+
     public City $city;
     public string $name = '';
     public ?int $country_id = null;
@@ -62,7 +65,7 @@ new class extends Component {
             <flux:legend>{{ __('Basic Information') }}</flux:legend>
 
             <div class="space-y-6">
-                <flux:input label="{{ __('Name') }}" wire:model="name" required />
+                <flux:input label="{{ __('Name') }}" wire:model="name" required/>
 
                 <flux:select label="{{ __('Country') }}" wire:model="country_id" required>
                     <option value="">{{ __('Select a country') }}</option>
@@ -77,8 +80,8 @@ new class extends Component {
             <flux:legend>{{ __('Coordinates') }}</flux:legend>
 
             <div class="grid grid-cols-2 gap-x-4 gap-y-6">
-                <flux:input label="{{ __('Latitude') }}" type="number" step="any" wire:model="latitude" required />
-                <flux:input label="{{ __('Longitude') }}" type="number" step="any" wire:model="longitude" required />
+                <flux:input label="{{ __('Latitude') }}" type="number" step="any" wire:model="latitude" required/>
+                <flux:input label="{{ __('Longitude') }}" type="number" step="any" wire:model="longitude" required/>
             </div>
         </flux:fieldset>
 
@@ -86,8 +89,8 @@ new class extends Component {
             <flux:legend>{{ __('Demographics') }}</flux:legend>
 
             <div class="grid grid-cols-2 gap-x-4 gap-y-6">
-                <flux:input label="{{ __('Population') }}" type="number" wire:model="population" />
-                <flux:input label="{{ __('Population Date') }}" wire:model="population_date" placeholder="e.g. 2024" />
+                <flux:input label="{{ __('Population') }}" type="number" wire:model="population"/>
+                <flux:input label="{{ __('Population Date') }}" wire:model="population_date" placeholder="e.g. 2024"/>
             </div>
         </flux:fieldset>
 
