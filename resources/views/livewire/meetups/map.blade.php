@@ -10,6 +10,22 @@ new
 class extends Component {
     use SeoTrait;
 
+    public string $country = 'de';
+    public float $latitude = 0.0;
+    public float $longitude = 0.0;
+
+    public function mount(): void
+    {
+        $this->country = request()->route('country');
+        $geoCountry = \Lwwcas\LaravelCountries\Models\Country::query()
+            ->where('iso_alpha_2', str($this->country)->upper())
+            ->first()
+            ?->coordinates()
+            ->first();
+        $this->latitude = $geoCountry->latitude ?? 51.165691;
+        $this->longitude = $geoCountry->longitude ?? 10.451526;
+    }
+
     public function with(): array
     {
         return [
@@ -43,10 +59,12 @@ class extends Component {
     </div>
     <div x-data="{
             markers: @js($meetups),
+            latitude: $wire.entangle('latitude'),
+            longitude: $wire.entangle('longitude'),
             initializeMap() {
                 const map = L.map($refs.map, {
                     scrollWheelZoom: false
-                }).setView([51.1657, 10.4515], 6);
+                }).setView([this.latitude, this.longitude], 6);
 
                 L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
                     minZoom: 0,

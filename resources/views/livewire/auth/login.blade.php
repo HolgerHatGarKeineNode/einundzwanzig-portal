@@ -64,7 +64,7 @@ class extends Component {
             Auth::loginUsingId($user->id);
             Session::regenerate();
             $this->redirectIntended(
-                default: route('dashboard', ['country' => 'de'], absolute: false),
+                default: route('dashboard', ['country' => str(session('lang_country', 'de'))->after('-')->lower()], absolute: false),
                 navigate: true,
             );
             return;
@@ -87,7 +87,7 @@ class extends Component {
         Session::regenerate();
 
         $this->redirectIntended(
-            default: route('dashboard', ['country' => 'de'], absolute: false),
+            default: route('dashboard', ['country' => str(session('lang_country', 'de'))->after('-')->lower()], absolute: false),
             navigate: true
         );
     }
@@ -135,7 +135,7 @@ class extends Component {
                 ->notify(new ModelCreatedNotification($user, 'users'));
             auth()->login($user);
 
-            return to_route('dashboard', ['country' => 'de']);
+            return to_route('dashboard', ['country' => str(session('lang_country', 'de'))->after('-')->lower()]);
         }
 
         return true;

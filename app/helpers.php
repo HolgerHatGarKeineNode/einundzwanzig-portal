@@ -5,8 +5,10 @@ if (!function_exists('route_with_country')) {
     {
         if (!isset($parameters['country'])) {
             $country = request()->route('country') ?? 'de';
-            $parameters = ['country' => $country] + $parameters;
+        } else {
+            $country = str(session('lang_country', 'de'))->after('-')->lower();
         }
+        $parameters = ['country' => $country] + $parameters;
 
         return route($name, $parameters, $absolute);
     }

@@ -13,12 +13,12 @@ class extends Component {
 
     public function goToMeetups(): void
     {
-        $this->redirect(route_with_country('meetups.index'), navigate: true);
+        $this->redirect(route('meetups.index', ['country' => str(session('lang_country', 'de'))->after('-')->lower()]), navigate: true);
     }
 
     public function goToMap(): void
     {
-        $this->redirect(route_with_country('meetups.map'), navigate: true);
+        $this->redirect(route('meetups.map', ['country' => str(session('lang_country', 'de'))->after('-')->lower()]), navigate: true);
     }
 }; ?>
 
@@ -60,7 +60,7 @@ class extends Component {
                     {{ __('Kartenansicht öffnen') }}
                 </flux:button>
 
-                <flux:button :href="route('dashboard', ['country' => 'de'])" class="cursor-pointer w-full"
+                <flux:button :href="route('dashboard', ['country' => str(session('lang_country', 'de'))->after('-')->lower()])" class="cursor-pointer w-full"
                              icon="arrow-right-start-on-rectangle">
                     {{ __('Login') }}
                 </flux:button>

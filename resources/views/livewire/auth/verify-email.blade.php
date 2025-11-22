@@ -17,7 +17,7 @@ class extends Component {
     public function sendVerification(): void
     {
         if (Auth::user()->hasVerifiedEmail()) {
-            $this->redirectIntended(default: route('dashboard', ['country' => 'de'],absolute: false), navigate: true);
+            $this->redirectIntended(default: route('dashboard', ['country' => str(session('lang_country', 'de'))->after('-')->lower()],absolute: false), navigate: true);
 
             return;
         }

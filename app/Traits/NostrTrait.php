@@ -53,7 +53,7 @@ trait NostrTrait
                 $model->course->name,
                 str($model->course->description)->toString(),
                 url()->route('courses.landingpage',
-                    ['country' => 'de', 'course' => $model->course]),
+                    ['country' => str(session('lang_country', 'de'))->after('-')->lower(), 'course' => $model->course]),
                 str($model->course->lecturer->slug)->replace('-', '_'),
             );
         }
@@ -68,7 +68,7 @@ trait NostrTrait
                 $model->start->asDateTime(),
                 $model->location,
                 url()->route('meetups.landingpage-event',
-                    ['country' => 'de', 'meetup' => $model, 'event' => $model]),
+                    ['country' => str(session('lang_country', 'de'))->after('-')->lower(), 'meetup' => $model, 'event' => $model]),
                 str($model->meetup->slug)->replace('-', '_'),
             );
         }
@@ -96,7 +96,7 @@ trait NostrTrait
                 $model->name,
                 str($model->description)->toString(),
                 url()->route('courses.landingpage',
-                    ['country' => 'de', 'course' => $model]),
+                    ['country' => str(session('lang_country', 'de'))->after('-')->lower(), 'course' => $model]),
                 str($model->lecturer->slug)->replace('-', '_'),
             );
         }
