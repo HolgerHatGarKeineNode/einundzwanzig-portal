@@ -63,7 +63,7 @@ class extends Component {
         if ($user) {
             Auth::loginUsingId($user->id);
             Session::regenerate();
-            $this->redirectIntended(default: route_with_country('dashboard', ['country' => 'de'], absolute: false),
+            $this->redirectIntended(default: route('dashboard', ['country' => 'de'], absolute: false),
                 navigate: true);
             return;
         }
@@ -84,7 +84,7 @@ class extends Component {
         RateLimiter::clear($this->throttleKey());
         Session::regenerate();
 
-        $this->redirectIntended(default: route_with_country('dashboard', ['country' => 'de'], absolute: false),
+        $this->redirectIntended(default: route('dashboard', ['country' => 'de'], absolute: false),
             navigate: true);
     }
 
