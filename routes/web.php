@@ -47,6 +47,8 @@ Route::middleware([])
     ->prefix('/{country:code}')
     ->group(function () {
         /* OLD URLS */
+        Route::get('meetup/stream-calendar', \App\Http\Controllers\DownloadMeetupCalendar::class)
+            ->name('ics');
         Route::get('/meetup/overview', function ($country) {
             return redirect("/{$country}/meetups");
         });
