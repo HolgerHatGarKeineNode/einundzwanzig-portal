@@ -35,7 +35,7 @@ class extends Component {
 
         Auth::login($user);
 
-        $this->redirectIntended(route_with_country('dashboard', absolute: false), navigate: true);
+        $this->redirectIntended(route('dashboard', ['country' => 'de'],absolute: false), navigate: true);
     }
 }; ?>
 

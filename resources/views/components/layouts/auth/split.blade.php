@@ -27,7 +27,7 @@
             </div>
             <div class="w-full lg:p-8">
                 <div class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-                    <a href="{{ route_with_country('dashboard') }}" class="z-20 flex flex-col items-center gap-2 font-medium lg:hidden" wire:navigate>
+                    <a href="{{ route('dashboard', ['country' => 'de']) }}" class="z-20 flex flex-col items-center gap-2 font-medium lg:hidden" wire:navigate>
                         <span class="flex h-9 w-9 items-center justify-center rounded-md">
                             <x-app-logo-icon class="size-9 fill-current text-black dark:text-white" />
                         </span>

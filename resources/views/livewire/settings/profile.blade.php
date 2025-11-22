@@ -64,7 +64,7 @@ class extends Component {
         $user = Auth::user();
 
         if ($user->hasVerifiedEmail()) {
-            $this->redirectIntended(default: route_with_country('dashboard', absolute: false));
+            $this->redirectIntended(default: route('dashboard', ['country' => 'de'],absolute: false));
 
             return;
         }

@@ -99,14 +99,14 @@
               class="lg:hidden border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
     <flux:sidebar.toggle class="lg:hidden" icon="x-mark"/>
 
-    <a href="{{ route_with_country('dashboard') }}" class="ms-1 flex items-center space-x-2 rtl:space-x-reverse"
+    <a href="{{ route('dashboard', ['country' => 'de']) }}" class="ms-1 flex items-center space-x-2 rtl:space-x-reverse"
        wire:navigate>
         <x-app-logo/>
     </a>
 
     <flux:navlist variant="outline">
         <flux:navlist.group :heading="__('Platform')">
-            <flux:navlist.item icon="layout-grid" :href="route_with_country('dashboard')"
+            <flux:navlist.item icon="layout-grid" :href="route('dashboard', ['country' => 'de'])"
                                :current="request()->routeIs('dashboard')" wire:navigate>
                 {{ __('Dashboard') }}
             </flux:navlist.item>

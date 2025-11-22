@@ -32,7 +32,7 @@ class extends Component {
 
         session(['auth.password_confirmed_at' => time()]);
 
-        $this->redirectIntended(default: route_with_country('dashboard', absolute: false), navigate: true);
+        $this->redirectIntended(default: route('dashboard', ['country' => 'de'], absolute: false), navigate: true);
     }
 }; ?>
 
