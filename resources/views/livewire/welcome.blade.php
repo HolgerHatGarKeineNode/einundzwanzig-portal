@@ -1,10 +1,13 @@
 <?php
 
+use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 use Livewire\Attributes\Layout;
 
 new #[Layout('components.layouts.auth')]
 class extends Component {
+    use SeoTrait;
+
     public function goToMeetups(): void
     {
         $this->redirect(route_with_country('meetups.index'), navigate: true);
@@ -23,7 +26,8 @@ class extends Component {
             <div class="flex justify-center">
                 <a href="/" class="group flex items-center gap-3">
                     <div>
-                        <flux:avatar class="[:where(&)]:size-32 [:where(&)]:text-base" size="xl" src="{{ asset('img/einundzwanzig-square.svg') }}" />
+                        <flux:avatar class="[:where(&)]:size-32 [:where(&)]:text-base" size="xl"
+                                     src="{{ asset('img/einundzwanzig-square.svg') }}"/>
                     </div>
                 </a>
             </div>
@@ -53,7 +57,8 @@ class extends Component {
                     {{ __('Kartenansicht öffnen') }}
                 </flux:button>
 
-                <flux:button :href="route('dashboard', ['country' => 'de'])" class="cursor-pointer w-full" icon="arrow-right-start-on-rectangle">
+                <flux:button :href="route('dashboard', ['country' => 'de'])" class="cursor-pointer w-full"
+                             icon="arrow-right-start-on-rectangle">
                     {{ __('Login') }}
                 </flux:button>
             </div>

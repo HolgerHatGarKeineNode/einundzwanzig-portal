@@ -2,10 +2,13 @@
 
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
+use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 use Flux\Flux;
 
 new class extends Component {
+    use SeoTrait;
+
     public $selectedMeetupId = null;
 
     public $country = 'de';

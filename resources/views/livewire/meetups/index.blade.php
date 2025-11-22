@@ -1,11 +1,16 @@
 <?php
 
+use App\Attributes\SeoDataAttribute;
 use App\Models\Meetup;
+use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 
-new class extends Component {
+new
+#[SeoDataAttribute(key: 'meetups_index')]
+class extends Component {
     use WithPagination;
+    use SeoTrait;
 
     public $country = 'de';
     public $search = '';
@@ -20,10 +25,11 @@ new class extends Component {
         return [
             'meetups' => Meetup::with(['city.country', 'createdBy'])
                 ->withExists([
-                    'meetupEvents as has_future_events' => fn($query) => $query->where('start', '>=', now())
+                    'meetupEvents as has_future_events' => fn($query) => $query->where('start', '>=', now()),
                 ])
                 ->leftJoin('meetup_events', function ($join) {
-                    $join->on('meetups.id', '=', 'meetup_events.meetup_id')
+                    $join
+                        ->on('meetups.id', '=', 'meetup_events.meetup_id')
                         ->where('meetup_events.start', '>=', now());
                 })
                 ->selectRaw('meetups.*, MIN(meetup_events.start) as next_event_start')
@@ -43,14 +49,16 @@ new class extends Component {
     <div class="flex items-center justify-between flex-col md:flex-row mb-6">
         <flux:heading size="xl">{{ __('Meetups') }}</flux:heading>
         <div class="flex flex-col md:flex-row items-center gap-4">
-            <flux:button class="cursor-pointer" x-copy-to-clipboard="'{{ route('ics') }}'" icon="calendar-date-range">{{ __('Kalender-Stream-URL kopieren') }}</flux:button>
+            <flux:button class="cursor-pointer" x-copy-to-clipboard="'{{ route('ics') }}'"
+                         icon="calendar-date-range">{{ __('Kalender-Stream-URL kopieren') }}</flux:button>
             <flux:input
                 wire:model.live="search"
                 :placeholder="__('Suche nach Meetups...')"
                 clearable
             />
             @auth
-                <flux:button class="cursor-pointer" :href="route_with_country('meetups.create')" icon="plus" variant="primary">
+                <flux:button class="cursor-pointer" :href="route_with_country('meetups.create')" icon="plus"
+                             variant="primary">
                     {{ __('Meetup erstellen') }}
                 </flux:button>
             @endauth
@@ -70,9 +78,10 @@ new class extends Component {
             @foreach ($meetups as $meetup)
                 <flux:table.row :key="$meetup->id">
                     <flux:table.cell variant="strong" class="flex items-center gap-3">
-                            <flux:avatar
-                                class="[:where(&)]:size-24 [:where(&)]:text-base" size="xl"
-                                :href="route('meetups.landingpage', ['meetup' => $meetup, 'country' => $country])" src="{{ $meetup->getFirstMedia('logo') ? $meetup->getFirstMediaUrl('logo', 'thumb') : asset('android-chrome-512x512.png') }}"/>
+                        <flux:avatar
+                            class="[:where(&)]:size-24 [:where(&)]:text-base" size="xl"
+                            :href="route('meetups.landingpage', ['meetup' => $meetup, 'country' => $country])"
+                            src="{{ $meetup->getFirstMedia('logo') ? $meetup->getFirstMediaUrl('logo', 'thumb') : asset('android-chrome-512x512.png') }}"/>
                         <div>
                             @if($meetup->city)
                                 <a href="{{ route('meetups.landingpage', ['meetup' => $meetup, 'country' => $country]) }}">
@@ -107,12 +116,14 @@ new class extends Component {
                     <flux:table.cell>
                         <div class="flex gap-2">
                             @if($meetup->telegram_link)
-                                <flux:link :href="$meetup->telegram_link" external variant="subtle" title="{{ __('Telegram') }}">
+                                <flux:link :href="$meetup->telegram_link" external variant="subtle"
+                                           title="{{ __('Telegram') }}">
                                     <flux:icon.paper-airplane variant="mini"/>
                                 </flux:link>
                             @endif
                             @if($meetup->webpage)
-                                <flux:link :href="$meetup->webpage" external variant="subtle" title="{{ __('Website') }}">
+                                <flux:link :href="$meetup->webpage" external variant="subtle"
+                                           title="{{ __('Website') }}">
                                     <flux:icon.globe-alt variant="mini"/>
                                 </flux:link>
                             @endif
@@ -123,7 +134,8 @@ new class extends Component {
                                 </flux:link>
                             @endif
                             @if($meetup->matrix_group)
-                                <flux:link :href="$meetup->matrix_group" external variant="subtle" title="{{ __('Matrix') }}">
+                                <flux:link :href="$meetup->matrix_group" external variant="subtle"
+                                           title="{{ __('Matrix') }}">
                                     <flux:icon.chat-bubble-left variant="mini"/>
                                 </flux:link>
                             @endif
@@ -134,7 +146,8 @@ new class extends Component {
                                 </flux:link>
                             @endif
                             @if($meetup->simplex)
-                                <flux:link :href="$meetup->simplex" external variant="subtle" title="{{ __('Simplex') }}">
+                                <flux:link :href="$meetup->simplex" external variant="subtle"
+                                           title="{{ __('Simplex') }}">
                                     <flux:icon.chat-bubble-bottom-center-text variant="mini"/>
                                 </flux:link>
                             @endif
@@ -151,13 +164,15 @@ new class extends Component {
                             <div>
                                 <flux:button
                                     :disabled="!$meetup->belongsToMe"
-                                    :href="$meetup->belongsToMe ? route_with_country('meetups.edit', ['meetup' => $meetup]) : null" size="xs"
+                                    :href="$meetup->belongsToMe ? route_with_country('meetups.edit', ['meetup' => $meetup]) : null"
+                                    size="xs"
                                     variant="filled" icon="pencil">
                                     {{ __('Bearbeiten') }}
                                 </flux:button>
                             </div>
                             <div>
-                                <flux:button :href="route_with_country('meetups.events.create', ['meetup' => $meetup])" size="xs" variant="filled" icon="calendar">
+                                <flux:button :href="route_with_country('meetups.events.create', ['meetup' => $meetup])"
+                                             size="xs" variant="filled" icon="calendar">
                                     {{ __('Neues Event erstellen') }}
                                 </flux:button>
                             </div>

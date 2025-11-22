@@ -3,6 +3,7 @@
 use App\Models\LoginKey;
 use App\Models\User;
 use App\Notifications\ModelCreatedNotification;
+use App\Traits\SeoTrait;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -20,6 +21,8 @@ use eza\lnurl;
 
 new #[Layout('components.layouts.auth')]
 class extends Component {
+    use SeoTrait;
+
     #[Validate('required|string|email')]
     public string $email = '';
 
