@@ -22,7 +22,7 @@ class DownloadMeetupCalendar extends Controller
                                 'meetupEvents.meetup',
                             ])
                             ->findOrFail($request->input('meetup'));
-            $events = $meetup->meetupEvents;
+            $events = $meetup->meetupEvents()->where('start', '>=', now())->get();
             $image = $meetup->getFirstMediaUrl('logo');
         } elseif ($request->has('my')) {
             $ids = $request->input('my');
@@ -30,6 +30,7 @@ class DownloadMeetupCalendar extends Controller
                                  ->with([
                                      'meetup',
                                  ])
+                                 ->where('start', '>=', now())
                                  ->whereHas('meetup', fn($query) => $query->whereIn('meetups.id', $ids))
                                  ->get();
             $image = asset('img/einundzwanzig-horizontal.png');
@@ -38,6 +39,7 @@ class DownloadMeetupCalendar extends Controller
                                  ->with([
                                      'meetup',
                                  ])
+                                 ->where('start', '>=', now())
                                  ->get();
             $image = asset('img/einundzwanzig-horizontal.png');
         }
