@@ -66,7 +66,15 @@ select:focus[data-flux-control] {
 } */
 
 .leaflet-popup-content-wrapper {
-    background-color: #404040!important;
+    background-color: #404040 !important;
+}
+
+.leaflet-control-zoom-in {
+    background-color: #404040 !important;
+}
+
+.leaflet-control-zoom-out {
+    background-color: #404040 !important;
 }
 
 .leaflet-container a {
