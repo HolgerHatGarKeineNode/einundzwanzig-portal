@@ -69,7 +69,7 @@
     <flux:spacer/>
 
     <flux:navlist variant="outline">
-        <flux:navlist.item icon="language" :href="route('settings.profile')"
+        <flux:navlist.item icon="language" :href="route('settings.profile', ['country' => str(session('lang_country', 'de'))->after('-')->lower()])"
                            :current="request()->routeIs('settings.profile')"
                            wire:navigate>
             {{ __('Sprache wechseln') }}
@@ -128,7 +128,7 @@
                 <flux:menu.separator/>
 
                 <flux:menu.radio.group>
-                    <flux:menu.item :href="route('settings.profile')" icon="cog"
+                    <flux:menu.item :href="route('settings.profile', ['country' => str(session('lang_country', 'de'))->after('-')->lower()])" icon="cog"
                                     wire:navigate>{{ __('Settings') }}</flux:menu.item>
                 </flux:menu.radio.group>
 
@@ -189,7 +189,7 @@
                 <flux:menu.separator/>
 
                 <flux:menu.radio.group>
-                    <flux:menu.item :href="route('settings.profile')" icon="cog"
+                    <flux:menu.item :href="route('settings.profile', ['country' => str(session('lang_country', 'de'))->after('-')->lower()])" icon="cog"
                                     wire:navigate>{{ __('Settings') }}</flux:menu.item>
                 </flux:menu.radio.group>
 

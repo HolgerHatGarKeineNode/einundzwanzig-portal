@@ -44,7 +44,7 @@ class extends Component {
                     'meetups.simplex',
                     'meetups.signal',
                 ])
-                ->with(['city:id,country_id,longitude,latitude'])
+                ->with(['city:id,country_id,longitude,latitude', 'city.country'])
                 ->get()
                 ->map(function ($meetup) {
                     $meetup->load(['meetupEvents' => function($query) {

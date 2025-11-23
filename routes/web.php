@@ -107,10 +107,7 @@ Route::middleware(['auth'])
 
         Volt::route('venue-create', 'venues.create')->name('venues.create');
         Volt::route('venue-edit/{venue}', 'venues.edit')->name('venues.edit');
-    });
 
-Route::middleware(['auth'])
-    ->group(function () {
         Route::redirect('settings', 'settings/profile');
 
         Volt::route('settings/profile', 'settings.profile')->name('settings.profile');

@@ -23,14 +23,17 @@ class extends Component {
     public function with(): array
     {
         return [
-            'lecturers' => Lecturer::with([
-                'createdBy', 'coursesEvents' => fn($query) => $query->where('from', '>=', now())->orderBy('from', 'asc')
-            ])
+            'lecturers' => Lecturer::query()
+                ->with([
+                    'createdBy',
+                    'coursesEvents' => fn($query) => $query->where('from', '>=', now())->orderBy('from', 'asc'),
+                    'coursesEvents.course',
+                ])
                 ->withExists([
-                    'coursesEvents as has_future_events' => fn($query) => $query->where('from', '>=', now())
+                    'coursesEvents as has_future_events' => fn($query) => $query->where('from', '>=', now()),
                 ])
                 ->withCount([
-                    'coursesEvents as future_events_count' => fn($query) => $query->where('from', '>=', now())
+                    'coursesEvents as future_events_count' => fn($query) => $query->where('from', '>=', now()),
                 ])
                 ->when($this->search, fn($query)
                     => $query
