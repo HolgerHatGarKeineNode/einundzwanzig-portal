@@ -154,6 +154,6 @@ class extends Component {
         }"
          x-init="initializeMap()"
     >
-        <div id="map" x-ref="map"></div>
+        <div class="rounded" id="map" x-ref="map"></div>
     </div>
 </div>

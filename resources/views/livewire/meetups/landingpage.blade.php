@@ -190,7 +190,7 @@ class extends Component {
                 }"
                  x-init="initializeMap()"
             >
-                <div id="meetup-map" x-ref="map"></div>
+                <div class="rounded" id="meetup-map" x-ref="map"></div>
                 <p class="text-sm text-gray-500 mt-2">{{ __('Zoom = STRG+Scroll') }}</p>
             </div>
         </div>
