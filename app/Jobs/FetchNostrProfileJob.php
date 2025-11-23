@@ -65,7 +65,6 @@ class FetchNostrProfileJob implements ShouldQueue
         // Setup relay set
         $relays = [
             new Relay('wss://nos.lol'),
-            new Relay('wss://relay.nostr.band'),
         ];
         $relaySet = new RelaySet();
         $relaySet->setRelays($relays);
