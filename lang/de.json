@@ -440,5 +440,22 @@
     "Öffnen/RSVP": "",
     "Über den Dozenten": "",
     "Über den Kurs": "",
-    "Über uns": ""
+    "Über uns": "",
+    "Details": "",
+    "Die Endzeit muss nach der Startzeit liegen.": "",
+    "Startdatum": "",
+    "An welchem Tag beginnt das Event?": "",
+    "Um wie viel Uhr beginnt das Event?": "",
+    "Enddatum": "",
+    "An welchem Tag endet das Event?": "",
+    "Um wie viel Uhr endet das Event?": "",
+    "Datum": "",
+    "An welchem Tag findet das Event statt?": "",
+    "Uhrzeit": "",
+    "Um wie viel Uhr startet das Event?": "",
+    "Zeitzone": "",
+    "Wähle deine Zeitzone aus...": "",
+    "Zeitzone erfolgreich aktualisiert": "",
+    "Wähle deine Zeitzone...": "",
+    "Suche Zeitzone...": ""
 }

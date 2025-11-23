@@ -16,7 +16,7 @@ class extends Component {
 
     public function mount(): void
     {
-        $this->country = request()->route('country');
+        $this->country = request()->route('country', config('app.domain_country'));
         $geoCountry = \Lwwcas\LaravelCountries\Models\Country::query()
             ->where('iso_alpha_2', str($this->country)->upper())
             ->first()

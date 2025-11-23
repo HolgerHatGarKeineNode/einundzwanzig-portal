@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
+            \App\Http\Middleware\DomainMiddleware::class,
             \Stefro\LaravelLangCountry\Middleware\LangCountrySession::class,
             \App\Http\Middleware\SetTimezone::class,
         ]);

@@ -49,6 +49,12 @@ Route::middleware(['auth'])
     });
 
 Route::middleware([])
+    ->prefix('/{country:code?}')
+    ->group(function () {
+        Volt::route('dashboard', 'dashboard')->name('dashboard');
+    });
+
+Route::middleware([])
     ->prefix('/{country:code}')
     ->group(function () {
         /* OLD URLS */
@@ -83,7 +89,6 @@ Route::middleware([])
 Route::middleware(['auth'])
     ->prefix('/{country:code}')
     ->group(function () {
-        Volt::route('dashboard', 'dashboard')->name('dashboard');
         Volt::route('meetup-create', 'meetups.create')->name('meetups.create');
         Volt::route('meetup-edit/{meetup}', 'meetups.edit')->name('meetups.edit');
         Volt::route('meetup/{meetup}/events/create', 'meetups.create-edit-events')->name('meetups.events.create');

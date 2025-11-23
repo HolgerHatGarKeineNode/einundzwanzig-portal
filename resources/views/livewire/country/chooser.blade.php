@@ -9,7 +9,7 @@ new class extends Component {
 
     public function mount(): void
     {
-        $this->currentCountry = request()->route('country', 'de');
+        $this->currentCountry = request()->route('country', config('app.domain_country'));
         $this->currentRouteName = request()->route()->getName();
         $this->currentRouteParams = request()->route()->parameters();
     }

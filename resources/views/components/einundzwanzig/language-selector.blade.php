@@ -10,11 +10,25 @@
 
             <flux:accordion.content>
                 @php
-                    $languages = [
+                    // Scan lang folder for available languages
+                    $availableLanguages = collect(glob(base_path('lang/*.json')))
+                        ->map(fn($file) => pathinfo($file, PATHINFO_FILENAME))
+                        ->toArray();
+
+                    $allLanguages = [
                         'de' => ['name' => 'Deutsch', 'countries' => ['de-DE', 'de-AT', 'de-CH']],
                         'en' => ['name' => 'English', 'countries' => ['en-GB', 'en-US', 'en-AU', 'en-CA']],
                         'es' => ['name' => 'Español', 'countries' => ['es-ES', 'es-CL', 'es-CO']],
+                        'nl' => ['name' => 'Nederlands', 'countries' => ['nl-NL', 'nl-BE']],
+                        'pt' => ['name' => 'Português', 'countries' => ['pt-PT']],
                     ];
+
+                    // Filter languages based on available JSON files and allowed languages
+                    $languages = array_filter($allLanguages, function($data, $key) use ($availableLanguages) {
+                        return in_array($key, $availableLanguages) &&
+                               count(array_intersect($data['countries'], config('lang-country.allowed'))) > 0;
+                    }, ARRAY_FILTER_USE_BOTH);
+
                     $currentLangCountry = session('lang_country', config('lang-country.fallback'));
                 @endphp
 

@@ -64,7 +64,7 @@ class extends Component {
         $user = Auth::user();
 
         if ($user->hasVerifiedEmail()) {
-            $this->redirectIntended(default: route('dashboard', ['country' => str(session('lang_country', 'de'))->after('-')->lower()],absolute: false));
+            $this->redirectIntended(default: route('dashboard', ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()],absolute: false));
 
             return;
         }
@@ -127,11 +127,22 @@ class extends Component {
 
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 @php
-                    $languages = [
+                    // Scan lang folder for available languages
+                    $availableLanguages = collect(glob(base_path('lang/*.json')))
+                        ->map(fn($file) => pathinfo($file, PATHINFO_FILENAME))
+                        ->toArray();
+
+                    $allLanguages = [
                         'de' => ['name' => 'Deutsch', 'countries' => ['de-DE', 'de-AT', 'de-CH']],
                         'en' => ['name' => 'English', 'countries' => ['en-GB', 'en-US', 'en-AU', 'en-CA']],
                         'es' => ['name' => 'Español', 'countries' => ['es-ES', 'es-CL', 'es-CO']],
+                        'nl' => ['name' => 'Nederlands', 'countries' => ['nl-NL', 'nl-BE']],
+                        'pt' => ['name' => 'Português', 'countries' => ['pt-PT', 'pt-BR']],
                     ];
+
+                    // Filter languages based on available JSON files
+                    $languages = array_filter($allLanguages, fn($key) => in_array($key, $availableLanguages), ARRAY_FILTER_USE_KEY);
+
                     $currentLangCountry = session('lang_country', config('lang-country.fallback'));
                 @endphp
 

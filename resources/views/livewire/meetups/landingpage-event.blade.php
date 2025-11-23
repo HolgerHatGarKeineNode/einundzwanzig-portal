@@ -25,7 +25,7 @@ class extends Component {
 
     public function mount(): void
     {
-        $this->country = request()->route('country');
+        $this->country = request()->route('country', config('app.domain_country'));
         $this->name = auth()->user()->name ?? '';
         $this->loadAttendees();
     }

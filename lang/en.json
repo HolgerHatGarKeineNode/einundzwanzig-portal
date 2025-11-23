@@ -440,5 +440,22 @@
     "Öffnen/RSVP": "Open/RSVP",
     "Über den Dozenten": "About the lecturer",
     "Über den Kurs": "About the course",
-    "Über uns": "About us"
+    "Über uns": "About us",
+    "Details": "Details",
+    "Die Endzeit muss nach der Startzeit liegen.": "The end time must be after the start time.",
+    "Startdatum": "Start date",
+    "An welchem Tag beginnt das Event?": "On which day does the event start?",
+    "Um wie viel Uhr beginnt das Event?": "At what time does the event start?",
+    "Enddatum": "End date",
+    "An welchem Tag endet das Event?": "On which day does the event end?",
+    "Um wie viel Uhr endet das Event?": "At what time does the event end?",
+    "Datum": "Date",
+    "An welchem Tag findet das Event statt?": "On which day does the event take place?",
+    "Uhrzeit": "Time",
+    "Um wie viel Uhr startet das Event?": "At what time does the event start?",
+    "Zeitzone": "Timezone",
+    "Wähle deine Zeitzone aus...": "Select your timezone...",
+    "Zeitzone erfolgreich aktualisiert": "Timezone successfully updated",
+    "Wähle deine Zeitzone...": "Choose your timezone...",
+    "Suche Zeitzone...": "Search timezone..."
 }

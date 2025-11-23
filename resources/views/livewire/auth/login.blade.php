@@ -36,9 +36,12 @@ class extends Component {
     public ?string $url = null;
     public ?string $lnurl = null;
     public ?string $qrCode = null;
+    public string $currentLangCountry = 'de-DE';
 
     public function mount(): void
     {
+        $this->currentLangCountry = session('lang_country');
+
         // Nur beim ersten Mount initialisieren
         if ($this->k1 === null) {
             $this->k1 = bin2hex(str()->random(32));
@@ -64,7 +67,7 @@ class extends Component {
             Auth::loginUsingId($user->id);
             Session::regenerate();
             $this->redirectIntended(
-                default: route('dashboard', ['country' => str(session('lang_country', 'de'))->after('-')->lower()], absolute: false),
+                default: route('dashboard', ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()], absolute: false),
                 navigate: true,
             );
             return;
@@ -85,9 +88,12 @@ class extends Component {
 
         RateLimiter::clear($this->throttleKey());
         Session::regenerate();
+        session([
+            'lang_country' => $this->currentLangCountry,
+        ]);
 
         $this->redirectIntended(
-            default: route('dashboard', ['country' => str(session('lang_country', 'de'))->after('-')->lower()], absolute: false),
+            default: route('dashboard', ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()], absolute: false),
             navigate: true
         );
     }
@@ -134,8 +140,12 @@ class extends Component {
             \App\Models\User::find(1)
                 ->notify(new ModelCreatedNotification($user, 'users'));
             auth()->login($user);
+            Session::regenerate();
+            session([
+                'lang_country' => $this->currentLangCountry,
+            ]);
 
-            return to_route('dashboard', ['country' => str(session('lang_country', 'de'))->after('-')->lower()]);
+            return to_route('dashboard', ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()]);
         }
 
         return true;

@@ -439,5 +439,22 @@
     "Öffnen/RSVP": "Abrir/RSVP",
     "Über den Dozenten": "Sobre el profesor",
     "Über den Kurs": "Sobre el curso",
-    "Über uns": "Sobre nosotros"
+    "Über uns": "Sobre nosotros",
+    "Details": "Detalles",
+    "Die Endzeit muss nach der Startzeit liegen.": "La hora de finalización debe ser posterior a la hora de inicio.",
+    "Startdatum": "Fecha de inicio",
+    "An welchem Tag beginnt das Event?": "¿En qué día comienza el evento?",
+    "Um wie viel Uhr beginnt das Event?": "¿A qué hora comienza el evento?",
+    "Enddatum": "Fecha de finalización",
+    "An welchem Tag endet das Event?": "¿En qué día termina el evento?",
+    "Um wie viel Uhr endet das Event?": "¿A qué hora termina el evento?",
+    "Datum": "Fecha",
+    "An welchem Tag findet das Event statt?": "¿En qué día se lleva a cabo el evento?",
+    "Uhrzeit": "Hora",
+    "Um wie viel Uhr startet das Event?": "¿A qué hora comienza el evento?",
+    "Zeitzone": "Zona horaria",
+    "Wähle deine Zeitzone aus...": "Selecciona tu zona horaria...",
+    "Zeitzone erfolgreich aktualisiert": "Zona horaria actualizada exitosamente",
+    "Wähle deine Zeitzone...": "Elige tu zona horaria...",
+    "Suche Zeitzone...": "Buscar zona horaria..."
 }

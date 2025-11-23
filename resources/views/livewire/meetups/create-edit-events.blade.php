@@ -31,7 +31,7 @@ class extends Component {
 
     public function mount(): void
     {
-        $this->country = request()->route('country');
+        $this->country = request()->route('country', config('app.domain_country'));
         $timezone = auth()->user()->timezone ?? 'Europe/Berlin';
 
         if ($this->event) {
