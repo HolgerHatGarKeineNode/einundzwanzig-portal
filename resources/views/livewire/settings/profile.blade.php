@@ -121,51 +121,7 @@ class extends Component {
             <livewire:timezone.chooser :withRedirect="false"/>
         </div>
 
-        <div class="my-8">
-            <flux:heading size="lg" class="mb-4">{{ __('Spracheinstellungen') }}</flux:heading>
-            <flux:subheading class="mb-6">{{ __('Wähle deine Sprache aus...') }}</flux:subheading>
-
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                @php
-                    // Scan lang folder for available languages
-                    $availableLanguages = collect(glob(base_path('lang/*.json')))
-                        ->map(fn($file) => pathinfo($file, PATHINFO_FILENAME))
-                        ->toArray();
-
-                    $allLanguages = [
-                        'de' => ['name' => 'Deutsch', 'countries' => ['de-DE', 'de-AT', 'de-CH']],
-                        'en' => ['name' => 'English', 'countries' => ['en-GB', 'en-US', 'en-AU', 'en-CA']],
-                        'es' => ['name' => 'Español', 'countries' => ['es-ES', 'es-CL', 'es-CO']],
-                        'nl' => ['name' => 'Nederlands', 'countries' => ['nl-NL', 'nl-BE']],
-                        'pt' => ['name' => 'Português', 'countries' => ['pt-PT', 'pt-BR']],
-                    ];
-
-                    // Filter languages based on available JSON files
-                    $languages = array_filter($allLanguages, fn($key) => in_array($key, $availableLanguages), ARRAY_FILTER_USE_KEY);
-
-                    $currentLangCountry = session('lang_country', config('lang-country.fallback'));
-                @endphp
-
-                @foreach($languages as $langCode => $langData)
-                    @foreach($langData['countries'] as $langCountry)
-                        @php
-                            [$lang, $countryCode] = explode('-', $langCountry);
-                            $isActive = $currentLangCountry === $langCountry;
-                        @endphp
-                        <a href="{{ route('lang_country.switch', ['lang_country' => $langCountry]) }}"
-                           class="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors {{ $isActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 dark:border-zinc-700' }}">
-                            <img
-                                alt="{{ strtolower($countryCode) }}"
-                                src="{{ asset('vendor/blade-flags/country-'.strtolower($countryCode).'.svg') }}"
-                                class="w-12 h-8 mb-2 object-cover"
-                            />
-                            <span class="text-sm font-medium">{{ $langData['name'] }}</span>
-                            <span class="text-xs text-zinc-500">{{ strtoupper($countryCode) }}</span>
-                        </a>
-                    @endforeach
-                @endforeach
-            </div>
-        </div>
+        <x-einundzwanzig.language-selector :collapsable="false"/>
 
         <livewire:settings.delete-user-form/>
     </x-settings.layout>

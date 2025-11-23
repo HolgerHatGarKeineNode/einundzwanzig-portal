@@ -20,6 +20,11 @@ class DomainMiddleware
                 'lang_country' => 'nl-NL',
                 'app_name' => 'EENENTWINTIG Portaal',
             ],
+            'portal.huszonegy.world/' => [
+                'locale' => 'hu',
+                'lang_country' => 'hu-HU',
+                'app_name' => ' HUSZONEGY Portál',
+            ],
         ];
 
         // App-Locale dynamisch setzen
