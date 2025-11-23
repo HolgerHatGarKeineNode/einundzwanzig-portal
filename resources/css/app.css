@@ -64,3 +64,11 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+.leaflet-popup-content-wrapper {
+    background-color: #404040!important;
+}
+
+.leaflet-container a {
+    color: unset!important;
+}

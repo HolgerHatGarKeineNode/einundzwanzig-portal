@@ -29,13 +29,56 @@ class extends Component {
     public function with(): array
     {
         return [
-            'meetups' => Meetup::with(['city:id,longitude,latitude'])
+            'meetups' => Meetup::query()
                 ->select([
                     'meetups.id',
                     'meetups.city_id',
                     'meetups.name',
+                    'meetups.slug',
+                    'meetups.intro',
+                    'meetups.telegram_link',
+                    'meetups.webpage',
+                    'meetups.twitter_username',
+                    'meetups.matrix_group',
+                    'meetups.nostr',
+                    'meetups.simplex',
+                    'meetups.signal',
                 ])
-                ->get(),
+                ->with(['city:id,country_id,longitude,latitude'])
+                ->get()
+                ->map(function ($meetup) {
+                    $meetup->load(['meetupEvents' => function($query) {
+                        $query->where('start', '>=', now())
+                              ->orderBy('start')
+                              ->limit(1);
+                    }]);
+
+                    $nextEvent = $meetup->meetupEvents->first();
+                    $eventUrl = null;
+
+                    if ($nextEvent) {
+                        $eventUrl = route('meetups.landingpage-event', [
+                            'country' => $meetup->city->country,
+                            'meetup' => $meetup->slug,
+                            'event' => $nextEvent->id
+                        ]);
+                    }
+
+                    return [
+                        'id' => $meetup->id,
+                        'name' => $meetup->name,
+                        'slug' => $meetup->slug,
+                        'city' => $meetup->city,
+                        'popupHtml' => view('components.meetup-popup', [
+                            'meetup' => $meetup,
+                            'url' => route('meetups.landingpage', [
+                                'country' => $meetup->city->country,
+                                'meetup' => $meetup->slug
+                            ]),
+                            'eventUrl' => $eventUrl
+                        ])->render(),
+                    ];
+                }),
         ];
     }
 }; ?>
@@ -85,7 +128,7 @@ class extends Component {
                     L.marker([marker.city.latitude, marker.city.longitude], {
                         icon: btcIcon
                     })
-                        .bindPopup(marker.name)
+                        .bindPopup(marker.popupHtml)
                         .addTo(map);
                 });
 
