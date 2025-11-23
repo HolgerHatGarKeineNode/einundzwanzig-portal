@@ -31,6 +31,12 @@
                     {{ $meetup->nextEvent['location'] }}
                 </flux:text>
             @endif
+
+            <flux:text class="flex items-center gap-2 mt-2">
+                <span class="text-xs text-zinc-200">{{ $meetup->nextEvent['attendees'] }} {{ __('Zusagen') }}</span>
+                <flux:separator vertical/>
+                <span class="text-xs text-zinc-200">{{ $meetup->nextEvent['might_attendees'] }} {{ __('Vielleicht') }}</span>
+            </flux:text>
         </div>
     @endif
 
