@@ -70,7 +70,7 @@ Route::middleware([])
         Route::get('/meetup/meetup-events', function ($country) {
             return redirect("/{$country}/meetups");
         });
-        Volt::route('meetup/meetup-events/l/{event}', 'meetups.landingpage-event');
+        Volt::route('meetup/meetup-events/l/{event}', 'meetups.landingpage-event')->name('meetups.landingpage-event-old');
 
         Volt::route('meetups', 'meetups.index')->name('meetups.index');
         Volt::route('map', 'meetups.map')->name('meetups.map');

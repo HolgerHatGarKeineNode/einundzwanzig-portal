@@ -82,7 +82,7 @@
     </flux:navlist>
 
     <flux:navlist variant="outline">
-        <flux:navlist.group :heading="__('Land')">
+        <flux:navlist.group>
             <div class="grid gap-4">
                 <div>
                     <livewire:country.chooser/>

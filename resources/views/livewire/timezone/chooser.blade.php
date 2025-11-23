@@ -39,7 +39,7 @@ new class extends Component {
 
 <div>
     <flux:select variant="listbox" searchable placeholder="{{ __('Wähle deine Zeitzone...') }}"
-                 wire:model.live.debounce="selectedTimezone">
+                 wire:model.live.debounce="selectedTimezone" label="{{ __('Zeitzone') }}">
         <x-slot name="search">
             <flux:select.search class="px-4" placeholder="{{ __('Suche Zeitzone...') }}"/>
         </x-slot>
