@@ -67,7 +67,33 @@ class extends Component {
             Auth::loginUsingId($user->id);
             Session::regenerate();
             $this->redirectIntended(
-                default: route('dashboard', ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()], absolute: false),
+                default: route('dashboard',
+                    ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()],
+                    absolute: false),
+                navigate: true,
+            );
+            return;
+        } else {
+            $fakeName = str()->random(10);
+            // create User
+            $user = User::create([
+                'public_key' => null,
+                'is_lecturer' => true,
+                'name' => $fakeName,
+                'email' => str($pubkey)->substr(-12).'@portal.einundzwanzig.space',
+                'nostr' => $pubkey,
+                'lnbits' => [
+                    'read_key' => null,
+                    'url' => null,
+                    'wallet_id' => null,
+                ],
+            ]);
+            Auth::loginUsingId($user->id);
+            Session::regenerate();
+            $this->redirectIntended(
+                default: route('dashboard',
+                    ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()],
+                    absolute: false),
                 navigate: true,
             );
             return;
@@ -93,8 +119,10 @@ class extends Component {
         ]);
 
         $this->redirectIntended(
-            default: route('dashboard', ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()], absolute: false),
-            navigate: true
+            default: route('dashboard',
+                ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()],
+                absolute: false),
+            navigate: true,
         );
     }
 
@@ -145,7 +173,8 @@ class extends Component {
                 'lang_country' => $this->currentLangCountry,
             ]);
 
-            return to_route('dashboard', ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()]);
+            return to_route('dashboard',
+                ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()]);
         }
 
         return true;
