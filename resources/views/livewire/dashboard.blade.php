@@ -4,8 +4,8 @@ use App\Attributes\SeoDataAttribute;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Traits\SeoTrait;
-use Livewire\Volt\Component;
 use Flux\Flux;
+use Livewire\Volt\Component;
 
 new
 #[SeoDataAttribute(key: 'dashboard')]
@@ -18,6 +18,9 @@ class extends Component {
 
     public function mount(): void
     {
+        if (!auth()->check()) {
+            $this->redirectRoute('login');
+        }
         $this->country = request()->route('country', config('app.domain_country'));
     }
 
