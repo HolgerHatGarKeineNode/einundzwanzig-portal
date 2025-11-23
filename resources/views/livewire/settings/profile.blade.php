@@ -115,6 +115,12 @@ class extends Component {
             </div>
         </form>
 
+        <div>
+            <flux:heading size="lg" class="mb-4">{{ __('Zeitzone') }}</flux:heading>
+            <flux:subheading class="mb-6">{{ __('Wähle deine Zeitzone aus...') }}</flux:subheading>
+            <livewire:timezone.chooser :withRedirect="false"/>
+        </div>
+
         <div class="my-8">
             <flux:heading size="lg" class="mb-4">{{ __('Spracheinstellungen') }}</flux:heading>
             <flux:subheading class="mb-6">{{ __('Wähle deine Sprache aus...') }}</flux:subheading>

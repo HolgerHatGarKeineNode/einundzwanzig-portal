@@ -9,6 +9,7 @@ class SeoDataAttribute
 {
     public function __construct(
         public ?string $key = null, // e.g., 'meetups_index', 'event_show', etc.
+        public ?string $image = null, // image url override
     ) {}
 
     // Centralized SEO data definitions by key as SEOData instances (lazy initialized)

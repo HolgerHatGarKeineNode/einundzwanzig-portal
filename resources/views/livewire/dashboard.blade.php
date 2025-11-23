@@ -96,7 +96,7 @@ class extends Component {
                                             {{ $event->meetup->city->name }}, {{ $event->meetup->city->country->name }}
                                         </div>
                                         <flux:badge color="green" size="sm" class="mt-1">
-                                            {{ $event->start->format('d.m.Y H:i') }}
+                                            {{ $event->start->asDateTime() }}
                                         </flux:badge>
                                     </div>
                                 </div>

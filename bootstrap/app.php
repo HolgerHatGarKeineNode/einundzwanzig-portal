@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
             \Stefro\LaravelLangCountry\Middleware\LangCountrySession::class,
+            \App\Http\Middleware\SetTimezone::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

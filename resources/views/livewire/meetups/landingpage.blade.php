@@ -215,12 +215,12 @@ class extends Component {
                 @foreach($events as $event)
                     <flux:card size="sm" class="h-full flex flex-col">
                         <flux:heading class="flex items-center gap-2">
-                            {{ $event->start->format('d.m.Y') }}
+                            {{ $event->start->asDate() }}
                         </flux:heading>
 
                         <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
                             <flux:icon.clock class="inline w-4 h-4"/>
-                            {{ $event->start->format('H:i') }} Uhr
+                            {{ $event->start->asTime() }} Uhr
                         </flux:text>
 
                         @if($event->location)

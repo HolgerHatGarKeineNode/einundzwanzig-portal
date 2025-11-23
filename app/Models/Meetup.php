@@ -123,6 +123,7 @@ class Meetup extends Model implements HasMedia
         return Attribute::make(
             get: fn()
                 => $nextEvent ? [
+                'id' => $nextEvent->id,
                 'start' => $nextEvent->start,
                 'portalLink' => url()->route('meetups.landingpage-event',
                     ['country' => $this->city->country, 'meetup' => $this, 'event' => $nextEvent]),
@@ -139,7 +140,8 @@ class Meetup extends Model implements HasMedia
     protected function belongsToMe(): Attribute
     {
         return Attribute::make(
-            get: fn() => DB::table('meetup_user')->where('meetup_id', $this->id)->where('user_id', auth()->id())->exists(),
+            get: fn() => DB::table('meetup_user')->where('meetup_id', $this->id)->where('user_id',
+                auth()->id())->exists(),
         );
     }
 

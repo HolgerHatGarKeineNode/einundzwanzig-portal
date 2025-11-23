@@ -100,16 +100,18 @@ class extends Component {
 
                     <flux:table.cell>
                         @if($meetup->nextEvent && $meetup->nextEvent['start']->isFuture())
-                            <div class="flex flex-col gap-1">
-                                <flux:badge color="green" size="sm">
-                                    {{ $meetup->nextEvent['start']->format('d.m.Y H:i') }}
-                                </flux:badge>
-                                <div class="text-xs text-zinc-500 flex items-center gap-2">
-                                    <span>{{ $meetup->nextEvent['attendees'] }} {{ __('Zusagen') }}</span>
-                                    <flux:separator vertical/>
-                                    <span>{{ $meetup->nextEvent['might_attendees'] }} {{ __('Vielleicht') }}</span>
+                            <a href="{{ route('meetups.landingpage-event', ['meetup' => $meetup, 'event' => $meetup->nextEvent['id'], 'country' => $country]) }}">
+                                <div class="flex flex-col gap-1">
+                                    <flux:badge color="green" size="sm">
+                                        {{ $meetup->nextEvent['start']->asDateTime() }}
+                                    </flux:badge>
+                                    <div class="text-xs text-zinc-500 flex items-center gap-2">
+                                        <span>{{ $meetup->nextEvent['attendees'] }} {{ __('Zusagen') }}</span>
+                                        <flux:separator vertical/>
+                                        <span>{{ $meetup->nextEvent['might_attendees'] }} {{ __('Vielleicht') }}</span>
+                                    </div>
                                 </div>
-                            </div>
+                            </a>
                         @endif
                     </flux:table.cell>
 

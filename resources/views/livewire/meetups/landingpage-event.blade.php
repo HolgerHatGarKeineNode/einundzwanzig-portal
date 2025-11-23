@@ -163,7 +163,7 @@ class extends Component {
             <flux:card class="max-w-3xl">
                 <flux:heading size="xl" class="mb-4">
                     <flux:icon.calendar class="inline w-6 h-6 mr-2"/>
-                    {{ $event->start->format('d.m.Y') }}
+                    {{ $event->start->asDateTime() }}
                 </flux:heading>
 
                 <div class="space-y-4">
@@ -171,9 +171,9 @@ class extends Component {
                     <div class="flex items-center text-zinc-700 dark:text-zinc-300">
                         <flux:icon.clock class="w-5 h-5 mr-3"/>
                         <div>
-                            <div class="font-semibold">{{ $event->start->format('H:i') }} Uhr</div>
+                            <div class="font-semibold">{{ $event->start->asTime() }} Uhr</div>
                             <div
-                                class="text-sm text-zinc-600 dark:text-zinc-400">{{ $event->start->isoFormat('dddd, D. MMMM YYYY') }}</div>
+                                class="text-sm text-zinc-600 dark:text-zinc-400">{{ $event->start->asDate() }}</div>
                         </div>
                     </div>
 
