@@ -1,6 +1,7 @@
 <?php
 
 use App\Attributes\SeoDataAttribute;
+use App\Jobs\FetchNostrProfileJob;
 use App\Models\LoginKey;
 use App\Models\User;
 use App\Notifications\ModelCreatedNotification;
@@ -63,17 +64,7 @@ class extends Component {
     public function loginListener($pubkey): void
     {
         $user = \App\Models\User::query()->where('nostr', $pubkey)->first();
-        if ($user) {
-            Auth::loginUsingId($user->id);
-            Session::regenerate();
-            $this->redirectIntended(
-                default: route('dashboard',
-                    ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()],
-                    absolute: false),
-                navigate: true,
-            );
-            return;
-        } else {
+        if (!$user) {
             $fakeName = str()->random(10);
             // create User
             $user = User::create([
@@ -88,16 +79,16 @@ class extends Component {
                     'wallet_id' => null,
                 ],
             ]);
-            Auth::loginUsingId($user->id);
-            Session::regenerate();
-            $this->redirectIntended(
-                default: route('dashboard',
-                    ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()],
-                    absolute: false),
-                navigate: true,
-            );
-            return;
         }
+        FetchNostrProfileJob::dispatch($user);
+        Auth::loginUsingId($user->id);
+        Session::regenerate();
+        $this->redirectIntended(
+            default: route('dashboard',
+                ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()],
+                absolute: false),
+            navigate: true,
+        );
         return;
 
         $this->validate();

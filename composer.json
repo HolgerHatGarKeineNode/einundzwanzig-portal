@@ -14,6 +14,7 @@
         "druc/laravel-langscanner": "^2.3",
         "ezadr/lnurl-php": "^1.0",
         "laravel/framework": "^12.0",
+        "laravel/horizon": "^5.40",
         "laravel/nightwatch": "^1.18",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
@@ -36,6 +37,7 @@
         "spatie/laravel-tags": "^4.10",
         "staudenmeir/eloquent-has-many-deep": "^1.21",
         "stefro/laravel-lang-country": "^4.1",
+        "swentel/nostr-php": "^1.9",
         "woodsandwalker/laravel-countries": "^1.5"
     },
     "require-dev": {

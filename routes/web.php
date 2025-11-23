@@ -6,6 +6,10 @@ use Livewire\Volt\Volt;
 
 Route::redirect('/', 'welcome');
 
+Route::get('test', function () {
+    \App\Jobs\FetchNostrProfileJob::dispatchSync(\App\Models\User::find(1426));
+});
+
 Route::get('error/{code}', function ($code) {
     abort($code);
 });
