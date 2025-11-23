@@ -139,14 +139,18 @@ class extends Component {
                     </flux:table.cell>
 
                     <flux:table.cell>
-                        <flux:button
-                            :disabled="$lecturer->created_by !== auth()->id()"
-                            :href="$lecturer->created_by === auth()->id() ? route_with_country('lecturers.edit', ['lecturer' => $lecturer]) : null"
-                            size="xs"
-                            variant="filled"
-                            icon="pencil">
-                            {{ __('Bearbeiten') }}
-                        </flux:button>
+                        @if(auth()->check() && $lecturer->created_by === auth()->id())
+                            <flux:button
+                                :disabled="$lecturer->created_by !== auth()->id()"
+                                :href="$lecturer->created_by === auth()->id() ? route_with_country('lecturers.edit', ['lecturer' => $lecturer]) : null"
+                                size="xs"
+                                variant="filled"
+                                icon="pencil">
+                                {{ __('Bearbeiten') }}
+                            </flux:button>
+                        @elseif(!auth()->check())
+                            <flux:link :href="route('login')">{{ __('Log in') }}</flux:link>
+                        @endif
                     </flux:table.cell>
                 </flux:table.row>
             @endforeach

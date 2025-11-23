@@ -80,13 +80,15 @@ class extends Component {
                     </flux:table.cell>
                     <flux:table.cell>
                         <div class="flex gap-2">
-                            @auth
+                            @if(auth()->check())
                                 <flux:button size="xs"
                                              :href="route('venues.edit', ['venue' => $venue, 'country' => $country])"
                                              icon="pencil">
                                     {{ __('Edit') }}
                                 </flux:button>
-                            @endauth
+                            @elseif(!auth()->check())
+                                <flux:link :href="route('login')">{{ __('Log in') }}</flux:link>
+                            @endif
                         </div>
                     </flux:table.cell>
                 </flux:table.row>

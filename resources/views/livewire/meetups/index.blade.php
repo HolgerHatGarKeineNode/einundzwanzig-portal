@@ -161,21 +161,26 @@ class extends Component {
 
                     <flux:table.cell>
                         <div class="flex flex-col space-y-2">
-                            <div>
-                                <flux:button
-                                    :disabled="!$meetup->belongsToMe"
-                                    :href="$meetup->belongsToMe ? route_with_country('meetups.edit', ['meetup' => $meetup]) : null"
-                                    size="xs"
-                                    variant="filled" icon="pencil">
-                                    {{ __('Bearbeiten') }}
-                                </flux:button>
-                            </div>
-                            <div>
-                                <flux:button :href="route_with_country('meetups.events.create', ['meetup' => $meetup])"
-                                             size="xs" variant="filled" icon="calendar">
-                                    {{ __('Neues Event erstellen') }}
-                                </flux:button>
-                            </div>
+                            @if(auth()->check() && $meetup->belongsToMe)
+                                <div>
+                                    <flux:button
+                                        :disabled="!$meetup->belongsToMe"
+                                        :href="$meetup->belongsToMe ? route_with_country('meetups.edit', ['meetup' => $meetup]) : null"
+                                        size="xs"
+                                        variant="filled" icon="pencil">
+                                        {{ __('Bearbeiten') }}
+                                    </flux:button>
+                                </div>
+                                <div>
+                                    <flux:button
+                                        :href="route_with_country('meetups.events.create', ['meetup' => $meetup])"
+                                        size="xs" variant="filled" icon="calendar">
+                                        {{ __('Neues Event erstellen') }}
+                                    </flux:button>
+                                </div>
+                            @elseif(!auth()->check())
+                                <flux:link :href="route('login')">{{ __('Log in') }}</flux:link>
+                            @endif
                         </div>
                     </flux:table.cell>
                 </flux:table.row>

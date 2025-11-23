@@ -115,26 +115,30 @@ class extends Component {
 
                     <flux:table.cell>
                         <div class="flex flex-col space-y-2">
-                            <div>
-                                <flux:button
-                                    :disabled="$course->created_by !== auth()->id()"
-                                    :href="$course->created_by === auth()->id() ? route_with_country('courses.edit', ['course' => $course]) : null"
-                                    size="xs"
-                                    variant="filled"
-                                    icon="pencil">
-                                    {{ __('Bearbeiten') }}
-                                </flux:button>
-                            </div>
-                            <div>
-                                <flux:button
-                                    :disabled="$course->created_by !== auth()->id()"
-                                    :href="$course->created_by === auth()->id() ? route_with_country('courses.events.create', ['course' => $course]) : null"
-                                    size="xs"
-                                    variant="filled"
-                                    icon="calendar">
-                                    {{ __('Neues Event erstellen') }}
-                                </flux:button>
-                            </div>
+                            @if(auth()->check() && $course->created_by === auth()->id())
+                                <div>
+                                    <flux:button
+                                        :disabled="$course->created_by !== auth()->id()"
+                                        :href="$course->created_by === auth()->id() ? route_with_country('courses.edit', ['course' => $course]) : null"
+                                        size="xs"
+                                        variant="filled"
+                                        icon="pencil">
+                                        {{ __('Bearbeiten') }}
+                                    </flux:button>
+                                </div>
+                                <div>
+                                    <flux:button
+                                        :disabled="$course->created_by !== auth()->id()"
+                                        :href="$course->created_by === auth()->id() ? route_with_country('courses.events.create', ['course' => $course]) : null"
+                                        size="xs"
+                                        variant="filled"
+                                        icon="calendar">
+                                        {{ __('Neues Event erstellen') }}
+                                    </flux:button>
+                                </div>
+                            @elseif(!auth()->check())
+                                <flux:link :href="route('login')">{{ __('Log in') }}</flux:link>
+                            @endif
                         </div>
                     </flux:table.cell>
                 </flux:table.row>

@@ -37,7 +37,7 @@ class extends Component {
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <!-- Left Column: Meetup Details -->
         <div class="space-y-6">
-            <div class="flex items-center space-x-4">
+            <div class="flex flex-col sm:flex-row items-center space-x-0 sm:space-x-4 space-y-4 sm:space-y-0">
                 <flux:avatar class="[:where(&)]:size-32 [:where(&)]:text-base" size="xl"
                              src="{{ $meetup->getFirstMediaUrl('logo') }}"/>
                 <div class="space-y-2">
@@ -196,10 +196,10 @@ class extends Component {
         </div>
     </div>
 
-    <!-- Events Section -->
+    {{-- Events Section --}}
     @if($events->isNotEmpty())
         <div class="mt-16">
-            <div class="flex items-center space-x-4 mb-6">
+            <div class="flex flex-col sm:flex-row items-center sm:space-x-4 space-y-4 sm:space-y-0 mb-6">
                 <flux:heading size="xl">{{ __('Kommende Veranstaltungen') }}</flux:heading>
                 @if(auth()->user() && auth()->user()->meetups()->find($meetup->id)?->exists)
                     <flux:button :href="route_with_country('meetups.events.create', ['meetup' => $meetup])"

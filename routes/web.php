@@ -43,6 +43,11 @@ Volt::route('welcome', 'welcome')->name('welcome');
 Route::get('stream-calendar', \App\Http\Controllers\DownloadMeetupCalendar::class)
     ->name('ics');
 
+Route::middleware(['auth'])
+    ->get('dashboard', function () {
+        return redirect('/de/dashboard'); // Zu /de weiterleiten
+    });
+
 Route::middleware([])
     ->prefix('/{country:code}')
     ->group(function () {

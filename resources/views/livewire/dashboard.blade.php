@@ -154,7 +154,7 @@ class extends Component {
                                         </div>
                                     </a>
                                 </div>
-                                <div class="flex items-center gap-2">
+                                <div class="flex flex-col sm:flex-row items-start gap-2">
                                     <flux:button :href="route_with_country('meetups.edit', ['meetup' => $meetup])"
                                                  size="xs" variant="ghost" icon="pencil">
                                         {{ __('Bearbeiten') }}
