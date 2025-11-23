@@ -40,7 +40,7 @@
             </flux:navlist.item>
             <flux:navlist.item icon="map" :href="route_with_country('meetups.map-world')"
                                :current="request()->routeIs('meetups.map-world')"
-                               wire:navigate>
+                               wire:navigate badge="{{ \App\Models\Meetup::query()->count() }}">
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Welt-Karte') }}</span>
                     <flux:icon name="globe-europe-africa"/>
