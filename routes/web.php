@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Laravel\Nightwatch\Http\Middleware\Sample;
 use Livewire\Volt\Volt;
 
 Route::redirect('/', 'welcome');
@@ -117,5 +118,8 @@ Route::middleware(['auth'])
     });
 
 //Route::feeds();
+
+Route::fallback(fn () => abort(404))
+    ->middleware(Sample::rate(0.5));
 
 require __DIR__.'/auth.php';
