@@ -157,7 +157,12 @@ class extends Component {
     public function with(): array
     {
         return [
-            'cities' => City::query()->orderBy('name')->get(),
+            'cities' => City::query()
+                ->with([
+                    'country',
+                ])
+                ->orderBy('name')
+                ->get(),
             'countries' => Country::query()->orderBy('countries.name')->get(),
         ];
     }
