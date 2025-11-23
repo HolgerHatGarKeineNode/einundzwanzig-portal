@@ -13,9 +13,11 @@ class extends Component {
     public string $country = 'de';
     public float $latitude = 0.0;
     public float $longitude = 0.0;
+    public string $currentRouteName = '';
 
     public function mount(): void
     {
+        $this->currentRouteName = request()->route()->getName();
         $this->country = request()->route('country', config('app.domain_country'));
         $geoCountry = \Lwwcas\LaravelCountries\Models\Country::query()
             ->where('iso_alpha_2', str($this->country)->upper())
@@ -45,6 +47,12 @@ class extends Component {
                     'meetups.signal',
                 ])
                 ->with(['city:id,country_id,longitude,latitude', 'city.country'])
+                ->when(
+                    $this->currentRouteName === 'meetups.map',
+                    fn($query)
+                        => $query
+                        ->whereHas('city.country', fn($query) => $query->where('code', $this->country))
+                )
                 ->get()
                 ->map(function ($meetup) {
                     $meetup->load(['meetupEvents' => function($query) {

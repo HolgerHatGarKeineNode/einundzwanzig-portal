@@ -30,7 +30,22 @@
             </flux:navlist.item>
             <flux:navlist.item icon="map" :href="route_with_country('meetups.map')"
                                :current="request()->routeIs('meetups.map')"
-                               wire:navigate>{{ __('Karte') }}</flux:navlist.item>
+                               wire:navigate>
+                <div class="flex items-center space-x-2">
+                    <span>{{ __('Karte') }}</span>
+                    <img alt="{{ request()->route('country') }}"
+                         src="{{ asset('vendor/blade-flags/country-'.request()->route('country').'.svg') }}"
+                         width="24" height="12"/>
+                </div>
+            </flux:navlist.item>
+            <flux:navlist.item icon="map" :href="route_with_country('meetups.map-world')"
+                               :current="request()->routeIs('meetups.map-world')"
+                               wire:navigate>
+                <div class="flex items-center space-x-2">
+                    <span>{{ __('Welt-Karte') }}</span>
+                    <flux:icon name="globe-europe-africa"/>
+                </div>
+            </flux:navlist.item>
         </flux:navlist.group>
 
         <flux:navlist.group :heading="__('Kurse')" class="grid">
@@ -49,7 +64,8 @@
         </flux:navlist.group>
 
         <flux:navlist.group :heading="__('Diverses')" class="grid">
-            <flux:navlist.group :heading="__('Orte/Gebiete')" expandable :expanded="request()->routeIs('cities.*') || request()->routeIs('venues.*')">
+            <flux:navlist.group :heading="__('Orte/Gebiete')" expandable
+                                :expanded="request()->routeIs('cities.*') || request()->routeIs('venues.*')">
                 <flux:navlist.item icon="building-office-2" :href="route_with_country('cities.index')"
                                    :current="request()->routeIs('cities.index')"
                                    wire:navigate
@@ -69,7 +85,8 @@
     <flux:spacer/>
 
     <flux:navlist variant="outline">
-        <flux:navlist.item icon="language" :href="route('settings.profile', ['country' => str(session('lang_country', 'de'))->after('-')->lower()])"
+        <flux:navlist.item icon="language"
+                           :href="route('settings.profile', ['country' => str(session('lang_country', 'de'))->after('-')->lower()])"
                            :current="request()->routeIs('settings.profile')"
                            wire:navigate>
             {{ __('Sprache wechseln') }}
@@ -108,7 +125,7 @@
                 <flux:menu.radio.group>
                     <div class="p-0 text-sm font-normal">
                         <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
-                            <flux:avatar :src="auth()->user()->profile_photo_url" size="sm" class="shrink-0" />
+                            <flux:avatar :src="auth()->user()->profile_photo_url" size="sm" class="shrink-0"/>
 
                             <div class="grid flex-1 text-start text-sm leading-tight">
                                 <span class="truncate font-semibold">{{ auth()->user()?->name }}</span>
@@ -128,8 +145,10 @@
                 <flux:menu.separator/>
 
                 <flux:menu.radio.group>
-                    <flux:menu.item :href="route('settings.profile', ['country' => str(session('lang_country', 'de'))->after('-')->lower()])" icon="cog"
-                                    wire:navigate>{{ __('Settings') }}</flux:menu.item>
+                    <flux:menu.item
+                        :href="route('settings.profile', ['country' => str(session('lang_country', 'de'))->after('-')->lower()])"
+                        icon="cog"
+                        wire:navigate>{{ __('Settings') }}</flux:menu.item>
                 </flux:menu.radio.group>
 
                 <flux:menu.separator/>
@@ -169,7 +188,7 @@
                 <flux:menu.radio.group>
                     <div class="p-0 text-sm font-normal">
                         <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
-                            <flux:avatar :src="auth()->user()->profile_photo_url" size="sm" class="shrink-0" />
+                            <flux:avatar :src="auth()->user()->profile_photo_url" size="sm" class="shrink-0"/>
 
                             <div class="grid flex-1 text-start text-sm leading-tight">
                                 <span class="truncate font-semibold">{{ auth()->user()?->name }}</span>
@@ -189,8 +208,10 @@
                 <flux:menu.separator/>
 
                 <flux:menu.radio.group>
-                    <flux:menu.item :href="route('settings.profile', ['country' => str(session('lang_country', 'de'))->after('-')->lower()])" icon="cog"
-                                    wire:navigate>{{ __('Settings') }}</flux:menu.item>
+                    <flux:menu.item
+                        :href="route('settings.profile', ['country' => str(session('lang_country', 'de'))->after('-')->lower()])"
+                        icon="cog"
+                        wire:navigate>{{ __('Settings') }}</flux:menu.item>
                 </flux:menu.radio.group>
 
                 <flux:menu.separator/>
