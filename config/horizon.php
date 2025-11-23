@@ -97,7 +97,7 @@ return [
     */
 
     'waits' => [
-        'redis:default' => 60 * 2, // 2 minutes
+        'redis:default' => 60 * 15, // 15 minutes
     ],
 
     /*
@@ -112,9 +112,9 @@ return [
     */
 
     'trim' => [
-        'recent' => 60 * 2, // 2 minutes
-        'pending' => 60 * 2, // 2 minutes
-        'completed' => 60 * 2, // 2 minutes
+        'recent' => 60 * 15, // 15 minutes
+        'pending' => 60 * 15, // 15 minutes
+        'completed' => 60 * 15, // 15 minutes
         'recent_failed' => 10080,
         'failed' => 10080,
         'monitored' => 10080,
@@ -207,7 +207,7 @@ return [
             'maxJobs' => 0,
             'memory' => 128,
             'tries' => 1,
-            'timeout' => 60 * 2, // 2 minutes
+            'timeout' => 60 * 15, // 15 minutes
             'nice' => 0,
         ],
     ],
