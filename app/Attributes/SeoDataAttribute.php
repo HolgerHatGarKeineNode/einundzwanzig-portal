@@ -17,28 +17,7 @@ class SeoDataAttribute
 
     private static function initDefinitions(): void
     {
-        $langCountry = session('lang_country', 'de-DE');
-        $domainImage = asset('img/domains/'.$langCountry.'.jpg');
-        if (!file_exists(public_path('img/domains/'.$langCountry.'.jpg'))) {
-            $langCountry = 'de-DE';
-        }
-        $southAmericanCountries = [
-            'ar-AR', // Argentina
-            'bo-BO', // Bolivia
-            'br-BR', // Brazil
-            'cl-CL', // Chile
-            'co-CO', // Colombia
-            'ec-EC', // Ecuador
-            'gy-GY', // Guyana
-            'py-PY', // Paraguay
-            'pe-PE', // Peru
-            'sr-SR', // Suriname
-            'uy-UY', // Uruguay
-            've-VE', // Venezuela
-        ];
-        if (in_array($langCountry, $southAmericanCountries, true)) {
-            $domainImage = asset('img/domains/lat.png');
-        }
+        $domainImage = get_domain_image();
 
         self::$seoDefinitions = [
             'login' => new SEOData(

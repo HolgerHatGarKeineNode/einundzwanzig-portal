@@ -1,29 +1,4 @@
-@php
-    $langCountry = session('lang_country', 'de-DE');
-    $domainImage = asset('img/domains/'.$langCountry.'.jpg');
-    if (!file_exists(public_path('img/domains/'.$langCountry.'.jpg'))) {
-        $langCountry = 'de-DE';
-    }
-    $southAmericanCountries = [
-        'ar-AR', // Argentina
-        'bo-BO', // Bolivia
-        'br-BR', // Brazil
-        'cl-CL', // Chile
-        'co-CO', // Colombia
-        'ec-EC', // Ecuador
-        'gy-GY', // Guyana
-        'py-PY', // Paraguay
-        'pe-PE', // Peru
-        'sr-SR', // Suriname
-        'uy-UY', // Uruguay
-        've-VE', // Venezuela
-    ];
-    if (in_array($langCountry, $southAmericanCountries, true)) {
-        $domainImage = asset('img/domains/lat.png');
-    }
-@endphp
-
-@if($langCountry === 'de-DE')
+@if(session('lang_country', 'de-DE') === 'de-DE')
     <svg viewBox="0 0 1287 1287" version="1.1" xmlns="http://www.w3.org/2000/svg"
          xmlns:xlink="http://www.w3.org/1999/xlink">
         <g>
@@ -41,5 +16,5 @@
         </g>
     </svg>
 @else
-    <img src="{{ $domainImage }}" alt="{{ $langCountry }}">
+    <img src="{{ get_domain_image() }}" alt="{{ session('lang_country', 'de-DE') }}">
 @endif
