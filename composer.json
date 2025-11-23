@@ -14,6 +14,7 @@
         "druc/laravel-langscanner": "^2.3",
         "ezadr/lnurl-php": "^1.0",
         "laravel/framework": "^12.0",
+        "laravel/nightwatch": "^1.18",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
         "league/glide": "^3.0",
