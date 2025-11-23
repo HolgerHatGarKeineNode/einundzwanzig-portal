@@ -26,6 +26,10 @@ class extends Component {
             ->first();
         $this->latitude = $geoCountry->latitude ?? 51.165691;
         $this->longitude = $geoCountry->longitude ?? 10.451526;
+        if ($this->currentRouteName !== 'meetups.map') {
+            $this->latitude = 20;
+            $this->longitude = 10;
+        }
     }
 
     public function with(): array
@@ -115,7 +119,7 @@ class extends Component {
             initializeMap() {
                 const map = L.map($refs.map, {
                     scrollWheelZoom: false
-                }).setView([this.latitude, this.longitude], 6);
+                }).setView([this.latitude, this.longitude], @js($currentRouteName === 'meetups.map' ? 6 : 3));
 
                 L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
                     minZoom: 0,
