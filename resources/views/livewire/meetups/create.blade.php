@@ -100,8 +100,15 @@ class extends Component {
     public function with(): array
     {
         return [
-            'cities' => City::query()->orderBy('name')->get(),
-            'countries' => Country::query()->orderBy('countries.name')->get(),
+            'cities' => City::query()
+                ->with([
+                    'country',
+                ])
+                ->orderBy('name')
+                ->get(),
+            'countries' => Country::query()
+                ->orderBy('countries.name')
+                ->get(),
         ];
     }
 }; ?>
@@ -120,20 +127,20 @@ class extends Component {
                 <flux:file-upload wire:model="logo">
                     <!-- Custom logo uploader -->
                     <div class="
-                            relative flex items-center justify-center size-20 rounded-full transition-colors cursor-pointer
+                            relative flex items-center justify-center size-20 rounded transition-colors cursor-pointer
                             border border-zinc-200 dark:border-white/10 hover:border-zinc-300 dark:hover:border-white/10
                             bg-zinc-100 hover:bg-zinc-200 dark:bg-white/10 hover:dark:bg-white/15 in-data-dragging:dark:bg-white/15
                         ">
                         @if($logo)
                             <img src="{{ $logo?->temporaryUrl() }}" alt="Logo"
-                                 class="size-full object-cover rounded-full"/>
+                                 class="size-full object-cover rounded"/>
                         @else
                             <!-- Show the default icon if no file is uploaded -->
                             <flux:icon name="user-group" variant="solid" class="text-zinc-500 dark:text-zinc-400"/>
                         @endif
 
                         <!-- Corner upload icon -->
-                        <div class="absolute bottom-0 right-0 bg-white dark:bg-zinc-800 rounded-full">
+                        <div class="absolute bottom-0 right-0 bg-white dark:bg-zinc-800 rounded">
                             <flux:icon name="arrow-up-circle" variant="solid" class="text-zinc-500 dark:text-zinc-400"/>
                         </div>
                     </div>

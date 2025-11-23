@@ -17,8 +17,8 @@ class extends Component {
 
     public $country = 'de';
 
-    #[Validate('required|date')]
-    public string $start = '';
+    public string $startDate = '';
+    public string $startTime = '';
 
     #[Validate('required|string|max:255')]
     public ?string $location = null;
@@ -32,29 +32,54 @@ class extends Component {
     public function mount(): void
     {
         $this->country = request()->route('country');
+        $timezone = auth()->user()->timezone ?? 'Europe/Berlin';
+
         if ($this->event) {
-            $this->start = $this->event->start->format('Y-m-d\TH:i');
+            $localStart = $this->event->start->setTimezone($timezone);
+            $this->startDate = $localStart->format('Y-m-d');
+            $this->startTime = $localStart->format('H:i');
             $this->location = $this->event->location;
             $this->description = $this->event->description;
             $this->link = $this->event->link;
         } else {
-            // Set default start time to next Monday at 19:00
-            $this->start = now()->next('Monday')->setTime(19, 0)->format('Y-m-d\TH:i');
+            // Set default start time to next Monday at 19:00 in user's timezone
+            $defaultStart = now($timezone)->next('Monday')->setTime(19, 0);
+            $this->startDate = $defaultStart->format('Y-m-d');
+            $this->startTime = $defaultStart->format('H:i');
         }
     }
 
     public function save(): void
     {
-        $validated = $this->validate();
+        $this->validate([
+            'startDate' => 'required|date',
+            'startTime' => 'required',
+            'location' => 'required|string|max:255',
+            'description' => 'required|string',
+            'link' => 'required|url|max:255',
+        ]);
+
+        $timezone = auth()->user()->timezone ?? 'Europe/Berlin';
+
+        // Combine date and time in user's timezone, then convert to UTC
+        $localDateTime = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $this->startDate . ' ' . $this->startTime, $timezone);
+        $utcDateTime = $localDateTime->setTimezone('UTC');
+
+        $data = [
+            'start' => $utcDateTime,
+            'location' => $this->location,
+            'description' => $this->description,
+            'link' => $this->link,
+        ];
 
         if ($this->event) {
             // Update existing event
-            $this->event->update($validated);
+            $this->event->update($data);
             session()->flash('status', __('Event erfolgreich aktualisiert!'));
         } else {
             // Create new event
             $this->meetup->meetupEvents()->create([
-                ...$validated,
+                ...$data,
                 'created_by' => auth()->id(),
                 'attendees' => [],
                 'might_attendees' => [],
@@ -90,19 +115,26 @@ class extends Component {
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <flux:field>
-                    <flux:label>{{ __('Startzeit') }} <span class="text-red-500">*</span></flux:label>
-                    <flux:input wire:model="start" type="datetime-local" required/>
-                    <flux:description>{{ __('Wann findet das Event statt?') }}</flux:description>
-                    <flux:error name="start"/>
+                    <flux:label>{{ __('Datum') }} <span class="text-red-500">*</span></flux:label>
+                    <flux:date-picker min="today" wire:model="startDate" required locale="{{ session('lang_country', 'de-DE') }}"/>
+                    <flux:description>{{ __('An welchem Tag findet das Event statt?') }}</flux:description>
+                    <flux:error name="startDate"/>
                 </flux:field>
 
                 <flux:field>
-                    <flux:label>{{ __('Ort') }}</flux:label>
-                    <flux:input wire:model="location" placeholder="{{ __('z.B. Café Mustermann, Hauptstr. 1') }}"/>
-                    <flux:description>{{ __('Wo findet das Event statt?') }}</flux:description>
-                    <flux:error name="location"/>
+                    <flux:label>{{ __('Uhrzeit') }} <span class="text-red-500">*</span></flux:label>
+                    <flux:time-picker wire:model="startTime" required locale="{{ session('lang_country', 'de-DE') }}"/>
+                    <flux:description>{{ __('Um wie viel Uhr startet das Event?') }} ({{ auth()->user()->timezone ?? 'Europe/Berlin' }})</flux:description>
+                    <flux:error name="startTime"/>
                 </flux:field>
             </div>
+
+            <flux:field>
+                <flux:label>{{ __('Ort') }}</flux:label>
+                <flux:input wire:model="location" placeholder="{{ __('z.B. Café Mustermann, Hauptstr. 1') }}"/>
+                <flux:description>{{ __('Wo findet das Event statt?') }}</flux:description>
+                <flux:error name="location"/>
+            </flux:field>
 
             <flux:field>
                 <flux:label>{{ __('Beschreibung') }}</flux:label>
