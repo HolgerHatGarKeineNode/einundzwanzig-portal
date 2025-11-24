@@ -68,7 +68,7 @@ trait NostrTrait
                 $model->start->asDateTime(),
                 $model->location,
                 url()->route('meetups.landingpage-event',
-                    ['country' => str(session('lang_country', 'de'))->after('-')->lower(), 'meetup' => $model, 'event' => $model]),
+                    ['country' => str(session('lang_country', 'de'))->after('-')->lower(), 'meetup' => $model->meetup, 'event' => $model]),
                 str($model->meetup->slug)->replace('-', '_'),
             );
         }

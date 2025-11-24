@@ -63,17 +63,17 @@ class extends Component {
     public function placeholder(): string
     {
         return <<<'HTML'
-        <div class="relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700">
-            <div class="p-6">
-                <flux:heading size="lg" class="mb-4">{{ __('Top Meetups') }}</flux:heading>
-                <flux:text class="text-sm text-zinc-500 mb-4">{{ __('Meetups mit den meisten Usern') }}</flux:text>
-                <flux:separator class="my-4"/>
-                <div class="flex items-center justify-center py-8">
-                    <flux:icon.arrow-path class="animate-spin size-6 text-zinc-400" />
+            <div class="relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700">
+                <div class="p-6">
+                    <flux:heading size="lg" class="mb-4">{{ __('Top Meetups') }}</flux:heading>
+                    <flux:text class="text-sm text-zinc-500 mb-4">{{ __('Meetups mit den meisten Usern') }}</flux:text>
+                    <flux:separator class="my-4"/>
+                    <div class="flex items-center justify-center py-8">
+                        <flux:icon.arrow-path class="animate-spin size-6 text-zinc-400" />
+                    </div>
                 </div>
             </div>
-        </div>
-        HTML;
+            HTML;
     }
 }; ?>
 
@@ -99,7 +99,7 @@ class extends Component {
                         </div>
                         <flux:chart :value="$meetup->sparkline" class="w-[5rem] aspect-[3/1]">
                             <flux:chart.svg gutter="0">
-                                <flux:chart.line class="text-green-500 dark:text-green-400" />
+                                <flux:chart.line class="text-green-500 dark:text-green-400"/>
                             </flux:chart.svg>
                         </flux:chart>
                     </a>

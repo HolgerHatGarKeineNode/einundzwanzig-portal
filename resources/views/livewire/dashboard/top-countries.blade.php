@@ -91,7 +91,8 @@ class extends Component {
             <flux:separator class="my-4"/>
             <div class="space-y-3">
                 @foreach($topCountries as $country)
-                    <div class="flex items-center justify-between gap-3 p-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+                    <div
+                        class="flex items-center justify-between gap-3 p-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg transition-colors">
                         <a href="{{ route('meetups.map', ['country' => $country->code]) }}">
                             <div class="flex items-center gap-3 flex-1">
                                 <img alt="{{ $country->code }}"
@@ -105,7 +106,7 @@ class extends Component {
                         </a>
                         <flux:chart :value="$country->sparkline" class="w-[5rem] aspect-[3/1]">
                             <flux:chart.svg gutter="0">
-                                <flux:chart.line class="text-green-500 dark:text-green-400" />
+                                <flux:chart.line class="text-green-500 dark:text-green-400"/>
                             </flux:chart.svg>
                         </flux:chart>
                     </div>

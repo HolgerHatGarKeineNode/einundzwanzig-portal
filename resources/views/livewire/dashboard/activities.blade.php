@@ -22,7 +22,10 @@ class extends Component {
             ->get();
 
         // Kombiniere und sortiere Activities
-        $activities = collect($recentMeetups->map(fn($m) => ['type' => 'meetup', 'data' => $m, 'created_at' => $m->created_at]))
+        $activities = collect($recentMeetups->map(fn($m)
+            => [
+            'type' => 'meetup', 'data' => $m, 'created_at' => $m->created_at,
+        ]))
             ->merge($recentEvents->map(fn($e) => ['type' => 'event', 'data' => $e, 'created_at' => $e->created_at]))
             ->sortByDesc('created_at')
             ->take(10);
@@ -35,17 +38,17 @@ class extends Component {
     public function placeholder(): string
     {
         return <<<'HTML'
-        <div class="relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700">
-            <div class="p-6">
-                <flux:heading size="lg" class="mb-4">{{ __('Aktivitäten') }}</flux:heading>
-                <flux:text class="text-sm text-zinc-500 mb-4">{{ __('Neue Meetups und Termine') }}</flux:text>
-                <flux:separator class="my-4"/>
-                <div class="flex items-center justify-center py-8">
-                    <flux:icon.arrow-path class="animate-spin size-6 text-zinc-400" />
+            <div class="relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700">
+                <div class="p-6">
+                    <flux:heading size="lg" class="mb-4">{{ __('Aktivitäten') }}</flux:heading>
+                    <flux:text class="text-sm text-zinc-500 mb-4">{{ __('Neue Meetups und Termine') }}</flux:text>
+                    <flux:separator class="my-4"/>
+                    <div class="flex items-center justify-center py-8">
+                        <flux:icon.arrow-path class="animate-spin size-6 text-zinc-400" />
+                    </div>
                 </div>
             </div>
-        </div>
-        HTML;
+            HTML;
     }
 }; ?>
 
