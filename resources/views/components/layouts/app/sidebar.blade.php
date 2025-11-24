@@ -26,7 +26,21 @@
                                :current="request()->routeIs('meetups.index')"
                                wire:navigate
                                badge="{{ \App\Models\Meetup::query()->whereHas('city.country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
-                {{ __('Meetups') }}
+                <div class="flex items-center space-x-2">
+                    <span>{{ __('Meetups') }}</span>
+                    <img alt="{{ request()->route('country') }}"
+                         src="{{ asset('vendor/blade-flags/country-'.request()->route('country').'.svg') }}"
+                         width="24" height="12"/>
+                </div>
+            </flux:navlist.item>
+            <flux:navlist.item icon="user-group" :href="route_with_country('meetups.index-all')"
+                               :current="request()->routeIs('meetups.index-all')"
+                               wire:navigate
+                               badge="{{ \App\Models\Meetup::query()->count() }}">
+                <div class="flex items-center space-x-2">
+                    <span>{{ __('Alle Meetups') }}</span>
+                    <flux:icon name="globe-europe-africa"/>
+                </div>
             </flux:navlist.item>
             <flux:navlist.item icon="map" :href="route_with_country('meetups.map')"
                                :current="request()->routeIs('meetups.map')"

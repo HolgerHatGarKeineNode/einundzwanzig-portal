@@ -14,9 +14,11 @@ class extends Component {
 
     public $country = 'de';
     public $search = '';
+    public string $currentRouteName = '';
 
     public function mount(): void
     {
+        $this->currentRouteName = request()->route()->getName();
         $this->country = request()->route('country', config('app.domain_country'));
     }
 
@@ -34,7 +36,9 @@ class extends Component {
                 })
                 ->selectRaw('meetups.*, MIN(meetup_events.start) as next_event_start')
                 ->groupBy('meetups.id')
-                ->whereHas('city.country', fn($query) => $query->where('countries.code', $this->country))
+                ->when($this->currentRouteName === 'meetups.index', fn($query) =>
+                    $query->whereHas('city.country', fn($query) => $query->where('countries.code', $this->country))
+                )
                 ->when($this->search, fn($query)
                     => $query->where('meetups.name', 'ilike', '%'.$this->search.'%'),
                 )
