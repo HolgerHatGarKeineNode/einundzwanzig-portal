@@ -74,7 +74,9 @@ Route::middleware([])
         Route::get('/meetup/meetup-events', function ($country) {
             return redirect("/{$country}/meetups");
         });
-        Volt::route('meetup/meetup-events/l/{event}', 'meetups.landingpage-event')->name('meetups.landingpage-event-old');
+        Volt::route('meetup/meetup-events/l/{event}', 'meetups.landingpage-event')
+            ->name('meetups.landingpage-event-old')
+            ->where('event', '[0-9]+');
 
         Volt::route('meetups', 'meetups.index')->name('meetups.index');
         Volt::route('all-meetups', 'meetups.index')->name('meetups.index-all');
@@ -82,7 +84,9 @@ Route::middleware([])
         Volt::route('map-world', 'meetups.map')->name('meetups.map-world');
         Volt::route('meetup/{meetup:slug}', 'meetups.landingpage')->name('meetups.landingpage');
         Volt::route('meetup/{meetup:slug}/event/{event}',
-            'meetups.landingpage-event')->name('meetups.landingpage-event');
+            'meetups.landingpage-event')
+            ->name('meetups.landingpage-event')
+            ->where('event', '[0-9]+');
 
         Volt::route('courses', 'courses.index')->name('courses.index');
         Volt::route('course/{course}', 'courses.landingpage')->name('courses.landingpage');
