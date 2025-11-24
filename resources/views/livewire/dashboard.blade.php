@@ -204,4 +204,11 @@ class extends Component {
             </div>
         </div>
     </div>
+
+    {{-- Neue Statistiken und Activities (Lazy loaded) --}}
+    <div class="grid auto-rows-min gap-4 grid-cols-1 md:grid-cols-2 2xl:grid-cols-3">
+        <livewire:dashboard.top-countries lazy/>
+        <livewire:dashboard.top-meetups lazy/>
+        <livewire:dashboard.activities lazy/>
+    </div>
 </div>
