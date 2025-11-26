@@ -119,7 +119,9 @@
                     <livewire:country.chooser/>
                 </div>
                 <div>
-                    <livewire:timezone.chooser/>
+                    @if(auth()->check())
+                        <livewire:timezone.chooser/>
+                    @endif
                 </div>
             </div>
         </flux:navlist.group>
