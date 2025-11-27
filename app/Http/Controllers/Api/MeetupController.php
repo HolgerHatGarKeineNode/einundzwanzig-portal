@@ -17,6 +17,10 @@ class MeetupController extends Controller
 
     public function index(Request $request)
     {
+        if (!is_numeric($request->input('user_id'))) {
+            abort(404);
+        }
+
         $myMeetupIds = User::query()
             ->findOrFail($request->input('user_id'))
             ?->meetups
