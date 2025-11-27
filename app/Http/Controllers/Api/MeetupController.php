@@ -17,7 +17,10 @@ class MeetupController extends Controller
 
     public function index(Request $request)
     {
-        $myMeetupIds = User::query()->find($request->input('user_id'))->meetups->pluck('id');
+        $myMeetupIds = User::query()
+            ->findOrFail($request->input('user_id'))
+            ?->meetups
+            ->pluck('id');
 
         return Meetup::query()
             ->select('id', 'name', 'city_id', 'slug')
