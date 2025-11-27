@@ -10,6 +10,11 @@ use Illuminate\Http\Request;
 
 class MeetupController extends Controller
 {
+    public function ical()
+    {
+        abort(404);
+    }
+
     public function index(Request $request)
     {
         $myMeetupIds = User::query()->find($request->input('user_id'))->meetups->pluck('id');

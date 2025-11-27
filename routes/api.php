@@ -10,6 +10,7 @@ Route::middleware([])
     ->as('api.')
     ->group(function () {
         Route::resource('countries', \App\Http\Controllers\Api\CountryController::class);
+        Route::get('meetup/ical', [\App\Http\Controllers\Api\MeetupController::class, 'ical'])->name('api.meetup.ical');
         Route::resource('meetup', \App\Http\Controllers\Api\MeetupController::class);
         Route::resource('lecturers', \App\Http\Controllers\Api\LecturerController::class);
         Route::resource('courses', \App\Http\Controllers\Api\CourseController::class);
