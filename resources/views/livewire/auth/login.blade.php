@@ -54,7 +54,7 @@ class extends Component {
             $this->lnurl = lnurl\encodeUrl($this->url);
             $this->qrCode = base64_encode(QrCode::format('png')
                 ->size(300)
-                ->merge('/public/android-chrome-192x192.png', .3)
+                ->merge('/public/img/domains/'.session('lang_country', 'de-DE').'.jpg', .3)
                 ->errorCorrection('H')
                 ->generate($this->lnurl));
         }
