@@ -1,6 +1,30 @@
 [![Laravel Forge Site Deployment Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fforge.laravel.com%2Fsite-badges%2Ff25a1151-9c87-4f14-9943-17d05fa736c9&style=plastic)](https://forge.laravel.com/prime-software/lsm-server-1/1833504)
 
-Hosted: [https://portal.einundzwanzig.space](https://portal.einundzwanzig.space)
+### Hosted: 
+
+- de-DE: [https://portal.einundzwanzig.space/de/meetups](https://portal.einundzwanzig.space/de/meetups)
+- de-AT: [https://portal.einundzwanzig.space/at/meetups](https://portal.einundzwanzig.space/at/meetups)
+- de-CH: [https://portal.einundzwanzig.space/ch/meetups](https://portal.einundzwanzig.space/ch/meetups)
+- pl-PL: [https://portal.dwadziesciajeden.pl/pl/meetups](https://portal.dwadziesciajeden.pl/pl/meetups)
+
+### Host your national domain?
+
+To add your national domain, you need to create a CNAME record pointing to `einundzwanzig.space`. Here's how:
+
+1. Add a subdomain like `portal.yourdomain.tld`
+2. Create a CNAME record pointing to `portal.einundzwanzig.space`
+
+Common DNS provider CNAME settings:
+
+| Provider   | Type  | Name/Host/Alias | Target/Value/Destination   |
+|------------|-------|-----------------|----------------------------|
+| Cloudflare | CNAME | portal          | portal.einundzwanzig.space |
+| GoDaddy    | CNAME | portal          | portal.einundzwanzig.space |
+| Namecheap  | CNAME | portal          | portal.einundzwanzig.space |
+| Route53    | CNAME | portal          | portal.einundzwanzig.space |
+| ...        | CNAME | portal          | portal.einundzwanzig.space |
+
+After setting up your CNAME, please notify the repository owner to refresh SSL certificates to include your domain.
 
 ## Contributing and Proposals
 
