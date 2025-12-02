@@ -1,4 +1,4 @@
-[![Laravel Forge Site Deployment Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fforge.laravel.com%2Fsite-badges%2Fb7221607-01f1-4a61-a0d9-b98c61ef1b1b&style=plastic)](https://portal.einundzwanzig.space)
+[![Laravel Forge Site Deployment Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fforge.laravel.com%2Fsite-badges%2Ff25a1151-9c87-4f14-9943-17d05fa736c9&style=plastic)](https://forge.laravel.com/prime-software/lsm-server-1/1833504)
 
 Hosted: [https://portal.einundzwanzig.space](https://portal.einundzwanzig.space)
 
