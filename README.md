@@ -9,7 +9,7 @@
 
 ### Host your national domain?
 
-To add your national domain, you need to create a CNAME record pointing to `einundzwanzig.space`. Here's how:
+To add your national domain, you need to create a CNAME record pointing to `portal.einundzwanzig.space`. Here's how:
 
 1. Add a subdomain like `portal.yourdomain.tld`
 2. Create a CNAME record pointing to `portal.einundzwanzig.space`
