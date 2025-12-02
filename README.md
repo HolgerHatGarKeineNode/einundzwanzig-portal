@@ -14,15 +14,11 @@ To add your national domain, you need to create a CNAME record pointing to `port
 1. Add a subdomain like `portal.yourdomain.tld`
 2. Create a CNAME record pointing to `portal.einundzwanzig.space`
 
-Common DNS provider CNAME settings:
+DNS provider CNAME settings:
 
-| Provider   | Type  | Name/Host/Alias | Target/Value/Destination   |
-|------------|-------|-----------------|----------------------------|
-| Cloudflare | CNAME | portal          | portal.einundzwanzig.space |
-| GoDaddy    | CNAME | portal          | portal.einundzwanzig.space |
-| Namecheap  | CNAME | portal          | portal.einundzwanzig.space |
-| Route53    | CNAME | portal          | portal.einundzwanzig.space |
-| ...        | CNAME | portal          | portal.einundzwanzig.space |
+Type: CNAME
+Name/Host/Alias: portal
+Target/Value/Destination: portal.einundzwanzig.space
 
 After setting up your CNAME, please notify the repository owner to refresh SSL certificates to include your domain.
 
