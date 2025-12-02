@@ -9,16 +9,18 @@
 
 ### Host your national domain?
 
-To add your national domain, you need to create a CNAME record pointing to `portal.einundzwanzig.space`. Here's how:
+To add your national domain, you need to create a CNAME record pointing to `portal.einundzwanzig.space`.
+
+Here's how:
 
 1. Add a subdomain like `portal.yourdomain.tld`
 2. Create a CNAME record pointing to `portal.einundzwanzig.space`
 
 DNS provider CNAME settings:
 
-Type: CNAME
-Name/Host/Alias: portal
-Target/Value/Destination: portal.einundzwanzig.space
+Type: `CNAME`
+Name/Host/Alias: `portal`
+Target/Value/Destination: `portal.einundzwanzig.space`
 
 After setting up your CNAME, please notify the repository owner to refresh SSL certificates to include your domain.
 
