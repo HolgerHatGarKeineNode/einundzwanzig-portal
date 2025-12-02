@@ -20,10 +20,20 @@ class DomainMiddleware
                 'lang_country' => 'nl-NL',
                 'app_name' => 'EENENTWINTIG Portaal',
             ],
-            'portal.huszonegy.world/' => [
+            'portal.huszonegy.world' => [
                 'locale' => 'hu',
                 'lang_country' => 'hu-HU',
-                'app_name' => ' HUSZONEGY Portál',
+                'app_name' => 'HUSZONEGY Portál',
+            ],
+            'portal.dwadziesciajeden.pl' => [
+                'locale' => 'pl',
+                'lang_country' => 'pl-PL',
+                'app_name' => 'DWADZIEŚCIA JEDEN Portal',
+            ],
+            'pl.localhost' => [
+                'locale' => 'pl',
+                'lang_country' => 'pl-PL',
+                'app_name' => 'DWADZIEŚCIA JEDEN Portal',
             ],
         ];
 
@@ -31,6 +41,7 @@ class DomainMiddleware
         if (isset($domainArray[$domain]['locale'])) {
             session([
                 'lang_country' => $domainArray[$domain]['lang_country'],
+                'locale' => $domainArray[$domain]['locale'],
             ]);
             config([
                 'app.name' => $domainArray[$domain]['app_name'],

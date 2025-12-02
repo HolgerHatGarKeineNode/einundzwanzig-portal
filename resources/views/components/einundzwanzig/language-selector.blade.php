@@ -13,6 +13,7 @@
         'hu' => ['name' => 'Magyar', 'countries' => ['hu-HU']],
         'nl' => ['name' => 'Nederlands', 'countries' => ['nl-NL', 'nl-BE']],
         'pt' => ['name' => 'Português', 'countries' => ['pt-PT']],
+        'pl' => ['name' => 'Polski', 'countries' => ['pl-PL']],
     ];
 
     // Filter languages based on available JSON files and allowed languages

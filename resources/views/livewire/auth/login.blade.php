@@ -178,9 +178,8 @@ class extends Component {
             <!-- Logo -->
             <div class="flex justify-center">
                 <a href="/" class="group flex items-center gap-3">
-                    <div>
-                        <flux:avatar class="[:where(&)]:size-32 [:where(&)]:text-base" size="xl"
-                                     src="{{ asset('img/einundzwanzig-square.svg') }}"/>
+                    <div class="h-24 m-12 [:where(&)]:size-32 [:where(&)]:text-base">
+                        <x-app-logo-icon/>
                     </div>
                 </a>
             </div>
@@ -199,7 +198,7 @@ class extends Component {
                              class="w-full cursor-pointer">{{ __('Log in mit Nostr') }}</flux:button>
 
                 <div class="text-center text-2xl text-gray-80 dark:text-gray-2000 mt-6">
-                    Login with lightning ⚡
+                    {{ __('Login with lightning ⚡') }}
                 </div>
 
                 <div class="flex justify-center" wire:key="qrcode">

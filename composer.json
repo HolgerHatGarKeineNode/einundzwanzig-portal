@@ -44,7 +44,7 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
-        "laravel-lang/lang": "^15.22",
+        "laravel-lang/lang": "^15.26",
         "laravel-lang/starter-kits": "^1.3",
         "laravel/boost": "^1.8",
         "laravel/pail": "^1.2.2",
