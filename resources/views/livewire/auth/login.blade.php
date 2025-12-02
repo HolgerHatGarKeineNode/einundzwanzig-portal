@@ -52,9 +52,15 @@ class extends Component {
                 $this->url = url('/api/lnurl-auth-callback?tag=login&k1='.$this->k1.'&action=login');
             }
             $this->lnurl = lnurl\encodeUrl($this->url);
+            $image = '/public/img/domains/'.session('lang_country', 'de-DE').'.jpg';
+            $checkIfFileExists = base_path($image);
+            if (!file_exists($checkIfFileExists)) {
+                $checkIfFileExists = base_path('/public/img/domains/de-DE.jpg');
+                $image = '/public/img/domains/de-DE.jpg';
+            }
             $this->qrCode = base64_encode(QrCode::format('png')
                 ->size(300)
-                ->merge('/public/img/domains/'.session('lang_country', 'de-DE').'.jpg', .3)
+                ->merge($image, .3)
                 ->errorCorrection('H')
                 ->generate($this->lnurl));
         }
