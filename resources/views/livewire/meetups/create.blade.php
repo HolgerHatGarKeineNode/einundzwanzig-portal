@@ -77,7 +77,7 @@ class extends Component {
             'twitter_username' => ['nullable', 'string', 'max:255'],
             'matrix_group' => ['nullable', 'string', 'max:255'],
             'nostr' => ['nullable', 'string', 'max:255'],
-            'simplex' => ['nullable', 'string', 'max:255'],
+            'simplex' => ['nullable', 'string',],
             'signal' => ['nullable', 'string', 'max:510'],
             'community' => ['nullable', 'string', 'max:255'],
             'visible_on_map' => ['boolean'],

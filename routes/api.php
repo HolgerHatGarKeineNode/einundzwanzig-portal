@@ -1,5 +1,11 @@
 <?php
 
+use App\Http\Controllers\Api\CityController;
+use App\Http\Controllers\Api\CountryController;
+use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\LecturerController;
+use App\Http\Controllers\Api\MeetupController;
+use App\Http\Controllers\Api\VenueController;
 use App\Models\LoginKey;
 use App\Models\User;
 use eza\lnurl;
@@ -9,13 +15,13 @@ use Illuminate\Support\Facades\Route;
 Route::middleware([])
     ->as('api.')
     ->group(function () {
-        Route::resource('countries', \App\Http\Controllers\Api\CountryController::class);
-        Route::get('meetup/ical', [\App\Http\Controllers\Api\MeetupController::class, 'ical'])->name('api.meetup.ical');
-        Route::resource('meetup', \App\Http\Controllers\Api\MeetupController::class);
-        Route::resource('lecturers', \App\Http\Controllers\Api\LecturerController::class);
-        Route::resource('courses', \App\Http\Controllers\Api\CourseController::class);
-        Route::resource('cities', \App\Http\Controllers\Api\CityController::class);
-        Route::resource('venues', \App\Http\Controllers\Api\VenueController::class);
+        Route::resource('countries', CountryController::class);
+        Route::get('meetup/ical', [MeetupController::class, 'ical'])->name('api.meetup.ical');
+        Route::resource('meetup', MeetupController::class);
+        Route::resource('lecturers', LecturerController::class);
+        Route::resource('courses', CourseController::class);
+        Route::resource('cities', CityController::class);
+        Route::resource('venues', VenueController::class);
         Route::get('nostrplebs', function () {
             return User::query()
                 ->select([
@@ -74,8 +80,8 @@ Route::middleware([])
                     'country' => str($meetup->city->country->code)->upper(),
                     'state' => $meetup->github_data['state'] ?? null,
                     'city' => $meetup->city->name,
-                    'longitude' => (float)$meetup->city->longitude,
-                    'latitude' => (float)$meetup->city->latitude,
+                    'longitude' => (float) $meetup->city->longitude,
+                    'latitude' => (float) $meetup->city->latitude,
                     'twitter_username' => $meetup->twitter_username,
                     'website' => $meetup->webpage,
                     'simplex' => $meetup->simplex,
@@ -121,8 +127,8 @@ Route::middleware([])
                 'meetup.url' => $event->meetup->telegram_link ?? $event->meetup->webpage,
                 'meetup.country' => str($event->meetup->city->country->code)->upper(),
                 'meetup.city' => $event->meetup->city->name,
-                'meetup.longitude' => (float)$event->meetup->city->longitude,
-                'meetup.latitude' => (float)$event->meetup->city->latitude,
+                'meetup.longitude' => (float) $event->meetup->city->longitude,
+                'meetup.latitude' => (float) $event->meetup->city->latitude,
                 'meetup.twitter_username' => $event->meetup->twitter_username,
                 'meetup.website' => $event->meetup->webpage,
                 'meetup.simplex' => $event->meetup->simplex,
@@ -162,7 +168,7 @@ Route::middleware([])
                             'continent' => 'europe',
                             'icon:square' => $meetup->logoSquare,
                             //'contact:email'          => null,
-                            'contact:twitter' => $meetup->twitter_username ? 'https://twitter.com/' . $meetup->twitter_username : null,
+                            'contact:twitter' => $meetup->twitter_username ? 'https://twitter.com/'.$meetup->twitter_username : null,
                             'contact:website' => $meetup->webpage,
                             'contact:telegram' => $meetup->telegram_link,
                             'contact:nostr' => $meetup->nostr,
@@ -205,7 +211,7 @@ Route::get('/lnurl-auth-callback', function (Request $request) {
                 'public_key' => $request->key,
                 'is_lecturer' => true,
                 'name' => $fakeName,
-                'email' => str($request->key)->substr(-12) . '@portal.einundzwanzig.space',
+                'email' => str($request->key)->substr(-12).'@portal.einundzwanzig.space',
                 'lnbits' => [
                     'read_key' => null,
                     'url' => null,
