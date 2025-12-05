@@ -160,9 +160,6 @@ class extends Component {
 
         if ($loginKey) {
             $user = User::find($loginKey->user_id);
-
-            \App\Models\User::find(1)
-                ->notify(new ModelCreatedNotification($user, 'users'));
             auth()->login($user);
             Session::regenerate();
             session([
