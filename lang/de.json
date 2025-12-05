@@ -473,5 +473,22 @@
     "Über den Kurs": "",
     "Über uns": "",
     "Login with lightning ⚡": "",
-    "Wähle die Stadt aus...": ""
+    "Wähle die Stadt aus...": "",
+    ":count Events erfolgreich erstellt!": "",
+    "Serientermine erstellen": "",
+    "Aktiviere diese Option, um mehrere Events mit regelmäßigen Abständen zu erstellen": "",
+    "Datum des ersten Termins": "",
+    "Datum des letzten Termins": "",
+    "Intervall": "",
+    "Monatlich": "",
+    "Wöchentlich": "",
+    "Wie oft soll das Event wiederholt werden?": "",
+    "Vorschau der Termine": "",
+    "Uhr": "",
+    "Vorschau auf 100 Termine begrenzt. Es werden möglicherweise mehr Termine erstellt.": "",
+    "Serientermine erstellen?": "",
+    "Du bist dabei, mehrere Events zu erstellen.": "",
+    "Falsch angelegte Termine müssen alle händisch wieder gelöscht werden.": "",
+    "Bist du sicher, dass die Einstellungen korrekt sind?": "",
+    "Jetzt erstellen": ""
 }

@@ -473,5 +473,22 @@
     "Über den Kurs": "About the course",
     "Über uns": "About us",
     "Login with lightning ⚡": "Login with lightning ⚡",
-    "Wähle die Stadt aus...": "Select the city..."
+    "Wähle die Stadt aus...": "Select the city...",
+    ":count Events erfolgreich erstellt!": ":count events successfully created!",
+    "Serientermine erstellen": "Create recurring events",
+    "Aktiviere diese Option, um mehrere Events mit regelmäßigen Abständen zu erstellen": "Enable this option to create multiple events at regular intervals",
+    "Datum des ersten Termins": "Date of first event",
+    "Datum des letzten Termins": "Date of last event",
+    "Intervall": "Interval",
+    "Monatlich": "Monthly",
+    "Wöchentlich": "Weekly",
+    "Wie oft soll das Event wiederholt werden?": "How often should the event be repeated?",
+    "Vorschau der Termine": "Preview of events",
+    "Uhr": "o'clock",
+    "Vorschau auf 100 Termine begrenzt. Es werden möglicherweise mehr Termine erstellt.": "Preview limited to 100 events. More events may be created.",
+    "Serientermine erstellen?": "Create recurring events?",
+    "Du bist dabei, mehrere Events zu erstellen.": "You are about to create multiple events.",
+    "Falsch angelegte Termine müssen alle händisch wieder gelöscht werden.": "Incorrectly created events must all be deleted manually.",
+    "Bist du sicher, dass die Einstellungen korrekt sind?": "Are you sure the settings are correct?",
+    "Jetzt erstellen": "Create now"
 }

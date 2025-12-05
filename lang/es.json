@@ -472,5 +472,22 @@
     "Über den Kurs": "Sobre el curso",
     "Über uns": "Sobre nosotros",
     "Login with lightning ⚡": "Inicia sesión con lightning ⚡",
-    "Wähle die Stadt aus...": "Selecciona la ciudad..."
+    "Wähle die Stadt aus...": "Selecciona la ciudad...",
+    ":count Events erfolgreich erstellt!": "¡:count eventos creados exitosamente!",
+    "Serientermine erstellen": "Crear eventos recurrentes",
+    "Aktiviere diese Option, um mehrere Events mit regelmäßigen Abständen zu erstellen": "Activa esta opción para crear múltiples eventos con intervalos regulares",
+    "Datum des ersten Termins": "Fecha del primer evento",
+    "Datum des letzten Termins": "Fecha del último evento",
+    "Intervall": "Intervalo",
+    "Monatlich": "Mensual",
+    "Wöchentlich": "Semanal",
+    "Wie oft soll das Event wiederholt werden?": "¿Con qué frecuencia debe repetirse el evento?",
+    "Vorschau der Termine": "Vista previa de eventos",
+    "Uhr": "hora",
+    "Vorschau auf 100 Termine begrenzt. Es werden möglicherweise mehr Termine erstellt.": "Vista previa limitada a 100 eventos. Es posible que se creen más eventos.",
+    "Serientermine erstellen?": "¿Crear eventos recurrentes?",
+    "Du bist dabei, mehrere Events zu erstellen.": "Estás a punto de crear múltiples eventos.",
+    "Falsch angelegte Termine müssen alle händisch wieder gelöscht werden.": "Los eventos creados incorrectamente deberán eliminarse manualmente.",
+    "Bist du sicher, dass die Einstellungen korrekt sind?": "¿Estás seguro de que la configuración es correcta?",
+    "Jetzt erstellen": "Crear ahora"
 }
