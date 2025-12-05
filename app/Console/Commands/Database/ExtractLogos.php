@@ -36,7 +36,7 @@ class ExtractLogos extends Command
             if ($logo) {
                 if (file_exists($logo->getPath())) {
                     Storage::disk('public')
-                           ->put('00_logos/'.$meetup->name.'.'.$logo->extension, file_get_contents($logo->getPath()));
+                           ->put('00_logos/'.str($meetup->name)->camel().'.'.$logo->extension, file_get_contents($logo->getPath()));
                 }
             }
         }
