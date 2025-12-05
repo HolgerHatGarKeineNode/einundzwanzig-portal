@@ -72,7 +72,11 @@ class extends Component {
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center gap-2">
                                         <flux:badge color="green" size="sm">{{ __('Neues Meetup') }}</flux:badge>
-                                        <span class="text-2xl">{{ $meetup->city->country->emoji }}</span>
+                                        <img
+                                            alt="{{ strtolower($meetup->city->country->code) }}"
+                                            src="{{ asset('vendor/blade-flags/country-'.strtolower($meetup->city->country->code).'.svg') }}"
+                                            width="24" height="12"
+                                        />
                                     </div>
                                     <div class="font-medium mt-1">{{ $meetup->name }}</div>
                                     <div class="text-xs text-zinc-500">
@@ -95,7 +99,11 @@ class extends Component {
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center gap-2">
                                         <flux:badge color="blue" size="sm">{{ __('Neuer Termin') }}</flux:badge>
-                                        <span class="text-2xl">{{ $event->meetup->city->country->emoji }}</span>
+                                        <img
+                                            alt="{{ strtolower($event->meetup->city->country->code) }}"
+                                            src="{{ asset('vendor/blade-flags/country-'.strtolower($event->meetup->city->country->code).'.svg') }}"
+                                            width="24" height="12"
+                                        />
                                     </div>
                                     <div class="font-medium mt-1">{{ $event->meetup->name }}</div>
                                     <div class="text-xs text-zinc-500">

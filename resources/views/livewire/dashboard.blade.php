@@ -93,8 +93,16 @@ class extends Component {
                             <a href="{{ route('meetups.landingpage-event', ['meetup' => $event->meetup->slug, 'event' => $event->id, 'country' => $event->meetup->city->country->code]) }}"
                                class="block hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg p-3 -m-3 transition-colors">
                                 <div class="flex items-start justify-between gap-3">
+                                    <flux:avatar size="xl" :src="$event->meetup->getFirstMediaUrl('logo', 'thumb')"/>
                                     <div class="flex-1">
-                                        <div class="font-medium">{{ $event->meetup->name }}</div>
+                                        <div class="flex items-center space-x-2">
+                                            <div class="font-medium">{{ $event->meetup->name }}</div>
+                                            <img
+                                                alt="{{ strtolower($event->meetup->city->country->code) }}"
+                                                src="{{ asset('vendor/blade-flags/country-'.strtolower($event->meetup->city->country->code).'.svg') }}"
+                                                width="24" height="12"
+                                            />
+                                        </div>
                                         <div class="text-sm text-zinc-500">
                                             {{ $event->meetup->city->name }}, {{ $event->meetup->city->country->name }}
                                         </div>
@@ -150,7 +158,14 @@ class extends Component {
                                         src="{{ $meetup->getFirstMedia('logo') ? $meetup->getFirstMediaUrl('logo', 'thumb') : asset('android-chrome-512x512.png') }}"/>
                                     <a href="{{ route('meetups.landingpage', ['meetup' => $meetup, 'country' => $country]) }}">
                                         <div>
-                                            <div class="font-medium">{{ $meetup->name }}</div>
+                                            <div class="flex items-center space-x-2">
+                                                <div class="font-medium">{{ $meetup->name }}</div>
+                                                <img
+                                                    alt="{{ strtolower($event->meetup->city->country->code) }}"
+                                                    src="{{ asset('vendor/blade-flags/country-'.strtolower($event->meetup->city->country->code).'.svg') }}"
+                                                    width="24" height="12"
+                                                />
+                                            </div>
                                             <div class="text-xs text-zinc-500">
                                                 {{ $meetup->city->name }}
                                             </div>

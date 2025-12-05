@@ -94,7 +94,14 @@ class extends Component {
                                 src="{{ $meetup->getFirstMedia('logo') ? $meetup->getFirstMediaUrl('logo', 'thumb') : asset('android-chrome-512x512.png') }}"/>
                             <div class="flex-1">
                                 <div class="font-medium">{{ $meetup->name }}</div>
-                                <div class="text-xs text-zinc-500">{{ $meetup->users_count }} {{ __('User') }}</div>
+                                <div class="flex items-center space-x-2">
+                                    <div class="text-xs text-zinc-500">{{ $meetup->users_count }} {{ __('User') }}</div>
+                                    <img
+                                        alt="{{ strtolower($meetup->city->country->code) }}"
+                                        src="{{ asset('vendor/blade-flags/country-'.strtolower($meetup->city->country->code).'.svg') }}"
+                                        width="12" height="6"
+                                    />
+                                </div>
                             </div>
                         </div>
                         <flux:chart :value="$meetup->sparkline" class="w-[5rem] aspect-[3/1]">
