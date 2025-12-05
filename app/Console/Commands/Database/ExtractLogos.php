@@ -36,6 +36,7 @@ class ExtractLogos extends Command
             if ($logo) {
                 if (file_exists($logo->getPath())) {
                     $safeName = str($meetup->name)
+                        ->ascii()
                         ->replaceMatches('/[^a-zA-Z0-9\s\-_]/', '')
                         ->studly();
                     Storage::disk('public')
