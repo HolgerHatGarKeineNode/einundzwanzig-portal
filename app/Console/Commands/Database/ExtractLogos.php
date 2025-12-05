@@ -35,8 +35,11 @@ class ExtractLogos extends Command
             $logo = $meetup->getFirstMedia('logo');
             if ($logo) {
                 if (file_exists($logo->getPath())) {
+                    $safeName = str($meetup->name)
+                        ->replaceMatches('/[^a-zA-Z0-9\s\-_]/', '')
+                        ->studly();
                     Storage::disk('public')
-                           ->put('00_logos/'.str($meetup->name)->camel().'.'.$logo->extension, file_get_contents($logo->getPath()));
+                           ->put('00_logos/'.$safeName.'.'.$logo->extension, file_get_contents($logo->getPath()));
                 }
             }
         }
