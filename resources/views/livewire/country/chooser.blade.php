@@ -23,7 +23,7 @@ new class extends Component {
 
 <div>
     <flux:select variant="listbox" searchable placeholder="{{ __('Wähle dein Land...') }}"
-                 wire:model.live.debounce="currentCountry" label="{{ __('Land') }}">
+                 wire:model.live.debounce="currentCountry">
         <x-slot name="search">
             <flux:select.search class="px-4" placeholder="{{ __('Suche dein Land...') }}"/>
         </x-slot>

@@ -202,7 +202,7 @@ class extends Component {
                 <flux:button variant="primary" @click="openNostrLogin" icon="cursor-arrow-ripple"
                              class="w-full cursor-pointer">{{ __('Log in mit Nostr') }}</flux:button>
 
-                <div class="text-center text-2xl text-gray-80 dark:text-gray-2000 mt-6">
+                <div class="text-center text-2xl text-gray-80 dark:text-gray-2000 mt-2">
                     {{ __('Login with lightning ⚡') }}
                 </div>
 
@@ -245,7 +245,7 @@ class extends Component {
                 </flux:subheading>
             @endif--}}
             <!-- Language Selection Accordion -->
-            <x-einundzwanzig.language-selector/>
+            <livewire:language.selector/>
         </div>
     </div>
 

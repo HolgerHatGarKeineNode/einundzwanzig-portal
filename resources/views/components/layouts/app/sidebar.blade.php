@@ -99,12 +99,6 @@
     <flux:spacer/>
 
     <flux:navlist variant="outline">
-        <flux:navlist.item icon="language"
-                           :href="route('settings.profile', ['country' => str(session('lang_country', 'de'))->after('-')->lower()])"
-                           :current="request()->routeIs('settings.profile')"
-                           wire:navigate>
-            {{ __('Sprache wechseln') }}
-        </flux:navlist.item>
         <flux:navlist.item icon="folder-git-2"
                            href="https://gitworkshop.dev/holgerhatgarkeinenode@einundzwanzig.space/einundzwanzig-app"
                            target="_blank">
@@ -114,12 +108,18 @@
 
     <flux:navlist variant="outline">
         <flux:navlist.group>
-            <div class="grid gap-4">
+            <div class="grid gap-2">
                 <div>
+                    <flux:heading class="my-2">{{ __('Land auswählen') }}</flux:heading>
                     <livewire:country.chooser/>
                 </div>
                 <div>
+                    <flux:heading class="my-2">{{ __('Sprache wechseln') }}</flux:heading>
+                    <livewire:language.selector/>
+                </div>
+                <div>
                     @if(auth()->check())
+                        <flux:heading class="my-2">{{ __('Zeitzone') }}</flux:heading>
                         <livewire:timezone.chooser/>
                     @endif
                 </div>

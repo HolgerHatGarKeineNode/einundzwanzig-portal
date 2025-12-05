@@ -66,7 +66,7 @@ class extends Component {
             </div>
 
             <!-- Language Selection Accordion -->
-            <x-einundzwanzig.language-selector/>
+            <livewire:language.selector/>
         </div>
     </div>
 
