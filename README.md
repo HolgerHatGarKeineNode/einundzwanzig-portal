@@ -1,11 +1,12 @@
 [![Laravel Forge Site Deployment Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fforge.laravel.com%2Fsite-badges%2Ff25a1151-9c87-4f14-9943-17d05fa736c9&style=plastic)](https://forge.laravel.com/prime-software/lsm-server-1/1833504)
 
-### Hosted: 
+### Hosted:
 
 - de-DE: [https://portal.einundzwanzig.space/de/meetups](https://portal.einundzwanzig.space/de/meetups)
 - de-AT: [https://portal.einundzwanzig.space/at/meetups](https://portal.einundzwanzig.space/at/meetups)
 - de-CH: [https://portal.einundzwanzig.space/ch/meetups](https://portal.einundzwanzig.space/ch/meetups)
 - pl-PL: [https://portal.dwadziesciajeden.pl/pl/meetups](https://portal.dwadziesciajeden.pl/pl/meetups)
+- hu-HU: [https://portal.huszonegy.world/hu/meetups](https://portal.huszonegy.world/hu/meetups)
 
 ### Host your national domain?
 

@@ -191,10 +191,12 @@ Route::middleware([])
 Route::get('/lnurl-auth-callback', function (Request $request) {
     if (lnurl\auth($request->k1, $request->sig, $request->key)) {
         // find User by $wallet_public_key
-        if ($user = User::query()
-            ->where('change', $request->k1)
-            ->where('change_time', '>', now()->subMinutes(5))
-            ->first()) {
+        if (
+            $user = User::query()
+                ->where('change', $request->k1)
+                ->where('change_time', '>', now()->subMinutes(5))
+                ->first()
+        ) {
             $user->public_key = $request->key;
             $user->change = null;
             $user->change_time = null;
