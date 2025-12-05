@@ -23,10 +23,12 @@ class extends Component {
     public function with(): array
     {
         return [
-            'cities' => City::with(['country', 'createdBy'])
+            'cities' => City::query()
+                ->with(['country', 'createdBy'])
                 ->when($this->search, fn($query)
                     => $query->where('name', 'ilike', '%'.$this->search.'%'),
                 )
+                ->whereHas('country', fn($query) => $query->where('countries.code', $this->country))
                 ->orderBy('name')
                 ->paginate(15),
         ];

@@ -32,7 +32,7 @@ class extends Component {
                     ->where('name', 'ilike', '%'.$this->search.'%')
                     ->orWhere('description', 'ilike', '%'.$this->search.'%'),
                 )
-                ->whereHas('courseEvents.venue.city.country', fn($query) => $query->where('countries.code', request()->route('country')))
+                ->whereHas('courseEvents.venue.city.country', fn($query) => $query->where('countries.code', $this->country))
                 ->orderByDesc('has_future_events')
                 ->paginate(15),
         ];

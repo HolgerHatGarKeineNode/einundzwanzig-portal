@@ -93,13 +93,13 @@
                 <flux:navlist.item icon="building-office-2" :href="route_with_country('cities.index')"
                                    :current="request()->routeIs('cities.index')"
                                    wire:navigate
-                                   badge="{{ \App\Models\City::query()->count() }}">
+                                   badge="{{ \App\Models\City::query()->whereHas('country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
                     {{ __('Städte/Gebiete') }}
                 </flux:navlist.item>
                 <flux:navlist.item icon="map-pin" :href="route_with_country('venues.index')"
                                    :current="request()->routeIs('venues.index')"
                                    wire:navigate
-                                   badge="{{ \App\Models\Venue::query()->count() }}">
+                                   badge="{{ \App\Models\Venue::query()->whereHas('city.country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
                     {{ __('Veranstaltungsorte') }}
                 </flux:navlist.item>
             </flux:navlist.group>
