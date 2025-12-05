@@ -161,8 +161,8 @@ class extends Component {
                                             <div class="flex items-center space-x-2">
                                                 <div class="font-medium">{{ $meetup->name }}</div>
                                                 <img
-                                                    alt="{{ strtolower($event->meetup->city->country->code) }}"
-                                                    src="{{ asset('vendor/blade-flags/country-'.strtolower($event->meetup->city->country->code).'.svg') }}"
+                                                    alt="{{ strtolower($meetup->city->country->code) }}"
+                                                    src="{{ asset('vendor/blade-flags/country-'.strtolower($meetup->city->country->code).'.svg') }}"
                                                     width="24" height="12"
                                                 />
                                             </div>
