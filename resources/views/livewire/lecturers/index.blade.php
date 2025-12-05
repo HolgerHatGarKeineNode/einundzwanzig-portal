@@ -35,6 +35,9 @@ class extends Component {
                 ->withCount([
                     'coursesEvents as future_events_count' => fn($query) => $query->where('from', '>=', now()),
                 ])
+                ->whereHas('coursesEvents')
+                ->whereHas('coursesEvents.venue.city.country',
+                    fn($query) => $query->where('countries.code', $this->country))
                 ->when($this->search, fn($query)
                     => $query
                     ->where('name', 'ilike', '%'.$this->search.'%')

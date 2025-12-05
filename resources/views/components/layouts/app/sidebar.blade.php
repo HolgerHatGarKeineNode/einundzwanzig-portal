@@ -66,14 +66,24 @@
             <flux:navlist.item icon="academic-cap" :href="route_with_country('courses.index')"
                                :current="request()->routeIs('courses.index')"
                                wire:navigate
-                               badge="{{ \App\Models\Course::query()->count() }}">
-                {{ __('Kurse') }}
+                               badge="{{ \App\Models\Course::query()->whereHas('courseEvents.venue.city.country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
+                <div class="flex items-center space-x-2">
+                    <span>{{ __('Kurse') }}</span>
+                    <img alt="{{ request()->route('country') }}"
+                         src="{{ asset('vendor/blade-flags/country-'.request()->route('country').'.svg') }}"
+                         width="24" height="12"/>
+                </div>
             </flux:navlist.item>
             <flux:navlist.item icon="user" :href="route_with_country('lecturers.index')"
                                :current="request()->routeIs('lecturers.index')"
                                wire:navigate
-                               badge="{{ \App\Models\Lecturer::query()->count() }}">
-                {{ __('Dozenten') }}
+                               badge="{{ \App\Models\Lecturer::query()->whereHas('coursesEvents.venue.city.country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
+                <div class="flex items-center space-x-2">
+                    <span>{{ __('Dozenten') }}</span>
+                    <img alt="{{ request()->route('country') }}"
+                         src="{{ asset('vendor/blade-flags/country-'.request()->route('country').'.svg') }}"
+                         width="24" height="12"/>
+                </div>
             </flux:navlist.item>
         </flux:navlist.group>
 

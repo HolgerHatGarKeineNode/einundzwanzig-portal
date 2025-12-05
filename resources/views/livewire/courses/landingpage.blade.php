@@ -18,6 +18,9 @@ class extends Component {
     public function mount(): void
     {
         $this->country = request()->route('country', config('app.domain_country'));
+        $this->course->load([
+           'courseEvents.registrations',
+        ]);
     }
 
     public function with(): array
@@ -26,7 +29,10 @@ class extends Component {
             'course' => $this->course->load('lecturer'),
             'events' => $this->course
                 ->courseEvents()
-                ->with(['venue.city'])
+                ->with([
+                    'venue.city',
+                    'registrations',
+                ])
                 ->where('from', '>=', now())
                 ->orderBy('from', 'asc')
                 ->get(),
