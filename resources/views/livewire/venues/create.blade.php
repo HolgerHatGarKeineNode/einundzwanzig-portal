@@ -11,9 +11,15 @@ new
 class extends Component {
     use SeoTrait;
 
+    public $country = 'de';
     public string $name = '';
     public ?int $city_id = null;
     public string $street = '';
+
+    public function mount(): void
+    {
+        $this->country = request()->route('country', config('app.domain_country'));
+    }
 
     public function createVenue(): void
     {
@@ -36,7 +42,10 @@ class extends Component {
     public function with(): array
     {
         return [
-            'cities' => City::query()->with('country')->orderBy('name')->get(),
+            'cities' => City::query()
+                ->with('country')
+                ->whereHas('country', fn($query) => $query->where('countries.code', $this->country))
+                ->orderBy('name')->get(),
         ];
     }
 }; ?>
@@ -53,15 +62,15 @@ class extends Component {
             <div class="space-y-6">
                 <flux:input label="{{ __('Name') }}" wire:model="name" required/>
 
-                <flux:select label="{{ __('City') }}" wire:model="city_id" required>
-                    <option value="">{{ __('Select a city') }}</option>
+                <flux:select placeholder="{{ __('Wähle die Stadt aus...') }}" variant="listbox" searchable
+                             label="{{ __('City') }}" wire:model="city_id" required>
                     @foreach($cities as $city)
-                        <option value="{{ $city->id }}">
+                        <flux:select.option value="{{ $city->id }}">
                             {{ $city->name }}
                             @if($city->country)
                                 ({{ $city->country->name }})
                             @endif
-                        </option>
+                        </flux:select.option>
                     @endforeach
                 </flux:select>
 

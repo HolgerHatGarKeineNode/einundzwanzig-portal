@@ -27,6 +27,7 @@ class extends Component {
                 ->when($this->search, fn($query)
                     => $query->where('name', 'ilike', '%'.$this->search.'%'),
                 )
+                ->whereHas('city.country', fn($query) => $query->where('countries.code', $this->country))
                 ->orderBy('name')
                 ->paginate(15),
         ];

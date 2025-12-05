@@ -11,12 +11,21 @@ new
 class extends Component {
     use SeoTrait;
 
+    public $country = 'de';
     public string $name = '';
     public ?int $country_id = null;
     public float $latitude = 0;
     public float $longitude = 0;
     public ?int $population = null;
     public ?string $population_date = null;
+
+    public function mount(): void
+    {
+        $this->country = request()->route('country', config('app.domain_country'));
+        $this->country_id = Country::query()
+            ->where('code', $this->country)
+            ->value('id');
+    }
 
     public function createCity(): void
     {
@@ -59,10 +68,17 @@ class extends Component {
             <div class="space-y-6">
                 <flux:input label="{{ __('Name') }}" wire:model="name" required/>
 
-                <flux:select label="{{ __('Country') }}" wire:model="country_id" required>
-                    <option value="">{{ __('Select a country') }}</option>
+                <flux:select variant="listbox" searchable label="{{ __('Country') }}" wire:model="country_id" required>
+                    <flux:select.option value="">{{ __('Select a country') }}</flux:select.option>
                     @foreach($countries as $country)
-                        <option value="{{ $country->id }}">{{ $country->name }}</option>
+                        <flux:select.option value="{{ $country->id }}">
+                            <div class="flex items-center space-x-2">
+                                <img alt="{{ str($country->code)->lower() }}"
+                                     src="{{ asset('vendor/blade-flags/country-'.str($country->code)->lower().'.svg') }}"
+                                     width="24" height="12"/>
+                                <span>{{ $country->name }}</span>
+                            </div>
+                        </flux:select.option>
                     @endforeach
                 </flux:select>
             </div>
@@ -74,6 +90,10 @@ class extends Component {
             <div class="grid grid-cols-2 gap-x-4 gap-y-6">
                 <flux:input label="{{ __('Latitude') }}" type="number" step="any" wire:model="latitude" required/>
                 <flux:input label="{{ __('Longitude') }}" type="number" step="any" wire:model="longitude" required/>
+            </div>
+
+            <div class="my-2">
+                <flux:link href="https://www.mappr.co/latitude-longitude-finder/">https://www.mappr.co/latitude-longitude-finder/</flux:link>
             </div>
         </flux:fieldset>
 
