@@ -62,6 +62,17 @@
             </flux:navlist.item>
         </flux:navlist.group>
 
+        <flux:navlist.group :heading="__('Community & Dienste')" class="grid">
+            <flux:navlist.item icon="server" :href="route_with_country('services.index')"
+                               :current="request()->routeIs('services.index')"
+                               wire:navigate
+                               badge="{{ \App\Models\SelfHostedService::query()->count() }}">
+                <div class="flex items-center space-x-2">
+                    <span>{{ __('Self Hosted Services') }}</span>
+                </div>
+            </flux:navlist.item>
+        </flux:navlist.group>
+
         <flux:navlist.group :heading="__('Kurse')" class="grid">
             <flux:navlist.item icon="academic-cap" :href="route_with_country('courses.index')"
                                :current="request()->routeIs('courses.index')"

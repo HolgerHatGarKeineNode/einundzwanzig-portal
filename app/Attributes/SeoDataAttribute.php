@@ -160,6 +160,26 @@ class SeoDataAttribute
                 description: __('Finde alle Veranstaltungsorte für Bitcoin Meetups und Events.'),
                 image: $domainImage,
             ),
+            'services_create' => new SEOData(
+                title: __('Neuen Service erstellen'),
+                description: __('Füge einen neuen Self-Hosted Service zur Bitcoin Community hinzu.'),
+                image: $domainImage,
+            ),
+            'services_edit' => new SEOData(
+                title: __('Service bearbeiten'),
+                description: __('Aktualisiere die Details deines Self-Hosted Service.'),
+                image: $domainImage,
+            ),
+            'services_index' => new SEOData(
+                title: __('Self-Hosted Services - Übersicht'),
+                description: __('Entdecke Bitcoin Self-Hosted Services und dezentrale Angebote der Community.'),
+                image: $domainImage,
+            ),
+            'services_landingpage' => new SEOData(
+                title: __('Service Details'),
+                description: __('Erfahre mehr über diesen Self-Hosted Service aus der Bitcoin Community.'),
+                image: $domainImage,
+            ),
             // Add more as needed
             'default' => new SEOData(
                 title: __('Willkommen'),

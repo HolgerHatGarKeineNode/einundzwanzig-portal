@@ -96,6 +96,10 @@ Route::middleware([])
 
         Volt::route('cities', 'cities.index')->name('cities.index');
         Volt::route('venues', 'venues.index')->name('venues.index');
+
+        // Self Hosted Services public routes
+        Volt::route('services', 'services.index')->name('services.index');
+        Volt::route('service/{service:slug}', 'services.landingpage')->name('services.landingpage');
     });
 
 Route::middleware(['auth'])
@@ -119,6 +123,10 @@ Route::middleware(['auth'])
 
         Volt::route('venue-create', 'venues.create')->name('venues.create');
         Volt::route('venue-edit/{venue}', 'venues.edit')->name('venues.edit');
+
+        // Self Hosted Services protected routes
+        Volt::route('service-create', 'services.create')->name('services.create');
+        Volt::route('service-edit/{service}', 'services.edit')->name('services.edit');
 
         Route::redirect('settings', 'settings/profile');
 
