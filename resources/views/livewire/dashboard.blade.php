@@ -150,7 +150,7 @@ class extends Component {
                     <flux:separator class="my-4"/>
                     <div class="space-y-3">
                         @foreach($myMeetups as $meetup)
-                            <div class="flex items-center justify-between gap-3">
+                            <div class="flex flex-col sm:flex-row items-start justify-between gap-3">
                                 <div class="flex items-center gap-3 flex-1">
                                     <flux:avatar
                                         :href="route('meetups.landingpage', ['meetup' => $meetup, 'country' => $country])"
@@ -172,9 +172,14 @@ class extends Component {
                                         </div>
                                     </a>
                                 </div>
-                                <div class="flex flex-col sm:flex-row items-start gap-2">
+                                <div class="flex flex-row items-center gap-2 w-full sm:w-auto">
+                                    <flux:button
+                                        :href="route_with_country('meetups.events.create', ['meetup' => $meetup])"
+                                        variant="primary" icon="calendar" size="xs">
+                                        {{ __('Neues Event erstellen') }}
+                                    </flux:button>
                                     <flux:button :href="route_with_country('meetups.edit', ['meetup' => $meetup])"
-                                                 size="xs" variant="ghost" icon="pencil">
+                                                 size="xs" variant="ghost" icon="pencil" class="w-full sm:w-auto">
                                         {{ __('Bearbeiten') }}
                                     </flux:button>
                                     <flux:modal.trigger :name="'remove-meetup-' . $meetup->id">
