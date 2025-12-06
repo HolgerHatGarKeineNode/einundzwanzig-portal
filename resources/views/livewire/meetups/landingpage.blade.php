@@ -5,6 +5,7 @@ use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Traits\SeoTrait;
 use Livewire\Volt\Component;
+use Flux\Flux;
 
 new
 #[SeoDataAttribute(key: 'meetups_landingpage')]
@@ -18,6 +19,16 @@ class extends Component {
     public function mount(): void
     {
         $this->country = request()->route('country', config('app.domain_country'));
+    }
+
+    public function deleteEvent(MeetupEvent $event): void
+    {
+        if ($this->meetup->belongsToMe) {
+            $event->delete();
+            $this->dispatch('event-deleted');
+            Flux::modals()->close();
+            $this->meetup->refresh();
+        }
     }
 
     public function with(): array
@@ -189,6 +200,7 @@ class extends Component {
                     }
                 }"
                  x-init="initializeMap()"
+                 wire:ignore
             >
                 <div class="rounded" id="meetup-map" x-ref="map"></div>
                 <p class="text-sm text-gray-500 mt-2">{{ __('Zoom = STRG+Scroll') }}</p>
@@ -260,6 +272,39 @@ class extends Component {
                                 >
                                     {{ __('Bearbeiten') }}
                                 </flux:button>
+                                <flux:modal.trigger name="delete-event-{{ $event->id }}">
+                                    <flux:button
+                                        class="cursor-pointer"
+                                        size="xs"
+                                        variant="danger"
+                                        icon="trash"
+                                    >
+                                        {{ __('Entfernen') }}
+                                    </flux:button>
+                                </flux:modal.trigger>
+
+                                <flux:modal name="delete-event-{{ $event->id }}" variant="flyout">
+                                    <form wire:submit="deleteEvent({{ $event->id }})" class="space-y-6">
+                                        <div>
+                                            <flux:heading size="lg">{{ __('Event löschen?') }}</flux:heading>
+                                            <flux:subheading>
+                                                {{ __('Möchtest du das Event vom') }} {{ $event->start->asDate() }} {{ __('wirklich löschen?') }}
+                                            </flux:subheading>
+                                            <flux:subheading class="mt-2">
+                                                {{ __('Diese Aktion kann nicht rückgängig gemacht werden.') }}
+                                            </flux:subheading>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <flux:spacer/>
+                                            <flux:modal.close>
+                                                <flux:button class="cursor-pointer"
+                                                             variant="ghost">{{ __('Abbrechen') }}</flux:button>
+                                            </flux:modal.close>
+                                            <flux:button type="submit" class="cursor-pointer"
+                                                         variant="danger">{{ __('Entfernen') }}</flux:button>
+                                        </div>
+                                    </form>
+                                </flux:modal>
                             @endif
                         </div>
                     </flux:card>
