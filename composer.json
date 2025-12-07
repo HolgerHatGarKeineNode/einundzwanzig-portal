@@ -9,7 +9,7 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.2",
+        "php": "^8.3",
         "akuechler/laravel-geoly": "^1.0",
         "druc/laravel-langscanner": "^2.3",
         "ezadr/lnurl-php": "^1.0",
@@ -38,6 +38,7 @@
         "staudenmeir/eloquent-has-many-deep": "^1.21",
         "stefro/laravel-lang-country": "^4.1",
         "swentel/nostr-php": "^1.9",
+        "symfony/clock": "^7.2",
         "symfony/http-client": "^7.3",
         "symfony/mailgun-mailer": "^7.3",
         "woodsandwalker/laravel-countries": "^1.5"
