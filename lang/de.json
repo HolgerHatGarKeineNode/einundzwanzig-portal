@@ -545,5 +545,7 @@
     "Zuletzt aktualisiert": "",
     "Zurück zur Übersicht": "",
     "Service löschen?": "",
-    "Möchten Sie den Service wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.": ""
+    "Möchten Sie den Service wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.": "",
+    "Mindestens eine URL oder IP muss angegeben werden.": "",
+    "IP Adresse": ""
 }

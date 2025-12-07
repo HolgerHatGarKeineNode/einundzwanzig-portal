@@ -540,5 +540,7 @@
     "Zuletzt aktualisiert": "Utoljára frissítve",
     "Zurück zur Übersicht": "Vissza az áttekintéshez",
     "Service löschen?": "Szolgáltatás törlése?",
-    "Möchten Sie den Service wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.": "Biztosan törölni szeretné a szolgáltatást? Ez a művelet nem vonható vissza."
+    "Möchten Sie den Service wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.": "Biztosan törölni szeretné a szolgáltatást? Ez a művelet nem vonható vissza.",
+    "Mindestens eine URL oder IP muss angegeben werden.": "Legalább egy URL-t vagy IP-t meg kell adni.",
+    "IP Adresse": "IP cím"
 }

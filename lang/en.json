@@ -545,5 +545,7 @@
     "Zuletzt aktualisiert": "Last updated",
     "Zurück zur Übersicht": "Back to overview",
     "Service löschen?": "Delete service?",
-    "Möchten Sie den Service wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.": "Do you really want to delete the service? This action cannot be undone."
+    "Möchten Sie den Service wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.": "Do you really want to delete the service? This action cannot be undone.",
+    "Mindestens eine URL oder IP muss angegeben werden.": "At least one URL or IP must be provided.",
+    "IP Adresse": "IP address"
 }

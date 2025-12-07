@@ -118,7 +118,7 @@ class extends Component {
                 </flux:field>
 
                 <flux:field>
-                    <flux:label>{{ __('IP-Adresse') }}</flux:label>
+                    <flux:label>{{ __('IP Adresse') }}</flux:label>
                     <flux:input wire:model="form.ip" placeholder="192.168.1.1"/>
                     <flux:description>{{ __('IP Adresse') }}</flux:description>
                     <flux:error name="form.ip"/>
