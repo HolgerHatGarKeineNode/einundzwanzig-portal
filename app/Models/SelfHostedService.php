@@ -28,6 +28,7 @@ class SelfHostedService extends Model implements HasMedia
         'id' => 'integer',
         'created_by' => 'integer',
         'type' => SelfHostedServiceType::class,
+        'anon' => 'boolean',
     ];
 
     protected static function booted(): void

@@ -73,7 +73,7 @@ class ServiceForm extends Form
         $this->ip = $service->ip;
         $this->type = $service->type?->value;
         $this->contact = $service->contact;
-        $this->anonymous = is_null($service->created_by);
+        $this->anonymous = $service->anon;
     }
 
     public function store(): SelfHostedService
@@ -91,7 +91,8 @@ class ServiceForm extends Form
             'url_pkdns' => $this->url_pkdns,
             'ip' => $this->ip,
             'contact' => $this->contact,
-            'created_by' => $this->anonymous ? null : auth()->id(),
+            'anon' => $this->anonymous,
+            'created_by' => auth()->id(),
         ]);
     }
 
@@ -110,7 +111,7 @@ class ServiceForm extends Form
             'url_pkdns' => $this->url_pkdns,
             'ip' => $this->ip,
             'contact' => $this->contact,
-            'created_by' => $this->anonymous ? null : ($this->service->created_by ?? auth()->id()),
+            'anon' => $this->anonymous,
         ]);
     }
 

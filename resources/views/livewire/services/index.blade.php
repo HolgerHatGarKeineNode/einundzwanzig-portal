@@ -159,13 +159,13 @@ class extends Component {
                     </flux:table.cell>
 
                     <flux:table.cell>
-                        @if($service->createdBy)
+                        @if($service->anon || !$service->createdBy)
+                            <span class="text-gray-500 dark:text-gray-400 italic">{{ __('Anonymous') }}</span>
+                        @else
                             <div class="flex items-center gap-2">
                                 <flux:avatar size="xs" src="{{ $service->createdBy->profile_photo_url }}"/>
                                 <span>{{ Str::length($service->createdBy->name) > 20 ? Str::substr($service->createdBy->name, 0, 4) . '...' . Str::substr($service->createdBy->name, -3) : $service->createdBy->name }}</span>
                             </div>
-                        @else
-                            <span class="text-gray-500 dark:text-gray-400 italic">{{ __('Anonymous') }}</span>
                         @endif
                     </flux:table.cell>
 
