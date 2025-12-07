@@ -40,6 +40,7 @@
         "swentel/nostr-php": "^1.9",
         "symfony/clock": "^7.2",
         "symfony/http-client": "^7.3",
+        "symfony/mailer": "^7.2",
         "symfony/mailgun-mailer": "^7.3",
         "symfony/string": "^7.2",
         "symfony/translation": "^7.2",
