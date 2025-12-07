@@ -42,6 +42,15 @@ class extends Component {
     }
 }; ?>
 
+@section('meta')
+    @php
+        $SEOData = SeoDataAttribute::getData('meetups_landingpage');
+        $SEOData->title = $this->service->name;
+        $SEOData->description = $this->service->intro ? str($this->service->intro)->limit(50) : $SEOData->description;
+    @endphp
+    {!! seo($SEOData)->render() !!}
+@endsection
+
 <div class="container mx-auto px-4 py-8 max-w-5xl">
     <!-- Header -->
     <div class="mb-8">
@@ -50,7 +59,8 @@ class extends Component {
             @auth
                 @if(auth()->id() === $service->created_by)
                     <div class="flex gap-2">
-                        <flux:button :href="route_with_country('services.edit', ['service' => $service])" variant="primary" icon="pencil">
+                        <flux:button :href="route_with_country('services.edit', ['service' => $service])"
+                                     variant="primary" icon="pencil">
                             {{ __('Bearbeiten') }}
                         </flux:button>
                         <flux:modal.trigger name="delete-service">
@@ -101,26 +111,30 @@ class extends Component {
                 <flux:heading size="lg" class="mb-4">{{ __('Zugriff') }}</flux:heading>
                 <div class="flex flex-col gap-2">
                     @if($service->url_clearnet)
-                        <flux:link :href="$service->url_clearnet" external class="text-blue-600 dark:text-blue-400 flex items-center gap-2">
-                            <flux:icon.globe-alt variant="mini" />
+                        <flux:link :href="$service->url_clearnet" external
+                                   class="text-blue-600 dark:text-blue-400 flex items-center gap-2">
+                            <flux:icon.globe-alt variant="mini"/>
                             <span>Clearnet</span>
                         </flux:link>
                     @endif
                     @if($service->url_onion)
-                        <flux:link :href="$service->url_onion" external class="text-purple-600 dark:text-purple-400 flex items-center gap-2">
-                            <flux:icon.lock-closed variant="mini" />
+                        <flux:link :href="$service->url_onion" external
+                                   class="text-purple-600 dark:text-purple-400 flex items-center gap-2">
+                            <flux:icon.lock-closed variant="mini"/>
                             <span>Onion / Tor</span>
                         </flux:link>
                     @endif
                     @if($service->url_i2p)
-                        <flux:link :href="$service->url_i2p" external class="text-green-600 dark:text-green-400 flex items-center gap-2">
-                            <flux:icon.link variant="mini" />
+                        <flux:link :href="$service->url_i2p" external
+                                   class="text-green-600 dark:text-green-400 flex items-center gap-2">
+                            <flux:icon.link variant="mini"/>
                             <span>I2P</span>
                         </flux:link>
                     @endif
                     @if($service->url_pkdns)
-                        <flux:link :href="$service->url_pkdns" external class="text-orange-600 dark:text-orange-400 flex items-center gap-2">
-                            <flux:icon.link variant="mini" />
+                        <flux:link :href="$service->url_pkdns" external
+                                   class="text-orange-600 dark:text-orange-400 flex items-center gap-2">
+                            <flux:icon.link variant="mini"/>
                             <span>pkdns</span>
                         </flux:link>
                     @endif
@@ -136,7 +150,7 @@ class extends Component {
                         <div class="text-gray-500 dark:text-gray-400 mb-1">{{ __('Erstellt von') }}</div>
                         @if($service->createdBy)
                             <div class="flex items-center gap-2">
-                                <flux:avatar size="xs" src="{{ $service->createdBy->profile_photo_url }}" />
+                                <flux:avatar size="xs" src="{{ $service->createdBy->profile_photo_url }}"/>
                                 <span class="font-medium">{{ $service->createdBy->name }}</span>
                             </div>
                         @else
@@ -148,7 +162,7 @@ class extends Component {
                     <div>
                         <div class="text-gray-500 dark:text-gray-400 mb-1">{{ __('Erstellt am') }}</div>
                         <div class="flex items-center gap-1">
-                            <flux:icon.plus variant="micro" class="text-green-600 dark:text-green-400" />
+                            <flux:icon.plus variant="micro" class="text-green-600 dark:text-green-400"/>
                             <span>{{ $service->created_at->format('d.m.Y H:i') }}</span>
                         </div>
                     </div>
@@ -158,7 +172,7 @@ class extends Component {
                         <div>
                             <div class="text-gray-500 dark:text-gray-400 mb-1">{{ __('Zuletzt aktualisiert') }}</div>
                             <div class="flex items-center gap-1">
-                                <flux:icon.pencil variant="micro" class="text-blue-600 dark:text-blue-400" />
+                                <flux:icon.pencil variant="micro" class="text-blue-600 dark:text-blue-400"/>
                                 <span>{{ $service->updated_at->format('d.m.Y H:i') }}</span>
                             </div>
                         </div>
@@ -183,7 +197,7 @@ class extends Component {
         </div>
 
         <div class="flex gap-2">
-            <flux:spacer />
+            <flux:spacer/>
             <flux:modal.close>
                 <flux:button variant="ghost">{{ __('Abbrechen') }}</flux:button>
             </flux:modal.close>

@@ -144,6 +144,16 @@ class extends Component {
     }
 }; ?>
 
+@section('meta')
+    @php
+        $SEOData = SeoDataAttribute::getData('meetups_landingpage');
+        $SEOData->title = $this->event->meetup->name;
+        $SEOData->description = $this->event->meetup->intro ? str($this->event->meetup->intro)->limit(50) : $SEOData->description;
+        $SEOData->image = $this->event->meetup->getFirstMediaUrl('logo');
+    @endphp
+    {!! seo($SEOData)->render() !!}
+@endsection
+
 <div class="container mx-auto px-4 py-8">
     <!-- Breadcrumb -->
     <div class="mb-6">

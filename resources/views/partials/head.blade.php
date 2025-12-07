@@ -1,7 +1,11 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-{!! seo($SEOData) !!}
+@hasSection('meta')
+    @yield('meta')
+@else
+    {!! seo($SEOData) !!}
+@endif
 
 <link rel="apple-touch-icon" href="/img/apple_touch_icon.png"/>
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
