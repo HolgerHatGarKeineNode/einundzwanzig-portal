@@ -87,7 +87,7 @@ class extends Component {
             @if($service->intro)
                 <flux:card class="p-6">
                     <flux:heading size="lg" class="mb-4">{{ __('Beschreibung') }}</flux:heading>
-                    <div class="prose dark:prose-invert max-w-none whitespace-pre-wrap">
+                    <div class="prose dark:prose-invert max-w-none">
                         {{ $service->intro }}
                     </div>
                 </flux:card>
@@ -97,7 +97,7 @@ class extends Component {
             @if($service->contact)
                 <flux:card class="p-6">
                     <flux:heading size="lg" class="mb-4">{{ __('Kontakt') }}</flux:heading>
-                    <div class="prose dark:prose-invert max-w-none whitespace-pre-wrap">
+                    <div class="prose dark:prose-invert max-w-none">
                         {{ $service->contact }}
                     </div>
                 </flux:card>
@@ -109,34 +109,75 @@ class extends Component {
             <!-- Links -->
             <flux:card class="p-6">
                 <flux:heading size="lg" class="mb-4">{{ __('Zugriff') }}</flux:heading>
-                <div class="flex flex-col gap-2">
+                <div class="flex flex-col gap-3">
                     @if($service->url_clearnet)
-                        <flux:link :href="$service->url_clearnet" external
-                                   class="text-blue-600 dark:text-blue-400 flex items-center gap-2">
-                            <flux:icon.globe-alt variant="mini"/>
-                            <span>Clearnet</span>
-                        </flux:link>
+                        <div class="flex items-center justify-between gap-2">
+                            <flux:link :href="$service->url_clearnet" external
+                                       class="text-blue-600 dark:text-blue-400 flex items-center gap-2">
+                                <flux:icon.globe-alt variant="mini"/>
+                                <span>Clearnet</span>
+                            </flux:link>
+                            <div x-copy-to-clipboard="'{{ $service->url_clearnet }}'">
+                                <flux:button icon="clipboard" size="xs" variant="ghost" class="cursor-pointer">
+                                    {{ __('Copy') }}
+                                </flux:button>
+                            </div>
+                        </div>
                     @endif
                     @if($service->url_onion)
-                        <flux:link :href="$service->url_onion" external
-                                   class="text-purple-600 dark:text-purple-400 flex items-center gap-2">
-                            <flux:icon.lock-closed variant="mini"/>
-                            <span>Onion / Tor</span>
-                        </flux:link>
+                        <div class="flex items-center justify-between gap-2">
+                            <flux:link :href="$service->url_onion" external
+                                       class="text-purple-600 dark:text-purple-400 flex items-center gap-2">
+                                <flux:icon.lock-closed variant="mini"/>
+                                <span>Onion / Tor</span>
+                            </flux:link>
+                            <div x-copy-to-clipboard="'{{ $service->url_onion }}'">
+                                <flux:button icon="clipboard" size="xs" variant="ghost" class="cursor-pointer">
+                                    {{ __('Copy') }}
+                                </flux:button>
+                            </div>
+                        </div>
                     @endif
                     @if($service->url_i2p)
-                        <flux:link :href="$service->url_i2p" external
-                                   class="text-green-600 dark:text-green-400 flex items-center gap-2">
-                            <flux:icon.link variant="mini"/>
-                            <span>I2P</span>
-                        </flux:link>
+                        <div class="flex items-center justify-between gap-2">
+                            <flux:link :href="$service->url_i2p" external
+                                       class="text-green-600 dark:text-green-400 flex items-center gap-2">
+                                <flux:icon.link variant="mini"/>
+                                <span>I2P</span>
+                            </flux:link>
+                            <div x-copy-to-clipboard="'{{ $service->url_i2p }}'">
+                                <flux:button icon="clipboard" size="xs" variant="ghost" class="cursor-pointer">
+                                    {{ __('Copy') }}
+                                </flux:button>
+                            </div>
+                        </div>
                     @endif
                     @if($service->url_pkdns)
-                        <flux:link :href="$service->url_pkdns" external
-                                   class="text-orange-600 dark:text-orange-400 flex items-center gap-2">
-                            <flux:icon.link variant="mini"/>
-                            <span>pkdns</span>
-                        </flux:link>
+                        <div class="flex items-center justify-between gap-2">
+                            <flux:link :href="$service->url_pkdns" external
+                                       class="text-orange-600 dark:text-orange-400 flex items-center gap-2">
+                                <flux:icon.link variant="mini"/>
+                                <span>pkdns</span>
+                            </flux:link>
+                            <div x-copy-to-clipboard="'{{ $service->url_pkdns }}'">
+                                <flux:button icon="clipboard" size="xs" variant="ghost" class="cursor-pointer">
+                                    {{ __('Copy') }}
+                                </flux:button>
+                            </div>
+                        </div>
+                    @endif
+                    @if($service->ip)
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 font-mono text-sm text-gray-700 dark:text-gray-300">
+                                <flux:icon.server variant="mini"/>
+                                <span>{{ $service->ip }}</span>
+                            </div>
+                            <div x-copy-to-clipboard="'{{ $service->ip }}'">
+                                <flux:button icon="clipboard" size="xs" variant="ghost" class="cursor-pointer">
+                                    {{ __('Copy') }}
+                                </flux:button>
+                            </div>
+                        </div>
                     @endif
                 </div>
             </flux:card>
@@ -148,13 +189,13 @@ class extends Component {
                     <!-- Created By -->
                     <div>
                         <div class="text-gray-500 dark:text-gray-400 mb-1">{{ __('Erstellt von') }}</div>
-                        @if($service->createdBy)
+                        @if($service->anon || !$service->createdBy)
+                            <span class="text-gray-500 dark:text-gray-400 italic">{{ __('Anonymous') }}</span>
+                        @else
                             <div class="flex items-center gap-2">
                                 <flux:avatar size="xs" src="{{ $service->createdBy->profile_photo_url }}"/>
                                 <span class="font-medium">{{ $service->createdBy->name }}</span>
                             </div>
-                        @else
-                            <span class="text-gray-500 dark:text-gray-400 italic">{{ __('Anonymous') }}</span>
                         @endif
                     </div>
 
