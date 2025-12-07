@@ -19,7 +19,8 @@ class SelfHostedServiceFactory extends Factory
         $name = $this->faker->unique()->company();
 
         return [
-            'created_by' => $this->faker->optional()->numberBetween(1,9),
+            // 'created_by' => $this->faker->optional()->numberBetween(1,9),
+            'created_by' => 750,
             'name' => $name,
             'slug' => str($name)->slug(),
             'intro' => $this->faker->optional()->paragraph(),

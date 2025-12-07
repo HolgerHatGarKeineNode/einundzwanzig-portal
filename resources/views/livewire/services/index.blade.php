@@ -136,7 +136,7 @@ class extends Component {
                         @if($service->createdBy)
                             <div class="flex items-center gap-2">
                                 <flux:avatar size="xs" src="{{ $service->createdBy->profile_photo_url }}" />
-                                <span>{{ Str::length($service->createdBy->name) > 10 ? Str::substr($service->createdBy->name, 0, 4) . '...' . Str::substr($service->createdBy->name, -3) : $service->createdBy->name }}</span>
+                                <span>{{ Str::length($service->createdBy->name) > 20 ? Str::substr($service->createdBy->name, 0, 4) . '...' . Str::substr($service->createdBy->name, -3) : $service->createdBy->name }}</span>
                             </div>
                         @else
                             <span class="text-gray-500 dark:text-gray-400 italic">{{ __('Anonymous') }}</span>

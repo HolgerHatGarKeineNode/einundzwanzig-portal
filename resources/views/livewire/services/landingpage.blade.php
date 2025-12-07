@@ -20,6 +20,20 @@ class extends Component {
         $this->country = request()->route('country', config('app.domain_country'));
     }
 
+    public function delete(): void
+    {
+        // Only allow deletion if user is the creator
+        if (auth()->id() === $this->service->created_by) {
+            $this->service->delete();
+
+            session()->flash('status', __('Service erfolgreich gelöscht!'));
+
+            redirect()->route('services.index', ['country' => $this->country]);
+        } else {
+            abort(403);
+        }
+    }
+
     public function with(): array
     {
         return [
@@ -35,9 +49,16 @@ class extends Component {
             <flux:heading size="xl">{{ $service->name }}</flux:heading>
             @auth
                 @if(auth()->id() === $service->created_by)
-                    <flux:button :href="route_with_country('services.edit', ['service' => $service])" variant="primary" icon="pencil">
-                        {{ __('Bearbeiten') }}
-                    </flux:button>
+                    <div class="flex gap-2">
+                        <flux:button :href="route_with_country('services.edit', ['service' => $service])" variant="primary" icon="pencil">
+                            {{ __('Bearbeiten') }}
+                        </flux:button>
+                        <flux:modal.trigger name="delete-service">
+                            <flux:button variant="danger" icon="trash">
+                                {{ __('Löschen') }}
+                            </flux:button>
+                        </flux:modal.trigger>
+                    </div>
                 @endif
             @endauth
         </div>
@@ -151,4 +172,24 @@ class extends Component {
             </flux:button>
         </div>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <flux:modal name="delete-service" class="space-y-6">
+        <div>
+            <flux:heading size="lg">{{ __('Service löschen?') }}</flux:heading>
+            <flux:text class="mt-2">
+                {{ __('Möchten Sie den Service wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.') }}
+            </flux:text>
+        </div>
+
+        <div class="flex gap-2">
+            <flux:spacer />
+            <flux:modal.close>
+                <flux:button variant="ghost">{{ __('Abbrechen') }}</flux:button>
+            </flux:modal.close>
+            <flux:button wire:click="delete" variant="danger">
+                {{ __('Löschen') }}
+            </flux:button>
+        </div>
+    </flux:modal>
 </div>
