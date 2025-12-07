@@ -16,6 +16,7 @@ class extends Component {
 
     public function mount(): void
     {
+        $this->service->load('createdBy');
         $this->country = request()->route('country', config('app.domain_country'));
     }
 
@@ -27,63 +28,11 @@ class extends Component {
     }
 }; ?>
 
-<div class="container mx-auto px-4 py-8">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div class="lg:col-span-2 space-y-6">
-            <div class="flex items-center gap-4">
-                <flux:avatar class="[:where(&)]:size-24 [:where(&)]:text-base" size="xl"
-                             src="{{ $service->getFirstMediaUrl('logo') }}"/>
-                <div>
-                    <flux:heading size="xl" class="mb-1">{{ $service->name }}</flux:heading>
-                    @if($service->type)
-                        <flux:badge size="sm">{{ ucfirst($service->type->value) }}</flux:badge>
-                    @endif
-                </div>
-            </div>
-
-            @if($service->intro)
-                <div>
-                    <flux:heading size="lg" class="mb-2">{{ __('Über den Service') }}</flux:heading>
-                    <x-markdown class="prose whitespace-pre-wrap">{!! $service->intro !!}</x-markdown>
-                </div>
-            @endif
-        </div>
-
-        <div class="space-y-4">
-            <flux:heading size="lg">{{ __('Links') }}</flux:heading>
-            <div class="grid grid-cols-1 gap-2">
-                @if($service->url_clearnet)
-                    <flux:button href="{{ $service->url_clearnet }}" target="_blank" variant="ghost" class="justify-start">
-                        <flux:icon.globe-alt class="w-5 h-5 mr-2" />
-                        Clearnet
-                    </flux:button>
-                @endif
-                @if($service->url_onion)
-                    <flux:button href="{{ $service->url_onion }}" target="_blank" variant="ghost" class="justify-start">
-                        <flux:icon.lock-closed class="w-5 h-5 mr-2" />
-                        Onion / Tor
-                    </flux:button>
-                @endif
-                @if($service->url_i2p)
-                    <flux:button href="{{ $service->url_i2p }}" target="_blank" variant="ghost" class="justify-start">
-                        <flux:icon.link class="w-5 h-5 mr-2" />
-                        I2P
-                    </flux:button>
-                @endif
-                @if($service->url_pkdns)
-                    <flux:button href="{{ $service->url_pkdns }}" target="_blank" variant="ghost" class="justify-start">
-                        <flux:icon.link class="w-5 h-5 mr-2" />
-                        pkdns
-                    </flux:button>
-                @endif
-                @if($service->contact_url)
-                    <flux:button href="{{ $service->contact_url }}" target="_blank" variant="ghost" class="justify-start">
-                        <flux:icon.envelope class="w-5 h-5 mr-2" />
-                        {{ __('Kontakt') }}
-                    </flux:button>
-                @endif
-            </div>
-
+<div class="container mx-auto px-4 py-8 max-w-5xl">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <flux:heading size="xl">{{ $service->name }}</flux:heading>
             @auth
                 @if(auth()->id() === $service->created_by)
                     <flux:button :href="route_with_country('services.edit', ['service' => $service])" variant="primary" icon="pencil">
@@ -91,6 +40,115 @@ class extends Component {
                     </flux:button>
                 @endif
             @endauth
+        </div>
+
+        @if($service->type)
+            <flux:badge size="lg" color="{{ $service->type->color() }}">
+                {{ $service->type->label() }}
+            </flux:badge>
+        @endif
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-8">
+            <!-- Description -->
+            @if($service->intro)
+                <flux:card class="p-6">
+                    <flux:heading size="lg" class="mb-4">{{ __('Beschreibung') }}</flux:heading>
+                    <div class="prose dark:prose-invert max-w-none whitespace-pre-wrap">
+                        {{ $service->intro }}
+                    </div>
+                </flux:card>
+            @endif
+
+            <!-- Contact Information -->
+            @if($service->contact)
+                <flux:card class="p-6">
+                    <flux:heading size="lg" class="mb-4">{{ __('Kontakt') }}</flux:heading>
+                    <div class="prose dark:prose-invert max-w-none whitespace-pre-wrap">
+                        {{ $service->contact }}
+                    </div>
+                </flux:card>
+            @endif
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Links -->
+            <flux:card class="p-6">
+                <flux:heading size="lg" class="mb-4">{{ __('Zugriff') }}</flux:heading>
+                <div class="flex flex-col gap-2">
+                    @if($service->url_clearnet)
+                        <flux:link :href="$service->url_clearnet" external class="text-blue-600 dark:text-blue-400 flex items-center gap-2">
+                            <flux:icon.globe-alt variant="mini" />
+                            <span>Clearnet</span>
+                        </flux:link>
+                    @endif
+                    @if($service->url_onion)
+                        <flux:link :href="$service->url_onion" external class="text-purple-600 dark:text-purple-400 flex items-center gap-2">
+                            <flux:icon.lock-closed variant="mini" />
+                            <span>Onion / Tor</span>
+                        </flux:link>
+                    @endif
+                    @if($service->url_i2p)
+                        <flux:link :href="$service->url_i2p" external class="text-green-600 dark:text-green-400 flex items-center gap-2">
+                            <flux:icon.link variant="mini" />
+                            <span>I2P</span>
+                        </flux:link>
+                    @endif
+                    @if($service->url_pkdns)
+                        <flux:link :href="$service->url_pkdns" external class="text-orange-600 dark:text-orange-400 flex items-center gap-2">
+                            <flux:icon.link variant="mini" />
+                            <span>pkdns</span>
+                        </flux:link>
+                    @endif
+                </div>
+            </flux:card>
+
+            <!-- Metadata -->
+            <flux:card class="p-6">
+                <flux:heading size="lg" class="mb-4">{{ __('Informationen') }}</flux:heading>
+                <div class="space-y-4 text-sm">
+                    <!-- Created By -->
+                    <div>
+                        <div class="text-gray-500 dark:text-gray-400 mb-1">{{ __('Erstellt von') }}</div>
+                        @if($service->createdBy)
+                            <div class="flex items-center gap-2">
+                                <flux:avatar size="xs" src="{{ $service->createdBy->profile_photo_url }}" />
+                                <span class="font-medium">{{ $service->createdBy->name }}</span>
+                            </div>
+                        @else
+                            <span class="text-gray-500 dark:text-gray-400 italic">{{ __('Anonymous') }}</span>
+                        @endif
+                    </div>
+
+                    <!-- Created At -->
+                    <div>
+                        <div class="text-gray-500 dark:text-gray-400 mb-1">{{ __('Erstellt am') }}</div>
+                        <div class="flex items-center gap-1">
+                            <flux:icon.plus variant="micro" class="text-green-600 dark:text-green-400" />
+                            <span>{{ $service->created_at->format('d.m.Y H:i') }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Updated At -->
+                    @if($service->created_at->ne($service->updated_at))
+                        <div>
+                            <div class="text-gray-500 dark:text-gray-400 mb-1">{{ __('Zuletzt aktualisiert') }}</div>
+                            <div class="flex items-center gap-1">
+                                <flux:icon.pencil variant="micro" class="text-blue-600 dark:text-blue-400" />
+                                <span>{{ $service->updated_at->format('d.m.Y H:i') }}</span>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </flux:card>
+
+            <!-- Back Button -->
+            <flux:button :href="route_with_country('services.index')" variant="ghost" icon="arrow-left" class="w-full">
+                {{ __('Zurück zur Übersicht') }}
+            </flux:button>
         </div>
     </div>
 </div>

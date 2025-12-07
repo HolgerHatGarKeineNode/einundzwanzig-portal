@@ -2,7 +2,7 @@
 
 use App\Attributes\SeoDataAttribute;
 use App\Enums\SelfHostedServiceType;
-use App\Models\SelfHostedService;
+use App\Livewire\Forms\ServiceForm;
 use App\Traits\SeoTrait;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
@@ -11,85 +11,30 @@ use Livewire\WithFileUploads;
 new
 #[SeoDataAttribute(key: 'services_create')]
 class extends Component {
-    use WithFileUploads;
     use SeoTrait;
 
-    #[Validate('image|max:10240')] // 10MB
-    public $logo;
+    public string $country = 'de';
+    public ServiceForm $form;
 
-    public string $name = '';
-    public ?string $intro = null;
-    public ?string $url_clearnet = null;
-    public ?string $url_onion = null;
-    public ?string $url_i2p = null;
-    public ?string $url_pkdns = null;
-    public ?string $type = null;
-    public ?string $contact = null;
-    public bool $anonymous = false;
-
-    protected function rules(): array
+    public function mount(): void
     {
-        return [
-            'name' => ['required', 'string', 'max:255'],
-            'type' => [
-                'required', 'in:'.collect(SelfHostedServiceType::cases())->map(fn($c) => $c->value)->implode(',')
-            ],
-            'intro' => ['nullable', 'string'],
-            'url_clearnet' => ['nullable', 'url', 'max:255'],
-            'url_onion' => ['nullable', 'string', 'max:255'],
-            'url_i2p' => ['nullable', 'string', 'max:255'],
-            'url_pkdns' => ['nullable', 'string', 'max:255'],
-            'contact' => ['nullable', 'string'],
-            'anonymous' => ['boolean'],
-        ];
-    }
-
-    protected function validateAtLeastOneUrl(): void
-    {
-        if (empty($this->url_clearnet) && empty($this->url_onion) && empty($this->url_i2p) && empty($this->url_pkdns)) {
-            $this->addError('url_clearnet', __('Mindestens eine URL muss angegeben werden.'));
-            throw new \Illuminate\Validation\ValidationException(
-                validator([], [])
-            );
-        }
+        $this->country = request()->route('country', config('app.domain_country'));
     }
 
     public function save(): void
     {
-        $validated = $this->validate();
-
-        $this->validateAtLeastOneUrl();
-
-        /** @var SelfHostedService $service */
-        $service = SelfHostedService::create([
-            'name' => $validated['name'],
-            'type' => $validated['type'],
-            'intro' => $validated['intro'] ?? null,
-            'url_clearnet' => $validated['url_clearnet'] ?? null,
-            'url_onion' => $validated['url_onion'] ?? null,
-            'url_i2p' => $validated['url_i2p'] ?? null,
-            'url_pkdns' => $validated['url_pkdns'] ?? null,
-            'contact' => $validated['contact'] ?? null,
-            'created_by' => $this->anonymous ? null : auth()->id(),
-        ]);
-
-        if ($this->logo) {
-            $service
-                ->addMedia($this->logo->getRealPath())
-                ->usingFileName($this->logo->getClientOriginalName())
-                ->toMediaCollection('logo');
-        }
+        $service = $this->form->store();
 
         session()->flash('status', __('Service erfolgreich erstellt!'));
 
-        redirect()->route('services.index', ['country' => request()->route('country')]);
+        redirect()->route('services.index', ['country' => $this->country]);
     }
 
     public function with(): array
     {
         return [
             'types' => collect(SelfHostedServiceType::cases())->map(fn($c) => [
-                'value' => $c->value, 'label' => ucfirst($c->value)
+                'value' => $c->value, 'label' => $c->label()
             ]),
         ];
     }
@@ -105,57 +50,37 @@ class extends Component {
             <flux:legend>{{ __('Grundlegende Informationen') }}</flux:legend>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                <flux:file-upload wire:model="logo">
-                    <div class="
-                            relative flex items-center justify-center size-20 rounded transition-colors cursor-pointer
-                            border border-zinc-200 dark:border-white/10 hover:border-zinc-300 dark:hover:border-white/10
-                            bg-zinc-100 hover:bg-zinc-200 dark:bg-white/10 hover:dark:bg-white/15 in-data-dragging:dark:bg-white/15
-                        ">
-                        @if($logo)
-                            <img src="{{ $logo?->temporaryUrl() }}" alt="Logo"
-                                 class="size-full object-cover rounded"/>
-                        @else
-                            <flux:icon name="cube" variant="solid" class="text-zinc-500 dark:text-zinc-400"/>
-                        @endif
-
-                        <div class="absolute bottom-0 right-0 bg-white dark:bg-zinc-800 rounded">
-                            <flux:icon name="arrow-up-circle" variant="solid" class="text-zinc-500 dark:text-zinc-400"/>
-                        </div>
-                    </div>
-                </flux:file-upload>
-
                 <flux:field>
                     <flux:label>{{ __('Name') }} <span class="text-red-500">*</span></flux:label>
-                    <flux:input wire:model="name" placeholder="Name" required/>
+                    <flux:input wire:model="form.name" placeholder="Name" required/>
                     <flux:description>{{ __('Der Name des Services') }}</flux:description>
-                    <flux:error name="name"/>
+                    <flux:error name="form.name"/>
                 </flux:field>
 
                 <flux:field>
                     <flux:label>{{ __('Typ') }} <span class="text-red-500">*</span></flux:label>
-                    <flux:select wire:model="type" placeholder="{{ __('Bitte wählen') }}" required>
+                    <flux:select wire:model="form.type" placeholder="{{ __('Bitte wählen') }}" required>
                         <flux:select.option :value="null">—</flux:select.option>
                         @foreach($types as $t)
                             <flux:select.option value="{{ $t['value'] }}">{{ $t['label'] }}</flux:select.option>
                         @endforeach
                     </flux:select>
                     <flux:description>{{ __('Art des Services') }}</flux:description>
-                    <flux:error name="type"/>
+                    <flux:error name="form.type"/>
                 </flux:field>
 
                 <flux:field>
                     <flux:label>{{ __('Anonym einstellen') }}</flux:label>
-                    <flux:switch wire:model="anonymous"/>
+                    <flux:switch wire:model="form.anonymous"/>
                     <flux:description>{{ __('Service ohne Autorenangabe einstellen') }}</flux:description>
                 </flux:field>
             </div>
 
             <flux:field>
                 <flux:label>{{ __('Beschreibung') }}</flux:label>
-                <flux:textarea rows="4" wire:model="intro"/>
+                <flux:textarea rows="4" wire:model="form.intro"/>
                 <flux:description>{{ __('Kurze Beschreibung des Services') }}</flux:description>
-                <flux:error name="intro"/>
+                <flux:error name="form.intro"/>
             </flux:field>
         </flux:fieldset>
 
@@ -166,39 +91,38 @@ class extends Component {
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <flux:field>
                     <flux:label>{{ __('URL (Clearnet)') }}</flux:label>
-                    <flux:input wire:model="url_clearnet" type="url" placeholder="https://..."/>
+                    <flux:input wire:model="form.url_clearnet" type="url" placeholder="https://..."/>
                     <flux:description>{{ __('Normale Web-URL') }}</flux:description>
-                    <flux:error name="url_clearnet"/>
+                    <flux:error name="form.url_clearnet"/>
                 </flux:field>
 
                 <flux:field>
                     <flux:label>{{ __('URL (Onion/Tor)') }}</flux:label>
-                    <flux:input wire:model="url_onion" placeholder="http://...onion"/>
+                    <flux:input wire:model="form.url_onion" placeholder="http://...onion"/>
                     <flux:description>{{ __('Tor Hidden Service URL') }}</flux:description>
-                    <flux:error name="url_onion"/>
+                    <flux:error name="form.url_onion"/>
                 </flux:field>
 
                 <flux:field>
                     <flux:label>{{ __('URL (I2P)') }}</flux:label>
-                    <flux:input wire:model="url_i2p" placeholder="..."/>
+                    <flux:input wire:model="form.url_i2p" placeholder="..."/>
                     <flux:description>{{ __('I2P Adresse') }}</flux:description>
-                    <flux:error name="url_i2p"/>
+                    <flux:error name="form.url_i2p"/>
                 </flux:field>
 
                 <flux:field>
                     <flux:label>{{ __('URL (pkdns)') }}</flux:label>
-                    <flux:input wire:model="url_pkdns" placeholder="..."/>
+                    <flux:input wire:model="form.url_pkdns" placeholder="..."/>
                     <flux:description>{{ __('Pkarr DNS Adresse') }}</flux:description>
-                    <flux:error name="url_pkdns"/>
+                    <flux:error name="form.url_pkdns"/>
                 </flux:field>
             </div>
 
             <flux:field>
                 <flux:label>{{ __('Kontaktinformation') }}</flux:label>
-                <flux:textarea rows="3" wire:model="contact"
-                               placeholder="{{ __('Signal: username, SimpleX: https://..., Email: ...') }}"/>
+                <flux:textarea rows="3" wire:model="form.contact" placeholder="{{ __('Signal: @username, SimpleX: https://..., Email: ...') }}"/>
                 <flux:description>{{ __('Beliebige Kontaktinformationen (Signal, SimpleX, Email, etc.)') }}</flux:description>
-                <flux:error name="contact"/>
+                <flux:error name="form.contact"/>
             </flux:field>
         </flux:fieldset>
 

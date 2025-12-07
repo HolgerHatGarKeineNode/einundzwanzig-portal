@@ -14,19 +14,29 @@ class extends Component {
 
     public string $country = 'de';
     public string $search = '';
+    public ?string $typeFilter = null;
 
     public function mount(): void
     {
         $this->country = request()->route('country', config('app.domain_country'));
     }
 
+    public function filterByType(?string $type): void
+    {
+        $this->typeFilter = $this->typeFilter === $type ? null : $type;
+        $this->resetPage();
+    }
+
     public function with(): array
     {
         return [
             'services' => SelfHostedService::query()
+                ->with('createdBy')
                 ->when($this->search, fn($q) => $q->where('name', 'ilike', '%'.$this->search.'%'))
+                ->when($this->typeFilter, fn($q) => $q->where('type', $this->typeFilter))
                 ->orderBy('name')
                 ->paginate(15),
+            'types' => \App\Enums\SelfHostedServiceType::cases(),
         ];
     }
 }; ?>
@@ -44,68 +54,108 @@ class extends Component {
         </div>
     </div>
 
+    <!-- Type Filter Cloud -->
+    <div class="flex flex-wrap gap-2 mb-6">
+        @foreach($types as $type)
+            <flux:badge
+                wire:click="filterByType('{{ $type->value }}')"
+                size="lg"
+                color="{{ $type->color() }}"
+                class="cursor-pointer transition-opacity {{ $typeFilter === $type->value ? 'ring-2 ring-offset-2' : 'opacity-70 hover:opacity-100' }}"
+            >
+                {{ $type->label() }}
+            </flux:badge>
+        @endforeach
+        @if($typeFilter)
+            <flux:badge
+                wire:click="filterByType(null)"
+                size="lg"
+                color="zinc"
+                class="cursor-pointer"
+            >
+                <flux:icon.x-mark variant="mini" class="inline" />
+                {{ __('Filter zurücksetzen') }}
+            </flux:badge>
+        @endif
+    </div>
+
     <flux:table :paginate="$services" class="mt-6">
         <flux:table.columns>
             <flux:table.column>{{ __('Name') }}</flux:table.column>
             <flux:table.column>{{ __('Typ') }}</flux:table.column>
             <flux:table.column>{{ __('Links') }}</flux:table.column>
-            <flux:table.column>{{ __('Aktionen') }}</flux:table.column>
+            <flux:table.column>{{ __('Erstellt von') }}</flux:table.column>
+            <flux:table.column>{{ __('Datum') }}</flux:table.column>
         </flux:table.columns>
 
         <flux:table.rows>
             @foreach ($services as $service)
                 <flux:table.row :key="$service->id">
-                    <flux:table.cell variant="strong" class="flex items-center gap-3">
-                        <flux:avatar class="[:where(&)]:size-16" :href="route('services.landingpage', ['service' => $service, 'country' => $country])" src="{{ $service->getFirstMedia('logo') ? $service->getFirstMediaUrl('logo', 'thumb') : asset('android-chrome-512x512.png') }}"/>
+                    <flux:table.cell variant="strong">
                         <a href="{{ route('services.landingpage', ['service' => $service, 'country' => $country]) }}">{{ $service->name }}</a>
                     </flux:table.cell>
 
                     <flux:table.cell>
                         @if($service->type)
-                            <flux:badge size="sm">{{ ucfirst($service->type->value) }}</flux:badge>
+                            <flux:badge size="sm" color="{{ $service->type->color() }}">
+                                {{ $service->type->label() }}
+                            </flux:badge>
                         @endif
                     </flux:table.cell>
 
                     <flux:table.cell>
-                        <div class="flex gap-2">
+                        <div class="flex flex-col gap-1">
                             @if($service->url_clearnet)
-                                <flux:link :href="$service->url_clearnet" external variant="subtle" title="Clearnet">
-                                    <flux:icon.globe-alt variant="mini" />
+                                <flux:link :href="$service->url_clearnet" external class="text-blue-600 dark:text-blue-400">
+                                    <flux:icon.globe-alt variant="mini" class="inline" />
+                                    Clearnet
                                 </flux:link>
                             @endif
                             @if($service->url_onion)
-                                <flux:link :href="$service->url_onion" external variant="subtle" title="Onion">
-                                    <flux:icon.lock-closed variant="mini" />
+                                <flux:link :href="$service->url_onion" external class="text-purple-600 dark:text-purple-400">
+                                    <flux:icon.lock-closed variant="mini" class="inline" />
+                                    Onion
                                 </flux:link>
                             @endif
                             @if($service->url_i2p)
-                                <flux:link :href="$service->url_i2p" external variant="subtle" title="I2P">
-                                    <flux:icon.link variant="mini" />
+                                <flux:link :href="$service->url_i2p" external class="text-green-600 dark:text-green-400">
+                                    <flux:icon.link variant="mini" class="inline" />
+                                    I2P
                                 </flux:link>
                             @endif
                             @if($service->url_pkdns)
-                                <flux:link :href="$service->url_pkdns" external variant="subtle" title="pkdns">
-                                    <flux:icon.link variant="mini" />
-                                </flux:link>
-                            @endif
-                            @if($service->contact_url)
-                                <flux:link :href="$service->contact_url" external variant="subtle" title="Kontakt">
-                                    <flux:icon.envelope variant="mini" />
+                                <flux:link :href="$service->url_pkdns" external class="text-orange-600 dark:text-orange-400">
+                                    <flux:icon.link variant="mini" class="inline" />
+                                    pkdns
                                 </flux:link>
                             @endif
                         </div>
                     </flux:table.cell>
 
                     <flux:table.cell>
-                        @auth
-                            @if(auth()->id() === $service->created_by)
-                                <flux:button :href="route_with_country('services.edit', ['service' => $service])" size="xs" variant="filled" icon="pencil">
-                                    {{ __('Bearbeiten') }}
-                                </flux:button>
-                            @endif
+                        @if($service->createdBy)
+                            <div class="flex items-center gap-2">
+                                <flux:avatar size="xs" src="{{ $service->createdBy->profile_photo_url }}" />
+                                <span>{{ Str::length($service->createdBy->name) > 10 ? Str::substr($service->createdBy->name, 0, 4) . '...' . Str::substr($service->createdBy->name, -3) : $service->createdBy->name }}</span>
+                            </div>
                         @else
-                            <flux:link :href="route('login')">{{ __('Log in') }}</flux:link>
-                        @endauth
+                            <span class="text-gray-500 dark:text-gray-400 italic">{{ __('Anonymous') }}</span>
+                        @endif
+                    </flux:table.cell>
+
+                    <flux:table.cell>
+                        <div class="flex flex-col gap-1 text-sm">
+                            <div class="flex items-center gap-1">
+                                <flux:icon.plus variant="micro" class="text-green-600 dark:text-green-400" />
+                                <span class="text-gray-600 dark:text-gray-400">{{ $service->created_at->format('d.m.Y') }}</span>
+                            </div>
+                            @if($service->created_at->ne($service->updated_at))
+                                <div class="flex items-center gap-1">
+                                    <flux:icon.pencil variant="micro" class="text-blue-600 dark:text-blue-400" />
+                                    <span class="text-gray-600 dark:text-gray-400">{{ $service->updated_at->format('d.m.Y') }}</span>
+                                </div>
+                            @endif
+                        </div>
                     </flux:table.cell>
                 </flux:table.row>
             @endforeach

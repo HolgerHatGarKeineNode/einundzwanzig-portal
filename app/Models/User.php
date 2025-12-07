@@ -72,7 +72,7 @@ class User extends Authenticatable implements CipherSweetEncrypted
             ->addOptionalTextField('node_id')
             ->addOptionalTextField('email')
             ->addOptionalTextField('paynym')
-            ->addJsonField('lnbits', $map)
+            ->addNullableJsonField('lnbits', $map, strict: false)
             ->addBlindIndex('public_key', new BlindIndex('public_key_index'))
             ->addBlindIndex('lightning_address', new BlindIndex('lightning_address_index'))
             ->addBlindIndex('lnurl', new BlindIndex('lnurl_index'))

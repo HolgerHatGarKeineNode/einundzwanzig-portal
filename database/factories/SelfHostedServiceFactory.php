@@ -19,16 +19,16 @@ class SelfHostedServiceFactory extends Factory
         $name = $this->faker->unique()->company();
 
         return [
-            'created_by' => User::factory(),
+            'created_by' => $this->faker->optional()->numberBetween(1,9),
             'name' => $name,
             'slug' => str($name)->slug(),
             'intro' => $this->faker->optional()->paragraph(),
             'url_clearnet' => $this->faker->optional()->url(),
-            'url_onion' => null,
-            'url_i2p' => null,
-            'url_pkdns' => null,
+            'url_onion' => $this->faker->optional()->url(),
+            'url_i2p' => $this->faker->optional()->url(),
+            'url_pkdns' => $this->faker->optional()->url(),
             'type' => $this->faker->randomElement(SelfHostedServiceType::cases())->value,
-            'contact_url' => $this->faker->optional()->url(),
+            'contact' => $this->faker->optional()->url(),
         ];
     }
 }

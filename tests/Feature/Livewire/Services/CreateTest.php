@@ -15,8 +15,11 @@ it('creates a self hosted service', function () {
         ->set('name', 'My Node')
         ->set('type', SelfHostedServiceType::Mempool->value)
         ->set('url_clearnet', 'https://example.com')
-        ->set('contact_url', 'https://contact.example.com')
+                ->set('contact', ['url' => 'https://contact.example.com'])
         ->call('save');
 
     expect(SelfHostedService::where('name', 'My Node')->exists())->toBeTrue();
+
+    $service = SelfHostedService::where('name', 'My Node')->first();
+    expect($service->getFirstMedia('logo'))->toBeNull();
 });
