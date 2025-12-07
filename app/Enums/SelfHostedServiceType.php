@@ -7,7 +7,6 @@ enum SelfHostedServiceType: string
     case Alby = 'alby';
     case BtcpayServer = 'btcpay_server';
     case ElectrumFulcrumServer = 'electrum_fulcrum_server';
-    case LNbits = 'lnbits';
     case LnbitsServer = 'lnbits_server';
     case Mempool = 'mempool';
     case NostrBlossomServer = 'nostr_blossom_server';
@@ -20,7 +19,6 @@ enum SelfHostedServiceType: string
     {
         return match ($this) {
             self::Mempool => 'blue',
-            self::LNbits => 'purple',
             self::Alby => 'amber',
             self::ElectrumFulcrumServer => 'cyan',
             self::BtcpayServer => 'green',
@@ -37,7 +35,6 @@ enum SelfHostedServiceType: string
     {
         return match ($this) {
             self::Mempool => 'Mempool',
-            self::LNbits => 'LNbits',
             self::Alby => 'Alby',
             self::ElectrumFulcrumServer => 'Electrum/Fulcrum Server',
             self::BtcpayServer => 'BTCPay Server',
