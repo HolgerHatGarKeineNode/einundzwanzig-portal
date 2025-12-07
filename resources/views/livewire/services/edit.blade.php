@@ -134,6 +134,13 @@ class extends Component {
                     <flux:description>{{ __('Pkarr DNS Adresse') }}</flux:description>
                     <flux:error name="form.url_pkdns"/>
                 </flux:field>
+
+                <flux:field>
+                    <flux:label>{{ __('IP-Adresse') }}</flux:label>
+                    <flux:input wire:model="form.ip" placeholder="192.168.1.1"/>
+                    <flux:description>{{ __('IPv4 Adresse') }}</flux:description>
+                    <flux:error name="form.ip"/>
+                </flux:field>
             </div>
 
             <flux:field>

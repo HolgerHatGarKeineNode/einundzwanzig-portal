@@ -142,6 +142,19 @@ class extends Component {
                                     </flux:link>
                                 </flux:tooltip>
                             @endif
+                            @if($service->ip)
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono text-sm text-gray-700 dark:text-gray-300">
+                                        <flux:icon.server variant="mini" class="inline"/>
+                                        {{ $service->ip }}
+                                    </span>
+                                    <div x-copy-to-clipboard="'{{ $service->ip }}'">
+                                        <flux:button icon="clipboard" size="xs" variant="ghost" class="cursor-pointer">
+                                            {{ __('Copy') }}
+                                        </flux:button>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     </flux:table.cell>
 

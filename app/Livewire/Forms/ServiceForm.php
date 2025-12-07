@@ -29,6 +29,9 @@ class ServiceForm extends Form
     #[Validate('nullable|string|max:255')]
     public ?string $url_pkdns = null;
 
+    #[Validate('nullable|ip|max:45')]
+    public ?string $ip = null;
+
     #[Validate('required')]
     public ?string $type = null;
 
@@ -51,6 +54,7 @@ class ServiceForm extends Form
             'url_onion' => ['nullable', 'string', 'max:255'],
             'url_i2p' => ['nullable', 'string', 'max:255'],
             'url_pkdns' => ['nullable', 'string', 'max:255'],
+            'ip' => ['nullable', 'ip', 'max:45'],
             'contact' => ['nullable', 'string'],
             'anonymous' => ['boolean'],
         ];
@@ -66,6 +70,7 @@ class ServiceForm extends Form
         $this->url_onion = $service->url_onion;
         $this->url_i2p = $service->url_i2p;
         $this->url_pkdns = $service->url_pkdns;
+        $this->ip = $service->ip;
         $this->type = $service->type?->value;
         $this->contact = $service->contact;
         $this->anonymous = is_null($service->created_by);
@@ -84,6 +89,7 @@ class ServiceForm extends Form
             'url_onion' => $this->url_onion,
             'url_i2p' => $this->url_i2p,
             'url_pkdns' => $this->url_pkdns,
+            'ip' => $this->ip,
             'contact' => $this->contact,
             'created_by' => $this->anonymous ? null : auth()->id(),
         ]);
@@ -102,6 +108,7 @@ class ServiceForm extends Form
             'url_onion' => $this->url_onion,
             'url_i2p' => $this->url_i2p,
             'url_pkdns' => $this->url_pkdns,
+            'ip' => $this->ip,
             'contact' => $this->contact,
             'created_by' => $this->anonymous ? null : ($this->service->created_by ?? auth()->id()),
         ]);
@@ -109,8 +116,8 @@ class ServiceForm extends Form
 
     protected function validateAtLeastOneUrl(): void
     {
-        if (empty($this->url_clearnet) && empty($this->url_onion) && empty($this->url_i2p) && empty($this->url_pkdns)) {
-            $this->addError('url_clearnet', __('Mindestens eine URL muss angegeben werden.'));
+        if (empty($this->url_clearnet) && empty($this->url_onion) && empty($this->url_i2p) && empty($this->url_pkdns) && empty($this->ip)) {
+            $this->addError('url_clearnet', __('Mindestens eine URL oder IP muss angegeben werden.'));
             throw new \Illuminate\Validation\ValidationException(
                 \Illuminate\Support\Facades\Validator::make([], [])
             );
