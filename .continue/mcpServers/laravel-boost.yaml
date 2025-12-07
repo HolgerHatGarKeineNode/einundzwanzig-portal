@@ -1,0 +1,11 @@
+name: Laravel Boost
+version: 0.0.1
+schema: v1
+
+mcpServers:
+  - name: laravel-boost
+    command: vendor/bin/sail
+    args:
+      - artisan
+      - boost:mcp
+    env: {}

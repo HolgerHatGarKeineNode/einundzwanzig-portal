@@ -45,9 +45,10 @@ class extends Component {
     <div class="flex items-center justify-between flex-col md:flex-row mb-6">
         <flux:heading size="xl">{{ __('Self Hosted Services') }}</flux:heading>
         <div class="flex flex-col md:flex-row items-center gap-4">
-            <flux:input wire:model.live="search" :placeholder="__('Suche nach Services...')" clearable />
+            <flux:input wire:model.live="search" :placeholder="__('Suche nach Services...')" clearable/>
             @auth
-                <flux:button class="cursor-pointer" :href="route_with_country('services.create')" icon="plus" variant="primary">
+                <flux:button class="cursor-pointer" :href="route_with_country('services.create')" icon="plus"
+                             variant="primary">
                     {{ __('Service erstellen') }}
                 </flux:button>
             @endauth
@@ -73,7 +74,7 @@ class extends Component {
                 color="zinc"
                 class="cursor-pointer"
             >
-                <flux:icon.x-mark variant="mini" class="inline" />
+                <flux:icon.x-mark variant="mini" class="inline"/>
                 {{ __('Filter zurücksetzen') }}
             </flux:badge>
         @endif
@@ -106,28 +107,40 @@ class extends Component {
                     <flux:table.cell>
                         <div class="flex flex-col gap-1">
                             @if($service->url_clearnet)
-                                <flux:link :href="$service->url_clearnet" external class="text-blue-600 dark:text-blue-400">
-                                    <flux:icon.globe-alt variant="mini" class="inline" />
-                                    Clearnet
-                                </flux:link>
+                                <flux:tooltip content="{{ $service->url_clearnet }}">
+                                    <flux:link :href="$service->url_clearnet" external
+                                               class="text-blue-600 dark:text-blue-400">
+                                        <flux:icon.globe-alt variant="mini" class="inline"/>
+                                        Clearnet
+                                    </flux:link>
+                                </flux:tooltip>
                             @endif
                             @if($service->url_onion)
-                                <flux:link :href="$service->url_onion" external class="text-purple-600 dark:text-purple-400">
-                                    <flux:icon.lock-closed variant="mini" class="inline" />
-                                    Onion
-                                </flux:link>
+                                <flux:tooltip content="{{ $service->url_onion }}">
+                                    <flux:link :href="$service->url_onion" external
+                                               class="text-purple-600 dark:text-purple-400">
+                                        <flux:icon.lock-closed variant="mini" class="inline"/>
+                                        Onion
+                                    </flux:link>
+                                </flux:tooltip>
                             @endif
                             @if($service->url_i2p)
-                                <flux:link :href="$service->url_i2p" external class="text-green-600 dark:text-green-400">
-                                    <flux:icon.link variant="mini" class="inline" />
-                                    I2P
-                                </flux:link>
+                                <flux:tooltip content="{{ $service->url_i2p }}">
+                                    <flux:link :href="$service->url_i2p" external
+                                               class="text-green-600 dark:text-green-400">
+                                        <flux:icon.link variant="mini" class="inline"/>
+                                        I2P
+                                    </flux:link>
+                                </flux:tooltip>
                             @endif
                             @if($service->url_pkdns)
-                                <flux:link :href="$service->url_pkdns" external class="text-orange-600 dark:text-orange-400">
-                                    <flux:icon.link variant="mini" class="inline" />
-                                    pkdns
-                                </flux:link>
+                                <flux:tooltip content="{{ $service->url_pkdns }}">
+                                    <flux:link :href="$service->url_pkdns" external
+                                               class="text-orange-600 dark:text-orange-400">
+                                        <flux:icon.link variant="mini" class="inline"/>
+                                        pkdns
+                                    </flux:link>
+                                </flux:tooltip>
                             @endif
                         </div>
                     </flux:table.cell>
@@ -135,7 +148,7 @@ class extends Component {
                     <flux:table.cell>
                         @if($service->createdBy)
                             <div class="flex items-center gap-2">
-                                <flux:avatar size="xs" src="{{ $service->createdBy->profile_photo_url }}" />
+                                <flux:avatar size="xs" src="{{ $service->createdBy->profile_photo_url }}"/>
                                 <span>{{ Str::length($service->createdBy->name) > 20 ? Str::substr($service->createdBy->name, 0, 4) . '...' . Str::substr($service->createdBy->name, -3) : $service->createdBy->name }}</span>
                             </div>
                         @else
@@ -145,15 +158,21 @@ class extends Component {
 
                     <flux:table.cell>
                         <div class="flex flex-col gap-1 text-sm">
-                            <div class="flex items-center gap-1">
-                                <flux:icon.plus variant="micro" class="text-green-600 dark:text-green-400" />
-                                <span class="text-gray-600 dark:text-gray-400">{{ $service->created_at->format('d.m.Y') }}</span>
-                            </div>
-                            @if($service->created_at->ne($service->updated_at))
+                            <flux:tooltip content="{{ __('Created at') }}">
                                 <div class="flex items-center gap-1">
-                                    <flux:icon.pencil variant="micro" class="text-blue-600 dark:text-blue-400" />
-                                    <span class="text-gray-600 dark:text-gray-400">{{ $service->updated_at->format('d.m.Y') }}</span>
+                                    <flux:icon.plus variant="micro" class="text-green-600 dark:text-green-400"/>
+                                    <span
+                                        class="text-gray-600 dark:text-gray-400">{{ $service->created_at->format('d.m.Y') }}</span>
                                 </div>
+                            </flux:tooltip>
+                            @if($service->created_at->ne($service->updated_at))
+                                <flux:tooltip content="{{ __('Updated at') }}">
+                                    <div class="flex items-center gap-1">
+                                        <flux:icon.pencil variant="micro" class="text-blue-600 dark:text-blue-400"/>
+                                        <span
+                                            class="text-gray-600 dark:text-gray-400">{{ $service->updated_at->format('d.m.Y') }}</span>
+                                    </div>
+                                </flux:tooltip>
                             @endif
                         </div>
                     </flux:table.cell>
