@@ -30,10 +30,16 @@ class DomainMiddleware
                 'lang_country' => 'pl-PL',
                 'app_name' => 'DWADZIEŚCIA JEDEN Portal',
             ],
+
             'pl.localhost' => [
                 'locale' => 'pl',
                 'lang_country' => 'pl-PL',
                 'app_name' => 'DWADZIEŚCIA JEDEN Portal',
+            ],
+            'hu.localhost' => [
+                'locale' => 'hu',
+                'lang_country' => 'hu-HU',
+                'app_name' => 'HUSZONEGY Portál',
             ],
         ];
 

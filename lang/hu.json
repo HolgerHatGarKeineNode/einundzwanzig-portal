@@ -542,5 +542,11 @@
     "Service löschen?": "Szolgáltatás törlése?",
     "Möchten Sie den Service wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.": "Biztosan törölni szeretné a szolgáltatást? Ez a művelet nem vonható vissza.",
     "Mindestens eine URL oder IP muss angegeben werden.": "Legalább egy URL-t vagy IP-t meg kell adni.",
-    "IP Adresse": "IP cím"
+    "IP Adresse": "IP cím",
+    "nostr.course_event_text": "Szakemberünk :from új kurzus eseményt tervezett:\n:name\n:description\n:url",
+    "nostr.meetup_event_text": ":from új eseményt tervezett:\n:start\n:location\n:url",
+    "nostr.meetup_text": "Új Meetup csoport került hozzáadásra:\n:from\n:url",
+    "nostr.course_text": "Szakemberünk :from új kurzust adott hozzá:\n:name\n:description\n:url",
+    "Einundzwanzig Community": "Huszonegy Közösség",
+    "Allgemeine Bitcoin Community": "Általános Bitcoin Közösség"
 }

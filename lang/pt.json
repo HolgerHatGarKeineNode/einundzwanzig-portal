@@ -542,5 +542,11 @@
     "Service löschen?": "Excluir serviço?",
     "Möchten Sie den Service wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.": "Você realmente quer excluir o serviço? Esta ação não pode ser desfeita.",
     "Mindestens eine URL oder IP muss angegeben werden.": "Pelo menos uma URL ou IP deve ser fornecido.",
-    "IP Adresse": "Endereço IP"
+    "IP Adresse": "Endereço IP",
+    "nostr.course_event_text": "O nosso docente :from agendou um novo evento de curso:\n:name\n:description\n:url",
+    "nostr.meetup_event_text": ":from agendou um novo evento:\n:start\n:location\n:url",
+    "nostr.meetup_text": "Um novo grupo Meetup foi adicionado:\n:from\n:url",
+    "nostr.course_text": "O nosso docente :from adicionou um novo curso:\n:name\n:description\n:url",
+    "Einundzwanzig Community": "Comunidade Einundzwanzig",
+    "Allgemeine Bitcoin Community": "Comunidade geral de Bitcoin"
 }

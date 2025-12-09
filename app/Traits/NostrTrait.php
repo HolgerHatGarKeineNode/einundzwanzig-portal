@@ -6,11 +6,12 @@ use App\Models\Course;
 use App\Models\CourseEvent;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Process;
 
 trait NostrTrait
 {
-    public function publishOnNostr($model, $text): array
+    public function publishOnNostr(Model $model, string $text): array
     {
         if (app()->environment('local')) {
             return [
@@ -21,12 +22,12 @@ trait NostrTrait
             ];
         }
 
-        //noscl publish "Good morning!"
+        // Use array to pass arguments safely and avoid shell injection
         $result = Process::timeout(60 * 5)
-            ->run('noscl publish "'.$text.'"');
+            ->run(['noscl', 'publish', $text]);
 
         if ($result->successful()) {
-            $model->nostr_status = $result->output();
+            $model->nostr_status = trim($result->output());
             $model->save();
         }
 
@@ -38,67 +39,63 @@ trait NostrTrait
         ];
     }
 
-    public function getText($model)
+    public function getText(Model $model, string $countryCode): string|null
     {
-        $from = '';
-        if ($model instanceof CourseEvent) {
-            if ($model->course->lecturer->nostr) {
-                $from .= '@'.$model->course->lecturer->nostr;
-            } else {
-                $from .= $model->course->lecturer->name;
-            }
+        return match (true) {
+            $model instanceof CourseEvent => __('nostr.course_event_text', [
+                'from' => $this->getFrom($model),
+                'name' => $model->course->name,
+                'description' => str($model->course->description)->toString(),
+                'url' => $this->getUrl($model, $countryCode),
+            ]),
+            $model instanceof MeetupEvent => __('nostr.meetup_event_text', [
+                'from' => $this->getFrom($model),
+                'start' => $model->start->asDateTime(),
+                'location' => $model->location,
+                'url' => $this->getUrl($model, $countryCode),
+            ]),
+            $model instanceof Meetup => __('nostr.meetup_text', [
+                'from' => $this->getFrom($model),
+                'url' => $this->getUrl($model, $countryCode),
+            ]),
+            $model instanceof Course => __('nostr.course_text', [
+                'from' => $this->getFrom($model),
+                'name' => $model->name,
+                'description' => str($model->description)->toString(),
+                'url' => $this->getUrl($model, $countryCode),
+            ]),
+            default => null,
+        };
+    }
 
-            return sprintf("Unser Dozent %s hat einen neuen Kurs-Termin eingestellt:\n%s\n%s\n%s\n\n#Bitcoin #Kurs #Education #Einundzwanzig #gesundesgeld #einundzwanzig_portal_lecturer_%s",
-                $from,
-                $model->course->name,
-                str($model->course->description)->toString(),
-                url()->route('courses.landingpage',
-                    ['country' => str(session('lang_country', 'de'))->after('-')->lower(), 'course' => $model->course]),
-                str($model->course->lecturer->slug)->replace('-', '_'),
-            );
-        }
-        if ($model instanceof MeetupEvent) {
-            $from = $model->meetup->name;
-            if ($model->meetup->nostr) {
-                $from .= ' @'.$model->meetup->nostr;
-            }
-
-            return sprintf("%s hat einen neuen Termin eingestellt:\n%s\n%s\n%s\n\n#Bitcoin #Meetup #Einundzwanzig #gesundesgeld #einundzwanzig_portal_%s",
-                $from,
-                $model->start->asDateTime(),
-                $model->location,
-                url()->route('meetups.landingpage-event',
-                    ['country' => str(session('lang_country', 'de'))->after('-')->lower(), 'meetup' => $model->meetup, 'event' => $model]),
-                str($model->meetup->slug)->replace('-', '_'),
-            );
-        }
-        if ($model instanceof Meetup) {
-            $from = $model->name;
-            if ($model->nostr) {
-                $from .= ' @'.$model->nostr;
-            }
-
-            return sprintf("Eine neue Meetup Gruppe wurde hinzugefügt:\n%s\n%s\n\n#Bitcoin #Meetup #Einundzwanzig #gesundesgeld #einundzwanzig_portal_%s",
-                $from,
-                url()->route('meetups.landingpage', ['country' => $model->city->country->code, 'meetup' => $model]),
-                str($model->slug)->replace('-', '_'),
-            );
-        }
+    private function getFrom(Model $model): string
+    {
         if ($model instanceof Course) {
-            if ($model->lecturer->nostr) {
-                $from .= '@'.$model->lecturer->nostr;
-            } else {
-                $from .= $model->lecturer->name;
-            }
-
-            return sprintf("Unser Dozent %s hat einen neuen Kurs eingestellt:\n%s\n%s\n%s\n\n#Bitcoin #Kurs #Education #Einundzwanzig #gesundesgeld #einundzwanzig_portal_lecturer_%s",
-                $from,
-                $model->name,
-                str($model->description)->toString(),
-                url()->route('courses.landingpage',
-                    ['country' => str(session('lang_country', 'de'))->after('-')->lower(), 'course' => $model]),
-                str($model->lecturer->slug)->replace('-', '_'),
-            );
+            return $model->lecturer->nostr ? '@'.$model->lecturer->nostr : $model->lecturer->name;
+        } elseif ($model instanceof CourseEvent) {
+            return $this->getFrom($model->course);
+        } elseif ($model instanceof Meetup) {
+            return $model->name.($model->nostr ? ' @'.$model->nostr : '');
+        } elseif ($model instanceof MeetupEvent) {
+            return $this->getFrom($model->meetup);
         }
+
+        return '';
+    }
+
+    private function getUrl(Model $model, string $countryCode): string
+    {
+        if ($model instanceof Course) {
+            return route('courses.landingpage', ['country' => $countryCode, 'course' => $model]);
+        } elseif ($model instanceof CourseEvent) {
+            return route('courses.landingpage', ['country' => $countryCode, 'course' => $model->course]);
+        } elseif ($model instanceof Meetup) {
+            return route('meetups.landingpage', ['country' => $countryCode, 'meetup' => $model]);
+        } elseif ($model instanceof MeetupEvent) {
+            return route('meetups.landingpage-event',
+                ['country' => $countryCode, 'meetup' => $model->meetup, 'event' => $model]);
+        }
+
+        return '';
     }
 }

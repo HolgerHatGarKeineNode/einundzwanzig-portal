@@ -544,5 +544,11 @@
     "Service löschen?": "Service verwijderen?",
     "Möchten Sie den Service wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.": "Wilt u de service echt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
     "Mindestens eine URL oder IP muss angegeben werden.": "Er moet minimaal één URL of IP worden opgegeven.",
-    "IP Adresse": "IP-adres"
+    "IP Adresse": "IP-adres",
+    "nostr.course_event_text": "Onze docent :from heeft een nieuw cursusevent gepland:\n:name\n:description\n:url",
+    "nostr.meetup_event_text": ":from heeft een nieuw evenement gepland:\n:start\n:location\n:url",
+    "nostr.meetup_text": "Er is een nieuwe Meetup-groep toegevoegd:\n:from\n:url",
+    "nostr.course_text": "Onze docent :from heeft een nieuwe cursus toegevoegd:\n:name\n:description\n:url",
+    "Einundzwanzig Community": "Eenentwintig Community",
+    "Allgemeine Bitcoin Community": "Algemene Bitcoin Gemeenschap"
 }

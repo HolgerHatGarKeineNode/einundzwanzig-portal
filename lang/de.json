@@ -547,5 +547,11 @@
     "Service löschen?": "",
     "Möchten Sie den Service wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.": "",
     "Mindestens eine URL oder IP muss angegeben werden.": "",
-    "IP Adresse": ""
+    "IP Adresse": "",
+    "nostr.course_event_text": "Unser Dozent :from hat einen neuen Kurs-Termin eingestellt:\n:name\n:description\n:url\n\n#Bitcoin #Einundzwanzig #gesundesgeld",
+    "nostr.meetup_event_text": ":from hat einen neuen Termin eingestellt:\n:start\n:location\n:url\n\n#Bitcoin #Meetup #Einundzwanzig",
+    "nostr.meetup_text": "Eine neue Meetup Gruppe wurde hinzugefügt:\n:from\n:url\n\n#Bitcoin #Meetup #Einundzwanzig",
+    "nostr.course_text": "Unser Dozent :from hat einen neuen Kurs eingestellt:\n:name\n:description\n:url\n\n#Bitcoin #Einundzwanzig",
+    "Einundzwanzig Community": "",
+    "Allgemeine Bitcoin Community": ""
 }

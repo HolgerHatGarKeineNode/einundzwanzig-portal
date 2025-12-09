@@ -546,5 +546,11 @@
     "Service löschen?": "¿Eliminar servicio?",
     "Möchten Sie den Service wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.": "¿Realmente desea eliminar el servicio? Esta acción no se puede deshacer.",
     "Mindestens eine URL oder IP muss angegeben werden.": "Se debe especificar al menos una URL o IP.",
-    "IP Adresse": "Dirección IP"
+    "IP Adresse": "Dirección IP",
+    "nostr.course_event_text": "Nuestro profesor :from ha programado un nuevo evento de curso:\n:name\n:description\n:url",
+    "nostr.meetup_event_text": ":from ha programado un nuevo evento:\n:start\n:location\n:url",
+    "nostr.meetup_text": "Se ha añadido un nuevo grupo Meetup:\n:from\n:url",
+    "nostr.course_text": "Nuestro profesor :from ha añadido un nuevo curso:\n:name\n:description\n:url",
+    "Einundzwanzig Community": "Comunidad Veintiuno",
+    "Allgemeine Bitcoin Community": "Comunidad General de Bitcoin"
 }

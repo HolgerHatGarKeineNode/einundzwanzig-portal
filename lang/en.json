@@ -547,5 +547,11 @@
     "Service löschen?": "Delete service?",
     "Möchten Sie den Service wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.": "Do you really want to delete the service? This action cannot be undone.",
     "Mindestens eine URL oder IP muss angegeben werden.": "At least one URL or IP must be provided.",
-    "IP Adresse": "IP address"
+    "IP Adresse": "IP address",
+    "nostr.course_event_text": "Our lecturer :from has scheduled a new course event:\n:name\n:description\n:url",
+    "nostr.meetup_event_text": ":from has scheduled a new event:\n:start\n:location\n:url",
+    "nostr.meetup_text": "A new Meetup group has been added:\n:from\n:url",
+    "nostr.course_text": "Our lecturer :from has added a new course:\n:name\n:description\n:url",
+    "Einundzwanzig Community": "Twenty One Community",
+    "Allgemeine Bitcoin Community": "General Bitcoin Community"
 }
