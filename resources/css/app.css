@@ -1,31 +1,44 @@
 @import 'tailwindcss';
 @import '../../vendor/livewire/flux/dist/flux.css';
 
-@source '../views';
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../vendor/livewire/flux-pro/stubs/**/*.blade.php';
-@source '../../vendor/livewire/flux/stubs/**/*.blade.php';
-
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
     --font-sans: 'Inconsolata', monospace;
 
-    --color-zinc-50: #fafafa;
-    --color-zinc-100: #f5f5f5;
-    --color-zinc-200: #e5e5e5;
-    --color-zinc-300: #d4d4d4;
-    --color-zinc-400: #a3a3a3;
-    --color-zinc-500: #737373;
-    --color-zinc-600: #525252;
-    --color-zinc-700: #404040;
-    --color-zinc-800: #262626;
-    --color-zinc-900: #171717;
-    --color-zinc-950: #0a0a0a;
+    --color-zinc-50: var(--color-neutral-50);
+    --color-zinc-100: var(--color-neutral-100);
+    --color-zinc-200: var(--color-neutral-200);
+    --color-zinc-300: var(--color-neutral-300);
+    --color-zinc-400: var(--color-neutral-400);
+    --color-zinc-500: var(--color-neutral-500);
+    --color-zinc-600: var(--color-neutral-600);
+    --color-zinc-700: var(--color-neutral-700);
+    --color-zinc-800: var(--color-neutral-800);
+    --color-zinc-900: var(--color-neutral-900);
+    --color-zinc-950: var(--color-neutral-950);
+}
 
+@theme {
     --color-accent: var(--color-neutral-800);
     --color-accent-content: var(--color-neutral-800);
     --color-accent-foreground: var(--color-white);
+}
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../vendor/livewire/flux-pro/stubs/**/*.blade.php';
+@source '../../vendor/livewire/flux/stubs/**/*.blade.php';
+
+/* See Alpine.js: https://github.com/alpinejs/alpine#x-cloak */
+[x-cloak=""] {
+    display: none;
+}
+
+@media screen and (max-width: theme(screens.lg)) {
+    [x-cloak="lg"] {
+        display: none;
+    }
 }
 
 @layer theme {
@@ -37,46 +50,7 @@
 }
 
 @layer base {
-
-    *,
-    ::after,
-    ::before,
-    ::backdrop,
-    ::file-selector-button {
-        border-color: var(--color-gray-200, currentColor);
+    button {
+        @apply cursor-pointer;
     }
-}
-
-[data-flux-field]:not(ui-radio, ui-checkbox) {
-    @apply grid gap-2;
-}
-
-[data-flux-label] {
-    @apply  !mb-0 !leading-tight;
-}
-
-input:focus[data-flux-control],
-textarea:focus[data-flux-control],
-select:focus[data-flux-control] {
-    @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
-}
-
-/* \[:where(&)\]:size-4 {
-    @apply size-4;
-} */
-
-.leaflet-popup-content-wrapper {
-    background-color: #404040 !important;
-}
-
-.leaflet-control-zoom-in {
-    background-color: #404040 !important;
-}
-
-.leaflet-control-zoom-out {
-    background-color: #404040 !important;
-}
-
-.leaflet-container a {
-    color: unset!important;
 }
