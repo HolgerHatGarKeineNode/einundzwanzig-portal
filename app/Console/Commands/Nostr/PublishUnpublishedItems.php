@@ -9,6 +9,7 @@ use App\Models\MeetupEvent;
 use App\Traits\NostrTrait;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\URL;
 
 class PublishUnpublishedItems extends Command
 {
@@ -24,6 +25,15 @@ class PublishUnpublishedItems extends Command
         'pl' => 'Europe/Warsaw',
         'es' => 'Europe/Madrid',
         'pt' => 'Europe/Lisbon',
+    ];
+
+    private const DOMAIN_MAP = [
+        'de' => 'portal.einundzwanzig.space',
+        'nl' => 'portal.eenentwintig.net',
+        'hu' => 'portal.huszonegy.world',
+        'pl' => 'portal.dwadziesciajeden.pl',
+        // Default for other countries (e.g., 'es', 'pt') if added later
+        'default' => 'portal.einundzwanzig.space',
     ];
 
     public function handle(): void
@@ -59,8 +69,14 @@ class PublishUnpublishedItems extends Command
             return;
         }
 
-        // Get country code and configure timezone/locale if applicable
+        // Get country code
         $countryCode = $this->getCountryCode($model);
+
+        // Set the domain based on country code for URL generation
+        $domain = self::DOMAIN_MAP[$countryCode] ?? self::DOMAIN_MAP['default'];
+        URL::useOrigin('https://'.$domain); // Forces URL generation to use this domain
+
+        // Configure timezone and locale
         $this->configureForCountry($countryCode);
 
         $text = $this->getText($model, $countryCode);

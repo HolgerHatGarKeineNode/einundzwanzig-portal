@@ -85,17 +85,16 @@ trait NostrTrait
 
     private function getUrl(Model $model, string $countryCode): string
     {
-        if ($model instanceof Course) {
-            return route('courses.landingpage', ['country' => $countryCode, 'course' => $model]);
-        } elseif ($model instanceof CourseEvent) {
-            return route('courses.landingpage', ['country' => $countryCode, 'course' => $model->course]);
-        } elseif ($model instanceof Meetup) {
-            return route('meetups.landingpage', ['country' => $countryCode, 'meetup' => $model]);
-        } elseif ($model instanceof MeetupEvent) {
-            return route('meetups.landingpage-event',
-                ['country' => $countryCode, 'meetup' => $model->meetup, 'event' => $model]);
-        }
-
-        return '';
+        return match (true) {
+            $model instanceof Course => url()->route('courses.landingpage',
+                ['country' => $countryCode, 'course' => $model]),
+            $model instanceof CourseEvent => url()->route('courses.landingpage',
+                ['country' => $countryCode, 'course' => $model->course]),
+            $model instanceof Meetup => url()->route('meetups.landingpage',
+                ['country' => $countryCode, 'meetup' => $model]),
+            $model instanceof MeetupEvent => url()->route('meetups.landingpage-event',
+                ['country' => $countryCode, 'meetup' => $model->meetup, 'event' => $model]),
+            default => '',
+        };
     }
 }

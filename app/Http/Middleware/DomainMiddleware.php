@@ -15,6 +15,11 @@ class DomainMiddleware
 
         // domains
         $domainArray = [
+            'portal.einundzwanzig.space' => [
+                'locale' => 'de',
+                'lang_country' => 'de-DE',
+                'app_name' => 'EINUNDZWANZIG Portal',
+            ],
             'portal.eenentwintig.net' => [
                 'locale' => 'nl',
                 'lang_country' => 'nl-NL',
