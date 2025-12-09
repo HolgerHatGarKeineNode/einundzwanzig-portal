@@ -49,16 +49,29 @@ class DomainMiddleware
         ];
 
         // App-Locale dynamisch setzen
-        if (isset($domainArray[$domain]['locale'])) {
-            session([
-                'lang_country' => $domainArray[$domain]['lang_country'],
-                'locale' => $domainArray[$domain]['locale'],
-            ]);
+        if (isset($domainArray[$domain])) {
+            $domainConfig = $domainArray[$domain];
+
+            // Only set session values if they are not already set (first visit)
+            // This allows user language preferences to persist
+            if (! session()->has('lang_country')) {
+                session(['lang_country' => $domainConfig['lang_country']]);
+            }
+
+            if (! session()->has('locale')) {
+                session(['locale' => $domainConfig['locale']]);
+            }
+
+            // Always set config values for the domain
             config([
-                'app.name' => $domainArray[$domain]['app_name'],
-                'app.domain_country' => $domainArray[$domain]['locale'],
+                'app.name' => $domainConfig['app_name'],
+                'app.domain_country' => $domainConfig['locale'],
             ]);
-            App::setLocale($domainArray[$domain]['locale']);
+
+            // Set app locale based on user's current lang_country preference
+            $currentLangCountry = session('lang_country', $domainConfig['lang_country']);
+            $currentLocale = explode('-', $currentLangCountry)[0];
+            App::setLocale($currentLocale);
         }
 
         return $next($request);
