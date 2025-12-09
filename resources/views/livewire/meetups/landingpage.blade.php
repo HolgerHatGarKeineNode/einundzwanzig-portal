@@ -145,7 +145,15 @@ class extends Component {
                 @if($meetup->community)
                     <div>
                         <flux:heading size="sm" class="mb-2">Community</flux:heading>
-                        <p class="text-gray-700 dark:text-gray-300">{{ $meetup->community }}</p>
+                        <p class="text-gray-700 dark:text-gray-300">
+                            @if ($meetup->community === 'bitcoin')
+                                {{ __('Allgemeine Bitcoin Community') }}
+                            @elseif ($meetup->community === 'einundzwanzig')
+                                {{ __('Einundzwanzig Community') }}
+                            @else
+                                {{ $meetup->community }}
+                            @endif
+                        </p>
                     </div>
                 @endif
             </div>

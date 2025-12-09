@@ -79,7 +79,7 @@ class extends Component {
             'nostr' => ['nullable', 'string', 'max:255'],
             'simplex' => ['nullable', 'string',],
             'signal' => ['nullable', 'string', 'max:510'],
-            'community' => ['nullable', 'string', 'max:255'],
+            'community' => ['required', 'string', 'max:255'],
             'visible_on_map' => ['boolean'],
         ]);
 

@@ -122,7 +122,7 @@ class extends Component {
             'nostr' => ['nullable', 'string', 'max:255'],
             'simplex' => ['nullable', 'string', 'max:255'],
             'signal' => ['nullable', 'string', 'max:255'],
-            'community' => ['nullable', 'string', 'max:255'],
+            'community' => ['required', 'string', 'max:255'],
         ]);
 
         // Convert github_data string back to array if provided
@@ -324,6 +324,7 @@ class extends Component {
                 <flux:field>
                     <flux:label>{{ __('Gemeinschaft') }}</flux:label>
                     <flux:select wire:model="community">
+                        <flux:select.option value="">{{ __('Keine') }}</flux:select.option>
                         <flux:select.option value="einundzwanzig">einundzwanzig</flux:select.option>
                         <flux:select.option value="bitcoin">bitcoin</flux:select.option>
                     </flux:select>
