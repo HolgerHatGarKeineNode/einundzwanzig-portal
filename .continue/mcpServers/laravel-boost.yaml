@@ -1,11 +1,14 @@
-name: Laravel Boost
+name: laravel-boost
 version: 0.0.1
 schema: v1
-
 mcpServers:
   - name: laravel-boost
-    command: vendor/bin/sail
+    command: docker
     args:
-      - artisan
+      - exec
+      - -i
+      - einundzwanzig-app-laravel.test-1
+      - php
+      - /var/www/html/artisan
       - boost:mcp
     env: {}
