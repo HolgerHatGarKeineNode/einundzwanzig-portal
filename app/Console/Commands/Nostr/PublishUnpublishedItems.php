@@ -53,6 +53,7 @@ class PublishUnpublishedItems extends Command
             'MeetupEvent' => $modelClass::with('meetup.city.country')
                 ->whereNull('nostr_status')
                 ->where('start', '>', now())
+                ->where('start', '<=', now()->addDays(7))
                 ->orderByDesc('created_at'),
             default => null,
         };

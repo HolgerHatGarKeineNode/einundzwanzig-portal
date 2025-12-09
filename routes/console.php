@@ -7,7 +7,7 @@ Schedule::command(CleanupLoginKeys::class)->everyFifteenMinutes();
 
 Schedule::command(PublishUnpublishedItems::class, [
     '--model' => 'MeetupEvent',
-])->dailyAt('17:00');
+])->hourly();
 
 Schedule::command(PublishUnpublishedItems::class, [
     '--model' => 'Meetup',
