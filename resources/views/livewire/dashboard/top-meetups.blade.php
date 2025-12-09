@@ -13,7 +13,7 @@ class extends Component {
         $topMeetups = Meetup::withCount('users')
             ->with(['city.country'])
             ->orderBy('users_count', 'desc')
-            ->limit(10)
+            ->limit(15)
             ->get()
             ->map(function ($meetup) {
                 // Optimierte Query: Hole alle User-Erstellungsdaten für dieses Meetup auf einmal

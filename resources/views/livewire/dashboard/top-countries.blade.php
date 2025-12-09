@@ -16,7 +16,7 @@ class extends Component {
             ->groupBy('countries.id')
             ->selectRaw('COUNT(DISTINCT meetup_user.user_id) as user_count')
             ->orderBy('user_count', 'desc')
-            ->limit(10)
+            ->limit(15)
             ->get()
             ->map(function ($country) {
                 // Optimierte Query: Hole alle User-Erstellungsdaten für dieses Land auf einmal
@@ -104,11 +104,13 @@ class extends Component {
                                 </div>
                             </div>
                         </a>
-                        <flux:chart :value="$country->sparkline" class="w-[5rem] aspect-[3/1]">
-                            <flux:chart.svg gutter="0">
-                                <flux:chart.line class="text-green-500 dark:text-green-400"/>
-                            </flux:chart.svg>
-                        </flux:chart>
+                        @if(count($country->sparkline) > 1)
+                            <flux:chart :value="$country->sparkline" class="w-[5rem] aspect-[3/1]">
+                                <flux:chart.svg gutter="0">
+                                    <flux:chart.line class="text-green-500 dark:text-green-400"/>
+                                </flux:chart.svg>
+                            </flux:chart>
+                        @endif
                     </div>
                 @endforeach
             </div>
