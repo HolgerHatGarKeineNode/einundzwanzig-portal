@@ -20,6 +20,8 @@ class PublishUnpublishedItems extends Command
 
     private const TZ_MAP = [
         'de' => 'Europe/Berlin',
+        'at' => 'Europe/Berlin',
+        'ch' => 'Europe/Berlin',
         'nl' => 'Europe/Amsterdam',
         'hu' => 'Europe/Budapest',
         'pl' => 'Europe/Warsaw',
@@ -29,6 +31,8 @@ class PublishUnpublishedItems extends Command
 
     private const DOMAIN_MAP = [
         'de' => 'portal.einundzwanzig.space',
+        'at' => 'portal.einundzwanzig.space',
+        'ch' => 'portal.einundzwanzig.space',
         'nl' => 'portal.eenentwintig.net',
         'hu' => 'portal.huszonegy.world',
         'pl' => 'portal.dwadziesciajeden.pl',
@@ -110,7 +114,7 @@ class PublishUnpublishedItems extends Command
         $timezone = self::TZ_MAP[$countryCode] ?? 'UTC';
         config([
             'app.user-timezone' => $timezone,
-            'app.locale' => $countryCode,
+            'app.locale' => in_array($countryCode, ['at', 'ch']) ? 'de' : $countryCode,
         ]);
     }
 }
