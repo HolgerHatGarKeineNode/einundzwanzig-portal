@@ -211,7 +211,7 @@ class extends Component {
                     </a>
                 </div>
 
-                <div class="flex justify-between w-full">
+                <div class="flex flex-col space-y-2 justify-between w-full">
                     <div x-copy-to-clipboard="'{{ $this->lnurl }}'">
                         <flux:button icon="clipboard" class="cursor-pointer">
                             {{ __('Copy') }}
