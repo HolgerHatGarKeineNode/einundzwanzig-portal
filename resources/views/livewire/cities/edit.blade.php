@@ -86,6 +86,10 @@ class extends Component {
                 <flux:input label="{{ __('Latitude') }}" type="number" step="any" wire:model="latitude" required/>
                 <flux:input label="{{ __('Longitude') }}" type="number" step="any" wire:model="longitude" required/>
             </div>
+
+            <div class="my-2">
+                <flux:link href="https://www.mappr.co/latitude-longitude-finder/">https://www.mappr.co/latitude-longitude-finder/</flux:link>
+            </div>
         </flux:fieldset>
 
         <flux:fieldset>
