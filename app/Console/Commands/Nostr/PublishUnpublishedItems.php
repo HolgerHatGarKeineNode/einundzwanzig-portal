@@ -111,7 +111,7 @@ class PublishUnpublishedItems extends Command
     private function configureForCountry(string $countryCode): void
     {
         // Set user timezone and locale based on country code
-        $timezone = self::TZ_MAP[$countryCode] ?? 'UTC';
+        $timezone = self::TZ_MAP[$countryCode] ?? 'Europe/Berlin';
         config([
             'app.user-timezone' => $timezone,
             'app.locale' => in_array($countryCode, ['at', 'ch']) ? 'de' : $countryCode,
