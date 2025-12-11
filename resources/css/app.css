@@ -50,7 +50,48 @@
 }
 
 @layer base {
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentColor);
+    }
     button {
         @apply cursor-pointer;
     }
+}
+
+[data-flux-field]:not(ui-radio, ui-checkbox) {
+    @apply grid gap-2;
+}
+
+[data-flux-label] {
+    @apply  !mb-0 !leading-tight;
+}
+
+input:focus[data-flux-control],
+textarea:focus[data-flux-control],
+select:focus[data-flux-control] {
+    @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
+}
+
+/* \[:where(&)\]:size-4 {
+    @apply size-4;
+} */
+
+.leaflet-popup-content-wrapper {
+    background-color: #404040 !important;
+}
+
+.leaflet-control-zoom-in {
+    background-color: #404040 !important;
+}
+
+.leaflet-control-zoom-out {
+    background-color: #404040 !important;
+}
+
+.leaflet-container a {
+    color: unset!important;
 }
