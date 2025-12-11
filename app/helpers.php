@@ -14,8 +14,8 @@ if (!function_exists('route_with_country')) {
     }
 }
 
-if (!function_exists('get_domain_image')) {
-    function get_domain_image(): string
+if (!function_exists('get_domain_attributes')) {
+    function get_domain_attributes(): array
     {
         $langCountry = session('lang_country', 'de-DE');
 
@@ -39,11 +39,47 @@ if (!function_exists('get_domain_image')) {
             've-VE', // Venezuela
         ];
 
+        $author = 'einundzwanzig';
+        $image = asset('img/domains/'.$langCountry.'.jpg');
         // Use LAT image for South American countries
         if (in_array($langCountry, $southAmericanCountries, true)) {
-            return asset('img/domains/lat.png');
+            $image = asset('img/domains/lat.png');
+            $author = 'veintiuno';
+            $twitter = 'veintiunolat';
         }
 
-        return asset('img/domains/'.$langCountry.'.jpg');
+        $countryAuthorMapping = [
+            'de-DE' => 'einundzwanzig',
+            'de-AT' => 'einundzwanzig',
+            'de-CH' => 'einundzwanzig',
+            'en-GB' => 'twenty-one',
+            'en-US' => 'twenty-one',
+            'es-ES' => 'veintiuno',
+            'nl-NL' => 'eenentwintig',
+            'pl-PL' => 'dwadzieścia',
+            'hu-HU' => 'huszonegy',
+        ];
+
+        $countryTwitterMapping = [
+            'de-DE' => '_einundzwanzig_',
+            'de-AT' => '_einundzwanzig_',
+            'de-CH' => '_einundzwanzig_',
+            'en-GB' => '_einundzwanzig_',
+            'en-US' => '_einundzwanzig_',
+            'nl-NL' => '_Eenentwintig_',
+            'pl-PL' => '21BitcoinPolska',
+            'hu-HU' => 'HUSZONEGYworld',
+        ];
+
+        $author = $countryAuthorMapping[$langCountry] ?? 'einundzwanzig';
+        $twitter = $countryTwitterMapping[$langCountry] ?? '_einundzwanzig_';
+        $siteName = $countrySiteNameMapping[$langCountry] ?? 'Einundzwanzig Portal';
+
+        return [
+            'image' => $image,
+            'author' => $author,
+            'twitter' => $twitter,
+            'siteName' => $siteName,
+        ];
     }
 }

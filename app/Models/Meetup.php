@@ -76,7 +76,7 @@ class Meetup extends Model implements HasMedia
         $this
             ->addMediaCollection('logo')
             ->singleFile()
-            ->useFallbackUrl(get_domain_image());
+            ->useFallbackUrl(get_domain_attributes()['image']);
     }
 
     public function createdBy(): BelongsTo

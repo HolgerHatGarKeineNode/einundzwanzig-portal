@@ -16,5 +16,5 @@
         </g>
     </svg>
 @else
-    <img src="{{ get_domain_image() }}" alt="{{ session('lang_country', 'de-DE') }}">
+    <img src="{{ get_domain_attributes()['image'] }}" alt="{{ session('lang_country', 'de-DE') }}">
 @endif
