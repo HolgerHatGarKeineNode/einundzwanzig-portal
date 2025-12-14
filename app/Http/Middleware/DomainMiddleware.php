@@ -11,7 +11,7 @@ class DomainMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $domain = $request->getHost(); // Erkennt die aktuelle Domain (via CNAME)
+        $domain = $request->getHost(); // Detects the current domain (via CNAME)
 
         // domains
         $domainArray = [
@@ -48,7 +48,6 @@ class DomainMiddleware
             ],
         ];
 
-        // App-Locale dynamisch setzen
         if (isset($domainArray[$domain])) {
             $domainConfig = $domainArray[$domain];
 
