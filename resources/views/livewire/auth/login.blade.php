@@ -4,7 +4,6 @@ use App\Attributes\SeoDataAttribute;
 use App\Jobs\FetchNostrProfileJob;
 use App\Models\LoginKey;
 use App\Models\User;
-use App\Notifications\ModelCreatedNotification;
 use App\Traits\SeoTrait;
 use eza\lnurl;
 use Illuminate\Auth\Events\Lockout;
@@ -22,7 +21,8 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 new
 #[Layout('components.layouts.auth')]
 #[SeoDataAttribute(key: 'login')]
-class extends Component {
+class extends Component
+{
     use SeoTrait;
 
     #[Validate('required|string|email')]
@@ -34,10 +34,16 @@ class extends Component {
     public bool $remember = false;
 
     public ?string $k1 = null;
+
     public ?string $url = null;
+
     public ?string $lnurl = null;
+
     public ?string $qrCode = null;
+
     public ?string $currentLangCountry = 'de-DE';
+
+    public ?string $authError = null;
 
     public function mount(): void
     {
@@ -54,7 +60,7 @@ class extends Component {
             $this->lnurl = lnurl\encodeUrl($this->url);
             $image = 'public/img/domains/'.session('lang_country', 'de-DE').'.jpg';
             $checkIfFileExists = base_path($image);
-            if (!file_exists($checkIfFileExists)) {
+            if (! file_exists($checkIfFileExists)) {
                 $image = 'public/img/domains/de-DE.jpg';
             }
             $this->qrCode = base64_encode(QrCode::format('png')
@@ -69,7 +75,7 @@ class extends Component {
     public function loginListener($pubkey): void
     {
         $user = \App\Models\User::query()->where('nostr', $pubkey)->first();
-        if (!$user) {
+        if (! $user) {
             $fakeName = str()->random(10);
             // create User
             $user = User::create([
@@ -94,13 +100,14 @@ class extends Component {
                 absolute: false),
             navigate: true,
         );
+
         return;
 
         $this->validate();
 
         $this->ensureIsNotRateLimited();
 
-        if (!Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
+        if (! Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -127,7 +134,7 @@ class extends Component {
      */
     protected function ensureIsNotRateLimited(): void
     {
-        if (!RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
             return;
         }
 
@@ -170,11 +177,42 @@ class extends Component {
                 ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()]);
         }
 
+        // Check if k1 has expired (older than 5 minutes)
+        $k1CreatedAt = now()->subMinutes(5);
+        if ($this->k1 && now()->diffInMinutes($k1CreatedAt) >= 5) {
+            $this->authError = 'Session expired. Please try again.';
+
+            return true;
+        }
+
         return true;
+    }
+
+    /**
+     * Get the current authentication error state.
+     */
+    public function getAuthError(): ?string
+    {
+        return $this->authError;
+    }
+
+    /**
+     * Reset authentication by generating a new k1 challenge.
+     */
+    public function resetAuth(): void
+    {
+        $this->k1 = null;
+        $this->url = null;
+        $this->lnurl = null;
+        $this->qrCode = null;
+        $this->authError = null;
+        $this->mount();
     }
 }; ?>
 
-<div class="flex min-h-screen" x-data="nostrLogin">
+<div class="flex min-h-screen" x-data="nostrLogin"
+     x-init="initErrorPolling"
+     @auth-error.window="showAuthError($event.detail)">
     <div class="flex-1 flex justify-center items-center">
         <div class="w-80 max-w-80 space-y-6">
             <!-- Logo -->

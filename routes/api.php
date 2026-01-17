@@ -6,9 +6,7 @@ use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\LecturerController;
 use App\Http\Controllers\Api\MeetupController;
 use App\Http\Controllers\Api\VenueController;
-use App\Models\LoginKey;
 use App\Models\User;
-use eza\lnurl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -50,11 +48,10 @@ Route::middleware([])
                 ])
                 ->orderByDesc('id')
                 ->get()
-                ->map(fn($item)
-                    => [
+                ->map(fn ($item) => [
                     'id' => $item->id,
                     'name' => $item->name,
-                    'link' => strtok($item->value, "?"),
+                    'link' => strtok($item->value, '?'),
                     'image' => $item->getFirstMediaUrl('main'),
                 ]);
         });
@@ -67,8 +64,7 @@ Route::middleware([])
                     'media',
                 ])
                 ->get()
-                ->map(fn($meetup)
-                    => [
+                ->map(fn ($meetup) => [
                     'name' => $meetup->name,
                     'portalLink' => url()->route(
                         'meetups.landingpage',
@@ -103,15 +99,13 @@ Route::middleware([])
                 ])
                 ->when(
                     $date,
-                    fn($query)
-                        => $query
+                    fn ($query) => $query
                         ->where('start', '>=', $date)
                         ->where('start', '<=', $date->copy()->endOfMonth()),
                 )
                 ->get();
 
-            return $events->map(fn($event)
-                => [
+            return $events->map(fn ($event) => [
                 'start' => $event->start->format('Y-m-d H:i'),
                 'location' => $event->location,
                 'description' => $event->description,
@@ -148,31 +142,28 @@ Route::middleware([])
                     ->where('community', '=', 'einundzwanzig')
                     ->when(
                         app()->environment('production'),
-                        fn($query)
-                            => $query->whereHas(
+                        fn ($query) => $query->whereHas(
                             'city',
-                            fn($query)
-                                => $query
+                            fn ($query) => $query
                                 ->whereNotNull('cities.simplified_geojson')
                                 ->whereNotNull('cities.population')
                                 ->whereNotNull('cities.population_date'),
                         ),
                     )
                     ->get()
-                    ->map(fn($meetup)
-                        => [
+                    ->map(fn ($meetup) => [
                         'id' => $meetup->slug,
                         'tags' => [
                             'type' => 'community',
                             'name' => $meetup->name,
                             'continent' => 'europe',
                             'icon:square' => $meetup->logoSquare,
-                            //'contact:email'          => null,
+                            // 'contact:email'          => null,
                             'contact:twitter' => $meetup->twitter_username ? 'https://twitter.com/'.$meetup->twitter_username : null,
                             'contact:website' => $meetup->webpage,
                             'contact:telegram' => $meetup->telegram_link,
                             'contact:nostr' => $meetup->nostr,
-                            //'tips:lightning_address' => null,
+                            // 'tips:lightning_address' => null,
                             'organization' => 'einundzwanzig',
                             'language' => $meetup->city->country->language_codes[0] ?? 'de',
                             'geo_json' => $meetup->city->simplified_geojson,
@@ -188,52 +179,8 @@ Route::middleware([])
         });
     });
 
-Route::get('/lnurl-auth-callback', function (Request $request) {
-    if (lnurl\auth($request->k1, $request->sig, $request->key)) {
-        // find User by $wallet_public_key
-        if (
-            $user = User::query()
-                ->where('change', $request->k1)
-                ->where('change_time', '>', now()->subMinutes(5))
-                ->first()
-        ) {
-            $user->public_key = $request->key;
-            $user->change = null;
-            $user->change_time = null;
-            $user->save();
-        } else {
-            $user = User::query()
-                ->whereBlind('public_key', 'public_key_index', $request->key)
-                ->first();
-        }
-        if (!$user) {
-            $fakeName = str()->random(10);
-            // create User
-            $user = User::create([
-                'public_key' => $request->key,
-                'is_lecturer' => true,
-                'name' => $fakeName,
-                'email' => str($request->key)->substr(-12).'@portal.einundzwanzig.space',
-                'lnbits' => [
-                    'read_key' => null,
-                    'url' => null,
-                    'wallet_id' => null,
-                ],
-            ]);
-        }
-        // check if $k1 is in the database, if not, add it
-        $loginKey = LoginKey::where('k1', $request->k1)
-            ->first();
-        if (!$loginKey) {
-            LoginKey::create([
-                'k1' => $request->k1,
-                'user_id' => $user->id,
-            ]);
-        }
-
-        return response()->json(['status' => 'OK']);
-    }
-
-    return response()->json(['status' => 'ERROR', 'reason' => 'Signature was NOT VERIFIED']);
-})
+Route::get('/lnurl-auth-callback', [\App\Http\Controllers\LnurlAuthController::class, 'callback'])
     ->name('auth.ln.callback');
+
+Route::post('/check-auth-error', [\App\Http\Controllers\LnurlAuthController::class, 'checkError'])
+    ->name('auth.check-error');
