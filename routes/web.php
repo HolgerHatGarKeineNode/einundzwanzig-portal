@@ -56,7 +56,8 @@ Route::livewire('/welcome', 'welcome')->name('welcome');
 
 // Stream calendar route to download meetup calendar as ICS file
 Route::get('stream-calendar', \App\Http\Controllers\DownloadMeetupCalendar::class)
-    ->name('ics');
+    ->name('ics')
+    ->middleware('throttle:calendar');
 
 // Dashboard redirect route for authenticated users, redirects to German dashboard
 Route::middleware(['auth'])
@@ -78,7 +79,8 @@ Route::middleware([])
         /* OLD URLS - redirects for legacy URLs */
         // Redirect old meetup calendar route to new one
         Route::get('meetup/stream-calendar', \App\Http\Controllers\DownloadMeetupCalendar::class)
-            ->name('ics');
+            ->name('ics')
+            ->middleware('throttle:calendar');
         // Redirect old meetup overview URL to new meetups page
         Route::get('/meetup/overview', function ($country) {
             return redirect("/{$country}/meetups");
