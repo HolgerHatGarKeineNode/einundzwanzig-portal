@@ -37,11 +37,11 @@ class extends Component {
     public ?string $url = null;
     public ?string $lnurl = null;
     public ?string $qrCode = null;
-    public string $currentLangCountry = 'de-DE';
+    public ?string $currentLangCountry = 'de-DE';
 
     public function mount(): void
     {
-        $this->currentLangCountry = session('lang_country');
+        $this->currentLangCountry = session('lang_country') ?? 'de-DE';
 
         // Nur beim ersten Mount initialisieren
         if ($this->k1 === null) {
