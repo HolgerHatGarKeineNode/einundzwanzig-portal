@@ -24,10 +24,23 @@ final class LnurlAuthController extends Controller
     {
         try {
             $validated = $request->validate([
-                'k1' => ['required', 'string', 'hex', 'size:128'],
+                'k1' => ['required', 'string', 'size:64'],
                 'sig' => ['required', 'string'],
-                'key' => ['required', 'string', 'hex', 'min:64', 'max:66'],
+                'key' => ['required', 'string', 'min:64', 'max:66'],
             ]);
+
+            // Validate hex format manually
+            if (! ctype_xdigit($validated['k1'])) {
+                throw ValidationException::withMessages([
+                    'k1' => ['The k1 field must be a valid hexadecimal string.'],
+                ]);
+            }
+
+            if (! ctype_xdigit($validated['key'])) {
+                throw ValidationException::withMessages([
+                    'key' => ['The key field must be a valid hexadecimal string.'],
+                ]);
+            }
 
             $isVerified = lnurl\auth($validated['k1'], $validated['sig'], $validated['key']);
 

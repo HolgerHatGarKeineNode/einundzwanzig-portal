@@ -18,10 +18,30 @@ test('lnurl auth callback validates required parameters', function () {
         ]);
 });
 
+test('lnurl auth callback validates hex format for k1 and key', function () {
+    // Invalid k1 (not hex)
+    $response = $this->get(route('auth.ln.callback').'?k1=ZZZZ'.str()->random(60).'&sig='.str()->random(128).'&key='.bin2hex(random_bytes(33)));
+
+    $response->assertStatus(400)
+        ->assertJson([
+            'status' => 'ERROR',
+            'reason' => 'Invalid request parameters',
+        ]);
+
+    // Invalid key (not hex)
+    $response = $this->get(route('auth.ln.callback').'?k1='.bin2hex(random_bytes(32)).'&sig='.str()->random(128).'&key=ZZZZ'.str()->random(60));
+
+    $response->assertStatus(400)
+        ->assertJson([
+            'status' => 'ERROR',
+            'reason' => 'Invalid request parameters',
+        ]);
+});
+
 test('lnurl auth callback handles signature verification failures', function () {
-    $k1 = str()->random(64);
-    $sig = str()->random(128);
-    $key = str()->random(64);
+    $k1 = bin2hex(random_bytes(32));
+    $sig = bin2hex(random_bytes(64));
+    $key = bin2hex(random_bytes(33));
 
     $response = $this->get(route('auth.ln.callback').'?k1='.$k1.'&sig='.$sig.'&key='.$key);
 
