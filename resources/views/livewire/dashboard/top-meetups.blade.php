@@ -2,7 +2,7 @@
 
 use App\Models\Meetup;
 use Livewire\Attributes\Lazy;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 new
 #[Lazy]

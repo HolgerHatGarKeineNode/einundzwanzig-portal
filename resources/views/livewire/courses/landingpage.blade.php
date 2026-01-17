@@ -4,7 +4,7 @@ use App\Attributes\SeoDataAttribute;
 use App\Models\Course;
 use App\Models\CourseEvent;
 use App\Traits\SeoTrait;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 new
 #[SeoDataAttribute(key: 'courses_landingpage')]

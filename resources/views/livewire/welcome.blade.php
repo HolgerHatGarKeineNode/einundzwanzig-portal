@@ -2,7 +2,7 @@
 
 use App\Attributes\SeoDataAttribute;
 use App\Traits\SeoTrait;
-use Livewire\Volt\Component;
+use Livewire\Component;
 use Livewire\Attributes\Layout;
 
 new

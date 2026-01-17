@@ -7,7 +7,7 @@ use App\Models\Meetup;
 use App\Traits\SeoTrait;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Validate;
-use Livewire\Volt\Component;
+use Livewire\Component;
 use Livewire\WithFileUploads;
 
 new

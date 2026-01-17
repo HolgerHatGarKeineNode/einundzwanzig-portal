@@ -5,7 +5,7 @@ use App\Models\MeetupEvent;
 use App\Models\User;
 use App\Traits\SeoTrait;
 use Livewire\Attributes\Validate;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 new
 #[SeoDataAttribute(key: 'meetups_landingpage_event')]

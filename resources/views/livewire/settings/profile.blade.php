@@ -6,7 +6,7 @@ use App\Traits\SeoTrait;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rule;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 new
 #[SeoDataAttribute(key: 'settings_profile')]

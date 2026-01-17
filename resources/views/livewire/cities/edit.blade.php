@@ -4,7 +4,7 @@ use App\Attributes\SeoDataAttribute;
 use App\Models\City;
 use App\Models\Country;
 use App\Traits\SeoTrait;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 new
 #[SeoDataAttribute(key: 'cities_edit')]

@@ -3,7 +3,7 @@
 use App\Attributes\SeoDataAttribute;
 use App\Models\Meetup;
 use App\Traits\SeoTrait;
-use Livewire\Volt\Component;
+use Livewire\Component;
 use Livewire\WithPagination;
 
 new

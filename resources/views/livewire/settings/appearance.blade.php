@@ -2,7 +2,7 @@
 
 use App\Attributes\SeoDataAttribute;
 use App\Traits\SeoTrait;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 new
 #[SeoDataAttribute(key: 'settings_appearance')]

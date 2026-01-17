@@ -38,9 +38,8 @@ Route::middleware([])
     ->get('/buecherverleih', \App\Livewire\BooksForPlebs\BookRentalGuide::class)
     ->name('buecherverleih');*/
 
-// Route for the rabbit following helper page
-Route::middleware([])
-    ->get('/kaninchenbau', \App\Livewire\Helper\FollowTheRabbit::class)
+// Route for rabbit following helper page - Updated for Livewire v4
+Route::livewire('/kaninchenbau', \App\Livewire\Helper\FollowTheRabbit::class)
     ->name('kaninchenbau');
 
 // Generic image handler route that serves images from storage
@@ -54,7 +53,7 @@ Route::get('/img-public/{path}', \App\Http\Controllers\ImageController::class)
     ->name('imgPublic');
 
 // Welcome page route using Volt component
-Volt::route('welcome', 'welcome')->name('welcome');
+Route::livewire('/welcome', 'welcome')->name('welcome');
 
 // Stream calendar route to download meetup calendar as ICS file
 Route::get('stream-calendar', \App\Http\Controllers\DownloadMeetupCalendar::class)
@@ -70,7 +69,7 @@ Route::middleware(['auth'])
 Route::middleware([])
     ->prefix('/{country:code?}')
     ->group(function () {
-        Volt::route('dashboard', 'dashboard')->name('dashboard');
+        Route::livewire('/dashboard', 'dashboard')->name('dashboard');
     });
 
 // Country-specific routes group with mandatory country code parameter
@@ -93,37 +92,37 @@ Route::middleware([])
         Route::get('/meetup/meetup-events', function ($country) {
             return redirect("/{$country}/meetups");
         });
-        // Old event landing page route (deprecated)
-        Volt::route('meetup/meetup-events/l/{event}', 'meetups.landingpage-event')
-            ->name('meetups.landingpage-event-old')
-            ->where('event', '[0-9]+');
+    // Old event landing page route (deprecated)
+    Route::livewire('/meetup/meetup-events/l/{event}', 'meetups.landingpage-event')
+        ->name('meetups.landingpage-event-old')
+        ->where('event', '[0-9]+');
 
-        // Meetup related routes
-        Volt::route('meetups', 'meetups.index')->name('meetups.index');
-        Volt::route('all-meetups', 'meetups.index')->name('meetups.index-all');
-        Volt::route('map', 'meetups.map')->name('meetups.map');
-        Volt::route('map-world', 'meetups.map')->name('meetups.map-world');
-        Volt::route('meetup/{meetup:slug}', 'meetups.landingpage')->name('meetups.landingpage');
-        Volt::route('meetup/{meetup:slug}/event/{event}',
-            'meetups.landingpage-event')
-            ->name('meetups.landingpage-event')
-            ->where('event', '[0-9]+');
+    /* Meetup related routes */
+    Route::livewire('/meetups', 'meetups.index')->name('meetups.index');
+    Route::livewire('/all-meetups', 'meetups.index')->name('meetups.index-all');
+    Route::livewire('/map', 'meetups.map')->name('meetups.map');
+    Route::livewire('/map-world', 'meetups.map')->name('meetups.map-world');
+    Route::livewire('/meetup/{meetup:slug}', 'meetups.landingpage')->name('meetups.landingpage');
+    Route::livewire('/meetup/{meetup:slug}/event/{event}',
+        'meetups.landingpage-event')
+        ->name('meetups.landingpage-event')
+        ->where('event', '[0-9]+');
 
-        // Course related routes
-        Volt::route('courses', 'courses.index')->name('courses.index');
-        Volt::route('course/{course}', 'courses.landingpage')->name('courses.landingpage');
-        Volt::route('course/{course}/event/{event}', 'courses.landingpage-event')->name('courses.landingpage-event');
+    /* Course related routes */
+    Route::livewire('/courses', 'courses.index')->name('courses.index');
+    Route::livewire('/course/{course}', 'courses.landingpage')->name('courses.landingpage');
+    Route::livewire('/course/{course}/event/{event}', 'courses.landingpage-event')->name('courses.landingpage-event');
 
-        // Lecturer related routes
-        Volt::route('lecturers', 'lecturers.index')->name('lecturers.index');
+    /* Lecturer related routes */
+    Route::livewire('/lecturers', 'lecturers.index')->name('lecturers.index');
 
-        // City and venue related routes
-        Volt::route('cities', 'cities.index')->name('cities.index');
-        Volt::route('venues', 'venues.index')->name('venues.index');
+    /* City and venue related routes */
+    Route::livewire('/cities', 'cities.index')->name('cities.index');
+    Route::livewire('/venues', 'venues.index')->name('venues.index');
 
-        // Self Hosted Services public routes
-        Volt::route('services', 'services.index')->name('services.index');
-        Volt::route('service/{service:slug}', 'services.landingpage')->name('services.landingpage');
+    /* Self Hosted Services public routes */
+    Route::livewire('/services', 'services.index')->name('services.index');
+    Route::livewire('/service/{service:slug}', 'services.landingpage')->name('services.landingpage');
     });
 
 // Authenticated user routes with country prefix
@@ -131,43 +130,43 @@ Route::middleware(['auth'])
     ->prefix('/{country:code}')
     ->group(function () {
         // Meetup creation and editing routes
-        Volt::route('meetup-create', 'meetups.create')->name('meetups.create');
-        Volt::route('meetup-edit/{meetup}', 'meetups.edit')->name('meetups.edit');
-        Volt::route('meetup/{meetup}/events/create', 'meetups.create-edit-events')->name('meetups.events.create');
-        Volt::route('meetup/{meetup}/events/{event}/edit', 'meetups.create-edit-events')->name('meetups.events.edit');
+        Route::livewire('/meetup-create', 'meetups.create')->name('meetups.create');
+        Route::livewire('/meetup-edit/{meetup}', 'meetups.edit')->name('meetups.edit');
+        Route::livewire('/meetup/{meetup}/events/create', 'meetups.create-edit-events')->name('meetups.events.create');
+        Route::livewire('/meetup/{meetup}/events/{event}/edit', 'meetups.create-edit-events')->name('meetups.events.edit');
 
         // Course creation and editing routes
-        Volt::route('course-create', 'courses.create')->name('courses.create');
-        Volt::route('course-edit/{course}', 'courses.edit')->name('courses.edit');
-        Volt::route('course/{course}/events/create', 'courses.create-edit-events')->name('courses.events.create');
-        Volt::route('course/{course}/events/{event}/edit', 'courses.create-edit-events')->name('courses.events.edit');
+        Route::livewire('/course-create', 'courses.create')->name('courses.create');
+        Route::livewire('/course-edit/{course}', 'courses.edit')->name('courses.edit');
+        Route::livewire('/course/{course}/events/create', 'courses.create-edit-events')->name('courses.events.create');
+        Route::livewire('/course/{course}/events/{event}/edit', 'courses.create-edit-events')->name('courses.events.edit');
 
         // Lecturer creation and editing routes
-        Volt::route('lecturer-create', 'lecturers.create')->name('lecturers.create');
-        Volt::route('lecturer-edit/{lecturer}', 'lecturers.edit')->name('lecturers.edit');
+        Route::livewire('/lecturer-create', 'lecturers.create')->name('lecturers.create');
+        Route::livewire('/lecturer-edit/{lecturer}', 'lecturers.edit')->name('lecturers.edit');
 
         // City creation and editing routes
-        Volt::route('city-create', 'cities.create')->name('cities.create');
-        Volt::route('city-edit/{city}', 'cities.edit')->name('cities.edit');
+        Route::livewire('/city-create', 'cities.create')->name('cities.create');
+        Route::livewire('/city-edit/{city}', 'cities.edit')->name('cities.edit');
 
         // Venue creation and editing routes
-        Volt::route('venue-create', 'venues.create')->name('venues.create');
-        Volt::route('venue-edit/{venue}', 'venues.edit')->name('venues.edit');
+        Route::livewire('/venue-create', 'venues.create')->name('venues.create');
+        Route::livewire('/venue-edit/{venue}', 'venues.edit')->name('venues.edit');
 
         // Self Hosted Services protected routes (authenticated users only)
-        Volt::route('service-create', 'services.create')->name('services.create');
-        Volt::route('service-edit/{service}', 'services.edit')->name('services.edit');
+        Route::livewire('/service-create', 'services.create')->name('services.create');
+        Route::livewire('/service-edit/{service}', 'services.edit')->name('services.edit');
 
         // Settings redirects and routes
         Route::redirect('settings', 'settings/profile');
 
-        Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
-        Volt::route('settings/password', 'settings.password')->name('settings.password');
-        Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
+        Route::livewire('/settings/profile', 'settings.profile')->name('settings.profile');
+        Route::livewire('/settings/password', 'settings.password')->name('settings.password');
+        Route::livewire('/settings/appearance', 'settings.appearance')->name('settings.appearance');
     });
 
 // Commented out feed routes (RSS/Atom feeds)
-//Route::feeds();
+// Route::feeds();
 
 // Fallback route for handling 404 errors with rate limiting
 Route::fallback(fn () => abort(404))

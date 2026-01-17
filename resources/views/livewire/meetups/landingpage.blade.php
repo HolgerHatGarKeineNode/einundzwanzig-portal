@@ -5,7 +5,7 @@ use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Traits\SeoTrait;
 use Flux\Flux;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 new
 #[SeoDataAttribute(key: 'meetups_landingpage')]

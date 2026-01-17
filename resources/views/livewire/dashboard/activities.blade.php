@@ -3,7 +3,7 @@
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use Livewire\Attributes\Lazy;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 new
 #[Lazy]

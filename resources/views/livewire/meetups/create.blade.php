@@ -6,7 +6,7 @@ use App\Models\Country;
 use App\Models\Meetup;
 use App\Traits\SeoTrait;
 use Livewire\Attributes\Validate;
-use Livewire\Volt\Component;
+use Livewire\Component;
 use Livewire\WithFileUploads;
 
 new

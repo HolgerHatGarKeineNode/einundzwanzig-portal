@@ -6,7 +6,7 @@ use App\Livewire\Forms\ServiceForm;
 use App\Models\SelfHostedService;
 use App\Traits\SeoTrait;
 use Livewire\Attributes\Validate;
-use Livewire\Volt\Component;
+use Livewire\Component;
 use Livewire\WithFileUploads;
 
 new

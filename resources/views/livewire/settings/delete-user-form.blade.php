@@ -4,7 +4,7 @@ use App\Attributes\SeoDataAttribute;
 use App\Livewire\Actions\Logout;
 use App\Traits\SeoTrait;
 use Illuminate\Support\Facades\Auth;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 new
 #[SeoDataAttribute(key: 'settings_delete_user_form')]

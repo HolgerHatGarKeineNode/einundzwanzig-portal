@@ -7,7 +7,7 @@ use App\Models\CourseEvent;
 use App\Models\Venue;
 use App\Traits\SeoTrait;
 use Livewire\Attributes\Validate;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 new
 #[SeoDataAttribute(key: 'courses_edit_events')]
