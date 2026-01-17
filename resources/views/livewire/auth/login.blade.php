@@ -57,7 +57,7 @@ class extends Component {
             $this->lnurl = lnurl\encodeUrl($this->url);
             $image = 'public/img/domains/'.session('lang_country', 'de-DE').'.jpg';
             $checkIfFileExists = base_path($image);
-            if (! file_exists($checkIfFileExists)) {
+            if (!file_exists($checkIfFileExists)) {
                 $image = 'public/img/domains/de-DE.jpg';
             }
             $this->qrCode = base64_encode(QrCode::format('png')
@@ -72,7 +72,7 @@ class extends Component {
     public function loginListener($pubkey): void
     {
         $user = \App\Models\User::query()->where('nostr', $pubkey)->first();
-        if (! $user) {
+        if (!$user) {
             $fakeName = str()->random(10);
             // create User
             $user = User::create([
@@ -104,7 +104,7 @@ class extends Component {
 
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
+        if (!Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -131,7 +131,7 @@ class extends Component {
      */
     protected function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (!RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
             return;
         }
 
@@ -210,7 +210,7 @@ class extends Component {
 
 <div class="flex min-h-screen" x-data="nostrLogin"
      x-init="initErrorPolling"
-     @auth-error.window="showAuthError($event.detail)">
+     x-on:auth-error.window="showAuthError($event.detail)">
     <div class="flex-1 flex justify-center items-center">
         <div class="w-80 max-w-80 space-y-6">
             <!-- Logo -->
