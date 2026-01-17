@@ -44,7 +44,7 @@ new class extends Component {
             <flux:select.search class="px-4" placeholder="{{ __('Suche Zeitzone...') }}"/>
         </x-slot>
         @foreach($timezones as $timezone)
-            <flux:select.option value="{{ $timezone }}">
+            <flux:select.option wire:key="timezone-{{ $timezone }}" value="{{ $timezone }}">
                 {{ $timezone }}
             </flux:select.option>
         @endforeach

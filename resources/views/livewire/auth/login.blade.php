@@ -18,11 +18,8 @@ use Livewire\Attributes\Validate;
 use Livewire\Component;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
-new
-#[Layout('components.layouts.auth')]
-#[SeoDataAttribute(key: 'login')]
-class extends Component
-{
+new #[Layout('components.layouts.auth')]
+class extends Component {
     use SeoTrait;
 
     #[Validate('required|string|email')]
@@ -208,7 +205,8 @@ class extends Component
         $this->authError = null;
         $this->mount();
     }
-}; ?>
+};
+?>
 
 <div class="flex min-h-screen" x-data="nostrLogin"
      x-init="initErrorPolling"
@@ -258,7 +256,7 @@ class extends Component
                     <div>
                         <flux:button
                             primary
-                            :href="'lightning:'.$this->lnurl"
+                            href="lightning:{{ $this->lnurl }}"
                         >
                             {{ __('Click to connect') }}
                             <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512"
@@ -273,12 +271,6 @@ class extends Component
                 </div>
             </div>
 
-            <!-- Sign up Link -->
-            {{--@if (Route::has('register'))
-                <flux:subheading class="text-center">
-                    First time around here? <flux:link href="{{ route('register') }}" wire:navigate>Sign up for free</flux:link>
-                </flux:subheading>
-            @endif--}}
             <!-- Language Selection Accordion -->
             <livewire:language.selector/>
         </div>

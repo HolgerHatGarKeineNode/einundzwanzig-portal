@@ -20,6 +20,8 @@ class extends Component {
     {
         if (!auth()->check()) {
             $this->redirectRoute('login');
+
+            return;
         }
         $this->country = request()->route('country', config('app.domain_country'));
     }
@@ -90,7 +92,7 @@ class extends Component {
                     <flux:separator class="my-4"/>
                     <div class="space-y-3">
                         @foreach($myUpcomingEvents as $event)
-                            <a href="{{ route('meetups.landingpage-event', ['meetup' => $event->meetup->slug, 'event' => $event->id, 'country' => $event->meetup->city->country->code]) }}"
+                            <a wire:key="event-{{ $event->id }}" href="{{ route('meetups.landingpage-event', ['meetup' => $event->meetup->slug, 'event' => $event->id, 'country' => $event->meetup->city->country->code]) }}"
                                class="block hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg p-3 -m-3 transition-colors">
                                 <div class="flex items-start justify-between gap-3">
                                     <flux:avatar size="xl" :src="$event->meetup->getFirstMediaUrl('logo', 'thumb')"/>

@@ -2,7 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 use Laravel\Nightwatch\Http\Middleware\Sample;
-use Livewire\Volt\Volt;
 
 // Redirect root URL to 'welcome' page
 Route::redirect('/', 'welcome');
@@ -92,37 +91,37 @@ Route::middleware([])
         Route::get('/meetup/meetup-events', function ($country) {
             return redirect("/{$country}/meetups");
         });
-    // Old event landing page route (deprecated)
-    Route::livewire('/meetup/meetup-events/l/{event}', 'meetups.landingpage-event')
-        ->name('meetups.landingpage-event-old')
-        ->where('event', '[0-9]+');
+        // Old event landing page route (deprecated)
+        Route::livewire('/meetup/meetup-events/l/{event}', 'meetups.landingpage-event')
+            ->name('meetups.landingpage-event-old')
+            ->where('event', '[0-9]+');
 
-    /* Meetup related routes */
-    Route::livewire('/meetups', 'meetups.index')->name('meetups.index');
-    Route::livewire('/all-meetups', 'meetups.index')->name('meetups.index-all');
-    Route::livewire('/map', 'meetups.map')->name('meetups.map');
-    Route::livewire('/map-world', 'meetups.map')->name('meetups.map-world');
-    Route::livewire('/meetup/{meetup:slug}', 'meetups.landingpage')->name('meetups.landingpage');
-    Route::livewire('/meetup/{meetup:slug}/event/{event}',
-        'meetups.landingpage-event')
-        ->name('meetups.landingpage-event')
-        ->where('event', '[0-9]+');
+        /* Meetup related routes */
+        Route::livewire('/meetups', 'meetups.index')->name('meetups.index');
+        Route::livewire('/all-meetups', 'meetups.index')->name('meetups.index-all');
+        Route::livewire('/map', 'meetups.map')->name('meetups.map');
+        Route::livewire('/map-world', 'meetups.map')->name('meetups.map-world');
+        Route::livewire('/meetup/{meetup:slug}', 'meetups.landingpage')->name('meetups.landingpage');
+        Route::livewire('/meetup/{meetup:slug}/event/{event}',
+            'meetups.landingpage-event')
+            ->name('meetups.landingpage-event')
+            ->where('event', '[0-9]+');
 
-    /* Course related routes */
-    Route::livewire('/courses', 'courses.index')->name('courses.index');
-    Route::livewire('/course/{course}', 'courses.landingpage')->name('courses.landingpage');
-    Route::livewire('/course/{course}/event/{event}', 'courses.landingpage-event')->name('courses.landingpage-event');
+        /* Course related routes */
+        Route::livewire('/courses', 'courses.index')->name('courses.index');
+        Route::livewire('/course/{course}', 'courses.landingpage')->name('courses.landingpage');
+        Route::livewire('/course/{course}/event/{event}', 'courses.landingpage-event')->name('courses.landingpage-event');
 
-    /* Lecturer related routes */
-    Route::livewire('/lecturers', 'lecturers.index')->name('lecturers.index');
+        /* Lecturer related routes */
+        Route::livewire('/lecturers', 'lecturers.index')->name('lecturers.index');
 
-    /* City and venue related routes */
-    Route::livewire('/cities', 'cities.index')->name('cities.index');
-    Route::livewire('/venues', 'venues.index')->name('venues.index');
+        /* City and venue related routes */
+        Route::livewire('/cities', 'cities.index')->name('cities.index');
+        Route::livewire('/venues', 'venues.index')->name('venues.index');
 
-    /* Self Hosted Services public routes */
-    Route::livewire('/services', 'services.index')->name('services.index');
-    Route::livewire('/service/{service:slug}', 'services.landingpage')->name('services.landingpage');
+        /* Self Hosted Services public routes */
+        Route::livewire('/services', 'services.index')->name('services.index');
+        Route::livewire('/service/{service:slug}', 'services.landingpage')->name('services.landingpage');
     });
 
 // Authenticated user routes with country prefix
