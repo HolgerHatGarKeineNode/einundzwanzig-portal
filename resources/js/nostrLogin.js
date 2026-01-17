@@ -47,7 +47,7 @@ export default () => ({
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
                 },
                 body: JSON.stringify({
-                    k1: livewireComponent.entangle('k1')[0],
+                    k1: livewireComponent.$wire.k1,
                     elapsed_seconds: elapsedSeconds,
                 }),
             });
