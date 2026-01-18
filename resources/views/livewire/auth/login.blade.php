@@ -42,6 +42,17 @@ class extends Component {
 
     public ?string $authError = null;
 
+    /**
+     * Handle authError property type conversion.
+     * Ensure array values from frontend are converted to string or null.
+     */
+    public function updatedAuthError(mixed $value): void
+    {
+        if (is_array($value) && empty($value)) {
+            $this->authError = null;
+        }
+    }
+
     public function mount(): void
     {
         $this->currentLangCountry = session('lang_country') ?? 'de-DE';
