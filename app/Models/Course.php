@@ -16,8 +16,8 @@ use Spatie\Tags\HasTags;
 class Course extends Model implements HasMedia
 {
     use HasFactory;
-    use InteractsWithMedia;
     use HasTags;
+    use InteractsWithMedia;
 
     /**
      * The attributes that aren't mass assignable.
@@ -45,25 +45,27 @@ class Course extends Model implements HasMedia
         });
     }
 
-    public function registerMediaConversions(Media $media = null): void
+    public function registerMediaConversions(?Media $media = null): void
     {
         $this
             ->addMediaConversion('preview')
             ->fit(Fit::Crop, 300, 300)
             ->nonQueued();
         $this->addMediaConversion('thumb')
-             ->fit(Fit::Crop, 130, 130)
-             ->width(130)
-             ->height(130);
+            ->fit(Fit::Crop, 130, 130)
+            ->width(130)
+            ->height(130);
     }
 
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('logo')
-             ->singleFile()
-             ->useFallbackUrl(asset('img/einundzwanzig.png'));
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
+            ->singleFile()
+            ->useFallbackUrl(asset('img/einundzwanzig.png'));
         $this->addMediaCollection('images')
-             ->useFallbackUrl(asset('img/einundzwanzig.png'));
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
+            ->useFallbackUrl(asset('img/einundzwanzig.png'));
     }
 
     public function createdBy(): BelongsTo

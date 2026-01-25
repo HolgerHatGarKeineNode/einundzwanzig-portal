@@ -19,8 +19,8 @@ use Spatie\Sluggable\SlugOptions;
 class Meetup extends Model implements HasMedia
 {
     use HasFactory;
-    use InteractsWithMedia;
     use HasSlug;
+    use InteractsWithMedia;
 
     /**
      * The attributes that aren't mass assignable.
@@ -44,7 +44,7 @@ class Meetup extends Model implements HasMedia
     protected static function booted()
     {
         static::creating(function ($model) {
-            if (!$model->created_by) {
+            if (! $model->created_by) {
                 $model->created_by = auth()->id();
             }
         });
@@ -58,7 +58,7 @@ class Meetup extends Model implements HasMedia
             ->usingLanguage(Cookie::get('lang', config('app.locale')));
     }
 
-    public function registerMediaConversions(Media $media = null): void
+    public function registerMediaConversions(?Media $media = null): void
     {
         $this
             ->addMediaConversion('preview')
@@ -75,6 +75,7 @@ class Meetup extends Model implements HasMedia
     {
         $this
             ->addMediaCollection('logo')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
             ->singleFile()
             ->useFallbackUrl(get_domain_attributes()['image']);
     }
@@ -104,8 +105,7 @@ class Meetup extends Model implements HasMedia
         }
 
         return Attribute::make(
-            get: fn()
-                => url()->route('img',
+            get: fn () => url()->route('img',
                 [
                     'path' => $path,
                     'w' => 900,
@@ -121,8 +121,7 @@ class Meetup extends Model implements HasMedia
         $nextEvent = $this->meetupEvents()->where('start', '>=', now())->orderBy('start')->first();
 
         return Attribute::make(
-            get: fn()
-                => $nextEvent ? [
+            get: fn () => $nextEvent ? [
                 'id' => $nextEvent->id,
                 'start' => $nextEvent->start,
                 'portalLink' => url()->route('meetups.landingpage-event',
@@ -140,7 +139,7 @@ class Meetup extends Model implements HasMedia
     protected function belongsToMe(): Attribute
     {
         return Attribute::make(
-            get: fn() => DB::table('meetup_user')->where('meetup_id', $this->id)->where('user_id',
+            get: fn () => DB::table('meetup_user')->where('meetup_id', $this->id)->where('user_id',
                 auth()->id())->exists(),
         );
     }

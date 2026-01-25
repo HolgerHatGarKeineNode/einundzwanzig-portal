@@ -18,9 +18,9 @@ use Spatie\Tags\HasTags;
 class SelfHostedService extends Model implements HasMedia
 {
     use HasFactory;
-    use InteractsWithMedia;
     use HasSlug;
     use HasTags;
+    use InteractsWithMedia;
 
     protected $guarded = [];
 
@@ -35,7 +35,7 @@ class SelfHostedService extends Model implements HasMedia
     {
         static::creating(function ($model): void {
             // Only set created_by if user is authenticated and not explicitly set as anonymous
-            if (auth()->check() && !isset($model->created_by)) {
+            if (auth()->check() && ! isset($model->created_by)) {
                 $model->created_by = auth()->id();
             }
         });
@@ -49,7 +49,7 @@ class SelfHostedService extends Model implements HasMedia
             ->usingLanguage(Cookie::get('lang', config('app.locale')));
     }
 
-    public function registerMediaConversions(Media $media = null): void
+    public function registerMediaConversions(?Media $media = null): void
     {
         $this
             ->addMediaConversion('preview')
@@ -66,6 +66,7 @@ class SelfHostedService extends Model implements HasMedia
     {
         $this
             ->addMediaCollection('logo')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
             ->singleFile()
             ->useFallbackUrl(asset('img/einundzwanzig.png'));
     }
