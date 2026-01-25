@@ -79,7 +79,7 @@ Route::middleware([])
         /* OLD URLS - redirects for legacy URLs */
         // Redirect old meetup calendar route to new one
         Route::get('meetup/stream-calendar', \App\Http\Controllers\DownloadMeetupCalendar::class)
-            ->name('ics')
+            ->name('ics-meetup')
             ->middleware('throttle:calendar');
         // Redirect old meetup overview URL to new meetups page
         Route::get('/meetup/overview', function ($country) {
