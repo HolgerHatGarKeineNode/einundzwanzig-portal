@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\CountryController;
 use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\HighscoreController;
 use App\Http\Controllers\Api\LecturerController;
 use App\Http\Controllers\Api\MeetupController;
 use App\Http\Controllers\Api\VenueController;
@@ -184,3 +185,6 @@ Route::get('/lnurl-auth-callback', [\App\Http\Controllers\LnurlAuthController::c
 
 Route::post('/check-auth-error', [\App\Http\Controllers\LnurlAuthController::class, 'checkError'])
     ->name('auth.check-error');
+
+Route::get('highscores', [HighscoreController::class, 'index'])->name('highscores.index');
+Route::post('highscores', [HighscoreController::class, 'store'])->name('highscores.store');
