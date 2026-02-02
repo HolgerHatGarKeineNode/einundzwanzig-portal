@@ -21,6 +21,8 @@ Route::middleware([])
         Route::resource('courses', CourseController::class);
         Route::resource('cities', CityController::class);
         Route::resource('venues', VenueController::class);
+        Route::get('highscores', [HighscoreController::class, 'index'])->name('highscores.index');
+        Route::post('highscores', [HighscoreController::class, 'store'])->name('highscores.store');
         Route::get('nostrplebs', function () {
             return User::query()
                 ->select([
@@ -185,6 +187,3 @@ Route::get('/lnurl-auth-callback', [\App\Http\Controllers\LnurlAuthController::c
 
 Route::post('/check-auth-error', [\App\Http\Controllers\LnurlAuthController::class, 'checkError'])
     ->name('auth.check-error');
-
-Route::get('highscores', [HighscoreController::class, 'index'])->name('highscores.index');
-Route::post('highscores', [HighscoreController::class, 'store'])->name('highscores.store');

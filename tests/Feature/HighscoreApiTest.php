@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\HighscoreController;
 use App\Models\Highscore;
 use Carbon\CarbonImmutable;
 
@@ -64,6 +65,35 @@ test('highscore submission updates existing attempt for same npub and datetime',
         'achieved_at' => CarbonImmutable::parse($datetime)->toDateTimeString(),
     ]);
     $this->assertSame(1, Highscore::query()->count());
+});
+
+test('missing name is fetched from nostr when available', function () {
+    $fetchedName = 'Fetched Player';
+
+    $controllerMock = \Mockery::mock(HighscoreController::class)->makePartial();
+    $controllerMock->shouldAllowMockingProtectedMethods();
+    $controllerMock->shouldReceive('fetchNostrName')->once()->andReturn($fetchedName);
+
+    app()->instance(HighscoreController::class, $controllerMock);
+
+    $payload = [
+        'npub' => 'npub1fetchnamevalue',
+        'satoshis' => 1337,
+        'blocks' => 2,
+        'datetime' => CarbonImmutable::now()->subMinute()->toIso8601String(),
+    ];
+
+    $response = $this->postJson(route('api.highscores.store'), $payload);
+
+    $response->assertAccepted()
+        ->assertJsonPath('data.name', $fetchedName);
+
+    $this->assertDatabaseHas('highscores', [
+        'npub' => $payload['npub'],
+        'name' => $fetchedName,
+        'satoshis' => $payload['satoshis'],
+        'blocks' => $payload['blocks'],
+    ]);
 });
 
 test('highscore submission does not clear existing name when omitted', function () {
