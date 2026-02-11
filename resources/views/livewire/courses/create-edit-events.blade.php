@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\CourseEvent;
 use App\Models\Venue;
 use App\Traits\SeoTrait;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
@@ -17,6 +18,7 @@ class extends Component {
     public Course $course;
     public ?CourseEvent $event = null;
 
+    #[Locked]
     public $country = 'de';
 
     public string $fromDate = '';

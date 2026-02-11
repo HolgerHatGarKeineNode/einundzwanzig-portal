@@ -4,6 +4,7 @@ use App\Attributes\SeoDataAttribute;
 use App\Enums\SelfHostedServiceType;
 use App\Livewire\Forms\ServiceForm;
 use App\Traits\SeoTrait;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -13,7 +14,9 @@ new
 class extends Component {
     use SeoTrait;
 
+    #[Locked]
     public string $country = 'de';
+
     public ServiceForm $form;
 
     public function mount(): void

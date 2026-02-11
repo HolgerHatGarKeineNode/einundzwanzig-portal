@@ -4,6 +4,7 @@ use App\Attributes\SeoDataAttribute;
 use App\Models\Lecturer;
 use App\Traits\SeoTrait;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -34,9 +35,14 @@ class extends Component {
     public ?string $node_id = null;
     public ?string $paynym = null;
 
-    // System fields (read-only)
+    // System fields (read-only) - locked to prevent client-side tampering
+    #[Locked]
     public ?int $created_by = null;
+
+    #[Locked]
     public ?string $created_at = null;
+
+    #[Locked]
     public ?string $updated_at = null;
 
     public function mount(): void

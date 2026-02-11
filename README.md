@@ -31,43 +31,41 @@ After setting up your CNAME, please notify the repository owner to refresh SSL c
 
 ## Development
 
+### Prerequisites
+
+- PHP 8.3+
+- PostgreSQL (running locally or as a container)
+- Redis (running locally or as a container)
+- Node.js + Yarn
+
 ### Installation
 
 ```cp .env.example .env```
 
-```
-docker run --rm \
-    -u "$(id -u):$(id -g)" \
-    -v $(pwd):/var/www/html \
-    -w /var/www/html \
-    laravelsail/php83-composer:latest \
-    composer install --ignore-platform-reqs
-```
+```composer install```
 *(you need a valid Flux Pro license or send a message to [Nostr - The Ben](http://njump.me/npub1pt0kw36ue3w2g4haxq3wgm6a2fhtptmzsjlc2j2vphtcgle72qesgpjyc6))*
-
-#### Start docker development containers
-
-```vendor/bin/sail up -d```
 
 ### Migrate and seed the database
 
-```./vendor/bin/sail artisan migrate:fresh --seed```
+```php artisan migrate:fresh --seed```
 
 ### Laravel storage link
 
-```./vendor/bin/sail artisan storage:link```
+```php artisan storage:link```
 
 #### Install node dependencies
 
-```vendor/bin/sail yarn```
+```yarn```
 
-#### Start just in time compiler
+#### Start development environment
 
-```vendor/bin/sail yarn dev```
+```composer run dev```
+
+This starts the PHP dev server, queue worker, Pail log viewer, and Vite concurrently.
 
 #### Update dependencies
 
-```vendor/bin/sail yarn```
+```yarn```
 
 ## Security Vulnerabilities
 

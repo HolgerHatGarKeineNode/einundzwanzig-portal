@@ -4,11 +4,13 @@ namespace App\Livewire\Forms;
 
 use App\Enums\SelfHostedServiceType;
 use App\Models\SelfHostedService;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Form;
 
 class ServiceForm extends Form
 {
+    #[Locked]
     public ?SelfHostedService $service = null;
 
     #[Validate('required|string|max:255')]
@@ -47,7 +49,7 @@ class ServiceForm extends Form
             'name' => ['required', 'string', 'max:255'],
             'type' => [
                 'required',
-                'in:' . collect(SelfHostedServiceType::cases())->map(fn($c) => $c->value)->implode(',')
+                'in:'.collect(SelfHostedServiceType::cases())->map(fn ($c) => $c->value)->implode(','),
             ],
             'intro' => ['nullable', 'string'],
             'url_clearnet' => ['nullable', 'url', 'max:255'],

@@ -6,6 +6,7 @@ use App\Models\Country;
 use App\Models\Meetup;
 use App\Traits\SeoTrait;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -42,9 +43,14 @@ class extends Component {
     public ?string $github_data = null;
     public bool $visible_on_map = false;
 
-    // System fields (read-only)
+    // System fields (read-only) - locked to prevent client-side tampering
+    #[Locked]
     public ?int $created_by = null;
+
+    #[Locked]
     public ?string $created_at = null;
+
+    #[Locked]
     public ?string $updated_at = null;
 
     // New City Modal

@@ -5,6 +5,7 @@ use App\Enums\RecurrenceType;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Traits\SeoTrait;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
@@ -16,6 +17,7 @@ class extends Component {
     public Meetup $meetup;
     public ?MeetupEvent $event = null;
 
+    #[Locked]
     public $country = 'de';
 
     public string $startDate = '';
