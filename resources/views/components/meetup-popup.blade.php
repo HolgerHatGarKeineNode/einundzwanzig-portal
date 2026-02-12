@@ -17,12 +17,12 @@
         <div class="space-y-1">
             <flux:text class="text-sm flex items-center gap-2">
                 <flux:icon.calendar class="w-4 h-4"/>
-                {{ $meetup->nextEvent['start']->format('d.m.Y') }}
+                {{ $meetup->nextEvent['start']->asDate() }}
             </flux:text>
 
             <flux:text class="text-sm flex items-center gap-2">
                 <flux:icon.clock class="w-4 h-4"/>
-                {{ $meetup->nextEvent['start']->format('H:i') }} Uhr
+                {{ $meetup->nextEvent['start']->asTime() }} Uhr
             </flux:text>
 
             @if($meetup->nextEvent['location'])
