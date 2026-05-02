@@ -14,6 +14,11 @@ new class extends Component {
         $this->currentRouteParams = request()->route()->parameters();
     }
 
+    public function updatingCurrentCountry(mixed $value): void
+    {
+        abort_if(! is_string($value), 422);
+    }
+
     public function updatedCurrentCountry()
     {
         $this->currentRouteParams['country'] = $this->currentCountry;
