@@ -11,6 +11,9 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <testsuite name="Browser">
+            <directory>tests/Browser</directory>
+        </testsuite>
         <testsuite name="Components">
             <directory suffix=".test.php">resources/views</directory>
         </testsuite>
@@ -25,7 +28,9 @@
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="DB_DATABASE" value="einundzwanzig_app_testing"/>
+        <env name="DB_CONNECTION" value="sqlite"/>
+        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="DB_FOREIGN_KEYS" value="true"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
@@ -33,5 +38,8 @@
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="APP_LOCALE" value="de"/>
         <env name="CIPHERSWEET_KEY" value="45186542ebd89a8c7d719543be7531c40a795c40582ceddfca758189d83ce356"/>
+        <env name="PERMISSION_TESTING" value="true"/>
+        <env name="PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD" value="1"/>
+        <env name="PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH" value="/usr/bin/chromium"/>
     </php>
 </phpunit>

@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\BitcoinEvent;
-use App\Models\BookCase;
 use App\Models\Category;
 use App\Models\City;
 use App\Models\Country;
@@ -19,7 +18,6 @@ use App\Models\LibraryItem;
 use App\Models\LoginKey;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
-use App\Models\OrangePill;
 use App\Models\Participant;
 use App\Models\Podcast;
 use App\Models\ProjectProposal;
@@ -65,9 +63,6 @@ class DatabaseSeeder extends Seeder
             ->recycle($users)
             ->create();
         $lecturers = Lecturer::factory()->count(15)
-            ->recycle($users)
-            ->create();
-        $bookCases = BookCase::factory()->count(25)
             ->recycle($users)
             ->create();
         SelfHostedService::factory()->count(10)
@@ -117,12 +112,6 @@ class DatabaseSeeder extends Seeder
             ->recycle($lecturers)
             ->recycle($users)
             ->create();
-        OrangePill::withoutEvents(function () use ($users, $bookCases) {
-            OrangePill::factory()->count(50)
-                ->recycle($users)
-                ->recycle($bookCases)
-                ->create();
-        });
         $proposals = ProjectProposal::factory()->count(8)
             ->recycle($users)
             ->create();

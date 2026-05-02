@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Http\UploadedFile;
@@ -19,16 +18,17 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements CipherSweetEncrypted
 {
-    use UsesCipherSweet;
-    use HasFactory;
-    use Notifiable;
-    use HasRoles;
     use HasApiTokens;
+    use HasFactory;
+    use HasRoles;
+    use Notifiable;
+    use UsesCipherSweet;
 
     protected $guarded = [];
 
     /**
      * The attributes that should be hidden for serialization.
+     *
      * @var array
      */
     protected $hidden = [
@@ -40,6 +40,7 @@ class User extends Authenticatable implements CipherSweetEncrypted
 
     /**
      * The attributes that should be cast.
+     *
      * @var array
      */
     protected $casts = [
@@ -60,7 +61,7 @@ class User extends Authenticatable implements CipherSweetEncrypted
 
     public static function configureCipherSweet(EncryptedRow $encryptedRow): void
     {
-        $map = (new JsonFieldMap())
+        $map = (new JsonFieldMap)
             ->addTextField('url')
             ->addTextField('read_key')
             ->addTextField('wallet_id');
@@ -79,11 +80,6 @@ class User extends Authenticatable implements CipherSweetEncrypted
             ->addBlindIndex('node_id', new BlindIndex('node_id_index'))
             ->addBlindIndex('paynym', new BlindIndex('paynym_index'))
             ->addBlindIndex('email', new BlindIndex('email_index'));
-    }
-
-    public function orangePills()
-    {
-        return $this->hasMany(OrangePill::class);
     }
 
     public function meetups()

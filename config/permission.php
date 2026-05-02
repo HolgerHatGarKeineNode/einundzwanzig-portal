@@ -1,5 +1,9 @@
 <?php
 
+use Spatie\Permission\DefaultTeamResolver;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+
 return [
 
     'models' => [
@@ -13,7 +17,7 @@ return [
          * `Spatie\Permission\Contracts\Permission` contract.
          */
 
-        'permission' => Spatie\Permission\Models\Permission::class,
+        'permission' => Permission::class,
 
         /*
          * When using the "HasRoles" trait from this package, we need to know which
@@ -24,7 +28,7 @@ return [
          * `Spatie\Permission\Contracts\Role` contract.
          */
 
-        'role' => Spatie\Permission\Models\Role::class,
+        'role' => Role::class,
 
     ],
 
@@ -136,7 +140,7 @@ return [
     /*
      * The class to use to resolve the permissions team id
      */
-    'team_resolver' => \Spatie\Permission\DefaultTeamResolver::class,
+    'team_resolver' => DefaultTeamResolver::class,
 
     /*
      * Passport Client Credentials Grant
@@ -183,7 +187,7 @@ return [
          * When permissions or roles are updated the cache is flushed automatically.
          */
 
-        'expiration_time' => \DateInterval::createFromDateString('24 hours'),
+        'expiration_time' => DateInterval::createFromDateString('24 hours'),
 
         /*
          * The cache key used to store all permissions.
@@ -199,4 +203,13 @@ return [
 
         'store' => 'default',
     ],
+
+    /*
+     * Testing-mode flag consumed by the package's migration to add team-related
+     * columns to the roles table even when teams are disabled. Required for
+     * the unique index on (team_foreign_key, name, guard_name) to exist on
+     * SQLite-backed test databases.
+     */
+
+    'testing' => env('PERMISSION_TESTING', false),
 ];
