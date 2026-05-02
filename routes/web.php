@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Controllers\DownloadMeetupCalendar;
+use App\Http\Controllers\ImageController;
+use App\Jobs\FetchNostrProfileJob;
+use App\Livewire\Helper\FollowTheRabbit;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
@@ -8,13 +13,15 @@ Route::redirect('/', 'welcome');
 
 // Test route that dispatches a job to fetch Nostr profile for user with ID 1426
 Route::get('test', function () {
-    \App\Jobs\FetchNostrProfileJob::dispatchSync(\App\Models\User::find(1426));
+    FetchNostrProfileJob::dispatchSync(User::find(1426));
 });
 
-// Error page route that aborts with given HTTP status code
-Route::get('error/{code}', function ($code) {
-    abort($code);
-});
+// Error page route that aborts with given HTTP status code (digits only,
+// constrained to valid 4xx/5xx range to avoid TypeErrors from bot scans).
+Route::get('error/{code}', function (string $code) {
+    $code = (int) $code;
+    abort($code >= 400 && $code <= 599 ? $code : 404);
+})->where('code', '[0-9]{3}');
 
 /*
  * Commented out routes related to book rental download and display
@@ -38,16 +45,16 @@ Route::middleware([])
     ->name('buecherverleih');*/
 
 // Route for rabbit following helper page - Updated for Livewire v4
-Route::livewire('/kaninchenbau', \App\Livewire\Helper\FollowTheRabbit::class)
+Route::livewire('/kaninchenbau', FollowTheRabbit::class)
     ->name('kaninchenbau');
 
 // Generic image handler route that serves images from storage
-Route::get('/img/{path}', \App\Http\Controllers\ImageController::class)
+Route::get('/img/{path}', ImageController::class)
     ->where('path', '.*')
     ->name('img');
 
 // Public image handler route for serving public images
-Route::get('/img-public/{path}', \App\Http\Controllers\ImageController::class)
+Route::get('/img-public/{path}', ImageController::class)
     ->where('path', '.*')
     ->name('imgPublic');
 
@@ -55,7 +62,7 @@ Route::get('/img-public/{path}', \App\Http\Controllers\ImageController::class)
 Route::livewire('/welcome', 'welcome')->name('welcome');
 
 // Stream calendar route to download meetup calendar as ICS file
-Route::get('stream-calendar', \App\Http\Controllers\DownloadMeetupCalendar::class)
+Route::get('stream-calendar', DownloadMeetupCalendar::class)
     ->name('ics')
     ->middleware(['throttle:calendar', Sample::never()]);
 
@@ -78,7 +85,7 @@ Route::middleware([])
     ->group(function () {
         /* OLD URLS - redirects for legacy URLs */
         // Redirect old meetup calendar route to new one
-        Route::get('meetup/stream-calendar', \App\Http\Controllers\DownloadMeetupCalendar::class)
+        Route::get('meetup/stream-calendar', DownloadMeetupCalendar::class)
             ->name('ics-meetup')
             ->middleware(['throttle:calendar', Sample::never()]);
         // Redirect old meetup overview URL to new meetups page

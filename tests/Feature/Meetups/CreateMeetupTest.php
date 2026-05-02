@@ -98,3 +98,19 @@ it('creates a city via createCity within the meetup-create flow', function () {
 
     expect(City::query()->where('name', 'Hamburg')->exists())->toBeTrue();
 });
+
+it('does not crash with PropertyNotFoundException when newCityLatitude is set to null', function () {
+    actingAsUser();
+    Livewire::test('meetups.create')
+        ->set('newCityLatitude', null)
+        ->assertStatus(200)
+        ->assertSet('newCityLatitude', null);
+});
+
+it('does not crash with PropertyNotFoundException when newCityLongitude is set to null', function () {
+    actingAsUser();
+    Livewire::test('meetups.create')
+        ->set('newCityLongitude', null)
+        ->assertStatus(200)
+        ->assertSet('newCityLongitude', null);
+});

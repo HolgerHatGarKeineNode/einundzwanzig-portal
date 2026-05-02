@@ -46,3 +46,30 @@ it('mounts meetups.create-edit-events for existing event', function () {
         'event' => $this->event,
     ])->assertStatus(200);
 });
+
+it('does not crash with PropertyNotFoundException when startDate is set to null in series mode', function () {
+    actingAsUser();
+    Livewire::test('meetups.create-edit-events', ['meetup' => $this->meetup])
+        ->set('seriesMode', true)
+        ->set('endDate', '2026-10-27')
+        ->set('startDate', null)
+        ->assertStatus(200)
+        ->assertSet('startDate', null);
+});
+
+it('does not crash when endDate is set to null in series mode', function () {
+    actingAsUser();
+    Livewire::test('meetups.create-edit-events', ['meetup' => $this->meetup])
+        ->set('seriesMode', true)
+        ->set('endDate', null)
+        ->assertStatus(200)
+        ->assertSet('endDate', null);
+});
+
+it('does not crash when startTime is set to null', function () {
+    actingAsUser();
+    Livewire::test('meetups.create-edit-events', ['meetup' => $this->meetup])
+        ->set('startTime', null)
+        ->assertStatus(200)
+        ->assertSet('startTime', null);
+});

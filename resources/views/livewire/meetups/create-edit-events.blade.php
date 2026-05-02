@@ -20,14 +20,14 @@ class extends Component {
     #[Locked]
     public $country = 'de';
 
-    public string $startDate = '';
-    public string $startTime = '';
+    public ?string $startDate = null;
+    public ?string $startTime = null;
 
     // Explicitly track timezone for reactivity
     public string $userTimezone = '';
 
     public bool $seriesMode = false;
-    public string $endDate = '';
+    public ?string $endDate = null;
 
     public ?RecurrenceType $recurrenceType = null;
     public ?string $recurrenceDayOfWeek = null;

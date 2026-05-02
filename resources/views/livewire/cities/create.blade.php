@@ -14,8 +14,8 @@ class extends Component {
     public $country = 'de';
     public string $name = '';
     public ?int $country_id = null;
-    public float $latitude = 0;
-    public float $longitude = 0;
+    public ?float $latitude = null;
+    public ?float $longitude = null;
     public ?int $population = null;
     public ?string $population_date = null;
 

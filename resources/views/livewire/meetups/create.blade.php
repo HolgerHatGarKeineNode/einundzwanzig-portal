@@ -39,8 +39,8 @@ class extends Component {
     // New City Modal
     public string $newCityName = '';
     public ?int $newCityCountryId = null;
-    public float $newCityLatitude = 0;
-    public float $newCityLongitude = 0;
+    public ?float $newCityLatitude = null;
+    public ?float $newCityLongitude = null;
 
     public function createCity(): void
     {

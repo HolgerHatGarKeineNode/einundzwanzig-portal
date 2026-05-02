@@ -53,3 +53,33 @@ it('mounts courses.create-edit-events for existing event', function () {
         'event' => $this->event,
     ])->assertStatus(200);
 });
+
+it('does not crash with PropertyNotFoundException when fromDate is set to null', function () {
+    actingAsUser();
+    Livewire::test('courses.create-edit-events', ['course' => $this->course])
+        ->set('fromDate', null)
+        ->assertStatus(200)
+        ->assertSet('fromDate', null);
+});
+
+it('does not crash when toDate is set to null', function () {
+    actingAsUser();
+    Livewire::test('courses.create-edit-events', ['course' => $this->course])
+        ->set('toDate', null)
+        ->assertStatus(200)
+        ->assertSet('toDate', null);
+});
+
+it('does not crash when fromTime is set to null', function () {
+    actingAsUser();
+    Livewire::test('courses.create-edit-events', ['course' => $this->course])
+        ->set('fromTime', null)
+        ->assertStatus(200);
+});
+
+it('does not crash when toTime is set to null', function () {
+    actingAsUser();
+    Livewire::test('courses.create-edit-events', ['course' => $this->course])
+        ->set('toTime', null)
+        ->assertStatus(200);
+});

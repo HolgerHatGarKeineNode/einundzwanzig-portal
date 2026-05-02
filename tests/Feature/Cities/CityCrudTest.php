@@ -22,12 +22,32 @@ it('creates a City with valid data', function () {
     expect(City::query()->where('name', 'Berlin')->exists())->toBeTrue();
 });
 
-it('rejects city creation without a name (country_id is preset by mount() from the route prefix)', function () {
+it('rejects city creation when required fields are blank (country_id is preset by mount() from the route prefix)', function () {
     actingAsUser();
 
     Livewire::test('cities.create')
         ->call('createCity')
-        ->assertHasErrors(['name' => 'required']);
+        ->assertHasErrors([
+            'name' => 'required',
+            'latitude' => 'required',
+            'longitude' => 'required',
+        ]);
+});
+
+it('does not crash with PropertyNotFoundException when latitude is set to null', function () {
+    actingAsUser();
+    Livewire::test('cities.create')
+        ->set('latitude', null)
+        ->assertStatus(200)
+        ->assertSet('latitude', null);
+});
+
+it('does not crash with PropertyNotFoundException when longitude is set to null', function () {
+    actingAsUser();
+    Livewire::test('cities.create')
+        ->set('longitude', null)
+        ->assertStatus(200)
+        ->assertSet('longitude', null);
 });
 
 it('rejects city creation when country_id is explicitly cleared', function () {

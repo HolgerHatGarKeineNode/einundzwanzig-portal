@@ -21,10 +21,10 @@ class extends Component {
     #[Locked]
     public $country = 'de';
 
-    public string $fromDate = '';
-    public string $fromTime = '';
-    public string $toDate = '';
-    public string $toTime = '';
+    public ?string $fromDate = null;
+    public ?string $fromTime = null;
+    public ?string $toDate = null;
+    public ?string $toTime = null;
 
     #[Validate('required|exists:venues,id')]
     public ?int $venue_id = null;

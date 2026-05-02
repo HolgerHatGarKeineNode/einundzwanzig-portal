@@ -55,6 +55,30 @@ it('returns 404 for the application fallback route', function () {
     $this->get('/this-route-does-not-exist')->assertNotFound();
 });
 
-it('aborts with the requested status code for /error/{code}', function () {
-    $this->get('/error/418')->assertStatus(418);
-});
+it('aborts with the requested status code for /error/{code}', function (int $code) {
+    $this->get('/error/'.$code)->assertStatus($code);
+})->with([
+    'teapot' => 418,
+    'forbidden' => 403,
+    'not found' => 404,
+    'server error' => 500,
+]);
+
+it('returns 404 for /error/{code} when the code is not three digits', function (string $path) {
+    $this->get($path)->assertNotFound();
+})->with([
+    'non-numeric' => '/error/error.log',
+    'letters' => '/error/abc',
+    'two digits' => '/error/42',
+    'four digits' => '/error/1000',
+    'mixed' => '/error/4xx',
+    'path traversal' => '/error/..%2Fetc%2Fpasswd',
+]);
+
+it('returns 404 for /error/{code} when code is outside the 4xx-5xx range', function (string $path) {
+    $this->get($path)->assertNotFound();
+})->with([
+    'success' => '/error/200',
+    'redirect' => '/error/301',
+    'too high' => '/error/600',
+]);
