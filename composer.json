@@ -105,6 +105,10 @@
             "@php artisan config:clear --ansi",
             "@test:lint",
             "@php artisan test"
+        ],
+        "dev": [
+            "Composer\\Config::disableProcessTimeout",
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fdba74,#86efac\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"yarn run dev\" --names=serve,queue,logs,vite --kill-others"
         ]
     },
     "extra": {
