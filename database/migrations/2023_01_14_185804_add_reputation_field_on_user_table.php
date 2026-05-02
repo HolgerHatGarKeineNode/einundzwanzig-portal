@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('users', 'reputation')) {
+            return;
+        }
+
         Schema::table('users', function (Blueprint $table) {
             $table->unsignedInteger('reputation')->default(0)->after('remember_token');
         });
@@ -21,6 +25,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (! Schema::hasColumn('users', 'reputation')) {
+            return;
+        }
+
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn('reputation');
         });
