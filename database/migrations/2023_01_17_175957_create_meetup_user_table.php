@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('meetup_user')) {
+            return;
+        }
+
         Schema::disableForeignKeyConstraints();
 
         Schema::create('meetup_user', function (Blueprint $table) {
