@@ -2,22 +2,21 @@
 
 namespace Database\Factories;
 
+use App\Models\Highscore;
+use Database\Factories\Helpers\NostrHelper;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Highscore>
+ * @extends Factory<Highscore>
  */
 class HighscoreFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    protected $model = Highscore::class;
+
     public function definition(): array
     {
         return [
-            'npub' => 'npub1'.fake()->regexify('[a-z0-9]{20}'),
+            'npub' => NostrHelper::randomNpub(),
             'name' => fake()->name(),
             'satoshis' => fake()->numberBetween(0, 100000),
             'blocks' => fake()->numberBetween(0, 1000),

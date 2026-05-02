@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\CustomFeedItem;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -21,6 +22,7 @@ use Spatie\Tags\HasTags;
 
 class LibraryItem extends Model implements Feedable, HasMedia, Sortable
 {
+    use HasFactory;
     use HasSlug;
     use HasStatuses;
     use HasTags;

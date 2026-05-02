@@ -2,43 +2,68 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
+use Database\Factories\Helpers\NostrHelper;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends Factory<User>
  */
 class UserFactory extends Factory
 {
-    /**
-     * The current password being used by the factory.
-     */
     protected static ?string $password;
 
     /**
-     * Define the model's default state.
-     *
      * @return array<string, mixed>
      */
     public function definition(): array
     {
+        $name = fake()->firstName().' '.fake()->lastName();
+
         return [
-            'name' => fake()->name(),
+            'name' => $name,
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'reputation' => fake()->numberBetween(0, 1000),
+            'current_language' => fake()->randomElement(['de', 'en']),
+            'timezone' => 'Europe/Berlin',
+            'is_lecturer' => fake()->boolean(20),
+            'nostr' => fake()->boolean(70) ? NostrHelper::randomNpub() : null,
+            'lightning_address' => fake()->boolean(40) ? NostrHelper::randomLightningAddress($name) : null,
+            'lnurl' => null,
+            'node_id' => null,
+            'paynym' => null,
+            'lnbits' => null,
+            'public_key' => null,
+            'change' => null,
+            'change_time' => null,
+            'profile_photo_path' => null,
         ];
     }
 
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
     public function unverified(): static
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    public function lecturer(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_lecturer' => true,
+        ]);
+    }
+
+    public function withNostr(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'nostr' => NostrHelper::randomNpub(),
+            'lightning_address' => NostrHelper::randomLightningAddress($attributes['name'] ?? null),
         ]);
     }
 }
