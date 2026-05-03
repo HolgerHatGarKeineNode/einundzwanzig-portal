@@ -106,7 +106,15 @@ export default () => ({
     },
 
     showAuthError(error) {
-        let message = error || 'Authentication failed. Please try again.';
+        let message;
+        if (typeof error === 'string') {
+            message = error;
+        } else if (error && typeof error === 'object' && typeof error.message === 'string') {
+            message = error.message;
+        } else {
+            message = 'Authentication failed. Please try again.';
+        }
+
         let variant = 'danger';
 
         if (message.includes('incompatible') || message.includes('format')) {
@@ -125,8 +133,6 @@ export default () => ({
                 duration: 8000,
             });
         }
-
-        this.$dispatch('auth-error', {message, variant});
     },
 
     destroy() {

@@ -306,8 +306,7 @@ class extends Component {
 ?>
 
 <div class="flex min-h-screen" x-data="nostrLogin"
-     x-init="initErrorPolling"
-     x-on:auth-error.window="showAuthError($event.detail)">
+     x-init="initErrorPolling">
     <div class="flex-1 flex justify-center items-center">
         <div class="w-80 max-w-80 space-y-6">
             <!-- Logo -->
