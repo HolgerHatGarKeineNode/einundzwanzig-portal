@@ -154,14 +154,10 @@ final class LnurlAuthController extends Controller
      */
     private function ensureLoginKeyExists(string $k1, int $userId): void
     {
-        $loginKey = LoginKey::where('k1', $k1)->first();
-
-        if (! $loginKey) {
-            LoginKey::create([
-                'k1' => $k1,
-                'user_id' => $userId,
-            ]);
-        }
+        LoginKey::query()->updateOrCreate(
+            ['k1' => $k1],
+            ['user_id' => $userId],
+        );
     }
 
     /**

@@ -17,7 +17,7 @@ class extends Component {
     use WithFileUploads;
     use SeoTrait;
 
-    #[Validate('image|max:10240')] // 10MB Max
+    #[Validate('image|mimes:jpeg,png,webp|max:5120|dimensions:max_width=4000,max_height=4000')]
     public $logo;
 
     public Meetup $meetup;
@@ -90,6 +90,35 @@ class extends Component {
         }
     }
 
+    /**
+     * Whitelist the keys allowed inside github_data and coerce types so a
+     * tampered payload cannot smuggle arbitrary keys into the stored JSON.
+     */
+    protected function sanitizeGithubData(?string $raw): ?array
+    {
+        if (empty($raw)) {
+            return null;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded)) {
+            return null;
+        }
+
+        $clean = [];
+        if (array_key_exists('top', $decoded) && (is_string($decoded['top']) || is_numeric($decoded['top']))) {
+            $clean['top'] = (string) $decoded['top'];
+        }
+        if (array_key_exists('left', $decoded) && (is_string($decoded['left']) || is_numeric($decoded['left']))) {
+            $clean['left'] = (string) $decoded['left'];
+        }
+        if (array_key_exists('state', $decoded) && is_string($decoded['state'])) {
+            $clean['state'] = mb_substr($decoded['state'], 0, 64);
+        }
+
+        return $clean === [] ? null : $clean;
+    }
+
     public function mount(): void
     {
         $this->authorizeAccess();
@@ -140,19 +169,10 @@ class extends Component {
             'simplex' => ['nullable', 'string', 'max:255'],
             'signal' => ['nullable', 'string', 'max:255'],
             'community' => ['required', 'string', 'max:255'],
+            'github_data' => ['nullable', 'json'],
         ]);
 
-        // Convert github_data string back to array if provided
-        if (!empty($validated['github_data'])) {
-            $decoded = json_decode($validated['github_data'], true);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                $validated['github_data'] = $decoded;
-            } else {
-                $validated['github_data'] = null;
-            }
-        } else {
-            $validated['github_data'] = null;
-        }
+        $validated['github_data'] = $this->sanitizeGithubData($validated['github_data'] ?? null);
 
         $this->meetup->update($validated);
 
