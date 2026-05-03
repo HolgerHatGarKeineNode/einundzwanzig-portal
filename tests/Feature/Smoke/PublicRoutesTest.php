@@ -25,7 +25,6 @@ it('returns a successful response for the listed public route', function (string
 })->with([
     'welcome' => '/welcome',
     'login' => '/login',
-    'register' => '/register',
     'forgot password' => '/forgot-password',
     'meetups index' => '/de/meetups',
     'meetups all' => '/de/all-meetups',
@@ -40,6 +39,10 @@ it('returns a successful response for the listed public route', function (string
 
 it('redirects / to /welcome', function () {
     $this->get('/')->assertRedirect('/welcome');
+});
+
+it('returns 404 for /register because public registration is disabled', function () {
+    $this->get('/register')->assertNotFound();
 });
 
 it('redirects /de/dashboard to login when guest', function () {
