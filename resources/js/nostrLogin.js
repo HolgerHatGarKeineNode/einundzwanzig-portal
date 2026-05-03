@@ -10,15 +10,39 @@ export default () => ({
         this.startTime = Date.now();
     },
 
-    async openNostrLogin() {
-        const livewireComponent = this.$el.closest('[wire\\:id]')?.__livewire;
-        const rawChallenge = livewireComponent?.$wire?.nostrChallenge;
+    async resolveChallenge() {
+        // 1) Prefer the data-attribute rendered straight from Blade. This avoids
+        //    Livewire's $wire proxy entirely and survives any reactive snapshot
+        //    quirks that have surfaced behind HTTP caches on production.
+        const fromDataset = this.$root?.dataset?.nostrChallenge;
+        if (typeof fromDataset === 'string' && fromDataset !== '') {
+            return fromDataset;
+        }
 
-        // Livewire's $wire proxy returns a function (server-action fallback) when
-        // a property is missing from the snapshot. Only accept a non-empty string.
-        const challenge = typeof rawChallenge === 'string' && rawChallenge !== ''
-            ? rawChallenge
-            : null;
+        // 2) Fallback to the Livewire snapshot via $wire.
+        const livewireComponent = this.$el.closest('[wire\\:id]')?.__livewire;
+        const fromWire = livewireComponent?.$wire?.nostrChallenge;
+        if (typeof fromWire === 'string' && fromWire !== '') {
+            return fromWire;
+        }
+
+        // 3) Last resort: ask the server for a freshly issued challenge.
+        if (livewireComponent?.$wire?.requestNostrChallenge) {
+            try {
+                const refreshed = await livewireComponent.$wire.requestNostrChallenge();
+                if (typeof refreshed === 'string' && refreshed !== '') {
+                    return refreshed;
+                }
+            } catch (error) {
+                console.error('requestNostrChallenge failed:', error);
+            }
+        }
+
+        return null;
+    },
+
+    async openNostrLogin() {
+        const challenge = await this.resolveChallenge();
 
         if (!challenge) {
             this.showAuthError('Login challenge missing. Please reload and try again.');

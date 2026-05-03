@@ -61,13 +61,37 @@ class extends Component {
         }
     }
 
+    /**
+     * Generate a fresh Nostr login challenge, persist it to the session, and
+     * return the value. Used both during mount() and as a JS-driven fallback
+     * (see requestNostrChallenge()) when the rendered challenge is missing
+     * on the client — e.g. behind an HTTP cache that stripped the snapshot.
+     */
+    protected function issueNostrChallenge(): string
+    {
+        $challenge = bin2hex(random_bytes(32));
+        $this->nostrChallenge = $challenge;
+        Session::put('nostr_login_challenge', $challenge);
+        Session::put('nostr_login_challenge_expires_at', now()->addSeconds(self::NOSTR_CHALLENGE_TTL_SECONDS)->timestamp);
+
+        return $challenge;
+    }
+
+    /**
+     * Server-side fallback for the JS layer: returns a fresh challenge.
+     * Always issues a new one so a stale rendered snapshot can be recovered
+     * without forcing the user to reload the page.
+     */
+    public function requestNostrChallenge(): string
+    {
+        return $this->issueNostrChallenge();
+    }
+
     public function mount(): void
     {
         $this->currentLangCountry = session('lang_country') ?? 'de-DE';
 
-        $this->nostrChallenge = bin2hex(random_bytes(32));
-        Session::put('nostr_login_challenge', $this->nostrChallenge);
-        Session::put('nostr_login_challenge_expires_at', now()->addSeconds(self::NOSTR_CHALLENGE_TTL_SECONDS)->timestamp);
+        $this->issueNostrChallenge();
 
         // Nur beim ersten Mount initialisieren
         if ($this->k1 === null) {
@@ -306,7 +330,8 @@ class extends Component {
 ?>
 
 <div class="flex min-h-screen" x-data="nostrLogin"
-     x-init="initErrorPolling">
+     x-init="initErrorPolling"
+     data-nostr-challenge="{{ $nostrChallenge ?? '' }}">
     <div class="flex-1 flex justify-center items-center">
         <div class="w-80 max-w-80 space-y-6">
             <!-- Logo -->

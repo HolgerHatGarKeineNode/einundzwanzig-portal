@@ -66,6 +66,23 @@ it('creates a new user and dispatches FetchNostrProfileJob when an unknown pubke
     expect(auth()->id())->toBe($user->id);
 });
 
+it('issues a fresh challenge when requestNostrChallenge is called and the same value is verifiable', function () {
+    $component = Livewire::test('auth.login');
+
+    $initial = Session::get('nostr_login_challenge');
+    expect($initial)->toBeString()->not->toBe('');
+
+    $component->call('requestNostrChallenge');
+
+    $refreshed = Session::get('nostr_login_challenge');
+    expect($refreshed)
+        ->toBeString()
+        ->not->toBe('')
+        ->not->toBe($initial);
+
+    $component->assertSet('nostrChallenge', $refreshed);
+});
+
 it('logs in an existing user without creating a duplicate when their pubkey is already known', function () {
     Queue::fake();
 
