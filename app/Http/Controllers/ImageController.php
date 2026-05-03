@@ -12,6 +12,8 @@ class ImageController extends Controller
 {
     public function __invoke(Request $request, $path)
     {
+        abort_if(str_contains($path, '..'), 404);
+
         $source = new \League\Flysystem\Filesystem(
             new \League\Flysystem\Local\LocalFilesystemAdapter(storage_path('app'))
         );

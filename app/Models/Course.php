@@ -20,11 +20,13 @@ class Course extends Model implements HasMedia
     use InteractsWithMedia;
 
     /**
-     * The attributes that aren't mass assignable.
-     *
-     * @var array
+     * @var array<int, string>
      */
-    protected $guarded = [];
+    protected $fillable = [
+        'name',
+        'lecturer_id',
+        'description',
+    ];
 
     /**
      * The attributes that should be cast to native types.

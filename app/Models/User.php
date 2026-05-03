@@ -24,7 +24,28 @@ class User extends Authenticatable implements CipherSweetEncrypted
     use Notifiable;
     use UsesCipherSweet;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'email_verified_at',
+        'remember_token',
+        'profile_photo_path',
+        'public_key',
+        'is_lecturer',
+        'is_leader',
+        'current_team_id',
+        'current_language',
+        'timezone',
+        'lightning_address',
+        'lnurl',
+        'node_id',
+        'paynym',
+        'nostr',
+        'lnbits',
+        'change',
+        'change_time',
+    ];
 
     /**
      * The attributes that should be hidden for serialization.

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Meetup;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
@@ -17,14 +16,10 @@ class MeetupController extends Controller
 
     public function index(Request $request)
     {
-        if (!is_numeric($request->input('user_id'))) {
-            abort(404);
-        }
+        $user = $request->user();
+        abort_unless($user, 401);
 
-        $myMeetupIds = User::query()
-            ->findOrFail($request->input('user_id'))
-            ?->meetups
-            ->pluck('id');
+        $myMeetupIds = $user->meetups->pluck('id');
 
         return Meetup::query()
             ->select('id', 'name', 'city_id', 'slug')

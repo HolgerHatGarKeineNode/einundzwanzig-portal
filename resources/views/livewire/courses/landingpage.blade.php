@@ -87,7 +87,7 @@ class extends Component {
                             <!-- Lecturer Social Links -->
                             <div class="mt-4 flex flex-wrap gap-2">
                                 @if($course->lecturer->website)
-                                    <flux:button href="{{ $course->lecturer->website }}" target="_blank" variant="ghost"
+                                    <flux:button href="{{ $course->lecturer->website }}" target="_blank" rel="noopener noreferrer" variant="ghost"
                                                  size="xs">
                                         <flux:icon.globe-alt class="w-4 h-4 mr-1"/>
                                         Website
@@ -96,7 +96,7 @@ class extends Component {
 
                                 @if($course->lecturer->twitter_username)
                                     <flux:button href="https://twitter.com/{{ $course->lecturer->twitter_username }}"
-                                                 target="_blank" variant="ghost" size="xs">
+                                                 target="_blank" rel="noopener noreferrer" variant="ghost" size="xs">
                                         <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
                                             <path
                                                 d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
@@ -106,7 +106,7 @@ class extends Component {
                                 @endif
 
                                 @if($course->lecturer->nostr)
-                                    <flux:button href="https://njump.me/{{ $course->lecturer->nostr }}" target="_blank"
+                                    <flux:button href="https://njump.me/{{ $course->lecturer->nostr }}" target="_blank" rel="noopener noreferrer"
                                                  variant="ghost" size="xs">
                                         <flux:icon.bolt class="w-4 h-4 mr-1"/>
                                         Nostr
@@ -173,6 +173,7 @@ class extends Component {
                         <div class="mt-auto pt-4 flex gap-2">
                             <flux:button
                                 target="_blank"
+                                rel="noopener noreferrer"
                                 :href="$event->link"
                                 size="xs"
                                 variant="primary"

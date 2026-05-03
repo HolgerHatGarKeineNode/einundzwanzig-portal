@@ -43,12 +43,12 @@ Route::livewire('/kaninchenbau', FollowTheRabbit::class)
 
 // Generic image handler route that serves images from storage
 Route::get('/img/{path}', ImageController::class)
-    ->where('path', '.*')
+    ->where('path', '[A-Za-z0-9._\-/]+')
     ->name('img');
 
 // Public image handler route for serving public images
 Route::get('/img-public/{path}', ImageController::class)
-    ->where('path', '.*')
+    ->where('path', '[A-Za-z0-9._\-/]+')
     ->name('imgPublic');
 
 // Welcome page route using Volt component

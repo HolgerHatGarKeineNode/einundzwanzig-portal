@@ -23,11 +23,25 @@ class Meetup extends Model implements HasMedia
     use InteractsWithMedia;
 
     /**
-     * The attributes that aren't mass assignable.
-     *
-     * @var array
+     * @var array<int, string>
      */
-    protected $guarded = [];
+    protected $fillable = [
+        'name',
+        'slug',
+        'city_id',
+        'intro',
+        'telegram_link',
+        'webpage',
+        'twitter_username',
+        'matrix_group',
+        'nostr',
+        'nostr_status',
+        'simplex',
+        'signal',
+        'community',
+        'github_data',
+        'visible_on_map',
+    ];
 
     /**
      * The attributes that should be cast to native types.
