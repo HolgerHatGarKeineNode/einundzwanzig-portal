@@ -15,7 +15,7 @@ class extends Component {
     use WithFileUploads;
     use SeoTrait;
 
-    #[Validate('image|max:10240')] // 10MB Max
+    #[Validate('image|mimes:jpeg,png,webp|max:5120|dimensions:max_width=4000,max_height=4000')]
     public $avatar;
 
     public Lecturer $lecturer;
@@ -45,8 +45,17 @@ class extends Component {
     #[Locked]
     public ?string $updated_at = null;
 
+    protected function authorizeAccess(): void
+    {
+        if (!is_null($this->lecturer->created_by) && auth()->id() !== $this->lecturer->created_by) {
+            abort(403);
+        }
+    }
+
     public function mount(): void
     {
+        $this->authorizeAccess();
+
         $this->lecturer->load('media');
 
         $this->name = $this->lecturer->name ?? '';
@@ -70,6 +79,8 @@ class extends Component {
 
     public function updateLecturer(): void
     {
+        $this->authorizeAccess();
+
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('lecturers')->ignore($this->lecturer->id)],
             'subtitle' => ['nullable', 'string'],

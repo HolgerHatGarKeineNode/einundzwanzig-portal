@@ -22,7 +22,22 @@ class SelfHostedService extends Model implements HasMedia
     use HasTags;
     use InteractsWithMedia;
 
-    protected $guarded = [];
+    /**
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'slug',
+        'type',
+        'intro',
+        'url_clearnet',
+        'url_onion',
+        'url_i2p',
+        'url_pkdns',
+        'ip',
+        'contact',
+        'anon',
+    ];
 
     protected $casts = [
         'id' => 'integer',

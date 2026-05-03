@@ -20,9 +20,17 @@ it('mounts lecturers.create when authenticated', function () {
     Livewire::test('lecturers.create')->assertStatus(200);
 });
 
-it('mounts lecturers.edit when authenticated', function () {
+it('mounts lecturers.edit when authenticated as the lecturer creator', function () {
+    $owner = actingAsUser();
+    $lecturer = Lecturer::factory()->create(['created_by' => $owner->id]);
+
+    Livewire::test('lecturers.edit', ['lecturer' => $lecturer])->assertStatus(200);
+});
+
+it('aborts lecturers.edit with 403 when authenticated user is not the creator', function () {
     actingAsUser();
-    Livewire::test('lecturers.edit', ['lecturer' => $this->lecturer])->assertStatus(200);
+
+    Livewire::test('lecturers.edit', ['lecturer' => $this->lecturer])->assertStatus(403);
 });
 
 it('mounts cities.create when authenticated', function () {

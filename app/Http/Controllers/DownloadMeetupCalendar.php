@@ -29,7 +29,17 @@ class DownloadMeetupCalendar extends Controller
             $events = $meetup->meetupEvents()->where('start', '>=', now())->get();
             $image = $meetup->getFirstMediaUrl('logo');
         } elseif ($request->has('my')) {
-            $ids = $request->input('my');
+            $validated = $request->validate([
+                'my' => ['required', 'array'],
+                'my.*' => ['integer'],
+            ]);
+
+            $ids = $validated['my'];
+            if (auth()->check()) {
+                $ownedIds = auth()->user()->meetups->pluck('id')->all();
+                $ids = array_values(array_intersect($ids, $ownedIds));
+            }
+
             $events = MeetupEvent::query()
                 ->with([
                     'meetup',

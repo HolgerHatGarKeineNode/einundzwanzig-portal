@@ -6,10 +6,6 @@ it('mounts the auth.login component', function () {
     Livewire::test('auth.login')->assertStatus(200);
 });
 
-it('mounts the auth.register component', function () {
-    Livewire::test('auth.register')->assertStatus(200);
-});
-
 it('mounts the auth.forgot-password component', function () {
     Livewire::test('auth.forgot-password')->assertStatus(200);
 });

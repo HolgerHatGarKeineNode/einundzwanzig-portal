@@ -133,6 +133,15 @@ class FetchNostrProfileJob implements ShouldQueue
 
     private function downloadAndSaveProfilePhoto(User $user, string $photoUrl): void
     {
+        if (!$this->isPublicHttpUrl($photoUrl)) {
+            \Log::warning('Refused to download Nostr profile photo from disallowed URL', [
+                'user_id' => $user->id,
+                'url' => $photoUrl,
+            ]);
+
+            return;
+        }
+
         try {
             // Download the image from the URL
             $response = Http::timeout(10)->get($photoUrl);
@@ -176,6 +185,41 @@ class FetchNostrProfileJob implements ShouldQueue
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Reject URLs that are not http(s) or that resolve to a private/loopback
+     * address, to prevent SSRF when fetching arbitrary profile photo URLs.
+     */
+    private function isPublicHttpUrl(string $url): bool
+    {
+        $parts = parse_url($url);
+        if ($parts === false || empty($parts['scheme']) || empty($parts['host'])) {
+            return false;
+        }
+
+        if (!in_array(strtolower($parts['scheme']), ['http', 'https'], true)) {
+            return false;
+        }
+
+        $host = $parts['host'];
+        $ips = filter_var($host, FILTER_VALIDATE_IP) ? [$host] : (gethostbynamel($host) ?: []);
+
+        if (empty($ips)) {
+            return false;
+        }
+
+        foreach ($ips as $ip) {
+            if (!filter_var(
+                $ip,
+                FILTER_VALIDATE_IP,
+                FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE,
+            )) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function getImageExtension(?string $contentType, string $url): string

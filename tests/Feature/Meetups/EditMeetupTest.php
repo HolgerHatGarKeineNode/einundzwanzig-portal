@@ -8,36 +8,50 @@ use Livewire\Livewire;
 beforeEach(function () {
     $country = Country::factory()->create(['code' => 'de']);
     $this->city = City::factory()->create(['country_id' => $country->id]);
-    $this->meetup = Meetup::factory()->create(['city_id' => $this->city->id, 'name' => 'Original Name']);
 });
 
 it('updates an existing Meetup name when authenticated', function () {
-    actingAsUser();
+    $owner = actingAsUser();
+    $meetup = Meetup::factory()->create([
+        'city_id' => $this->city->id,
+        'name' => 'Original Name',
+        'created_by' => $owner->id,
+    ]);
 
-    Livewire::test('meetups.edit', ['meetup' => $this->meetup])
+    Livewire::test('meetups.edit', ['meetup' => $meetup])
         ->set('name', 'Updated Name')
         ->set('city_id', $this->city->id)
         ->set('community', 'einundzwanzig')
         ->call('updateMeetup')
         ->assertHasNoErrors();
 
-    expect($this->meetup->refresh()->name)->toBe('Updated Name');
+    expect($meetup->refresh()->name)->toBe('Updated Name');
 });
 
 it('rejects update when name collides with another existing Meetup', function () {
+    $owner = actingAsUser();
+    $meetup = Meetup::factory()->create([
+        'city_id' => $this->city->id,
+        'name' => 'Original Name',
+        'created_by' => $owner->id,
+    ]);
     Meetup::factory()->create(['name' => 'Other Name', 'city_id' => $this->city->id]);
-    actingAsUser();
 
-    Livewire::test('meetups.edit', ['meetup' => $this->meetup])
+    Livewire::test('meetups.edit', ['meetup' => $meetup])
         ->set('name', 'Other Name')
         ->call('updateMeetup')
         ->assertHasErrors(['name' => 'unique']);
 });
 
 it('allows update when name is unchanged (Rule::unique ignores own id)', function () {
-    actingAsUser();
+    $owner = actingAsUser();
+    $meetup = Meetup::factory()->create([
+        'city_id' => $this->city->id,
+        'name' => 'Original Name',
+        'created_by' => $owner->id,
+    ]);
 
-    Livewire::test('meetups.edit', ['meetup' => $this->meetup])
+    Livewire::test('meetups.edit', ['meetup' => $meetup])
         ->set('name', 'Original Name')
         ->set('community', 'einundzwanzig')
         ->call('updateMeetup')
@@ -45,5 +59,7 @@ it('allows update when name is unchanged (Rule::unique ignores own id)', functio
 });
 
 it('redirects guests when accessing meetup-edit', function () {
-    $this->get('/de/meetup-edit/'.$this->meetup->id)->assertRedirect(route('login'));
+    $meetup = Meetup::factory()->create(['city_id' => $this->city->id]);
+
+    $this->get('/de/meetup-edit/'.$meetup->id)->assertRedirect(route('login'));
 });

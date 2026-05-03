@@ -84,7 +84,7 @@ class extends Component {
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     @if($meetup->webpage)
-                        <flux:button href="{{ $meetup->webpage }}" target="_blank" variant="ghost"
+                        <flux:button href="{{ $meetup->webpage }}" target="_blank" rel="noopener noreferrer" variant="ghost"
                                      class="justify-start">
                             <flux:icon.globe-alt class="w-5 h-5 mr-2"/>
                             Webseite
@@ -92,7 +92,7 @@ class extends Component {
                     @endif
 
                     @if($meetup->telegram_link)
-                        <flux:button href="{{ $meetup->telegram_link }}" target="_blank" variant="ghost"
+                        <flux:button href="{{ $meetup->telegram_link }}" target="_blank" rel="noopener noreferrer" variant="ghost"
                                      class="justify-start">
                             <flux:icon.chat-bubble-left-right class="w-5 h-5 mr-2"/>
                             Telegram
@@ -100,7 +100,7 @@ class extends Component {
                     @endif
 
                     @if($meetup->twitter_username)
-                        <flux:button href="https://twitter.com/{{ $meetup->twitter_username }}" target="_blank"
+                        <flux:button href="https://twitter.com/{{ $meetup->twitter_username }}" target="_blank" rel="noopener noreferrer"
                                      variant="ghost" class="justify-start">
                             <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
                                 <path
@@ -111,7 +111,7 @@ class extends Component {
                     @endif
 
                     @if($meetup->matrix_group)
-                        <flux:button href="{{ $meetup->matrix_group }}" target="_blank" variant="ghost"
+                        <flux:button href="{{ $meetup->matrix_group }}" target="_blank" rel="noopener noreferrer" variant="ghost"
                                      class="justify-start">
                             <flux:icon.hashtag class="w-5 h-5 mr-2"/>
                             Matrix
@@ -119,14 +119,14 @@ class extends Component {
                     @endif
 
                     @if($meetup->signal)
-                        <flux:button href="{{ $meetup->signal }}" target="_blank" variant="ghost" class="justify-start">
+                        <flux:button href="{{ $meetup->signal }}" target="_blank" rel="noopener noreferrer" variant="ghost" class="justify-start">
                             <flux:icon.phone class="w-5 h-5 mr-2"/>
                             Signal
                         </flux:button>
                     @endif
 
                     @if($meetup->simplex)
-                        <flux:button href="{{ $meetup->simplex }}" target="_blank" variant="ghost"
+                        <flux:button href="{{ $meetup->simplex }}" target="_blank" rel="noopener noreferrer" variant="ghost"
                                      class="justify-start">
                             <flux:icon.chat-bubble-oval-left-ellipsis class="w-5 h-5 mr-2"/>
                             SimpleX

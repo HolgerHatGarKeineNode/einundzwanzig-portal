@@ -7,9 +7,3 @@ it('renders the login page with QR code and language selector', function () {
         ->assertSee('Bitcoin, not blockchain')
         ->assertNoJavaScriptErrors();
 });
-
-it('renders the registration page', function () {
-    $page = visit('/register');
-
-    $page->assertNoJavaScriptErrors();
-});

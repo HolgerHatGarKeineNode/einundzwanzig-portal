@@ -22,11 +22,24 @@ class Lecturer extends Model implements HasMedia
     use InteractsWithMedia;
 
     /**
-     * The attributes that aren't mass assignable.
-     *
-     * @var array
+     * @var array<int, string>
      */
-    protected $guarded = [];
+    protected $fillable = [
+        'name',
+        'slug',
+        'subtitle',
+        'intro',
+        'description',
+        'active',
+        'website',
+        'twitter_username',
+        'nostr',
+        'lightning_address',
+        'lnurl',
+        'node_id',
+        'paynym',
+        'team_id',
+    ];
 
     /**
      * The attributes that should be cast to native types.

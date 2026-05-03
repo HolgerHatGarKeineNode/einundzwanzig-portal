@@ -2,19 +2,12 @@
 
 use App\Http\Controllers\DownloadMeetupCalendar;
 use App\Http\Controllers\ImageController;
-use App\Jobs\FetchNostrProfileJob;
 use App\Livewire\Helper\FollowTheRabbit;
-use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
 // Redirect root URL to 'welcome' page
 Route::redirect('/', 'welcome');
-
-// Test route that dispatches a job to fetch Nostr profile for user with ID 1426
-Route::get('test', function () {
-    FetchNostrProfileJob::dispatchSync(User::find(1426));
-});
 
 // Error page route that aborts with given HTTP status code (digits only,
 // constrained to valid 4xx/5xx range to avoid TypeErrors from bot scans).
@@ -50,12 +43,12 @@ Route::livewire('/kaninchenbau', FollowTheRabbit::class)
 
 // Generic image handler route that serves images from storage
 Route::get('/img/{path}', ImageController::class)
-    ->where('path', '.*')
+    ->where('path', '[A-Za-z0-9._\-/]+')
     ->name('img');
 
 // Public image handler route for serving public images
 Route::get('/img-public/{path}', ImageController::class)
-    ->where('path', '.*')
+    ->where('path', '[A-Za-z0-9._\-/]+')
     ->name('imgPublic');
 
 // Welcome page route using Volt component

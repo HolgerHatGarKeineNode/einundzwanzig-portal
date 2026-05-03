@@ -11,7 +11,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware([])
+Route::middleware(['throttle:60,1'])
     ->as('api.')
     ->group(function () {
         Route::resource('countries', CountryController::class);
@@ -22,7 +22,9 @@ Route::middleware([])
         Route::resource('cities', CityController::class);
         Route::resource('venues', VenueController::class);
         Route::get('highscores', [HighscoreController::class, 'index'])->name('highscores.index');
-        Route::post('highscores', [HighscoreController::class, 'store'])->name('highscores.store');
+        Route::post('highscores', [HighscoreController::class, 'store'])
+            ->middleware('throttle:10,1')
+            ->name('highscores.store');
         Route::get('nostrplebs', function () {
             return User::query()
                 ->select([

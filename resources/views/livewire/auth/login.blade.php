@@ -13,10 +13,13 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use swentel\nostr\Event\Event as NostrEvent;
+use swentel\nostr\Key\Key as NostrKey;
 
 new #[Layout('components.layouts.auth')]
 class extends Component {
@@ -42,6 +45,11 @@ class extends Component {
 
     public ?string $authError = null;
 
+    #[Locked]
+    public ?string $nostrChallenge = null;
+
+    private const NOSTR_CHALLENGE_TTL_SECONDS = 300;
+
     /**
      * Handle authError property type conversion.
      * Ensure array values from frontend are converted to string or null.
@@ -56,6 +64,10 @@ class extends Component {
     public function mount(): void
     {
         $this->currentLangCountry = session('lang_country') ?? 'de-DE';
+
+        $this->nostrChallenge = bin2hex(random_bytes(32));
+        Session::put('nostr_login_challenge', $this->nostrChallenge);
+        Session::put('nostr_login_challenge_expires_at', now()->addSeconds(self::NOSTR_CHALLENGE_TTL_SECONDS)->timestamp);
 
         // Nur beim ersten Mount initialisieren
         if ($this->k1 === null) {
@@ -80,18 +92,19 @@ class extends Component {
     }
 
     #[On('nostrLoggedIn')]
-    public function loginListener($pubkey): void
+    public function loginListener($signedEvent = null): void
     {
-        $user = \App\Models\User::query()->where('nostr', $pubkey)->first();
+        $npub = $this->verifyNostrLoginEvent($signedEvent);
+
+        $user = User::query()->where('nostr', $npub)->first();
         if (!$user) {
             $fakeName = str()->random(10);
-            // create User
             $user = User::create([
                 'public_key' => null,
                 'is_lecturer' => true,
                 'name' => $fakeName,
-                'email' => str($pubkey)->substr(-12).'@portal.einundzwanzig.space',
-                'nostr' => $pubkey,
+                'email' => str($npub)->substr(-12).'@portal.einundzwanzig.space',
+                'nostr' => $npub,
                 'lnbits' => [
                     'read_key' => null,
                     'url' => null,
@@ -135,6 +148,79 @@ class extends Component {
                 absolute: false),
             navigate: true,
         );
+    }
+
+    /**
+     * Verify a NIP-42-style signed login event and return the user's npub.
+     *
+     * Throws ValidationException on any invalid input — never trust client data.
+     */
+    protected function verifyNostrLoginEvent(mixed $signedEvent): string
+    {
+        if (!is_array($signedEvent)) {
+            throw ValidationException::withMessages(['email' => __('auth.failed')]);
+        }
+
+        $required = ['id', 'pubkey', 'created_at', 'kind', 'tags', 'content', 'sig'];
+        foreach ($required as $key) {
+            if (!array_key_exists($key, $signedEvent)) {
+                throw ValidationException::withMessages(['email' => __('auth.failed')]);
+            }
+        }
+
+        if ((int) $signedEvent['kind'] !== 22242) {
+            throw ValidationException::withMessages(['email' => __('auth.failed')]);
+        }
+
+        $expectedChallenge = Session::get('nostr_login_challenge');
+        $expiresAt = (int) Session::get('nostr_login_challenge_expires_at', 0);
+
+        if (!is_string($expectedChallenge) || $expectedChallenge === '' || $expiresAt < now()->timestamp) {
+            Session::forget(['nostr_login_challenge', 'nostr_login_challenge_expires_at']);
+            throw ValidationException::withMessages(['email' => __('auth.failed')]);
+        }
+
+        $challengeFromEvent = null;
+        foreach ($signedEvent['tags'] as $tag) {
+            if (is_array($tag) && ($tag[0] ?? null) === 'challenge') {
+                $challengeFromEvent = (string) ($tag[1] ?? '');
+                break;
+            }
+        }
+
+        if ($challengeFromEvent === null || !hash_equals($expectedChallenge, $challengeFromEvent)) {
+            throw ValidationException::withMessages(['email' => __('auth.failed')]);
+        }
+
+        $createdAt = (int) $signedEvent['created_at'];
+        if (abs(now()->timestamp - $createdAt) > self::NOSTR_CHALLENGE_TTL_SECONDS) {
+            throw ValidationException::withMessages(['email' => __('auth.failed')]);
+        }
+
+        $eventJson = json_encode([
+            'id' => (string) $signedEvent['id'],
+            'pubkey' => (string) $signedEvent['pubkey'],
+            'created_at' => $createdAt,
+            'kind' => 22242,
+            'tags' => $signedEvent['tags'],
+            'content' => (string) $signedEvent['content'],
+            'sig' => (string) $signedEvent['sig'],
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        $isValid = false;
+        try {
+            $isValid = (new NostrEvent())->verify($eventJson);
+        } catch (\Throwable $e) {
+            $isValid = false;
+        }
+
+        if (!$isValid) {
+            throw ValidationException::withMessages(['email' => __('auth.failed')]);
+        }
+
+        Session::forget(['nostr_login_challenge', 'nostr_login_challenge_expires_at']);
+
+        return (new NostrKey())->convertPublicKeyToBech32((string) $signedEvent['pubkey']);
     }
 
     /**

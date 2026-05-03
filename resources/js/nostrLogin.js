@@ -1,5 +1,3 @@
-import {npubEncode} from "nostr-tools/nip19";
-
 export default () => ({
     pollingInterval: null,
     errorCheckInterval: null,
@@ -13,11 +11,21 @@ export default () => ({
     },
 
     async openNostrLogin() {
-        const pubkey = await window.nostr.getPublicKey();
-        const npub = npubEncode(pubkey);
-        console.log(pubkey);
-        console.log(npub);
-        this.$dispatch('nostrLoggedIn', {pubkey: npub});
+        const livewireComponent = this.$el.closest('[wire\\:id]')?.__livewire;
+        const challenge = livewireComponent?.$wire?.nostrChallenge;
+        if (!challenge) {
+            this.showAuthError('Login challenge missing. Please reload and try again.');
+            return;
+        }
+
+        const signedEvent = await window.nostr.signEvent({
+            kind: 22242,
+            created_at: Math.floor(Date.now() / 1000),
+            tags: [['challenge', challenge]],
+            content: '',
+        });
+
+        this.$dispatch('nostrLoggedIn', {signedEvent});
     },
 
     initErrorPolling() {
