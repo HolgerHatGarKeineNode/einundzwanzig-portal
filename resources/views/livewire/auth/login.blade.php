@@ -339,6 +339,7 @@ class extends Component {
 
 <div class="flex min-h-screen" x-data="nostrLogin"
      x-init="initErrorPolling"
+     x-effect="document.body.style.overflow = nostrLoginInProgress ? 'hidden' : ''"
      data-nostr-challenge="{{ $nostrChallenge ?? '' }}">
     <div class="flex-1 flex justify-center items-center">
         <div class="w-80 max-w-80 space-y-6">
@@ -361,8 +362,18 @@ class extends Component {
             <div class="flex flex-col gap-6">
 
                 <!-- Submit Button -->
-                <flux:button variant="primary" @click="openNostrLogin" icon="cursor-arrow-ripple"
-                             class="w-full cursor-pointer">{{ __('Log in mit Nostr') }}</flux:button>
+                <flux:button variant="primary"
+                             @click="openNostrLogin"
+                             icon="cursor-arrow-ripple"
+                             x-bind:disabled="nostrLoginInProgress"
+                             x-bind:aria-busy="nostrLoginInProgress"
+                             class="w-full cursor-pointer">
+                    <span x-show="!nostrLoginInProgress">{{ __('Log in mit Nostr') }}</span>
+                    <span x-show="nostrLoginInProgress" x-cloak class="inline-flex items-center gap-2">
+                        <flux:icon.arrow-path class="animate-spin size-4" aria-hidden="true"/>
+                        {{ __('Signiere…') }}
+                    </span>
+                </flux:button>
 
                 <div class="text-center text-2xl text-gray-80 dark:text-gray-2000 mt-2">
                     {{ __('Login with lightning ⚡') }}
@@ -433,4 +444,41 @@ class extends Component {
     <template x-if="!nostrLoginInProgress">
         <div wire:poll.4s="checkAuth" wire:key="checkAuth"></div>
     </template>
+
+    {{-- Full-viewport progress overlay. Visible while the wallet-signing
+         round-trip is running. Locks input by capturing pointer events and
+         intercepting Escape/Tab so the user cannot interact with anything
+         underneath until the redirect resolves (or the flow errors out). --}}
+    <div x-show="nostrLoginInProgress"
+         x-cloak
+         x-transition.opacity.duration.150ms
+         role="dialog"
+         aria-modal="true"
+         x-bind:aria-busy="nostrLoginInProgress"
+         aria-labelledby="nostr-login-progress-heading"
+         aria-describedby="nostr-login-progress-description"
+         @keydown.window.escape.prevent.stop
+         @keydown.window.tab.prevent.stop
+         class="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/70 backdrop-blur-md">
+        <div class="mx-4 w-full max-w-md rounded-2xl bg-white px-8 py-10 text-center shadow-2xl ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+            <div class="relative mx-auto flex size-20 items-center justify-center">
+                <span class="absolute inset-0 animate-ping rounded-full bg-amber-500/20" aria-hidden="true"></span>
+                <span class="absolute inset-2 rounded-full bg-amber-500/10" aria-hidden="true"></span>
+                <flux:icon.arrow-path class="relative size-10 animate-spin text-amber-600 dark:text-amber-400"
+                                      aria-hidden="true"/>
+            </div>
+
+            <flux:heading id="nostr-login-progress-heading" size="lg" class="mt-6">
+                {{ __('Signiere mit deinem Nostr-Wallet') }}
+            </flux:heading>
+
+            <flux:text id="nostr-login-progress-description" class="mt-3 text-zinc-600 dark:text-zinc-400">
+                {{ __('Bitte bestätige die Login-Anfrage in deiner Browser-Extension. Du wirst gleich automatisch weitergeleitet.') }}
+            </flux:text>
+
+            <flux:text size="sm" class="mt-6 text-zinc-500 dark:text-zinc-500">
+                {{ __('Schließe dieses Fenster nicht.') }}
+            </flux:text>
+        </div>
+    </div>
 </div>
