@@ -96,7 +96,7 @@ class extends Component {
                         <a href="{{ route('meetups.map', ['country' => $country->code]) }}">
                             <div class="flex items-center gap-3 flex-1">
                                 <img alt="{{ $country->code }}"
-                                     src="{{ asset('vendor/blade-flags/country-'.$country->code.'.svg') }}"
+                                     src="{{ asset('vendor/blade-flags/country-'.strtolower($country->code).'.svg') }}"
                                      width="24" height="12"/>
                                 <div class="flex-1">
                                     <div class="font-medium">{{ $country->name }}</div>

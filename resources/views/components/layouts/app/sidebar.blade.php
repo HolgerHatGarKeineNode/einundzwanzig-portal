@@ -29,7 +29,7 @@
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Meetups') }}</span>
                     <img alt="{{ request()->route('country') }}"
-                         src="{{ asset('vendor/blade-flags/country-'.request()->route('country').'.svg') }}"
+                         src="{{ asset('vendor/blade-flags/country-'.strtolower(request()->route('country')).'.svg') }}"
                          width="24" height="12"/>
                 </div>
             </flux:navlist.item>
@@ -48,7 +48,7 @@
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Karte') }}</span>
                     <img alt="{{ request()->route('country') }}"
-                         src="{{ asset('vendor/blade-flags/country-'.request()->route('country').'.svg') }}"
+                         src="{{ asset('vendor/blade-flags/country-'.strtolower(request()->route('country')).'.svg') }}"
                          width="24" height="12"/>
                 </div>
             </flux:navlist.item>
@@ -81,7 +81,7 @@
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Kurse') }}</span>
                     <img alt="{{ request()->route('country') }}"
-                         src="{{ asset('vendor/blade-flags/country-'.request()->route('country').'.svg') }}"
+                         src="{{ asset('vendor/blade-flags/country-'.strtolower(request()->route('country')).'.svg') }}"
                          width="24" height="12"/>
                 </div>
             </flux:navlist.item>
@@ -92,7 +92,7 @@
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Dozenten') }}</span>
                     <img alt="{{ request()->route('country') }}"
-                         src="{{ asset('vendor/blade-flags/country-'.request()->route('country').'.svg') }}"
+                         src="{{ asset('vendor/blade-flags/country-'.strtolower(request()->route('country')).'.svg') }}"
                          width="24" height="12"/>
                 </div>
             </flux:navlist.item>

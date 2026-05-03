@@ -46,8 +46,8 @@ it('returns 404 for /api/meetup/ical (currently a stub that aborts)', function (
     $this->get('/api/meetup/ical')->assertNotFound();
 });
 
-it('returns 404 for /api/meetup index without user_id (currently aborts on missing param)', function () {
-    $this->getJson('/api/meetup')->assertNotFound();
+it('returns 401 for /api/meetup index when unauthenticated (auth-only after IDOR fix)', function () {
+    $this->getJson('/api/meetup')->assertUnauthorized();
 });
 
 it('returns a successful response for /stream-calendar', function () {

@@ -43,8 +43,8 @@ it('rejects lecturer creation with invalid website URL', function () {
 });
 
 it('updates an existing lecturer', function () {
-    $lecturer = Lecturer::factory()->create(['name' => 'Old Name']);
-    actingAsUser();
+    $owner = actingAsUser();
+    $lecturer = Lecturer::factory()->create(['name' => 'Old Name', 'created_by' => $owner->id]);
 
     Livewire::test('lecturers.edit', ['lecturer' => $lecturer])
         ->set('name', 'New Name')

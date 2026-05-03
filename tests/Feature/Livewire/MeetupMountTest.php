@@ -29,9 +29,20 @@ it('mounts meetups.create when authenticated', function () {
     Livewire::test('meetups.create')->assertStatus(200);
 });
 
-it('mounts meetups.edit when authenticated', function () {
+it('mounts meetups.edit when authenticated as the meetup creator', function () {
+    $owner = actingAsUser();
+    $meetup = Meetup::factory()->create([
+        'city_id' => $this->city->id,
+        'created_by' => $owner->id,
+    ]);
+
+    Livewire::test('meetups.edit', ['meetup' => $meetup])->assertStatus(200);
+});
+
+it('aborts meetups.edit with 403 when authenticated user is not the creator', function () {
     actingAsUser();
-    Livewire::test('meetups.edit', ['meetup' => $this->meetup])->assertStatus(200);
+
+    Livewire::test('meetups.edit', ['meetup' => $this->meetup])->assertStatus(403);
 });
 
 it('mounts meetups.create-edit-events for new event', function () {
