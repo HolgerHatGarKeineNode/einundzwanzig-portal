@@ -12,20 +12,53 @@ export default () => ({
 
     async openNostrLogin() {
         const livewireComponent = this.$el.closest('[wire\\:id]')?.__livewire;
-        const challenge = livewireComponent?.$wire?.nostrChallenge;
+        const rawChallenge = livewireComponent?.$wire?.nostrChallenge;
+
+        // Livewire's $wire proxy returns a function (server-action fallback) when
+        // a property is missing from the snapshot. Only accept a non-empty string.
+        const challenge = typeof rawChallenge === 'string' && rawChallenge !== ''
+            ? rawChallenge
+            : null;
+
         if (!challenge) {
             this.showAuthError('Login challenge missing. Please reload and try again.');
             return;
         }
 
-        const signedEvent = await window.nostr.signEvent({
+        if (!window.nostr || typeof window.nostr.signEvent !== 'function') {
+            this.showAuthError('No Nostr signer found. Please install a Nostr browser extension.');
+            return;
+        }
+
+        const event = {
             kind: 22242,
             created_at: Math.floor(Date.now() / 1000),
             tags: [['challenge', challenge]],
             content: '',
-        });
+        };
 
-        this.$dispatch('nostrLoggedIn', {signedEvent});
+        let signedEvent;
+        try {
+            signedEvent = await window.nostr.signEvent(event);
+        } catch (error) {
+            console.error('Nostr signEvent failed:', error);
+            this.showAuthError('Could not sign Nostr login event. Please try again.');
+            return;
+        }
+
+        // Some Nostr extensions return objects wrapped in extension-specific
+        // proxies (e.g. cloneInto results) that Livewire cannot serialize.
+        // Round-trip through JSON to guarantee a plain, cloneable object.
+        let plainSignedEvent;
+        try {
+            plainSignedEvent = JSON.parse(JSON.stringify(signedEvent));
+        } catch (error) {
+            console.error('Nostr signedEvent serialization failed:', error);
+            this.showAuthError('Wallet returned an incompatible signature. Please try a different wallet.');
+            return;
+        }
+
+        this.$dispatch('nostrLoggedIn', {signedEvent: plainSignedEvent});
     },
 
     initErrorPolling() {
