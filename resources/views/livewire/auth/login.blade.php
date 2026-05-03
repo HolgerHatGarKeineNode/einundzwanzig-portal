@@ -137,13 +137,19 @@ class extends Component {
             ]);
         }
         FetchNostrProfileJob::dispatch($user);
+        // Auth::loginUsingId() already regenerates the session id (see
+        // SessionGuard::updateSession), so an explicit Session::regenerate()
+        // would just rotate the CSRF token a second time. We also avoid
+        // wire:navigate here: it preserves the <meta name="csrf-token"> tag
+        // from the previous page, so any subsequent Livewire action on the
+        // destination would 419 (TokenMismatch). A full-page redirect gives
+        // the browser a fresh document with a fresh token.
         Auth::loginUsingId($user->id);
-        Session::regenerate();
+
         $this->redirectIntended(
             default: route('dashboard',
                 ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()],
                 absolute: false),
-            navigate: true,
         );
 
         return;
