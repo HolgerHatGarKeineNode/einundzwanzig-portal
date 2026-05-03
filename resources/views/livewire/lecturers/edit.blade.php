@@ -45,8 +45,17 @@ class extends Component {
     #[Locked]
     public ?string $updated_at = null;
 
+    protected function authorizeAccess(): void
+    {
+        if (!is_null($this->lecturer->created_by) && auth()->id() !== $this->lecturer->created_by) {
+            abort(403);
+        }
+    }
+
     public function mount(): void
     {
+        $this->authorizeAccess();
+
         $this->lecturer->load('media');
 
         $this->name = $this->lecturer->name ?? '';
@@ -70,6 +79,8 @@ class extends Component {
 
     public function updateLecturer(): void
     {
+        $this->authorizeAccess();
+
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('lecturers')->ignore($this->lecturer->id)],
             'subtitle' => ['nullable', 'string'],

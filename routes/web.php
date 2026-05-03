@@ -2,19 +2,12 @@
 
 use App\Http\Controllers\DownloadMeetupCalendar;
 use App\Http\Controllers\ImageController;
-use App\Jobs\FetchNostrProfileJob;
 use App\Livewire\Helper\FollowTheRabbit;
-use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
 // Redirect root URL to 'welcome' page
 Route::redirect('/', 'welcome');
-
-// Test route that dispatches a job to fetch Nostr profile for user with ID 1426
-Route::get('test', function () {
-    FetchNostrProfileJob::dispatchSync(User::find(1426));
-});
 
 // Error page route that aborts with given HTTP status code (digits only,
 // constrained to valid 4xx/5xx range to avoid TypeErrors from bot scans).

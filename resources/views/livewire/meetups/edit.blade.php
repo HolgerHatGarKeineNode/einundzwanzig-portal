@@ -83,8 +83,17 @@ class extends Component {
         \Flux\Flux::modal('add-city')->close();
     }
 
+    protected function authorizeAccess(): void
+    {
+        if (!is_null($this->meetup->created_by) && auth()->id() !== $this->meetup->created_by) {
+            abort(403);
+        }
+    }
+
     public function mount(): void
     {
+        $this->authorizeAccess();
+
         $this->meetup->load('media');
 
         // Basic Information
@@ -117,6 +126,8 @@ class extends Component {
 
     public function updateMeetup(): void
     {
+        $this->authorizeAccess();
+
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('meetups')->ignore($this->meetup->id)],
             'city_id' => ['nullable', 'exists:cities,id'],
