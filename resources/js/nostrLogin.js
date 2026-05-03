@@ -5,6 +5,11 @@ export default () => ({
     startTime: null,
     pollCount: 0,
     MAX_POLL_COUNT: 30,
+    // Toggled while window.nostr.signEvent is awaiting the wallet so we can
+    // pause wire:poll, preventing it from racing with auth()->login()'s
+    // session-id migration (which would otherwise yield a 419 on the next
+    // round-trip).
+    nostrLoginInProgress: false,
 
     async init() {
         this.startTime = Date.now();
@@ -42,47 +47,66 @@ export default () => ({
     },
 
     async openNostrLogin() {
-        const challenge = await this.resolveChallenge();
+        // Flip the flag immediately so the wire:poll <template x-if> in the
+        // blade unmounts the polling element before we kick off any async
+        // work. Stays true through the dispatch so the subsequent
+        // auth()->login() round-trip is the only request in flight.
+        this.nostrLoginInProgress = true;
 
-        if (!challenge) {
-            this.showAuthError('Login challenge missing. Please reload and try again.');
-            return;
-        }
-
-        if (!window.nostr || typeof window.nostr.signEvent !== 'function') {
-            this.showAuthError('No Nostr signer found. Please install a Nostr browser extension.');
-            return;
-        }
-
-        const event = {
-            kind: 22242,
-            created_at: Math.floor(Date.now() / 1000),
-            tags: [['challenge', challenge]],
-            content: '',
-        };
-
-        let signedEvent;
         try {
-            signedEvent = await window.nostr.signEvent(event);
-        } catch (error) {
-            console.error('Nostr signEvent failed:', error);
-            this.showAuthError('Could not sign Nostr login event. Please try again.');
-            return;
-        }
+            const challenge = await this.resolveChallenge();
 
-        // Some Nostr extensions return objects wrapped in extension-specific
-        // proxies (e.g. cloneInto results) that Livewire cannot serialize.
-        // Round-trip through JSON to guarantee a plain, cloneable object.
-        let plainSignedEvent;
-        try {
-            plainSignedEvent = JSON.parse(JSON.stringify(signedEvent));
-        } catch (error) {
-            console.error('Nostr signedEvent serialization failed:', error);
-            this.showAuthError('Wallet returned an incompatible signature. Please try a different wallet.');
-            return;
-        }
+            if (!challenge) {
+                this.showAuthError('Login challenge missing. Please reload and try again.');
+                this.nostrLoginInProgress = false;
+                return;
+            }
 
-        this.$dispatch('nostrLoggedIn', {signedEvent: plainSignedEvent});
+            if (!window.nostr || typeof window.nostr.signEvent !== 'function') {
+                this.showAuthError('No Nostr signer found. Please install a Nostr browser extension.');
+                this.nostrLoginInProgress = false;
+                return;
+            }
+
+            const event = {
+                kind: 22242,
+                created_at: Math.floor(Date.now() / 1000),
+                tags: [['challenge', challenge]],
+                content: '',
+            };
+
+            let signedEvent;
+            try {
+                signedEvent = await window.nostr.signEvent(event);
+            } catch (error) {
+                console.error('Nostr signEvent failed:', error);
+                this.showAuthError('Could not sign Nostr login event. Please try again.');
+                this.nostrLoginInProgress = false;
+                return;
+            }
+
+            // Some Nostr extensions return objects wrapped in extension-specific
+            // proxies (e.g. cloneInto results) that Livewire cannot serialize.
+            // Round-trip through JSON to guarantee a plain, cloneable object.
+            let plainSignedEvent;
+            try {
+                plainSignedEvent = JSON.parse(JSON.stringify(signedEvent));
+            } catch (error) {
+                console.error('Nostr signedEvent serialization failed:', error);
+                this.showAuthError('Wallet returned an incompatible signature. Please try a different wallet.');
+                this.nostrLoginInProgress = false;
+                return;
+            }
+
+            // Leave nostrLoginInProgress = true: the loginListener will issue
+            // a redirect; resetting the flag here would re-mount wire:poll and
+            // race the redirect.
+            this.$dispatch('nostrLoggedIn', {signedEvent: plainSignedEvent});
+        } catch (error) {
+            console.error('openNostrLogin unexpected error:', error);
+            this.showAuthError('Authentication failed. Please try again.');
+            this.nostrLoginInProgress = false;
+        }
     },
 
     initErrorPolling() {

@@ -291,8 +291,10 @@ class extends Component {
 
         if ($loginKey) {
             $user = User::find($loginKey->user_id);
+            // auth()->login() already migrates the session id (rotates cookie).
+            // An additional Session::regenerate() races with the in-flight
+            // wire:poll request and produces 419s on the next round-trip.
             auth()->login($user);
-            Session::regenerate();
             session([
                 'lang_country' => $this->currentLangCountry,
             ]);
@@ -424,5 +426,11 @@ class extends Component {
         </div>
     </div>
 
-    <div wire:poll.4s="checkAuth" wire:key="checkAuth"></div>
+    {{-- Pause Livewire polling while a Nostr signature round-trip is in
+         flight. Otherwise wire:poll can fire a parallel /livewire/update
+         request that races with auth()->login()'s session migration and
+         lands on an invalidated session id, producing 419 TokenMismatch. --}}
+    <template x-if="!nostrLoginInProgress">
+        <div wire:poll.4s="checkAuth" wire:key="checkAuth"></div>
+    </template>
 </div>
