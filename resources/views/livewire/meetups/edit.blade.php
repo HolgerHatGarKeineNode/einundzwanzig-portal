@@ -146,8 +146,6 @@ class extends Component {
 
     public function updateMeetup(): void
     {
-        $this->authorizeAccess();
-
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('meetups')->ignore($this->meetup->id)],
             'city_id' => ['nullable', 'exists:cities,id'],
