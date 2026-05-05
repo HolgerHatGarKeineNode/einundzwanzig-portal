@@ -83,13 +83,6 @@ class extends Component {
         \Flux\Flux::modal('add-city')->close();
     }
 
-    protected function authorizeAccess(): void
-    {
-        if (!is_null($this->meetup->created_by) && auth()->id() !== $this->meetup->created_by) {
-            abort(403);
-        }
-    }
-
     /**
      * Whitelist the keys allowed inside github_data and coerce types so a
      * tampered payload cannot smuggle arbitrary keys into the stored JSON.
@@ -121,8 +114,6 @@ class extends Component {
 
     public function mount(): void
     {
-        $this->authorizeAccess();
-
         $this->meetup->load('media');
 
         // Basic Information
