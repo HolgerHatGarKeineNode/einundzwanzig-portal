@@ -282,42 +282,35 @@ class extends Component {
         return Str::transliterate(Str::lower($this->email).'|'.request()->ip());
     }
 
-    public function checkAuth()
+    public function checkAuth(): void
     {
         $loginKey = LoginKey::query()
             ->where('k1', $this->k1)
-            ->whereDate('created_at', '>=', now()->subMinutes(5))
+            ->where('created_at', '>=', now()->subMinutes(5))
             ->first();
 
-        if ($loginKey) {
-            // Persist the locale choice before the auth round-trip — once we
-            // redirect, this component is unmounted and $currentLangCountry
-            // would otherwise be lost.
-            session(['lang_country' => $this->currentLangCountry]);
-
-            // Hand off to a dedicated controller via full-page redirect.
-            // Calling auth()->login() inside the wire:poll handler rotates
-            // the session id and CSRF token mid-flight. Any Livewire request
-            // that arrives in the same window — a parallel wire:poll tick,
-            // a sibling component update, a click on the Nostr button —
-            // would then 419 (TokenMismatch). The controller performs the
-            // login on a clean, non-Livewire request before redirecting on
-            // to the dashboard.
-            return $this->redirect(
-                route('auth.ln.complete', ['k1' => $this->k1]),
-                navigate: false,
-            );
+        if (! $loginKey) {
+            return;
         }
 
-        // Check if k1 has expired (older than 5 minutes)
-        $k1CreatedAt = now()->subMinutes(5);
-        if ($this->k1 && now()->diffInMinutes($k1CreatedAt) >= 5) {
-            $this->authError = 'Session expired. Please try again.';
+        // Persist the locale choice before the auth round-trip — once we
+        // navigate, this component is unmounted and $currentLangCountry
+        // would otherwise be lost.
+        session(['lang_country' => $this->currentLangCountry]);
 
-            return true;
-        }
-
-        return true;
+        // Hand the full-page navigation off to the client: returning a
+        // Livewire redirect from inside wire:poll has shown races with
+        // subsequent poll ticks (visible as a "request loop without
+        // redirect" for the user). Dispatching an event lets Alpine pause
+        // wire:poll via lightningLoginInProgress and run a clean
+        // window.location navigation. The dedicated /auth/complete-lightning
+        // controller then performs auth()->login() on a non-Livewire
+        // request, avoiding the session-id/CSRF rotation race that
+        // previously yielded 419s.
+        $this->dispatch(
+            'lightning-login-ready',
+            url: route('auth.ln.complete', ['k1' => $this->k1]),
+        );
     }
 
     /**
@@ -345,7 +338,8 @@ class extends Component {
 
 <div class="flex min-h-screen" x-data="nostrLogin"
      x-init="initErrorPolling"
-     x-effect="document.body.style.overflow = nostrLoginInProgress ? 'hidden' : ''"
+     x-effect="document.body.style.overflow = (nostrLoginInProgress || lightningLoginInProgress) ? 'hidden' : ''"
+     @lightning-login-ready.window="lightningLoginInProgress = true; window.location.href = $event.detail.url"
      data-nostr-challenge="{{ $nostrChallenge ?? '' }}">
     <div class="flex-1 flex justify-center items-center">
         <div class="w-80 max-w-80 space-y-6">
@@ -447,7 +441,12 @@ class extends Component {
          flight. Otherwise wire:poll can fire a parallel /livewire/update
          request that races with auth()->login()'s session migration and
          lands on an invalidated session id, producing 419 TokenMismatch. --}}
-    <template x-if="!nostrLoginInProgress">
+    {{-- Pause Livewire polling while either login flow is mid-flight.
+         Otherwise wire:poll can fire a parallel /livewire/update request
+         that races with the navigation handled in nostrLogin.js for Nostr
+         or the controller-driven Lightning flow, yielding the "request loop
+         without redirect" symptom seen in production. --}}
+    <template x-if="!nostrLoginInProgress && !lightningLoginInProgress">
         <div wire:poll.4s="checkAuth" wire:key="checkAuth"></div>
     </template>
 

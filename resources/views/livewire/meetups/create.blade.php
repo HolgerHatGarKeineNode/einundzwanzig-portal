@@ -83,7 +83,12 @@ class extends Component {
             'visible_on_map' => ['boolean'],
         ]);
 
-        $meetup = Meetup::create($validated);
+        $meetup = Meetup::create($validated + ['created_by' => auth()->id()]);
+
+        // Attach the creator to meetup_user so they appear under "My-Meetups"
+        // and pass the new edit-permission check (which is based on this pivot,
+        // not on created_by).
+        $meetup->users()->attach(auth()->id());
 
         if ($this->logo) {
             $meetup

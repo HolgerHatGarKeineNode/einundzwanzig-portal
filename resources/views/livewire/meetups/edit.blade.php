@@ -84,13 +84,23 @@ class extends Component {
     }
 
     /**
-     * Enforce that only the meetup's creator may load or update this view.
-     * Mirrors services/edit and lecturer-edit. Removing this guard reopens
-     * the IDOR closed by 90835f8 (security: critical fixes / edit authz).
+     * Enforce that only users who have added the meetup to their personal
+     * "My-Meetups" list (the meetup_user pivot) may load or update this view.
+     * Editing is intentionally not restricted to the original `created_by`
+     * — any member of the meetup's user list is treated as an editor.
      */
     protected function authorizeAccess(): void
     {
-        if (! is_null($this->meetup->created_by) && auth()->id() !== $this->meetup->created_by) {
+        if (! auth()->check()) {
+            abort(403);
+        }
+
+        $isMember = $this->meetup
+            ->users()
+            ->whereKey(auth()->id())
+            ->exists();
+
+        if (! $isMember) {
             abort(403);
         }
     }

@@ -4,6 +4,7 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
+use App\Models\User;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -29,20 +30,40 @@ it('mounts meetups.create when authenticated', function () {
     Livewire::test('meetups.create')->assertStatus(200);
 });
 
-it('mounts meetups.edit when authenticated as the meetup creator', function () {
+it('mounts meetups.edit when the authenticated user has added the meetup to My-Meetups', function () {
     $owner = actingAsUser();
-    $meetup = Meetup::factory()->create([
-        'city_id' => $this->city->id,
-        'created_by' => $owner->id,
-    ]);
+    $meetup = Meetup::factory()->create(['city_id' => $this->city->id]);
+    $meetup->users()->attach($owner);
 
     Livewire::test('meetups.edit', ['meetup' => $meetup])->assertStatus(200);
 });
 
-it('aborts meetups.edit with 403 when authenticated user is not the creator', function () {
+it('mounts meetups.edit for a My-Meetups member even if another user created the meetup', function () {
+    $creator = User::factory()->create();
+    $member = actingAsUser();
+    $meetup = Meetup::factory()->create([
+        'city_id' => $this->city->id,
+        'created_by' => $creator->id,
+    ]);
+    $meetup->users()->attach($member);
+
+    Livewire::test('meetups.edit', ['meetup' => $meetup])->assertStatus(200);
+});
+
+it('aborts meetups.edit with 403 when the authenticated user has not added the meetup to My-Meetups', function () {
     actingAsUser();
 
     Livewire::test('meetups.edit', ['meetup' => $this->meetup])->assertStatus(403);
+});
+
+it('aborts meetups.edit with 403 when the authenticated user is only the creator but not in My-Meetups', function () {
+    $creator = actingAsUser();
+    $meetup = Meetup::factory()->create([
+        'city_id' => $this->city->id,
+        'created_by' => $creator->id,
+    ]);
+
+    Livewire::test('meetups.edit', ['meetup' => $meetup])->assertStatus(403);
 });
 
 it('mounts meetups.create-edit-events for new event', function () {

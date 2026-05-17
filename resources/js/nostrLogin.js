@@ -10,6 +10,11 @@ export default () => ({
     // session-id migration (which would otherwise yield a 419 on the next
     // round-trip).
     nostrLoginInProgress: false,
+    // Toggled by the @lightning-login-ready handler in login.blade.php once
+    // the server signals a matching LoginKey. Same purpose: pause wire:poll
+    // before the full-page navigation to /auth/complete-lightning so the
+    // browser does not race the redirect with another poll tick.
+    lightningLoginInProgress: false,
 
     async init() {
         this.startTime = Date.now();

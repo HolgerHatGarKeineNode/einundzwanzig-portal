@@ -10,13 +10,13 @@ beforeEach(function () {
     $this->city = City::factory()->create(['country_id' => $country->id]);
 });
 
-it('updates an existing Meetup name when authenticated', function () {
-    $owner = actingAsUser();
+it('updates an existing Meetup name when the user has it in My-Meetups', function () {
+    $member = actingAsUser();
     $meetup = Meetup::factory()->create([
         'city_id' => $this->city->id,
         'name' => 'Original Name',
-        'created_by' => $owner->id,
     ]);
+    $meetup->users()->attach($member);
 
     Livewire::test('meetups.edit', ['meetup' => $meetup])
         ->set('name', 'Updated Name')
@@ -29,12 +29,12 @@ it('updates an existing Meetup name when authenticated', function () {
 });
 
 it('rejects update when name collides with another existing Meetup', function () {
-    $owner = actingAsUser();
+    $member = actingAsUser();
     $meetup = Meetup::factory()->create([
         'city_id' => $this->city->id,
         'name' => 'Original Name',
-        'created_by' => $owner->id,
     ]);
+    $meetup->users()->attach($member);
     Meetup::factory()->create(['name' => 'Other Name', 'city_id' => $this->city->id]);
 
     Livewire::test('meetups.edit', ['meetup' => $meetup])
@@ -44,18 +44,31 @@ it('rejects update when name collides with another existing Meetup', function ()
 });
 
 it('allows update when name is unchanged (Rule::unique ignores own id)', function () {
-    $owner = actingAsUser();
+    $member = actingAsUser();
     $meetup = Meetup::factory()->create([
         'city_id' => $this->city->id,
         'name' => 'Original Name',
-        'created_by' => $owner->id,
     ]);
+    $meetup->users()->attach($member);
 
     Livewire::test('meetups.edit', ['meetup' => $meetup])
         ->set('name', 'Original Name')
         ->set('community', 'einundzwanzig')
         ->call('updateMeetup')
         ->assertHasNoErrors();
+});
+
+it('blocks updateMeetup when the user has not added the meetup to My-Meetups', function () {
+    actingAsUser();
+    $meetup = Meetup::factory()->create([
+        'city_id' => $this->city->id,
+        'name' => 'Original Name',
+    ]);
+
+    Livewire::test('meetups.edit', ['meetup' => $meetup])
+        ->assertStatus(403);
+
+    expect($meetup->refresh()->name)->toBe('Original Name');
 });
 
 it('redirects guests when accessing meetup-edit', function () {

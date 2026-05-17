@@ -105,7 +105,7 @@ it('returns 404 when the k1 path parameter is malformed', function () {
         ->assertNotFound();
 });
 
-it('redirects auth.login checkAuth() to the completion URL without rotating the session', function () {
+it('dispatches lightning-login-ready from auth.login checkAuth() without rotating the session', function () {
     $user = User::factory()->create();
     $k1 = bin2hex(random_bytes(32));
     LoginKey::factory()->create([
@@ -117,10 +117,41 @@ it('redirects auth.login checkAuth() to the completion URL without rotating the 
     Livewire::test('auth.login')
         ->set('k1', $k1)
         ->call('checkAuth')
-        ->assertRedirect(route('auth.ln.complete', ['k1' => $k1]));
+        ->assertDispatched('lightning-login-ready', url: route('auth.ln.complete', ['k1' => $k1]));
 
     // The poll handler must NOT log the user in directly — that's the
     // controller's job. Logging in here would rotate the session id and
     // CSRF token mid-poll, producing 419s on any in-flight Livewire request.
+    // It also must NOT return a server-side redirect: emitting an event lets
+    // Alpine pause wire:poll via lightningLoginInProgress before navigating,
+    // which avoids the "request loop without redirect" symptom in production.
+    expect(auth()->check())->toBeFalse();
+});
+
+it('does not dispatch lightning-login-ready when no LoginKey exists', function () {
+    $k1 = bin2hex(random_bytes(32));
+
+    Livewire::test('auth.login')
+        ->set('k1', $k1)
+        ->call('checkAuth')
+        ->assertNotDispatched('lightning-login-ready');
+
+    expect(auth()->check())->toBeFalse();
+});
+
+it('does not dispatch lightning-login-ready when the LoginKey is older than 5 minutes', function () {
+    $user = User::factory()->create();
+    $k1 = bin2hex(random_bytes(32));
+    LoginKey::factory()->create([
+        'user_id' => $user->id,
+        'k1' => $k1,
+        'created_at' => now()->subMinutes(10),
+    ]);
+
+    Livewire::test('auth.login')
+        ->set('k1', $k1)
+        ->call('checkAuth')
+        ->assertNotDispatched('lightning-login-ready');
+
     expect(auth()->check())->toBeFalse();
 });
