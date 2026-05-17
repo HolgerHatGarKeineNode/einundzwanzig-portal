@@ -84,6 +84,18 @@ class extends Component {
     }
 
     /**
+     * Enforce that only the meetup's creator may load or update this view.
+     * Mirrors services/edit and lecturer-edit. Removing this guard reopens
+     * the IDOR closed by 90835f8 (security: critical fixes / edit authz).
+     */
+    protected function authorizeAccess(): void
+    {
+        if (! is_null($this->meetup->created_by) && auth()->id() !== $this->meetup->created_by) {
+            abort(403);
+        }
+    }
+
+    /**
      * Whitelist the keys allowed inside github_data and coerce types so a
      * tampered payload cannot smuggle arbitrary keys into the stored JSON.
      */
@@ -114,6 +126,8 @@ class extends Component {
 
     public function mount(): void
     {
+        $this->authorizeAccess();
+
         $this->meetup->load('media');
 
         // Basic Information
@@ -146,6 +160,8 @@ class extends Component {
 
     public function updateMeetup(): void
     {
+        $this->authorizeAccess();
+
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('meetups')->ignore($this->meetup->id)],
             'city_id' => ['nullable', 'exists:cities,id'],
