@@ -87,13 +87,19 @@ class extends Component {
             <div class="space-y-3">
                 @foreach($topMeetups as $meetup)
                     <a href="{{ route('meetups.landingpage', ['meetup' => $meetup, 'country' => $meetup->city->country->code]) }}"
-                       class="flex items-center justify-between gap-3 p-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg transition-colors block">
+                       class="flex items-center justify-between gap-3 p-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg transition-colors block {{ $meetup->is_active ? '' : 'opacity-60' }}">
                         <div class="flex items-center gap-3 flex-1">
                             <flux:avatar
                                 size="sm"
+                                class="{{ $meetup->is_active ? '' : 'grayscale' }}"
                                 src="{{ $meetup->getFirstMedia('logo') ? $meetup->getFirstMediaUrl('logo', 'thumb') : asset('android-chrome-512x512.png') }}"/>
                             <div class="flex-1">
-                                <div class="font-medium">{{ $meetup->name }}</div>
+                                <div class="font-medium flex items-center gap-2">
+                                    <span>{{ $meetup->name }}</span>
+                                    @unless($meetup->is_active)
+                                        <flux:badge color="zinc" size="sm">{{ __('Inaktiv') }}</flux:badge>
+                                    @endunless
+                                </div>
                                 <div class="flex items-center space-x-2">
                                     <div class="text-xs text-zinc-500">{{ $meetup->users_count }} {{ __('User') }}</div>
                                     <img

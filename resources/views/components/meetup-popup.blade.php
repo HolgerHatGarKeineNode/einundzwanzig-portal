@@ -1,7 +1,20 @@
 @props(['meetup', 'url', 'eventUrl' => null])
 
 <div class="w-72">
-    <flux:heading size="lg" class="mb-3">{{ $meetup->name }}</flux:heading>
+    <div class="flex items-center justify-between mb-3 gap-2">
+        <flux:heading size="lg">{{ $meetup->name }}</flux:heading>
+        @if($meetup->is_active)
+            <flux:badge color="green" size="sm">{{ __('Aktiv') }}</flux:badge>
+        @else
+            <flux:badge color="zinc" size="sm">{{ __('Inaktiv') }}</flux:badge>
+        @endif
+    </div>
+
+    @if($meetup->last_event_at)
+        <flux:text class="text-xs text-zinc-500 mb-2">
+            {{ __('Letztes Event') }}: {{ $meetup->last_event_at->asDate() }}
+        </flux:text>
+    @endif
 
     @if($meetup->intro)
         <flux:text class="text-sm text-zinc-600 dark:text-zinc-400 mb-3">

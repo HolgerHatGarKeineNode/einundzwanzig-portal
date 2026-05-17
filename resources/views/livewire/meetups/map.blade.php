@@ -49,6 +49,8 @@ class extends Component {
                     'meetups.nostr',
                     'meetups.simplex',
                     'meetups.signal',
+                    'meetups.is_active',
+                    'meetups.last_event_at',
                 ])
                 ->with(['city:id,country_id,longitude,latitude', 'city.country'])
                 ->when(
@@ -81,6 +83,7 @@ class extends Component {
                         'name' => $meetup->name,
                         'slug' => $meetup->slug,
                         'city' => $meetup->city,
+                        'is_active' => (bool) $meetup->is_active,
                         'popupHtml' => view('components.meetup-popup', [
                             'meetup' => $meetup,
                             'url' => route('meetups.landingpage', [
@@ -105,6 +108,18 @@ class extends Component {
         #map:focus {
             outline: none;
         }
+
+        .meetup-marker-inactive {
+            background: transparent;
+            border: none;
+        }
+
+        .meetup-marker-inactive img {
+            width: 100%;
+            height: 100%;
+            filter: grayscale(100%);
+            opacity: 0.55;
+        }
     </style>
     @php
         $attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
@@ -127,7 +142,7 @@ class extends Component {
                     attribution: '{{ $attribution }}'
                 }).addTo(map);
 
-                // Custom BTC icon
+                // Custom BTC icon (active meetups)
                 const btcIcon = L.icon({
                     iconUrl: '/img/btc_marker.png',
                     iconSize: [32, 32],     // Full size of the image
@@ -136,9 +151,18 @@ class extends Component {
                     shadowUrl: null         // No shadow for simplicity
                 });
 
+                // Inactive meetups: smaller, grayscaled, semi-transparent
+                const btcIconInactive = L.divIcon({
+                    className: 'meetup-marker-inactive',
+                    html: `<img src='/img/btc_marker.png' alt='' />`,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 20],
+                    popupAnchor: [0, -20],
+                });
+
                 this.markers.forEach(marker => {
                     L.marker([marker.city.latitude, marker.city.longitude], {
-                        icon: btcIcon
+                        icon: marker.is_active ? btcIcon : btcIconInactive
                     })
                         .bindPopup(marker.popupHtml)
                         .addTo(map);

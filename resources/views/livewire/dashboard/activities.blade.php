@@ -64,14 +64,18 @@ class extends Component {
                     @if($activity['type'] === 'meetup')
                         @php $meetup = $activity['data']; @endphp
                         <a href="{{ route('meetups.landingpage', ['meetup' => $meetup, 'country' => $meetup->city->country->code]) }}"
-                           class="block p-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+                           class="block p-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg transition-colors {{ $meetup->is_active ? '' : 'opacity-60' }}">
                             <div class="flex items-start gap-3">
                                 <flux:avatar
                                     size="sm"
+                                    class="{{ $meetup->is_active ? '' : 'grayscale' }}"
                                     src="{{ $meetup->getFirstMedia('logo') ? $meetup->getFirstMediaUrl('logo', 'thumb') : asset('android-chrome-512x512.png') }}"/>
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center gap-2">
                                         <flux:badge color="green" size="sm">{{ __('Neues Meetup') }}</flux:badge>
+                                        @unless($meetup->is_active)
+                                            <flux:badge color="zinc" size="sm">{{ __('Inaktiv') }}</flux:badge>
+                                        @endunless
                                         <img
                                             alt="{{ strtolower($meetup->city->country->code) }}"
                                             src="{{ asset('vendor/blade-flags/country-'.strtolower($meetup->city->country->code).'.svg') }}"

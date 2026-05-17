@@ -86,6 +86,40 @@ it('rejects city creation with non-existent country', function () {
         ->assertHasErrors(['country_id' => 'exists']);
 });
 
+it('rejects city creation when latitude and longitude are both zero', function () {
+    actingAsUser();
+
+    Livewire::test('cities.create')
+        ->set('name', 'Null Island')
+        ->set('country_id', $this->country->id)
+        ->set('latitude', 0)
+        ->set('longitude', 0)
+        ->call('createCity')
+        ->assertHasErrors(['latitude']);
+
+    expect(City::query()->where('name', 'Null Island')->exists())->toBeFalse();
+});
+
+it('rejects city update when latitude and longitude are both zero', function () {
+    $city = City::factory()->create([
+        'name' => 'Berlin Test',
+        'country_id' => $this->country->id,
+        'latitude' => 52.52,
+        'longitude' => 13.405,
+    ]);
+    actingAsUser();
+
+    Livewire::test('cities.edit', ['city' => $city])
+        ->set('name', 'Berlin Test')
+        ->set('country_id', $this->country->id)
+        ->set('latitude', 0)
+        ->set('longitude', 0)
+        ->call('updateCity')
+        ->assertHasErrors(['latitude']);
+
+    expect($city->refresh()->latitude)->toEqual(52.52);
+});
+
 it('updates an existing city', function () {
     $city = City::factory()->create(['name' => 'Old Name', 'country_id' => $this->country->id]);
     actingAsUser();

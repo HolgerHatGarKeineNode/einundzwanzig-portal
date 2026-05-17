@@ -152,11 +152,12 @@ class extends Component {
                     <flux:separator class="my-4"/>
                     <div class="space-y-3">
                         @foreach($myMeetups as $meetup)
-                            <div class="flex flex-col sm:flex-row items-start justify-between gap-3">
+                            <div class="flex flex-col sm:flex-row items-start justify-between gap-3 {{ $meetup->is_active ? '' : 'opacity-60' }}">
                                 <div class="flex items-center gap-3 flex-1">
                                     <flux:avatar
                                         :href="route('meetups.landingpage', ['meetup' => $meetup, 'country' => $country])"
                                         size="sm"
+                                        class="{{ $meetup->is_active ? '' : 'grayscale' }}"
                                         src="{{ $meetup->getFirstMedia('logo') ? $meetup->getFirstMediaUrl('logo', 'thumb') : asset('android-chrome-512x512.png') }}"/>
                                     <a href="{{ route('meetups.landingpage', ['meetup' => $meetup, 'country' => $country]) }}">
                                         <div>
@@ -167,6 +168,9 @@ class extends Component {
                                                     src="{{ asset('vendor/blade-flags/country-'.strtolower($meetup->city->country->code).'.svg') }}"
                                                     width="24" height="12"
                                                 />
+                                                @unless($meetup->is_active)
+                                                    <flux:badge color="zinc" size="sm">{{ __('Inaktiv') }}</flux:badge>
+                                                @endunless
                                             </div>
                                             <div class="text-xs text-zinc-500">
                                                 {{ $meetup->city->name }}

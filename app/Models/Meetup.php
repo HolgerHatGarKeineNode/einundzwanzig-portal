@@ -41,6 +41,8 @@ class Meetup extends Model implements HasMedia
         'community',
         'github_data',
         'visible_on_map',
+        'is_active',
+        'last_event_at',
     ];
 
     /**
@@ -53,6 +55,8 @@ class Meetup extends Model implements HasMedia
         'city_id' => 'integer',
         'github_data' => 'json',
         'simplified_geojson' => 'array',
+        'is_active' => 'boolean',
+        'last_event_at' => 'datetime',
     ];
 
     protected static function booted()

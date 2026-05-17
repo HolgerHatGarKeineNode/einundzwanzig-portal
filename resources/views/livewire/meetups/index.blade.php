@@ -73,6 +73,7 @@ class extends Component {
         <flux:table.columns>
             <flux:table.column>{{ __('Name') }}
             </flux:table.column>
+            <flux:table.column>{{ __('Aktivität') }}</flux:table.column>
             <flux:table.column>{{ __('Nächster Termin') }}</flux:table.column>
             <flux:table.column>{{ __('Links') }}</flux:table.column>
             <flux:table.column>{{ __('Aktionen') }}</flux:table.column>
@@ -80,10 +81,10 @@ class extends Component {
 
         <flux:table.rows>
             @foreach ($meetups as $meetup)
-                <flux:table.row :key="$meetup->id">
+                <flux:table.row :key="$meetup->id" :class="$meetup->is_active ? '' : 'opacity-60'">
                     <flux:table.cell variant="strong" class="flex items-center gap-3">
                         <flux:avatar
-                            class="[:where(&)]:size-24 [:where(&)]:text-base" size="xl"
+                            class="[:where(&)]:size-24 [:where(&)]:text-base {{ $meetup->is_active ? '' : 'grayscale' }}" size="xl"
                             :href="route('meetups.landingpage', ['meetup' => $meetup, 'country' => $country])"
                             src="{{ $meetup->getFirstMedia('logo') ? $meetup->getFirstMediaUrl('logo', 'thumb') : asset('android-chrome-512x512.png') }}"/>
                         <div>
@@ -98,6 +99,23 @@ class extends Component {
                                         @endif
                                     </div>
                                 </a>
+                            @endif
+                        </div>
+                    </flux:table.cell>
+
+                    <flux:table.cell>
+                        <div class="flex flex-col gap-1">
+                            @if($meetup->is_active)
+                                <flux:badge color="green" size="sm">{{ __('Aktiv') }}</flux:badge>
+                            @else
+                                <flux:badge color="zinc" size="sm">{{ __('Inaktiv') }}</flux:badge>
+                            @endif
+                            @if($meetup->last_event_at)
+                                <span class="text-xs text-zinc-500">
+                                    {{ __('Letztes Event') }}: {{ $meetup->last_event_at->asDate() }}
+                                </span>
+                            @else
+                                <span class="text-xs text-zinc-500">{{ __('Noch kein Event') }}</span>
                             @endif
                         </div>
                     </flux:table.cell>

@@ -47,9 +47,18 @@ class extends Component {
         $validated = $this->validate([
             'newCityName' => ['required', 'string', 'max:255', 'unique:cities,name'],
             'newCityCountryId' => ['required', 'exists:countries,id'],
-            'newCityLatitude' => ['required', 'numeric'],
-            'newCityLongitude' => ['required', 'numeric'],
+            'newCityLatitude' => ['required', 'numeric', 'between:-90,90'],
+            'newCityLongitude' => ['required', 'numeric', 'between:-180,180'],
+        ], [], [
+            'newCityLatitude' => __('Breitengrad'),
+            'newCityLongitude' => __('Längengrad'),
         ]);
+
+        if ((float) $validated['newCityLatitude'] === 0.0 && (float) $validated['newCityLongitude'] === 0.0) {
+            $this->addError('newCityLatitude', __('Breiten- und Längengrad dürfen nicht beide 0 sein.'));
+
+            return;
+        }
 
         $city = City::create([
             'name' => $validated['newCityName'],

@@ -39,7 +39,16 @@ class extends Component {
             'longitude' => ['required', 'numeric', 'between:-180,180'],
             'population' => ['nullable', 'integer', 'min:0'],
             'population_date' => ['nullable', 'string', 'max:255'],
+        ], [], [
+            'latitude' => __('Breitengrad'),
+            'longitude' => __('Längengrad'),
         ]);
+
+        if ((float) $validated['latitude'] === 0.0 && (float) $validated['longitude'] === 0.0) {
+            $this->addError('latitude', __('Breiten- und Längengrad dürfen nicht beide 0 sein.'));
+
+            return;
+        }
 
         $validated['slug'] = str($validated['name'])->slug();
 

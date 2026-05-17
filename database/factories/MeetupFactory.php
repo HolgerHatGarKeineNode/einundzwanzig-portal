@@ -38,6 +38,24 @@ class MeetupFactory extends Factory
             'nostr' => NostrHelper::randomNpub(),
             'nostr_status' => NostrHelper::fakeNostrEventStatus(),
             'created_by' => User::factory(),
+            'is_active' => false,
+            'last_event_at' => null,
         ];
+    }
+
+    public function active(): static
+    {
+        return $this->state(fn (array $attrs) => [
+            'is_active' => true,
+            'last_event_at' => now()->subDays(30),
+        ]);
+    }
+
+    public function inactive(): static
+    {
+        return $this->state(fn (array $attrs) => [
+            'is_active' => false,
+            'last_event_at' => now()->subYears(2),
+        ]);
     }
 }
