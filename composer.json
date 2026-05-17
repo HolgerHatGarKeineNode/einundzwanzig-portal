@@ -11,13 +11,13 @@
     "require": {
         "php": "^8.3",
         "akuechler/laravel-geoly": "^1.0",
-        "druc/laravel-langscanner": "^2.3",
+        "druc/laravel-langscanner": "dev-master",
         "ezadr/lnurl-php": "^1.0",
-        "laravel/framework": "^12.0",
+        "laravel/framework": "^13.0",
         "laravel/horizon": "^5.40",
         "laravel/nightwatch": "^1.18",
         "laravel/sanctum": "^4.0",
-        "laravel/tinker": "^2.10.1",
+        "laravel/tinker": "^3.0",
         "league/glide": "^3.0",
         "livewire/flux": "^2.2",
         "livewire/flux-pro": "^2.2",
@@ -33,10 +33,10 @@
         "spatie/laravel-markdown": "^2.7",
         "spatie/laravel-medialibrary": "^11.13",
         "spatie/laravel-model-status": "^1.18",
-        "spatie/laravel-permission": "^6.20",
-        "spatie/laravel-sluggable": "^3.7",
+        "spatie/laravel-permission": "^7.0",
+        "spatie/laravel-sluggable": "^4.0",
         "spatie/laravel-tags": "^4.10",
-        "staudenmeir/eloquent-has-many-deep": "^1.21",
+        "staudenmeir/eloquent-has-many-deep": "^1.22",
         "stefro/laravel-lang-country": "^4.1",
         "swentel/nostr-php": "^1.9",
         "woodsandwalker/laravel-countries": "^1.5"
@@ -45,7 +45,7 @@
         "fakerphp/faker": "^1.23",
         "laravel-lang/lang": "^15.26",
         "laravel-lang/starter-kits": "^1.3",
-        "laravel/boost": "^1.8",
+        "laravel/boost": "^2.0",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.18",
         "mockery/mockery": "^1.6",
@@ -132,6 +132,74 @@
         "flux-pro": {
             "type": "composer",
             "url": "https://composer.fluxui.dev"
+        },
+        "lwwcas-countries-l13": {
+            "type": "package",
+            "package": {
+                "name": "lwwcas/laravel-countries",
+                "version": "4.12.0.2",
+                "type": "library",
+                "license": "MIT",
+                "source": {
+                    "type": "git",
+                    "url": "https://github.com/Lwwcas/laravel-countries.git",
+                    "reference": "85b6bcaabbf4987f70459af7896c4db19bdb4fe2"
+                },
+                "require": {
+                    "php": "^8.2|^8.3|^8.4|^8.5",
+                    "laravel/framework": "^10.48|^11.31|^12.0|^13.0",
+                    "astrotomic/laravel-translatable": "^11.8",
+                    "spatie/laravel-package-tools": "^1.92"
+                },
+                "autoload": {
+                    "psr-4": {
+                        "Lwwcas\\LaravelCountries\\": "src/",
+                        "Lwwcas\\LaravelCountries\\Config\\": "src/config/",
+                        "Lwwcas\\LaravelCountries\\Database\\migrations\\": "src/database/migrations/"
+                    }
+                },
+                "extra": {
+                    "laravel": {
+                        "providers": [
+                            "Lwwcas\\LaravelCountries\\Providers\\WCountriesServiceProvider"
+                        ],
+                        "aliases": {
+                            "WCountries": "Lwwcas\\LaravelCountries\\Facades\\WCountries"
+                        }
+                    }
+                }
+            }
+        },
+        "woodsandwalker-countries-l13": {
+            "type": "package",
+            "package": {
+                "name": "woodsandwalker/laravel-countries",
+                "version": "1.5.0",
+                "type": "library",
+                "license": "MIT",
+                "source": {
+                    "type": "git",
+                    "url": "https://github.com/woodsandwalker/laravel-countries.git",
+                    "reference": "4485a86ad1afe2a57bf7382e0c1a94a4f563b6f7"
+                },
+                "require": {
+                    "php": "^8.0|^8.1|^8.2|^8.3|^8.4|^8.5",
+                    "illuminate/database": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
+                    "calebporzio/sushi": "^2.5"
+                },
+                "autoload": {
+                    "psr-4": {
+                        "WW\\Countries\\": "src/"
+                    }
+                },
+                "extra": {
+                    "laravel": {
+                        "providers": [
+                            "WW\\Countries\\LaravelCountriesServiceProvider"
+                        ]
+                    }
+                }
+            }
         }
     }
 }

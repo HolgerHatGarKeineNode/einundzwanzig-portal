@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\LnurlAuthController;
 use App\Livewire\Actions\Logout;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,10 @@ Route::middleware('guest')
 
         Route::livewire('/reset-password/{token}', 'auth.reset-password')
             ->name('password.reset');
+
+        Route::get('/auth/complete-lightning/{k1}', [LnurlAuthController::class, 'completeLogin'])
+            ->where('k1', '[a-f0-9]{64}')
+            ->name('auth.ln.complete');
     });
 
 Route::middleware('auth')

@@ -2,6 +2,7 @@
 
 use App\Models\LoginKey;
 use App\Models\User;
+use Livewire\Livewire;
 
 it('returns invalid request parameters when k1 is missing', function () {
     $this->get('/api/lnurl-auth-callback')
@@ -57,4 +58,69 @@ it('returns a session-expired error when no LoginKey exists and elapsed_seconds 
     ])
         ->assertSuccessful()
         ->assertJson(['error' => 'Session expired. Please try again.']);
+});
+
+it('completes a Lightning login and redirects to the dashboard when a recent LoginKey exists', function () {
+    $user = User::factory()->create();
+    $k1 = bin2hex(random_bytes(32));
+    LoginKey::factory()->create([
+        'user_id' => $user->id,
+        'k1' => $k1,
+        'created_at' => now(),
+    ]);
+
+    $response = $this->withSession(['lang_country' => 'de-DE', 'locale' => 'de'])
+        ->get(route('auth.ln.complete', ['k1' => $k1]));
+
+    $response->assertRedirect(route('dashboard', ['country' => 'de']));
+    $this->assertAuthenticatedAs($user);
+});
+
+it('redirects to login when the LoginKey is older than 5 minutes', function () {
+    $user = User::factory()->create();
+    $k1 = bin2hex(random_bytes(32));
+    LoginKey::factory()->create([
+        'user_id' => $user->id,
+        'k1' => $k1,
+        'created_at' => now()->subMinutes(10),
+    ]);
+
+    $this->get(route('auth.ln.complete', ['k1' => $k1]))
+        ->assertRedirect(route('login'));
+
+    $this->assertGuest();
+});
+
+it('redirects to login when no LoginKey exists for the k1', function () {
+    $k1 = bin2hex(random_bytes(32));
+
+    $this->get(route('auth.ln.complete', ['k1' => $k1]))
+        ->assertRedirect(route('login'));
+
+    $this->assertGuest();
+});
+
+it('returns 404 when the k1 path parameter is malformed', function () {
+    $this->get('/auth/complete-lightning/not-hex-string-not-64-chars')
+        ->assertNotFound();
+});
+
+it('redirects auth.login checkAuth() to the completion URL without rotating the session', function () {
+    $user = User::factory()->create();
+    $k1 = bin2hex(random_bytes(32));
+    LoginKey::factory()->create([
+        'user_id' => $user->id,
+        'k1' => $k1,
+        'created_at' => now(),
+    ]);
+
+    Livewire::test('auth.login')
+        ->set('k1', $k1)
+        ->call('checkAuth')
+        ->assertRedirect(route('auth.ln.complete', ['k1' => $k1]));
+
+    // The poll handler must NOT log the user in directly — that's the
+    // controller's job. Logging in here would rotate the session id and
+    // CSRF token mid-poll, producing 419s on any in-flight Livewire request.
+    expect(auth()->check())->toBeFalse();
 });

@@ -8,7 +8,9 @@ use App\Models\LoginKey;
 use App\Models\User;
 use eza\lnurl;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
@@ -171,6 +173,56 @@ final class LnurlAuthController extends Controller
             'status' => 'ERROR',
             'reason' => $reason,
         ], 400);
+    }
+
+    /**
+     * Complete a Lightning login after the wallet callback has stored a
+     * matching LoginKey row. Called as a full-page GET from the login
+     * component once wire:poll detects readiness.
+     *
+     * The wire:poll handler itself must not call Auth::login(), since that
+     * rotates the session id and CSRF token mid-flight — any parallel
+     * Livewire request in the same window (a sibling component, a stray
+     * poll tick) would then 419. By handing off to this controller, the
+     * session migration happens during a clean, non-Livewire request.
+     */
+    public function completeLogin(string $k1): RedirectResponse
+    {
+        if (! ctype_xdigit($k1) || strlen($k1) !== 64) {
+            return redirect()->route('login');
+        }
+
+        $loginKey = LoginKey::query()
+            ->where('k1', $k1)
+            ->where('created_at', '>=', now()->subMinutes(5))
+            ->first();
+
+        if (! $loginKey) {
+            return redirect()->route('login');
+        }
+
+        $user = User::find($loginKey->user_id);
+
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        // Auth::login() calls Session::migrate(destroy: true) internally,
+        // which wipes the previous session payload. Capture lang_country
+        // before the login and restore it on the fresh session so the
+        // dashboard URL keeps the user's chosen locale.
+        $langCountry = session('lang_country', config('app.domain_country'));
+
+        Auth::login($user);
+
+        session(['lang_country' => $langCountry]);
+
+        $country = str($langCountry)
+            ->after('-')
+            ->lower()
+            ->value();
+
+        return redirect()->route('dashboard', ['country' => $country]);
     }
 
     /**

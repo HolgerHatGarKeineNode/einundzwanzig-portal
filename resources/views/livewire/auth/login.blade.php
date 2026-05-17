@@ -290,17 +290,23 @@ class extends Component {
             ->first();
 
         if ($loginKey) {
-            $user = User::find($loginKey->user_id);
-            // auth()->login() already migrates the session id (rotates cookie).
-            // An additional Session::regenerate() races with the in-flight
-            // wire:poll request and produces 419s on the next round-trip.
-            auth()->login($user);
-            session([
-                'lang_country' => $this->currentLangCountry,
-            ]);
+            // Persist the locale choice before the auth round-trip — once we
+            // redirect, this component is unmounted and $currentLangCountry
+            // would otherwise be lost.
+            session(['lang_country' => $this->currentLangCountry]);
 
-            return to_route('dashboard',
-                ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()]);
+            // Hand off to a dedicated controller via full-page redirect.
+            // Calling auth()->login() inside the wire:poll handler rotates
+            // the session id and CSRF token mid-flight. Any Livewire request
+            // that arrives in the same window — a parallel wire:poll tick,
+            // a sibling component update, a click on the Nostr button —
+            // would then 419 (TokenMismatch). The controller performs the
+            // login on a clean, non-Livewire request before redirecting on
+            // to the dashboard.
+            return $this->redirect(
+                route('auth.ln.complete', ['k1' => $this->k1]),
+                navigate: false,
+            );
         }
 
         // Check if k1 has expired (older than 5 minutes)
