@@ -49,13 +49,28 @@ it('keeps a meetup active when it only has a future event', function () {
         ->and($meetup->last_event_at)->toBeNull();
 });
 
-it('keeps a meetup active when a recurring event has no end date', function () {
-    $meetup = Meetup::factory()->create(['is_active' => false, 'last_event_at' => null]);
+it('marks a meetup as inactive when a recurring event has no end date but is older than a year', function () {
+    $meetup = Meetup::factory()->create(['is_active' => true, 'last_event_at' => now()]);
     MeetupEvent::factory()->create([
         'meetup_id' => $meetup->id,
         'start' => now()->subYears(3),
         'recurrence_type' => RecurrenceType::Monthly,
         'recurrence_end_date' => null,
+    ]);
+
+    $this->artisan('meetups:update-activity')->assertSuccessful();
+
+    $meetup->refresh();
+    expect($meetup->is_active)->toBeFalse();
+});
+
+it('keeps a meetup active when a recurring event has an end date in the future', function () {
+    $meetup = Meetup::factory()->create(['is_active' => false, 'last_event_at' => null]);
+    MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+        'start' => now()->subYears(3),
+        'recurrence_type' => RecurrenceType::Monthly,
+        'recurrence_end_date' => now()->addMonths(6),
     ]);
 
     $this->artisan('meetups:update-activity')->assertSuccessful();
@@ -72,6 +87,36 @@ it('marks a meetup as inactive when no events exist at all', function () {
     $meetup->refresh();
     expect($meetup->is_active)->toBeFalse()
         ->and($meetup->last_event_at)->toBeNull();
+});
+
+it('flips a meetup from inactive to active immediately when a future event is created', function () {
+    $meetup = Meetup::factory()->create(['is_active' => false, 'last_event_at' => null]);
+
+    MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+        'start' => now()->addDays(7),
+        'recurrence_type' => null,
+    ]);
+
+    $meetup->refresh();
+    expect($meetup->is_active)->toBeTrue();
+});
+
+it('flips a meetup back to inactive when its only future event is deleted', function () {
+    $meetup = Meetup::factory()->create(['is_active' => false, 'last_event_at' => null]);
+    $event = MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+        'start' => now()->addDays(7),
+        'recurrence_type' => null,
+    ]);
+
+    $meetup->refresh();
+    expect($meetup->is_active)->toBeTrue();
+
+    $event->delete();
+
+    $meetup->refresh();
+    expect($meetup->is_active)->toBeFalse();
 });
 
 it('marks a meetup as inactive when a recurring event has ended more than a year ago', function () {

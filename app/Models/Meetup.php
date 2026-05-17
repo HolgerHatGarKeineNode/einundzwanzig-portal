@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
@@ -165,5 +166,38 @@ class Meetup extends Model implements HasMedia
     public function meetupEvents(): HasMany
     {
         return $this->hasMany(MeetupEvent::class);
+    }
+
+    public function recalculateActivity(): void
+    {
+        $threshold = now()->subYear();
+
+        $lastEventAt = MeetupEvent::query()
+            ->where('meetup_id', $this->id)
+            ->where('start', '<=', now())
+            ->max('start');
+
+        $lastEventAt = $lastEventAt ? Date::parse($lastEventAt) : null;
+
+        $hasFutureEvent = MeetupEvent::query()
+            ->where('meetup_id', $this->id)
+            ->where('start', '>', now())
+            ->exists();
+
+        $hasActiveRecurrence = MeetupEvent::query()
+            ->where('meetup_id', $this->id)
+            ->whereNotNull('recurrence_type')
+            ->whereNotNull('recurrence_end_date')
+            ->where('recurrence_end_date', '>=', now())
+            ->exists();
+
+        $isActive = ($lastEventAt && $lastEventAt->greaterThanOrEqualTo($threshold))
+            || $hasFutureEvent
+            || $hasActiveRecurrence;
+
+        $this->forceFill([
+            'is_active' => $isActive,
+            'last_event_at' => $lastEventAt,
+        ])->saveQuietly();
     }
 }
