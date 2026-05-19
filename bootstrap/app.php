@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\DomainMiddleware;
 use App\Http\Middleware\SetTimezone;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -52,15 +53,31 @@ return Application::configure(basePath: dirname(__DIR__))
             return false;
         };
 
-        $exceptions->report(function (Throwable $e) use ($isStaleLivewireAsset) {
+        $isStaleCompiledView = function (Throwable $e): bool {
+            if (! $e instanceof FileNotFoundException) {
+                return false;
+            }
+
+            return str_contains($e->getMessage(), '/storage/framework/views/');
+        };
+
+        $exceptions->report(function (Throwable $e) use ($isStaleLivewireAsset, $isStaleCompiledView) {
             if ($isStaleLivewireAsset($e, request())) {
+                return false;
+            }
+
+            if ($isStaleCompiledView($e)) {
                 return false;
             }
         });
 
-        $exceptions->render(function (Throwable $e, Request $request) use ($isStaleLivewireAsset) {
+        $exceptions->render(function (Throwable $e, Request $request) use ($isStaleLivewireAsset, $isStaleCompiledView) {
             if ($isStaleLivewireAsset($e, $request)) {
                 return response('', 404);
+            }
+
+            if ($isStaleCompiledView($e)) {
+                return response('', 503)->header('Retry-After', '5');
             }
 
             return null;
