@@ -25,12 +25,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->render(function (Throwable $e, Request $request) {
-            if (! preg_match('#^livewire-[a-f0-9]+/(?:css|js)/#', $request->path())) {
-                return null;
+        $isStaleLivewireAsset = function (Throwable $e, ?Request $request): bool {
+            if (! $request instanceof Request) {
+                return false;
             }
 
-            $message = $e->getMessage();
+            if (! preg_match('#^livewire-[a-f0-9]+/(?:css|js)/#', $request->path())) {
+                return false;
+            }
 
             $stalePatterns = [
                 'does not have a style source',
@@ -42,9 +44,23 @@ return Application::configure(basePath: dirname(__DIR__))
             ];
 
             foreach ($stalePatterns as $pattern) {
-                if (str_contains($message, $pattern)) {
-                    return response('', 404);
+                if (str_contains($e->getMessage(), $pattern)) {
+                    return true;
                 }
+            }
+
+            return false;
+        };
+
+        $exceptions->report(function (Throwable $e) use ($isStaleLivewireAsset) {
+            if ($isStaleLivewireAsset($e, request())) {
+                return false;
+            }
+        });
+
+        $exceptions->render(function (Throwable $e, Request $request) use ($isStaleLivewireAsset) {
+            if ($isStaleLivewireAsset($e, $request)) {
+                return response('', 404);
             }
 
             return null;

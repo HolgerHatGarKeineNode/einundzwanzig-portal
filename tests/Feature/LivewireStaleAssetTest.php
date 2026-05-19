@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Log;
 use Livewire\Mechanisms\HandleRequests\EndpointResolver;
 
 it('returns 404 for stale livewire css module urls instead of 500', function () {
@@ -8,6 +9,19 @@ it('returns 404 for stale livewire css module urls instead of 500', function () 
     $response = $this->get($prefix.'/css/meetups--landingpage.css?v=1502173559');
 
     $response->assertNotFound();
+});
+
+it('does not report stale livewire css module exceptions to the logs', function () {
+    Log::spy();
+
+    $prefix = EndpointResolver::prefix();
+
+    $this->get($prefix.'/css/meetups--landingpage.css?v=1502173559')
+        ->assertNotFound();
+
+    Log::shouldNotHaveReceived('error');
+    Log::shouldNotHaveReceived('critical');
+    Log::shouldNotHaveReceived('emergency');
 });
 
 it('returns 404 for stale livewire global css module urls', function () {
