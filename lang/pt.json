@@ -657,5 +657,18 @@
     "Öffnen/RSVP": "Abrir/RSVP",
     "Über den Dozenten": "Sobre o professor",
     "Über den Kurs": "Sobre o curso",
-    "Über uns": "Sobre nós"
+    "Über uns": "Sobre nós",
+    "Hauptnavigation": "Navegação principal",
+    "Menü schließen": "Fechar menu",
+    "Zur Startseite": "Para a página inicial",
+    "Benutzermenü": "Menu do utilizador",
+    "Menü öffnen": "Abrir menu",
+    "Letztes Event": "Último evento",
+    "Signiere…": "A assinar…",
+    "Signiere mit deinem Nostr-Wallet": "Assina com a tua Nostr-Wallet",
+    "Bitte bestätige die Login-Anfrage in deiner Browser-Extension. Du wirst gleich automatisch weitergeleitet.": "Por favor, confirma o pedido de início de sessão na tua extensão do navegador. Serás redirecionado automaticamente em breve.",
+    "Schließe dieses Fenster nicht.": "Não feches esta janela.",
+    "Breiten- und Längengrad dürfen nicht beide 0 sein.": "A latitude e a longitude não podem ser ambas 0.",
+    "Aktivität": "Atividade",
+    "Noch kein Event": "Ainda sem eventos"
 }

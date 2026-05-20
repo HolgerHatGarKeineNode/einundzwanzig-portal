@@ -655,5 +655,18 @@
     "Öffnen/RSVP": "Otwórz/RSVP",
     "Über den Dozenten": "O wykładowcy",
     "Über den Kurs": "O kursie",
-    "Über uns": "O nas"
+    "Über uns": "O nas",
+    "Hauptnavigation": "Nawigacja główna",
+    "Menü schließen": "Zamknij menu",
+    "Zur Startseite": "Do strony głównej",
+    "Benutzermenü": "Menu użytkownika",
+    "Menü öffnen": "Otwórz menu",
+    "Letztes Event": "Ostatnie wydarzenie",
+    "Signiere…": "Podpisywanie…",
+    "Signiere mit deinem Nostr-Wallet": "Podpisz swoim portfelem Nostr",
+    "Bitte bestätige die Login-Anfrage in deiner Browser-Extension. Du wirst gleich automatisch weitergeleitet.": "Potwierdź żądanie logowania w rozszerzeniu przeglądarki. Za chwilę zostaniesz automatycznie przekierowany.",
+    "Schließe dieses Fenster nicht.": "Nie zamykaj tego okna.",
+    "Breiten- und Längengrad dürfen nicht beide 0 sein.": "Szerokość i długość geograficzna nie mogą być jednocześnie równe 0.",
+    "Aktivität": "Aktywność",
+    "Noch kein Event": "Brak wydarzeń"
 }

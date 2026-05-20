@@ -6,15 +6,7 @@
         ->map(fn($file) => pathinfo($file, PATHINFO_FILENAME))
         ->toArray();
 
-    $allLanguages = [
-        'de' => ['name' => 'Deutsch', 'countries' => ['de-DE', 'de-AT', 'de-CH']],
-        'en' => ['name' => 'English', 'countries' => ['en-GB', 'en-US', 'en-AU', 'en-CA']],
-        'es' => ['name' => 'Español', 'countries' => ['es-ES', 'es-CL', 'es-CO']],
-        'hu' => ['name' => 'Magyar', 'countries' => ['hu-HU']],
-        'nl' => ['name' => 'Nederlands', 'countries' => ['nl-NL', 'nl-BE']],
-        'pt' => ['name' => 'Português', 'countries' => ['pt-PT']],
-        'pl' => ['name' => 'Polski', 'countries' => ['pl-PL']],
-    ];
+    $allLanguages = config('lang-country.languages');
 
     // Filter languages based on available JSON files and allowed languages
     $languages = array_filter($allLanguages, function($data, $key) use ($availableLanguages) {

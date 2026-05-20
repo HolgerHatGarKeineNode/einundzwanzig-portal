@@ -659,5 +659,18 @@
     "Öffnen/RSVP": "Openen/RSVP",
     "Über den Dozenten": "Over de docent",
     "Über den Kurs": "Over de cursus",
-    "Über uns": "Over ons"
+    "Über uns": "Over ons",
+    "Hauptnavigation": "Hoofdnavigatie",
+    "Menü schließen": "Menu sluiten",
+    "Zur Startseite": "Naar startpagina",
+    "Benutzermenü": "Gebruikersmenu",
+    "Menü öffnen": "Menu openen",
+    "Letztes Event": "Laatste evenement",
+    "Signiere…": "Ondertekenen…",
+    "Signiere mit deinem Nostr-Wallet": "Onderteken met je Nostr-wallet",
+    "Bitte bestätige die Login-Anfrage in deiner Browser-Extension. Du wirst gleich automatisch weitergeleitet.": "Bevestig het inlogverzoek in je browser-extensie. Je wordt zo automatisch doorgestuurd.",
+    "Schließe dieses Fenster nicht.": "Sluit dit venster niet.",
+    "Breiten- und Längengrad dürfen nicht beide 0 sein.": "Breedte- en lengtegraad mogen niet beide 0 zijn.",
+    "Aktivität": "Activiteit",
+    "Noch kein Event": "Nog geen evenement"
 }

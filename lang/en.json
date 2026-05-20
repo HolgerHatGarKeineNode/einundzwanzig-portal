@@ -664,5 +664,14 @@
     "Öffnen/RSVP": "Open/RSVP",
     "Über den Dozenten": "About the lecturer",
     "Über den Kurs": "About the course",
-    "Über uns": "About us"
+    "Über uns": "About us",
+    "Hauptnavigation": "Main navigation",
+    "Menü schließen": "Close menu",
+    "Zur Startseite": "To home page",
+    "Benutzermenü": "User menu",
+    "Menü öffnen": "Open menu",
+    "Letztes Event": "Last event",
+    "Breiten- und Längengrad dürfen nicht beide 0 sein.": "Latitude and longitude must not both be 0.",
+    "Aktivität": "Activity",
+    "Noch kein Event": "No event yet"
 }

@@ -11,7 +11,7 @@
     sticky
     stashable
     aria-label="{{ __('Hauptnavigation') }}"
-    class="border-e border-zinc-200 bg-zinc-50 pb-[max(1rem,calc(env(safe-area-inset-bottom)+1rem))] dark:border-zinc-700 dark:bg-zinc-900"
+    class="w-72 border-e border-zinc-200 bg-zinc-50 pb-[max(1rem,calc(env(safe-area-inset-bottom)+1rem))] dark:border-zinc-700 dark:bg-zinc-900"
 >
     <flux:sidebar.toggle class="lg:hidden" icon="x-mark" aria-label="{{ __('Menü schließen') }}"/>
 

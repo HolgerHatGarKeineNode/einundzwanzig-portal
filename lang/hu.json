@@ -657,5 +657,18 @@
     "Öffnen/RSVP": "Megnyitás/RSVP",
     "Über den Dozenten": "Az oktatóról",
     "Über den Kurs": "A kurzusról",
-    "Über uns": "Rólunk"
+    "Über uns": "Rólunk",
+    "Hauptnavigation": "Főnavigáció",
+    "Menü schließen": "Menü bezárása",
+    "Zur Startseite": "A kezdőlapra",
+    "Benutzermenü": "Felhasználói menü",
+    "Menü öffnen": "Menü megnyitása",
+    "Letztes Event": "Legutóbbi esemény",
+    "Signiere…": "Aláírás…",
+    "Signiere mit deinem Nostr-Wallet": "Írj alá a Nostr-tárcáddal",
+    "Bitte bestätige die Login-Anfrage in deiner Browser-Extension. Du wirst gleich automatisch weitergeleitet.": "Kérjük, erősítsd meg a bejelentkezési kérést a böngészőkiterjesztésedben. Hamarosan automatikusan átirányítunk.",
+    "Schließe dieses Fenster nicht.": "Ne zárd be ezt az ablakot.",
+    "Breiten- und Längengrad dürfen nicht beide 0 sein.": "A szélességi és hosszúsági fokok nem lehetnek mindkettő nulla.",
+    "Aktivität": "Tevékenység",
+    "Noch kein Event": "Még nincs esemény"
 }

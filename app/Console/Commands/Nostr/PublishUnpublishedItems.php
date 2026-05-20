@@ -16,6 +16,7 @@ class PublishUnpublishedItems extends Command
     use NostrTrait;
 
     protected $signature = 'nostr:publish {--model=}';
+
     protected $description = 'Publish unpublished items to Nostr';
 
     private const TZ_MAP = [
@@ -27,6 +28,7 @@ class PublishUnpublishedItems extends Command
         'pl' => 'Europe/Warsaw',
         'es' => 'Europe/Madrid',
         'pt' => 'Europe/Lisbon',
+        'lv' => 'Europe/Riga',
     ];
 
     private const DOMAIN_MAP = [
@@ -62,15 +64,17 @@ class PublishUnpublishedItems extends Command
             default => null,
         };
 
-        if (!$query) {
+        if (! $query) {
             $this->error("Unsupported model: {$modelName}");
+
             return;
         }
 
         $model = $query->first();
 
-        if (!$model) {
+        if (! $model) {
             $this->info("No unpublished items for model: {$modelName}");
+
             return;
         }
 
