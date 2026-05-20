@@ -7,6 +7,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Livewire\Features\SupportFileUploads\MissingFileUploadsTraitException;
 use Stefro\LaravelLangCountry\Middleware\LangCountrySession;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -61,7 +62,11 @@ return Application::configure(basePath: dirname(__DIR__))
             return str_contains($e->getMessage(), '/storage/framework/views/');
         };
 
-        $exceptions->report(function (Throwable $e) use ($isStaleLivewireAsset, $isStaleCompiledView) {
+        $isMissingFileUploadsTrait = function (Throwable $e): bool {
+            return $e instanceof MissingFileUploadsTraitException;
+        };
+
+        $exceptions->report(function (Throwable $e) use ($isStaleLivewireAsset, $isStaleCompiledView, $isMissingFileUploadsTrait) {
             if ($isStaleLivewireAsset($e, request())) {
                 return false;
             }
@@ -69,15 +74,23 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($isStaleCompiledView($e)) {
                 return false;
             }
+
+            if ($isMissingFileUploadsTrait($e)) {
+                return false;
+            }
         });
 
-        $exceptions->render(function (Throwable $e, Request $request) use ($isStaleLivewireAsset, $isStaleCompiledView) {
+        $exceptions->render(function (Throwable $e, Request $request) use ($isStaleLivewireAsset, $isStaleCompiledView, $isMissingFileUploadsTrait) {
             if ($isStaleLivewireAsset($e, $request)) {
                 return response('', 404);
             }
 
             if ($isStaleCompiledView($e)) {
                 return response('', 503)->header('Retry-After', '5');
+            }
+
+            if ($isMissingFileUploadsTrait($e)) {
+                return response('', 400);
             }
 
             return null;
