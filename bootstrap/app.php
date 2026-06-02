@@ -7,7 +7,9 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Livewire\Exceptions\MethodNotFoundException;
 use Livewire\Features\SupportFileUploads\MissingFileUploadsTraitException;
+use Livewire\Features\SupportLifecycleHooks\DirectlyCallingLifecycleHooksNotAllowedException;
 use Stefro\LaravelLangCountry\Middleware\LangCountrySession;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -66,7 +68,23 @@ return Application::configure(basePath: dirname(__DIR__))
             return $e instanceof MissingFileUploadsTraitException;
         };
 
-        $exceptions->report(function (Throwable $e) use ($isStaleLivewireAsset, $isStaleCompiledView, $isMissingFileUploadsTrait) {
+        $isLivewireExploitProbe = function (Throwable $e): bool {
+            // Deserialization/RCE bots probe the `livewire/update` endpoint by invoking
+            // protected lifecycle hooks or PHP magic methods to reach gadget chains.
+            // Livewire safely rejects these calls; the rejection is the bot signature,
+            // so we silence the resulting noise instead of reporting it as a 500.
+            if ($e instanceof DirectlyCallingLifecycleHooksNotAllowedException) {
+                return true;
+            }
+
+            if ($e instanceof MethodNotFoundException) {
+                return (bool) preg_match('/Public method \[__/', $e->getMessage());
+            }
+
+            return false;
+        };
+
+        $exceptions->report(function (Throwable $e) use ($isStaleLivewireAsset, $isStaleCompiledView, $isMissingFileUploadsTrait, $isLivewireExploitProbe) {
             if ($isStaleLivewireAsset($e, request())) {
                 return false;
             }
@@ -78,9 +96,13 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($isMissingFileUploadsTrait($e)) {
                 return false;
             }
+
+            if ($isLivewireExploitProbe($e)) {
+                return false;
+            }
         });
 
-        $exceptions->render(function (Throwable $e, Request $request) use ($isStaleLivewireAsset, $isStaleCompiledView, $isMissingFileUploadsTrait) {
+        $exceptions->render(function (Throwable $e, Request $request) use ($isStaleLivewireAsset, $isStaleCompiledView, $isMissingFileUploadsTrait, $isLivewireExploitProbe) {
             if ($isStaleLivewireAsset($e, $request)) {
                 return response('', 404);
             }
@@ -90,6 +112,10 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             if ($isMissingFileUploadsTrait($e)) {
+                return response('', 400);
+            }
+
+            if ($isLivewireExploitProbe($e)) {
                 return response('', 400);
             }
 
