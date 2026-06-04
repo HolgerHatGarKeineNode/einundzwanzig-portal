@@ -43,7 +43,7 @@ class AppServiceProvider extends ServiceProvider
 
         Livewire::setUpdateRoute(function ($handle) {
             return Route::post('/livewire/update', $handle)
-                ->middleware(['web', Sample::rate(0)]);
+                ->middleware(['web', 'throttle:livewire', Sample::rate(0)]);
         });
 
         Nightwatch::user(fn (Authenticatable $user) => [
@@ -64,6 +64,16 @@ class AppServiceProvider extends ServiceProvider
     {
         RateLimiter::for('calendar', function (Request $request) {
             return Limit::perMinute(60)->by($request->ip());
+        });
+
+        // Generous backstop for the shared `/livewire/update` endpoint. A single
+        // active user stays far below this: the only sustained generator is the
+        // login page's `wire:poll.4s` at ~15 req/min, plus interaction bursts.
+        // 120/min leaves headroom for several users behind one NAT while still
+        // capping abusive replay/scan traffic. Keyed by the real client IP
+        // (trustProxies('*') resolves X-Forwarded-For).
+        RateLimiter::for('livewire', function (Request $request) {
+            return Limit::perMinute(120)->by($request->ip());
         });
     }
 }

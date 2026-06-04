@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Livewire\Exceptions\MethodNotFoundException;
 use Livewire\Features\SupportFileUploads\MissingFileUploadsTraitException;
 use Livewire\Features\SupportLifecycleHooks\DirectlyCallingLifecycleHooksNotAllowedException;
+use Livewire\Mechanisms\HandleComponents\CorruptComponentPayloadException;
 use Stefro\LaravelLangCountry\Middleware\LangCountrySession;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -100,6 +101,17 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($isLivewireExploitProbe($e)) {
                 return false;
             }
+
+            // Bots replay `/livewire/update` with a mutated snapshot whose HMAC
+            // checksum no longer matches its [name, id, data]. Checksum::verify()
+            // rejects these, so the rejection is the tamper signature, not an app
+            // fault — we silence the report noise. Rendering is left untouched:
+            // the exception already returns a native 419 on its own.
+            if ($e instanceof CorruptComponentPayloadException) {
+                return false;
+            }
+
+            return null;
         });
 
         $exceptions->render(function (Throwable $e, Request $request) use ($isStaleLivewireAsset, $isStaleCompiledView, $isMissingFileUploadsTrait, $isLivewireExploitProbe) {
