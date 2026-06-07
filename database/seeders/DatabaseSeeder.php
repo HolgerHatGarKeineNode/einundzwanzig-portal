@@ -11,7 +11,6 @@ use App\Models\CourseEvent;
 use App\Models\EmailCampaign;
 use App\Models\EmailTexts;
 use App\Models\Episode;
-use App\Models\Highscore;
 use App\Models\Lecturer;
 use App\Models\Library;
 use App\Models\LibraryItem;
@@ -28,7 +27,6 @@ use App\Models\TwitterAccount;
 use App\Models\User;
 use App\Models\Venue;
 use App\Models\Vote;
-use Database\Factories\Helpers\NostrHelper;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
@@ -167,7 +165,7 @@ class DatabaseSeeder extends Seeder
             }
         });
 
-        $this->command->info('Phase 6: Voting & Highscores');
+        $this->command->info('Phase 6: Voting');
         $proposals->each(function (ProjectProposal $proposal) use ($users) {
             foreach ($users->random(min(8, $users->count())) as $voter) {
                 Vote::create([
@@ -179,17 +177,6 @@ class DatabaseSeeder extends Seeder
                 ]);
             }
         });
-
-        foreach (NostrHelper::realNpubs() as $i => $npub) {
-            for ($d = 0; $d < 5; $d++) {
-                Highscore::factory()->create([
-                    'npub' => $npub,
-                    'achieved_at' => now()->subDays(($i * 10) + $d),
-                    'satoshis' => fake()->numberBetween(1000, 1_000_000),
-                    'blocks' => fake()->numberBetween(1, 5000),
-                ]);
-            }
-        }
 
         $this->command->info('Phase 7: LoginKeys');
         LoginKey::factory()->count(5)->recycle($users)->create();

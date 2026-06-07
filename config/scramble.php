@@ -64,8 +64,7 @@ return [
 
         ## Rate Limiting
 
-        Öffentliche Endpunkte sind auf **60 Anfragen/Minute** begrenzt, das Einreichen von
-        Highscores zusätzlich auf **10 Anfragen/Minute**.
+        Öffentliche Endpunkte sind auf **60 Anfragen/Minute** begrenzt.
         MARKDOWN,
     ],
 
@@ -96,7 +95,7 @@ return [
             'view' => 'scramble::scalar',
             'cdn' => 'https://cdn.jsdelivr.net/npm/@scalar/api-reference',
             'theme' => 'laravel',
-            'proxyUrl' => 'https://proxy.scalar.com',
+            'proxyUrl' => '',
             'darkMode' => true,
             'showDeveloperTools' => 'never',
             'agent' => ['disabled' => true],

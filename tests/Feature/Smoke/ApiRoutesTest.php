@@ -4,9 +4,7 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Course;
 use App\Models\CourseEvent;
-use App\Models\Highscore;
 use App\Models\Lecturer;
-use App\Models\LibraryItem;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Models\User;
@@ -21,8 +19,6 @@ beforeEach(function () {
     Course::factory()->create();
     CourseEvent::factory()->create();
     Lecturer::factory()->create();
-    Highscore::factory()->create();
-    LibraryItem::factory()->create(['type' => 'bindle']);
     User::factory()->create(['nostr' => 'npub1'.str_repeat('a', 58)]);
 });
 
@@ -34,12 +30,10 @@ it('returns a JSON response for the API GET endpoint', function (string $path) {
     'meetup events' => '/api/meetup-events',
     'btc-map communities' => '/api/btc-map-communities',
     'nostrplebs' => '/api/nostrplebs',
-    'bindles' => '/api/bindles',
     'lecturers' => '/api/lecturers',
     'courses' => '/api/courses',
     'cities' => '/api/cities',
     'venues' => '/api/venues',
-    'highscores' => '/api/highscores',
 ]);
 
 it('returns 404 for /api/meetup/ical (currently a stub that aborts)', function () {

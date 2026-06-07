@@ -16,27 +16,6 @@ Route::get('error/{code}', function (string $code) {
     abort($code >= 400 && $code <= 599 ? $code : 404);
 })->where('code', '[0-9]{3}');
 
-/*
- * Commented out routes related to book rental download and display
- * These are currently inactive but can be enabled if needed
- */
-/*Route::get('/download-buecherverleih', function (Request $request) {
-    $filename = $request->input('filename');
-    // Get the file path from the storage folder
-    $filePath = storage_path('app/'.$filename);
-    dd($filePath);
-    // Check if the file exists
-    if (!file_exists($filePath)) {
-        abort(404);
-    }
-    // Generate a response with the file for download
-    return response()->download($filePath, $filename);
-})->name('buecherverleih.download');
-
-Route::middleware([])
-    ->get('/buecherverleih', \App\Livewire\BooksForPlebs\BookRentalGuide::class)
-    ->name('buecherverleih');*/
-
 // Route for rabbit following helper page - Updated for Livewire v4
 Route::livewire('/kaninchenbau', FollowTheRabbit::class)
     ->name('kaninchenbau');

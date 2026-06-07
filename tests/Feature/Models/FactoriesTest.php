@@ -9,7 +9,6 @@ use App\Models\CourseEvent;
 use App\Models\EmailCampaign;
 use App\Models\EmailTexts;
 use App\Models\Episode;
-use App\Models\Highscore;
 use App\Models\Lecturer;
 use App\Models\Library;
 use App\Models\LibraryItem;
@@ -62,7 +61,6 @@ it('creates a valid persisted record via the factory', function (string $modelCl
     'Participant' => Participant::class,
     'EmailCampaign' => EmailCampaign::class,
     'EmailTexts' => EmailTexts::class,
-    'Highscore' => Highscore::class,
     'LoginKey' => LoginKey::class,
     'Tag' => Tag::class,
 ]);
