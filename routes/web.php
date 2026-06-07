@@ -165,6 +165,7 @@ Route::middleware(['auth'])
         Route::livewire('/settings/profile', 'settings.profile')->name('settings.profile');
         Route::livewire('/settings/password', 'settings.password')->name('settings.password');
         Route::livewire('/settings/appearance', 'settings.appearance')->name('settings.appearance');
+        Route::livewire('/settings/api-tokens', 'settings.api-tokens')->name('settings.api-tokens');
     });
 
 // Commented out feed routes (RSS/Atom feeds)
