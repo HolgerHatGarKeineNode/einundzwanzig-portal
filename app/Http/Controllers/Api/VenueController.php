@@ -3,13 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Lecturer;
+use App\Http\Requests\Api\StoreVenueRequest;
+use App\Http\Requests\Api\UpdateVenueRequest;
+use App\Http\Resources\VenueResource;
 use App\Models\Venue;
-use Dedoc\Scramble\Attributes\ExcludeRouteFromDocs;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
+use Dedoc\Scramble\Attributes\Response as ResponseAttribute;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Gate;
+use Symfony\Component\HttpFoundation\Response;
 
 #[Group(name: 'Stammdaten', weight: 5)]
 class VenueController extends Controller
@@ -50,38 +56,63 @@ class VenueController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Veranstaltungsort anlegen
+     *
+     * Erlaubt einem authentifizierten Nutzer, einen Veranstaltungsort programmatisch anzulegen.
+     * Der Ersteller (created_by) wird automatisch gesetzt.
      */
-    #[ExcludeRouteFromDocs]
-    public function store(Request $request)
+    #[ResponseAttribute(status: 401, description: 'Nicht authentifiziert.')]
+    #[ResponseAttribute(status: 422, description: 'Validierungsfehler.')]
+    public function store(StoreVenueRequest $request): JsonResponse
     {
-        //
+        $venue = Venue::create($request->validated());
+
+        return VenueResource::make($venue->fresh())
+            ->response()
+            ->setStatusCode(Response::HTTP_CREATED);
     }
 
     /**
-     * Display the specified resource.
+     * Veranstaltungsort aktualisieren
+     *
+     * Aktualisiert einen Veranstaltungsort; nur fuer den Ersteller oder einen Super-Admin.
      */
-    #[ExcludeRouteFromDocs]
-    public function show(Lecturer $lecturer)
+    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf den Veranstaltungsort aendern.')]
+    #[ResponseAttribute(status: 422, description: 'Validierungsfehler.')]
+    public function update(UpdateVenueRequest $request, Venue $venue): VenueResource
     {
-        //
+        $venue->update($request->validated());
+
+        return VenueResource::make($venue->fresh());
     }
 
     /**
-     * Update the specified resource in storage.
+     * Eigene Veranstaltungsorte auflisten
+     *
+     * Liefert alle vom authentifizierten Nutzer erstellten Veranstaltungsorte, alphabetisch sortiert.
      */
-    #[ExcludeRouteFromDocs]
-    public function update(Request $request, Lecturer $lecturer)
+    public function mine(Request $request): AnonymousResourceCollection
     {
-        //
+        Gate::authorize('viewAny', Venue::class);
+
+        $venues = Venue::query()
+            ->where('created_by', $request->user()->id)
+            ->orderBy('name')
+            ->get();
+
+        return VenueResource::collection($venues);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Eigenen Veranstaltungsort anzeigen
+     *
+     * Zeigt einen einzelnen, vom authentifizierten Nutzer erstellten Veranstaltungsort.
      */
-    #[ExcludeRouteFromDocs]
-    public function destroy(Lecturer $lecturer)
+    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf den Veranstaltungsort sehen.')]
+    public function mineShow(Venue $venue): VenueResource
     {
-        //
+        Gate::authorize('view', $venue);
+
+        return VenueResource::make($venue);
     }
 }

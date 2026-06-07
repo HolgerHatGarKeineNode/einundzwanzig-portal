@@ -17,14 +17,14 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['throttle:60,1'])
     ->as('api.')
     ->group(function () {
-        Route::resource('countries', CountryController::class);
+        Route::resource('countries', CountryController::class)->only(['index']);
         Route::get('meetup/ical', [MeetupController::class, 'ical'])->name('api.meetup.ical');
-        Route::resource('meetup', MeetupController::class);
-        Route::resource('lecturers', LecturerController::class);
+        Route::resource('meetup', MeetupController::class)->only(['index']);
+        Route::resource('lecturers', LecturerController::class)->only(['index']);
         Route::resource('courses', CourseController::class)
             ->only(['index', 'show']);
-        Route::resource('cities', CityController::class);
-        Route::resource('venues', VenueController::class);
+        Route::resource('cities', CityController::class)->only(['index']);
+        Route::resource('venues', VenueController::class)->only(['index']);
         Route::get('nostrplebs', NostrPlebController::class);
         Route::get('meetups', MeetupMapController::class);
         Route::get('meetup-events/{date?}', MeetupEventController::class);
@@ -50,6 +50,31 @@ Route::middleware('auth:sanctum')
             ->name('course-events.store');
         Route::patch('course-events/{courseEvent}', [CourseEventController::class, 'update'])
             ->name('course-events.update');
+
+        Route::post('lecturers', [LecturerController::class, 'store'])->name('lecturers.store');
+        Route::patch('lecturers/{lecturer}', [LecturerController::class, 'update'])->name('lecturers.update');
+        Route::get('my-lecturers', [LecturerController::class, 'mine'])->name('lecturers.mine');
+        Route::get('my-lecturers/{lecturer}', [LecturerController::class, 'mineShow'])->name('lecturers.mine.show');
+
+        Route::post('venues', [VenueController::class, 'store'])->name('venues.store');
+        Route::patch('venues/{venue}', [VenueController::class, 'update'])->name('venues.update');
+        Route::get('my-venues', [VenueController::class, 'mine'])->name('venues.mine');
+        Route::get('my-venues/{venue}', [VenueController::class, 'mineShow'])->name('venues.mine.show');
+
+        Route::post('cities', [CityController::class, 'store'])->name('cities.store');
+        Route::patch('cities/{city}', [CityController::class, 'update'])->name('cities.update');
+        Route::get('my-cities', [CityController::class, 'mine'])->name('cities.mine');
+        Route::get('my-cities/{city}', [CityController::class, 'mineShow'])->name('cities.mine.show');
+
+        Route::post('meetup', [MeetupController::class, 'store'])->name('meetup.store');
+        Route::patch('meetup/{meetup}', [MeetupController::class, 'update'])->name('meetup.update');
+        Route::get('my-meetups', [MeetupController::class, 'mine'])->name('meetup.mine');
+        Route::get('my-meetups/{meetup}', [MeetupController::class, 'mineShow'])->name('meetup.mine.show');
+
+        Route::post('meetup-events', [MeetupEventController::class, 'store'])->name('meetup-events.store');
+        Route::patch('meetup-events/{meetupEvent}', [MeetupEventController::class, 'update'])->name('meetup-events.update');
+        Route::get('my-meetup-events', [MeetupEventController::class, 'mine'])->name('meetup-events.mine');
+        Route::get('my-meetup-events/{meetupEvent}', [MeetupEventController::class, 'mineShow'])->name('meetup-events.mine.show');
     });
 
 Route::get('/lnurl-auth-callback', [LnurlAuthController::class, 'callback'])

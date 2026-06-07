@@ -3,12 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\StoreLecturerRequest;
+use App\Http\Requests\Api\UpdateLecturerRequest;
+use App\Http\Resources\LecturerResource;
 use App\Models\Lecturer;
-use Dedoc\Scramble\Attributes\ExcludeRouteFromDocs;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
+use Dedoc\Scramble\Attributes\Response as ResponseAttribute;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Gate;
+use Symfony\Component\HttpFoundation\Response;
 
 #[Group(name: 'Referenten', weight: 4)]
 class LecturerController extends Controller
@@ -48,38 +55,63 @@ class LecturerController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Referent anlegen
+     *
+     * Erlaubt einem authentifizierten Nutzer, einen Referenten programmatisch anzulegen.
+     * Der Ersteller (created_by) wird automatisch gesetzt.
      */
-    #[ExcludeRouteFromDocs]
-    public function store(Request $request)
+    #[ResponseAttribute(status: 401, description: 'Nicht authentifiziert.')]
+    #[ResponseAttribute(status: 422, description: 'Validierungsfehler.')]
+    public function store(StoreLecturerRequest $request): JsonResponse
     {
-        //
+        $lecturer = Lecturer::create($request->validated());
+
+        return LecturerResource::make($lecturer->fresh())
+            ->response()
+            ->setStatusCode(Response::HTTP_CREATED);
     }
 
     /**
-     * Display the specified resource.
+     * Referent aktualisieren
+     *
+     * Aktualisiert einen Referenten; nur fuer den Ersteller oder einen Super-Admin.
      */
-    #[ExcludeRouteFromDocs]
-    public function show(Lecturer $lecturer)
+    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf den Referenten aendern.')]
+    #[ResponseAttribute(status: 422, description: 'Validierungsfehler.')]
+    public function update(UpdateLecturerRequest $request, Lecturer $lecturer): LecturerResource
     {
-        //
+        $lecturer->update($request->validated());
+
+        return LecturerResource::make($lecturer->fresh());
     }
 
     /**
-     * Update the specified resource in storage.
+     * Eigene Referenten auflisten
+     *
+     * Liefert alle vom authentifizierten Nutzer erstellten Referenten, alphabetisch sortiert.
      */
-    #[ExcludeRouteFromDocs]
-    public function update(Request $request, Lecturer $lecturer)
+    public function mine(Request $request): AnonymousResourceCollection
     {
-        //
+        Gate::authorize('viewAny', Lecturer::class);
+
+        $lecturers = Lecturer::query()
+            ->where('created_by', $request->user()->id)
+            ->orderBy('name')
+            ->get();
+
+        return LecturerResource::collection($lecturers);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Eigenen Referenten anzeigen
+     *
+     * Zeigt einen einzelnen, vom authentifizierten Nutzer erstellten Referenten.
      */
-    #[ExcludeRouteFromDocs]
-    public function destroy(Lecturer $lecturer)
+    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf den Referenten sehen.')]
+    public function mineShow(Lecturer $lecturer): LecturerResource
     {
-        //
+        Gate::authorize('view', $lecturer);
+
+        return LecturerResource::make($lecturer);
     }
 }

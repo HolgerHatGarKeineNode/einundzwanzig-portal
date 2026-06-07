@@ -3,13 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\StoreMeetupRequest;
+use App\Http\Requests\Api\UpdateMeetupRequest;
+use App\Http\Resources\MeetupResource;
 use App\Models\Meetup;
 use Dedoc\Scramble\Attributes\ExcludeRouteFromDocs;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Gate;
 
 #[Group(name: 'Meetups', weight: 3)]
 class MeetupController extends Controller
@@ -63,27 +69,64 @@ class MeetupController extends Controller
             });
     }
 
-    #[ExcludeRouteFromDocs]
-    public function store(Request $request)
+    /**
+     * Meetup anlegen
+     *
+     * Erlaubt einem authentifizierten Nutzer, ein Meetup programmatisch anzulegen.
+     * Der Ersteller (created_by) wird automatisch gesetzt.
+     */
+    #[Response(status: 401, description: 'Nicht authentifiziert.')]
+    #[Response(status: 422, description: 'Validierungsfehler.')]
+    public function store(StoreMeetupRequest $request): JsonResponse
     {
-        //
+        $meetup = Meetup::create($request->validated());
+
+        return MeetupResource::make($meetup->fresh())
+            ->response()
+            ->setStatusCode(\Symfony\Component\HttpFoundation\Response::HTTP_CREATED);
     }
 
-    #[ExcludeRouteFromDocs]
-    public function show(Meetup $meetup)
+    /**
+     * Meetup aktualisieren
+     *
+     * Aktualisiert ein Meetup; nur fuer den Ersteller oder einen Super-Admin.
+     */
+    #[Response(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf das Meetup aendern.')]
+    #[Response(status: 422, description: 'Validierungsfehler.')]
+    public function update(UpdateMeetupRequest $request, Meetup $meetup): MeetupResource
     {
-        //
+        $meetup->update($request->validated());
+
+        return MeetupResource::make($meetup->fresh());
     }
 
-    #[ExcludeRouteFromDocs]
-    public function update(Request $request, Meetup $meetup)
+    /**
+     * Eigene Meetups auflisten
+     *
+     * Liefert alle vom authentifizierten Nutzer erstellten Meetups, alphabetisch sortiert.
+     */
+    public function mine(Request $request): AnonymousResourceCollection
     {
-        //
+        Gate::authorize('viewAny', Meetup::class);
+
+        $meetups = Meetup::query()
+            ->where('created_by', $request->user()->id)
+            ->orderBy('name')
+            ->get();
+
+        return MeetupResource::collection($meetups);
     }
 
-    #[ExcludeRouteFromDocs]
-    public function destroy(Meetup $meetup)
+    /**
+     * Eigenes Meetup anzeigen
+     *
+     * Zeigt ein einzelnes, vom authentifizierten Nutzer erstelltes Meetup.
+     */
+    #[Response(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf das Meetup sehen.')]
+    public function mineShow(Meetup $meetup): MeetupResource
     {
-        //
+        Gate::authorize('view', $meetup);
+
+        return MeetupResource::make($meetup);
     }
 }

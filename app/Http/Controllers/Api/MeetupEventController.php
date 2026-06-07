@@ -3,11 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\StoreMeetupEventRequest;
+use App\Http\Requests\Api\UpdateMeetupEventRequest;
+use App\Http\Resources\MeetupEventResource;
 use App\Models\MeetupEvent;
 use Carbon\Carbon;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\PathParameter;
+use Dedoc\Scramble\Attributes\Response as ResponseAttribute;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
+use Symfony\Component\HttpFoundation\Response;
 
 #[Group(name: 'Meetups', weight: 3)]
 class MeetupEventController extends Controller
@@ -65,5 +74,66 @@ class MeetupEventController extends Controller
             'meetup.logo' => $event->meetup->getFirstMediaUrl('logo'),
         ],
         );
+    }
+
+    /**
+     * Meetup-Event anlegen
+     *
+     * Erlaubt einem authentifizierten Nutzer, ein Meetup-Event programmatisch anzulegen.
+     * Der Ersteller (created_by) wird automatisch gesetzt.
+     */
+    #[ResponseAttribute(status: 401, description: 'Nicht authentifiziert.')]
+    #[ResponseAttribute(status: 422, description: 'Validierungsfehler.')]
+    public function store(StoreMeetupEventRequest $request): JsonResponse
+    {
+        $meetupEvent = MeetupEvent::create($request->validated());
+
+        return MeetupEventResource::make($meetupEvent->fresh())
+            ->response()
+            ->setStatusCode(Response::HTTP_CREATED);
+    }
+
+    /**
+     * Meetup-Event aktualisieren
+     *
+     * Aktualisiert ein Meetup-Event; nur fuer den Ersteller oder einen Super-Admin.
+     */
+    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf das Meetup-Event aendern.')]
+    #[ResponseAttribute(status: 422, description: 'Validierungsfehler.')]
+    public function update(UpdateMeetupEventRequest $request, MeetupEvent $meetupEvent): MeetupEventResource
+    {
+        $meetupEvent->update($request->validated());
+
+        return MeetupEventResource::make($meetupEvent->fresh());
+    }
+
+    /**
+     * Eigene Meetup-Events auflisten
+     *
+     * Liefert alle vom authentifizierten Nutzer erstellten Meetup-Events, nach Startzeit absteigend sortiert.
+     */
+    public function mine(Request $request): AnonymousResourceCollection
+    {
+        Gate::authorize('viewAny', MeetupEvent::class);
+
+        $meetupEvents = MeetupEvent::query()
+            ->where('created_by', $request->user()->id)
+            ->orderByDesc('start')
+            ->get();
+
+        return MeetupEventResource::collection($meetupEvents);
+    }
+
+    /**
+     * Eigenes Meetup-Event anzeigen
+     *
+     * Zeigt ein einzelnes, vom authentifizierten Nutzer erstelltes Meetup-Event.
+     */
+    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf das Meetup-Event sehen.')]
+    public function mineShow(MeetupEvent $meetupEvent): MeetupEventResource
+    {
+        Gate::authorize('view', $meetupEvent);
+
+        return MeetupEventResource::make($meetupEvent);
     }
 }
