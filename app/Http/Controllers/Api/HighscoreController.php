@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreHighscoreRequest;
 use App\Models\Highscore;
 use Carbon\CarbonImmutable;
+use Dedoc\Scramble\Attributes\Group;
+use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use swentel\nostr\Filter\Filter;
@@ -15,8 +17,15 @@ use swentel\nostr\Relay\RelaySet;
 use swentel\nostr\Request\Request;
 use swentel\nostr\Subscription\Subscription;
 
+#[Group(name: 'Highscores', weight: 6)]
 class HighscoreController extends Controller
 {
+    /**
+     * Highscore-Bestenliste abrufen
+     *
+     * Öffentliche Bestenliste des Spiels, absteigend nach Satoshis (dann nach Zeitpunkt).
+     * Die Antwort hat die Form { data: [ { npub, name, satoshis, blocks, datetime } ] }.
+     */
     public function index(): JsonResponse
     {
         // npub1pt0kw36ue3w2g4haxq3wgm6a2fhtptmzsjlc2j2vphtcgle72qesgpjyc6
@@ -37,6 +46,15 @@ class HighscoreController extends Controller
         ]);
     }
 
+    /**
+     * Highscore einreichen
+     *
+     * Reicht einen Highscore ein (idempotent pro npub und Zeitpunkt).
+     * Zusätzlich auf 10 Anfragen pro Minute begrenzt.
+     * Fehlt ein Name, versucht der Server, ihn über das Nostr-Profil zu ergänzen.
+     * Antwortet mit HTTP 202.
+     */
+    #[Response(status: 429, description: 'Zu viele Anfragen (Limit: 10 pro Minute überschritten).')]
     public function store(StoreHighscoreRequest $request): JsonResponse
     {
         $validated = $request->validated();

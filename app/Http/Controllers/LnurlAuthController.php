@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\LoginKey;
 use App\Models\User;
+use Dedoc\Scramble\Attributes\ExcludeRouteFromDocs;
 use eza\lnurl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +23,7 @@ final class LnurlAuthController extends Controller
      * This endpoint is called by Lightning wallets during LNURL-Auth authentication flow.
      * It validates the signature provided by wallet against the stored challenge (k1).
      */
+    #[ExcludeRouteFromDocs]
     public function callback(Request $request): JsonResponse
     {
         try {
@@ -230,6 +232,7 @@ final class LnurlAuthController extends Controller
      *
      * This endpoint is polled by the frontend to detect authentication failures.
      */
+    #[ExcludeRouteFromDocs]
     public function checkError(Request $request): JsonResponse
     {
         $k1 = $request->input('k1');

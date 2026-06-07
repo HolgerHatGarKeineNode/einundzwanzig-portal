@@ -4,17 +4,28 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
-use App\Models\Lecturer;
+use Dedoc\Scramble\Attributes\ExcludeRouteFromDocs;
+use Dedoc\Scramble\Attributes\Group;
+use Dedoc\Scramble\Attributes\QueryParameter;
+use Dedoc\Scramble\Attributes\Response as ResponseAttribute;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+#[Group(name: 'Kurse', weight: 1)]
 class CourseController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Kurse auflisten und durchsuchen
+     *
+     * Öffentlicher Endpunkt; liefert id und name, alphabetisch sortiert. Ohne den Parameter
+     * 'selected' wird das Ergebnis auf 10 Einträge begrenzt. Jeder Kurs enthält zusätzlich
+     * ein 'image' (Logo-Thumbnail-URL).
      */
+    #[QueryParameter(name: 'search', description: 'Teilstring-Suche im Namen des Kurses.', required: false, type: 'string')]
+    #[QueryParameter(name: 'user_id', description: 'Filtert die Kurse nach ihrem Ersteller.', required: false, type: 'integer')]
+    #[QueryParameter(name: 'selected', description: 'Lädt gezielt die angegebenen Kurs-IDs.', required: false, type: 'array')]
     public function index(Request $request)
     {
         return Course::query()
@@ -43,12 +54,11 @@ class CourseController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Kurs anlegen
      *
-     * Allows an authenticated lecturer to create a course programmatically
-     * (e.g. to sync courses from an external system). Validation mirrors the
-     * Livewire course create form; `created_by` is set by the model's creating hook.
+     * Erlaubt einem authentifizierten Referenten, einen Kurs programmatisch anzulegen.
      */
+    #[ResponseAttribute(status: 403, description: 'Nur Referenten (is_lecturer) dürfen Kurse anlegen.')]
     public function store(Request $request): JsonResponse
     {
         abort_unless((bool) $request->user()->is_lecturer, Response::HTTP_FORBIDDEN);
@@ -64,19 +74,18 @@ class CourseController extends Controller
         return response()->json($course->fresh(), Response::HTTP_CREATED);
     }
 
-    /**
-     * Display the specified resource.
-     */
+    #[ExcludeRouteFromDocs]
     public function show(Course $course)
     {
         //
     }
 
     /**
-     * Update the specified resource in storage.
+     * Kurs aktualisieren
      *
-     * Authorized for the course owner (or a super-admin).
+     * Aktualisiert einen Kurs; nur für den Ersteller oder einen Super-Admin.
      */
+    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller des Kurses oder ein Super-Admin darf ihn ändern.')]
     public function update(Request $request, Course $course): JsonResponse
     {
         abort_unless(
@@ -95,9 +104,7 @@ class CourseController extends Controller
         return response()->json($course->fresh());
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+    #[ExcludeRouteFromDocs]
     public function destroy(Course $course)
     {
         //

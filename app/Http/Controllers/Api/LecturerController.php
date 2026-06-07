@@ -4,48 +4,53 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Lecturer;
+use Dedoc\Scramble\Attributes\ExcludeRouteFromDocs;
+use Dedoc\Scramble\Attributes\Group;
+use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
+#[Group(name: 'Referenten', weight: 4)]
 class LecturerController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Referenten auflisten und durchsuchen
      *
-     * @return \Illuminate\Http\Response
+     * Öffentlicher Endpunkt; liefert id und name, alphabetisch sortiert. Ohne den Parameter 'selected' wird die Liste auf 10 Einträge begrenzt. Jeder Referent enthält zusätzlich ein 'image' (Avatar-Thumbnail-URL).
      */
+    #[QueryParameter(name: 'search', description: 'Teilstring-Suche im Namen.', required: false, type: 'string')]
+    #[QueryParameter(name: 'selected', description: 'Lädt gezielt die angegebenen IDs.', required: false, type: 'array')]
     public function index(Request $request)
     {
         return Lecturer::query()
-                       ->select('id', 'name', )
-                       ->orderBy('name')
+            ->select('id', 'name')
+            ->orderBy('name')
 //                       ->when($request->has('user_id'),
 //                           fn(Builder $query) => $query->where('created_by', $request->user_id))
-                       ->when(
-                           $request->search,
-                           fn (Builder $query) => $query
-                               ->where('name', 'ilike', "%{$request->search}%")
-                       )
-                       ->when(
-                           $request->exists('selected'),
-                           fn (Builder $query) => $query->whereIn('id',
-                               $request->input('selected', [])),
-                           fn (Builder $query) => $query->limit(10)
-                       )
-                       ->get()
-                       ->map(function (Lecturer $lecturer) {
-                           $lecturer->image = $lecturer->getFirstMediaUrl('avatar',
-                               'thumb');
+            ->when(
+                $request->search,
+                fn (Builder $query) => $query
+                    ->where('name', 'ilike', "%{$request->search}%")
+            )
+            ->when(
+                $request->exists('selected'),
+                fn (Builder $query) => $query->whereIn('id',
+                    $request->input('selected', [])),
+                fn (Builder $query) => $query->limit(10)
+            )
+            ->get()
+            ->map(function (Lecturer $lecturer) {
+                $lecturer->image = $lecturer->getFirstMediaUrl('avatar',
+                    'thumb');
 
-                           return $lecturer;
-                       });
+                return $lecturer;
+            });
     }
 
     /**
      * Store a newly created resource in storage.
-     *
-     * @return \Illuminate\Http\Response
      */
+    #[ExcludeRouteFromDocs]
     public function store(Request $request)
     {
         //
@@ -53,9 +58,8 @@ class LecturerController extends Controller
 
     /**
      * Display the specified resource.
-     *
-     * @return \Illuminate\Http\Response
      */
+    #[ExcludeRouteFromDocs]
     public function show(Lecturer $lecturer)
     {
         //
@@ -63,9 +67,8 @@ class LecturerController extends Controller
 
     /**
      * Update the specified resource in storage.
-     *
-     * @return \Illuminate\Http\Response
      */
+    #[ExcludeRouteFromDocs]
     public function update(Request $request, Lecturer $lecturer)
     {
         //
@@ -73,9 +76,8 @@ class LecturerController extends Controller
 
     /**
      * Remove the specified resource from storage.
-     *
-     * @return \Illuminate\Http\Response
      */
+    #[ExcludeRouteFromDocs]
     public function destroy(Lecturer $lecturer)
     {
         //

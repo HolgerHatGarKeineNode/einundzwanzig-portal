@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.3",
         "akuechler/laravel-geoly": "^1.0",
+        "dedoc/scramble": "^0.13.26",
         "druc/laravel-langscanner": "dev-master",
         "ezadr/lnurl-php": "^1.0",
         "laravel/framework": "^13.0",

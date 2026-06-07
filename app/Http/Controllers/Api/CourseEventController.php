@@ -4,22 +4,28 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CourseEvent;
+use Dedoc\Scramble\Attributes\Group;
+use Dedoc\Scramble\Attributes\QueryParameter;
+use Dedoc\Scramble\Attributes\Response as ResponseAttribute;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+#[Group(name: 'Kurs-Events', weight: 2)]
 class CourseEventController extends Controller
 {
     /**
-     * Display a listing of the course events created by the authenticated user.
+     * Eigene Kurs-Events auflisten
      *
-     * Useful for an external sync client to detect which events already exist
-     * (idempotent syncing). Optionally filtered by course_id.
+     * Liefert alle vom authentifizierten Nutzer erstellten Kurs-Events (inkl. zugehörigem
+     * Kurs und Veranstaltungsort), absteigend nach Startdatum. Ideal für idempotente
+     * Synchronisierung durch externe Clients.
      *
      * @return Collection<int, CourseEvent>
      */
+    #[QueryParameter(name: 'course_id', description: 'Filtert die Kurs-Events auf einen bestimmten Kurs.', required: false, type: 'integer')]
     public function index(Request $request): Collection
     {
         return CourseEvent::query()
@@ -34,12 +40,11 @@ class CourseEventController extends Controller
     }
 
     /**
-     * Store a newly created course event in storage.
+     * Kurs-Event anlegen
      *
-     * Allows an authenticated lecturer to create a dated course event
-     * programmatically. Validation mirrors the Livewire course event form;
-     * `created_by` is set by the model's creating hook.
+     * Erlaubt einem authentifizierten Referenten, ein datiertes Kurs-Event programmatisch anzulegen.
      */
+    #[ResponseAttribute(status: 403, description: 'Nur Referenten (is_lecturer) dürfen Kurs-Events anlegen.')]
     public function store(Request $request): JsonResponse
     {
         abort_unless((bool) $request->user()->is_lecturer, Response::HTTP_FORBIDDEN);
@@ -58,10 +63,11 @@ class CourseEventController extends Controller
     }
 
     /**
-     * Update the specified course event in storage.
+     * Kurs-Event aktualisieren
      *
-     * Authorized for the course event owner (or a super-admin).
+     * Aktualisiert ein Kurs-Event; nur für den Ersteller oder einen Super-Admin.
      */
+    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller des Kurs-Events oder ein Super-Admin darf es ändern.')]
     public function update(Request $request, CourseEvent $courseEvent): JsonResponse
     {
         abort_unless(
