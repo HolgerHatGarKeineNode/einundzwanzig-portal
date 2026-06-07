@@ -2,7 +2,6 @@
 
 use Dedoc\Scramble\Http\Middleware\RestrictedDocsAccess;
 use Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy;
-use Dedoc\Scramble\Support\Generator\SecurityScheme;
 
 return [
     /*
@@ -187,11 +186,17 @@ return [
      *     ],
      * ],
      */
+    /*
+     * NOTE: `scheme` is intentionally omitted here. Passing a `SecurityScheme` object
+     * instance would make the config non-serializable and break `config:cache`/`optimize`
+     * (LogicException: value is non-serializable). `MiddlewareAuthSecurityStrategy`
+     * defaults to `SecurityScheme::http('bearer')` when no scheme is provided, which is
+     * exactly what we want.
+     */
     'security_strategy' => [
         MiddlewareAuthSecurityStrategy::class,
         [
             'middleware' => ['auth', 'auth:*'],
-            'scheme' => SecurityScheme::http('bearer'),
         ],
     ],
 ];
