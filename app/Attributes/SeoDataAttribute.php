@@ -200,6 +200,14 @@ class SeoDataAttribute
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
+            'settings_api_tokens' => new SEOData(
+                title: __('API Tokens - Einstellungen'),
+                description: __('Verwalte deine persönlichen Zugriffstokens für den programmatischen API-Zugriff auf dein Bitcoin Meetup Konto.'),
+                author: $domainAuthor,
+                image: $domainImage,
+                twitter_username: $domainTwitter,
+                site_name: $domainSiteName,
+            ),
             'settings_delete_user_form' => new SEOData(
                 title: __('Konto löschen - Bitcoin Meetups'),
                 description: __('Informationen zum Löschen deines Bitcoin Meetup Kontos.'),
@@ -298,6 +306,7 @@ class SeoDataAttribute
         if (empty(self::$seoDefinitions)) {
             self::initDefinitions();
         }
+
         return self::$seoDefinitions[$key] ?? self::$seoDefinitions['default'];
     }
 
@@ -307,6 +316,7 @@ class SeoDataAttribute
         if ($this->key) {
             return self::getData($this->key);
         }
+
         return self::getData('default'); // Fallback
     }
 }

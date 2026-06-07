@@ -3,11 +3,17 @@
 use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\CountryController;
 use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\CourseEventController;
 use App\Http\Controllers\Api\HighscoreController;
 use App\Http\Controllers\Api\LecturerController;
 use App\Http\Controllers\Api\MeetupController;
 use App\Http\Controllers\Api\VenueController;
+use App\Http\Controllers\LnurlAuthController;
+use App\Models\LibraryItem;
+use App\Models\Meetup;
+use App\Models\MeetupEvent;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -18,7 +24,8 @@ Route::middleware(['throttle:60,1'])
         Route::get('meetup/ical', [MeetupController::class, 'ical'])->name('api.meetup.ical');
         Route::resource('meetup', MeetupController::class);
         Route::resource('lecturers', LecturerController::class);
-        Route::resource('courses', CourseController::class);
+        Route::resource('courses', CourseController::class)
+            ->only(['index', 'show']);
         Route::resource('cities', CityController::class);
         Route::resource('venues', VenueController::class);
         Route::get('highscores', [HighscoreController::class, 'index'])->name('highscores.index');
@@ -46,7 +53,7 @@ Route::middleware(['throttle:60,1'])
                 ->pluck('nostr');
         });
         Route::get('bindles', function () {
-            return \App\Models\LibraryItem::query()
+            return LibraryItem::query()
                 ->where('type', 'bindle')
                 ->with([
                     'media',
@@ -61,7 +68,7 @@ Route::middleware(['throttle:60,1'])
                 ]);
         });
         Route::get('meetups', function (Request $request) {
-            return \App\Models\Meetup::query()
+            return Meetup::query()
                 ->where('visible_on_map', true)
                 ->with([
                     'meetupEvents',
@@ -95,9 +102,9 @@ Route::middleware(['throttle:60,1'])
         });
         Route::get('meetup-events/{date?}', function ($date = null) {
             if ($date) {
-                $date = \Carbon\Carbon::parse($date);
+                $date = Carbon::parse($date);
             }
-            $events = \App\Models\MeetupEvent::query()
+            $events = MeetupEvent::query()
                 ->with([
                     'meetup.city.country',
                     'meetup.media',
@@ -139,7 +146,7 @@ Route::middleware(['throttle:60,1'])
         });
         Route::get('btc-map-communities', function () {
             return response()->json(
-                \App\Models\Meetup::query()
+                Meetup::query()
                     ->with([
                         'media',
                         'city.country',
@@ -184,8 +191,29 @@ Route::middleware(['throttle:60,1'])
         });
     });
 
-Route::get('/lnurl-auth-callback', [\App\Http\Controllers\LnurlAuthController::class, 'callback'])
+/*
+ * Authenticated write endpoints (Sanctum token auth).
+ * Lets a lecturer create/update their own courses and course events
+ * programmatically, e.g. to sync events from an external system.
+ */
+Route::middleware('auth:sanctum')
+    ->as('api.')
+    ->group(function () {
+        Route::post('courses', [CourseController::class, 'store'])
+            ->name('courses.store');
+        Route::patch('courses/{course}', [CourseController::class, 'update'])
+            ->name('courses.update');
+
+        Route::get('course-events', [CourseEventController::class, 'index'])
+            ->name('course-events.index');
+        Route::post('course-events', [CourseEventController::class, 'store'])
+            ->name('course-events.store');
+        Route::patch('course-events/{courseEvent}', [CourseEventController::class, 'update'])
+            ->name('course-events.update');
+    });
+
+Route::get('/lnurl-auth-callback', [LnurlAuthController::class, 'callback'])
     ->name('auth.ln.callback');
 
-Route::post('/check-auth-error', [\App\Http\Controllers\LnurlAuthController::class, 'checkError'])
+Route::post('/check-auth-error', [LnurlAuthController::class, 'checkError'])
     ->name('auth.check-error');
