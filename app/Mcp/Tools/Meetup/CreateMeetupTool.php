@@ -15,7 +15,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Legt ein neues Meetup für den authentifizierten Nutzer an. Die Stadt wird über ihren Namen angegeben; der Ersteller (created_by) wird automatisch gesetzt.')]
+#[Description('Legt ein neues Meetup für den authentifizierten Nutzer an. Die Stadt wird über ihren Namen angegeben; der Ersteller (created_by) wird automatisch gesetzt. WICHTIG: Vorher mit search-meetups (Name UND Stadtname) prüfen, ob bereits ein Meetup existiert, und erst nach Rückfrage beim Nutzer anlegen, wenn keines gefunden wurde.')]
 class CreateMeetupTool extends Tool
 {
     use ResolvesEntities;

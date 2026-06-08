@@ -17,7 +17,7 @@ it('registers every domain tool on the server', function () {
     $property = (new ReflectionClass(EinundzwanzigServer::class))->getProperty('tools');
     $tools = $property->getDefaultValue();
 
-    expect($tools)->toHaveCount(30)
+    expect($tools)->toHaveCount(31)
         ->and($tools)->toContain(CreateMeetupTool::class)
         ->and($tools)->toContain(UpdateCourseEventTool::class)
         ->and($tools)->toContain(SearchCitiesTool::class);

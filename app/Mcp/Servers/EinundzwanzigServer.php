@@ -27,6 +27,7 @@ use App\Mcp\Tools\Search\ListCountriesTool;
 use App\Mcp\Tools\Search\SearchCitiesTool;
 use App\Mcp\Tools\Search\SearchCoursesTool;
 use App\Mcp\Tools\Search\SearchLecturersTool;
+use App\Mcp\Tools\Search\SearchMeetupsTool;
 use App\Mcp\Tools\Search\SearchVenuesTool;
 use App\Mcp\Tools\Venue\CreateVenueTool;
 use App\Mcp\Tools\Venue\ListMyVenuesTool;
@@ -57,6 +58,12 @@ Entitäten immer über ihren NAMEN:
   übergeben (Parameter z. B. "city", "country", "lecturer", "course", "venue"); bei Unsicherheit
   vorher mit search-cities / search-venues / search-lecturers / search-courses / list-countries
   den genauen Namen ermitteln.
+Bevor ein NEUES Meetup angelegt wird (create-meetup): IMMER zuerst mit search-meetups nach
+einem bestehenden Meetup suchen – sowohl nach dem Namen als auch nach dem Stadtnamen. Existiert
+bereits ein passendes Meetup, KEIN Duplikat anlegen, sondern dem Nutzer das gefundene Meetup
+nennen. Nur wenn die Suche kein passendes Meetup liefert, den Nutzer fragen, ob ein neues
+Meetup erstellt werden soll – und erst nach Bestätigung create-meetup aufrufen.
+
 Termine/Events (Meetup-Termine, Kurs-Events) haben keinen Namen. Hier zuerst list-my-meetup-
 events bzw. list-my-course-events aufrufen, dem Nutzer die Einträge zur Auswahl anbieten und
 die ID des gewählten Eintrags übergeben – ebenfalls ohne den Nutzer nach der ID zu fragen.
@@ -123,6 +130,7 @@ class EinundzwanzigServer extends Server
         UpdateCourseEventTool::class,
 
         // Suche / Stammdaten-Lookups
+        SearchMeetupsTool::class,
         SearchCitiesTool::class,
         SearchVenuesTool::class,
         SearchLecturersTool::class,
