@@ -8,6 +8,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Livewire\Exceptions\MethodNotFoundException;
+use Livewire\Exceptions\PublicPropertyNotFoundException;
 use Livewire\Features\SupportFileUploads\MissingFileUploadsTraitException;
 use Livewire\Features\SupportLifecycleHooks\DirectlyCallingLifecycleHooksNotAllowedException;
 use Livewire\Mechanisms\HandleComponents\CorruptComponentPayloadException;
@@ -85,7 +86,16 @@ return Application::configure(basePath: dirname(__DIR__))
             return false;
         };
 
-        $exceptions->report(function (Throwable $e) use ($isStaleLivewireAsset, $isStaleCompiledView, $isMissingFileUploadsTrait, $isLivewireExploitProbe) {
+        $isMalformedLivewirePropertyUpdate = function (Throwable $e): bool {
+            // Bots replay `livewire/update` with a mutated snapshot that sets public
+            // properties the target component never declared (e.g. `value` on `welcome`).
+            // Livewire rejects the update; in production this is pure bot noise, so we
+            // silence it. Locally we let it surface, so a genuinely undeclared property
+            // binding is still caught during development.
+            return $e instanceof PublicPropertyNotFoundException && ! app()->isLocal();
+        };
+
+        $exceptions->report(function (Throwable $e) use ($isStaleLivewireAsset, $isStaleCompiledView, $isMissingFileUploadsTrait, $isLivewireExploitProbe, $isMalformedLivewirePropertyUpdate) {
             if ($isStaleLivewireAsset($e, request())) {
                 return false;
             }
@@ -102,6 +112,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 return false;
             }
 
+            if ($isMalformedLivewirePropertyUpdate($e)) {
+                return false;
+            }
+
             // Bots replay `/livewire/update` with a mutated snapshot whose HMAC
             // checksum no longer matches its [name, id, data]. Checksum::verify()
             // rejects these, so the rejection is the tamper signature, not an app
@@ -114,7 +128,7 @@ return Application::configure(basePath: dirname(__DIR__))
             return null;
         });
 
-        $exceptions->render(function (Throwable $e, Request $request) use ($isStaleLivewireAsset, $isStaleCompiledView, $isMissingFileUploadsTrait, $isLivewireExploitProbe) {
+        $exceptions->render(function (Throwable $e, Request $request) use ($isStaleLivewireAsset, $isStaleCompiledView, $isMissingFileUploadsTrait, $isLivewireExploitProbe, $isMalformedLivewirePropertyUpdate) {
             if ($isStaleLivewireAsset($e, $request)) {
                 return response('', 404);
             }
@@ -128,6 +142,10 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             if ($isLivewireExploitProbe($e)) {
+                return response('', 400);
+            }
+
+            if ($isMalformedLivewirePropertyUpdate($e)) {
                 return response('', 400);
             }
 

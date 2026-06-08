@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\FiltersNumericIds;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreVenueRequest;
 use App\Http\Requests\Api\UpdateVenueRequest;
@@ -20,6 +21,8 @@ use Symfony\Component\HttpFoundation\Response;
 #[Group(name: 'Stammdaten', weight: 5)]
 class VenueController extends Controller
 {
+    use FiltersNumericIds;
+
     /**
      * Veranstaltungsorte auflisten und durchsuchen
      *
@@ -42,8 +45,7 @@ class VenueController extends Controller
             )
             ->when(
                 $request->exists('selected'),
-                fn (Builder $query) => $query->whereIn('id',
-                    $request->input('selected', [])),
+                fn (Builder $query) => $query->whereIn('id', $this->numericIds($request)),
                 fn (Builder $query) => $query->limit(10)
             )
             ->get()

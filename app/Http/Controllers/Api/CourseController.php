@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\FiltersNumericIds;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use Dedoc\Scramble\Attributes\ExcludeRouteFromDocs;
@@ -16,6 +17,8 @@ use Symfony\Component\HttpFoundation\Response;
 #[Group(name: 'Kurse', weight: 1)]
 class CourseController extends Controller
 {
+    use FiltersNumericIds;
+
     /**
      * Kurse auflisten und durchsuchen
      *
@@ -32,7 +35,7 @@ class CourseController extends Controller
             ->select('id', 'name')
             ->orderBy('name')
             ->when($request->has('user_id'),
-                fn (Builder $query) => $query->where('created_by', $request->user_id))
+                fn (Builder $query) => $query->where('created_by', $request->integer('user_id')))
             ->when(
                 $request->search,
                 fn (Builder $query) => $query
@@ -40,8 +43,7 @@ class CourseController extends Controller
             )
             ->when(
                 $request->exists('selected'),
-                fn (Builder $query) => $query->whereIn('id',
-                    $request->input('selected', [])),
+                fn (Builder $query) => $query->whereIn('id', $this->numericIds($request)),
                 fn (Builder $query) => $query->limit(10)
             )
             ->get()

@@ -8,6 +8,7 @@ use App\Http\Requests\Api\UpdateMeetupEventRequest;
 use App\Http\Resources\MeetupEventResource;
 use App\Models\MeetupEvent;
 use Carbon\Carbon;
+use Carbon\Exceptions\InvalidFormatException;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\PathParameter;
 use Dedoc\Scramble\Attributes\Response as ResponseAttribute;
@@ -30,10 +31,15 @@ class MeetupEventController extends Controller
      * @return Collection<int, array<string, mixed>>
      */
     #[PathParameter(name: 'date', description: 'Optionales Datum (Y-m-d); filtert auf den Monat dieses Datums.', required: false, type: 'string')]
+    #[ResponseAttribute(status: 400, description: 'Das übergebene Datum ist nicht parsebar (erwartet wird Y-m-d).')]
     public function __invoke(?string $date = null): Collection
     {
         if ($date) {
-            $date = Carbon::parse($date);
+            try {
+                $date = Carbon::parse($date);
+            } catch (InvalidFormatException) {
+                abort(Response::HTTP_BAD_REQUEST, 'Ungültiges Datum. Erwartet wird das Format Y-m-d.');
+            }
         }
         $events = MeetupEvent::query()
             ->with([

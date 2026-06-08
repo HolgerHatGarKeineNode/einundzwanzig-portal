@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\FiltersNumericIds;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreLecturerRequest;
 use App\Http\Requests\Api\UpdateLecturerRequest;
@@ -20,6 +21,8 @@ use Symfony\Component\HttpFoundation\Response;
 #[Group(name: 'Referenten', weight: 4)]
 class LecturerController extends Controller
 {
+    use FiltersNumericIds;
+
     /**
      * Referenten auflisten und durchsuchen
      *
@@ -32,8 +35,6 @@ class LecturerController extends Controller
         return Lecturer::query()
             ->select('id', 'name')
             ->orderBy('name')
-//                       ->when($request->has('user_id'),
-//                           fn(Builder $query) => $query->where('created_by', $request->user_id))
             ->when(
                 $request->search,
                 fn (Builder $query) => $query
@@ -41,8 +42,7 @@ class LecturerController extends Controller
             )
             ->when(
                 $request->exists('selected'),
-                fn (Builder $query) => $query->whereIn('id',
-                    $request->input('selected', [])),
+                fn (Builder $query) => $query->whereIn('id', $this->numericIds($request)),
                 fn (Builder $query) => $query->limit(10)
             )
             ->get()

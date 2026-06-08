@@ -94,3 +94,11 @@ it('filters /api/meetup-events by date when one is supplied', function () {
     $response->assertSuccessful();
     expect($response->json())->toBeArray()->not->toBeEmpty();
 });
+
+it('returns 400 instead of 500 when the date path segment is not parseable', function () {
+    $this->getJson('/api/meetup-events/'.urlencode('{date}'))
+        ->assertStatus(400);
+
+    $this->getJson('/api/meetup-events/not-a-date')
+        ->assertStatus(400);
+});
