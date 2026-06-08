@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools\Venue;
 
 use App\Http\Resources\VenueResource;
+use App\Mcp\Tools\Concerns\ResolvesEntities;
 use App\Models\Venue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
@@ -14,15 +15,17 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('Zeigt einen einzelnen, vom authentifizierten Nutzer erstellten Veranstaltungsort.')]
+#[Description('Zeigt einen deiner Veranstaltungsorte (per Name angegeben).')]
 class ShowMyVenueTool extends Tool
 {
+    use ResolvesEntities;
+
     public function handle(Request $request): Response
     {
-        $venue = Venue::find($request->get('id'));
+        $venue = $this->resolveOwnedByName($request, Venue::class, 'Veranstaltungsorte', 'venue');
 
-        if (! $venue) {
-            return Response::error('Veranstaltungsort nicht gefunden.');
+        if ($venue instanceof Response) {
+            return $venue;
         }
 
         $user = $request->user();
@@ -40,7 +43,8 @@ class ShowMyVenueTool extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'id' => $schema->integer()->description('ID des Veranstaltungsorts.')->required(),
+            'venue' => $schema->string()->description('Name des Veranstaltungsorts (aus deinen Orten, siehe list-my-venues).'),
+            'id' => $schema->integer()->description('Optional: ID des Veranstaltungsorts, falls bereits bekannt (Alternative zu "venue").'),
         ];
     }
 }

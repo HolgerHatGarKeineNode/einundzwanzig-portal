@@ -40,7 +40,7 @@ class ShowMyMeetupEventTool extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'id' => $schema->integer()->description('ID des Meetup-Termins.')->required(),
+            'id' => $schema->integer()->description('ID des Meetup-Termins (über list-my-meetup-events ermitteln; nicht den Nutzer danach fragen).')->required(),
         ];
     }
 }

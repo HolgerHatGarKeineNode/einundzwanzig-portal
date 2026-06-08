@@ -4,6 +4,8 @@ namespace App\Mcp\Tools\MeetupEvent;
 
 use App\Http\Requests\Api\StoreMeetupEventRequest;
 use App\Http\Resources\MeetupEventResource;
+use App\Mcp\Tools\Concerns\ResolvesEntities;
+use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
@@ -13,15 +15,27 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Legt einen neuen Meetup-Termin für den authentifizierten Nutzer an. Der Ersteller (created_by) wird automatisch gesetzt.')]
+#[Description('Legt einen neuen Meetup-Termin für eines der eigenen Meetups an. Das Meetup wird über seinen Namen angegeben; der Ersteller (created_by) wird automatisch gesetzt.')]
 class CreateMeetupEventTool extends Tool
 {
+    use ResolvesEntities;
+
     public function handle(Request $request): Response
     {
         $user = $request->user();
 
         if ($user === null || Gate::forUser($user)->denies('create', MeetupEvent::class)) {
             return Response::error('Nicht berechtigt, einen Meetup-Termin anzulegen.');
+        }
+
+        if (! $this->present($request->get('meetup_id'))) {
+            $meetup = $this->resolveOwnedByName($request, Meetup::class, 'Meetups', 'meetup');
+
+            if ($meetup instanceof Response) {
+                return $meetup;
+            }
+
+            $request->merge(['meetup_id' => $meetup->id]);
         }
 
         $storeRequest = new StoreMeetupEventRequest;
@@ -42,7 +56,8 @@ class CreateMeetupEventTool extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'meetup_id' => $schema->integer()->description('ID des zugehörigen Meetups (vorher per search-meetups auflösen).')->required(),
+            'meetup' => $schema->string()->description('Name deines Meetups, zu dem der Termin gehört (z. B. "Einundzwanzig Ansbach"). Wird automatisch aufgelöst – sonst zuerst list-my-meetups aufrufen und den Nutzer auswählen lassen.'),
+            'meetup_id' => $schema->integer()->description('Optional: ID des Meetups, falls bereits bekannt (Alternative zu "meetup").'),
             'start' => $schema->string()->description('Startzeitpunkt als Datum/Uhrzeit (z. B. 2026-08-01 18:00:00).')->required(),
             'location' => $schema->string()->description('Veranstaltungsort.'),
             'description' => $schema->string()->description('Beschreibung des Termins.'),

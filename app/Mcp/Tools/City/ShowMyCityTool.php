@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools\City;
 
 use App\Http\Resources\CityResource;
+use App\Mcp\Tools\Concerns\ResolvesEntities;
 use App\Models\City;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
@@ -14,15 +15,17 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('Zeigt eine einzelne, vom authentifizierten Nutzer erstellte Stadt.')]
+#[Description('Zeigt eine deiner Städte (per Name angegeben).')]
 class ShowMyCityTool extends Tool
 {
+    use ResolvesEntities;
+
     public function handle(Request $request): Response
     {
-        $city = City::find($request->get('id'));
+        $city = $this->resolveOwnedByName($request, City::class, 'Städte', 'city');
 
-        if (! $city) {
-            return Response::error('Stadt nicht gefunden.');
+        if ($city instanceof Response) {
+            return $city;
         }
 
         $user = $request->user();
@@ -40,7 +43,8 @@ class ShowMyCityTool extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'id' => $schema->integer()->description('ID der Stadt.')->required(),
+            'city' => $schema->string()->description('Name der Stadt (aus deinen Städten, siehe list-my-cities).'),
+            'id' => $schema->integer()->description('Optional: ID der Stadt, falls bereits bekannt (Alternative zu "city").'),
         ];
     }
 }

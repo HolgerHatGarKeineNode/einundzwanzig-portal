@@ -42,12 +42,28 @@ use Laravel\Mcp\Server\Tool;
 #[Version('1.0.0')]
 #[Instructions(<<<'TXT'
 Dieser Server spiegelt die authentifizierte Einundzwanzig-API. Jeder Aufruf läuft im Kontext
-des per Sanctum-Token angemeldeten Nutzers; beim Anlegen wird der Ersteller (created_by)
-automatisch auf diesen Nutzer gesetzt. Schreib- und Eigentums-Operationen (update, my-*) sind
-nur für den Ersteller oder einen Super-Admin erlaubt.
+des angemeldeten Nutzers; beim Anlegen wird der Ersteller (created_by) automatisch gesetzt.
+Schreib- und Eigentums-Operationen (update, show-my-*) sind nur für den Ersteller oder einen
+Super-Admin erlaubt.
 
-Fremdschlüssel (city_id, venue_id, lecturer_id, course_id) zuerst über die search-* Tools
-auflösen, bevor ein Datensatz angelegt oder aktualisiert wird.
+WICHTIG – niemals nach numerischen IDs fragen: Nutzer kennen keine internen IDs. Referenziere
+Entitäten immer über ihren NAMEN:
+- Eigene Datensätze ändern/anzeigen: zuerst das passende list-my-* Tool aufrufen
+  (list-my-meetups, list-my-cities, list-my-venues, list-my-lecturers, list-my-course-events),
+  dem Nutzer die Namen als Auswahlliste präsentieren und ihn wählen lassen. Dann das update-/
+  show-my-* Tool mit dem gewählten Namen aufrufen (Parameter z. B. "meetup", "city", "venue",
+  "lecturer", "course").
+- Fremdschlüssel beim Anlegen (Stadt, Land, Referent, Kurs, Veranstaltungsort): den Namen
+  übergeben (Parameter z. B. "city", "country", "lecturer", "course", "venue"); bei Unsicherheit
+  vorher mit search-cities / search-venues / search-lecturers / search-courses / list-countries
+  den genauen Namen ermitteln.
+Termine/Events (Meetup-Termine, Kurs-Events) haben keinen Namen. Hier zuerst list-my-meetup-
+events bzw. list-my-course-events aufrufen, dem Nutzer die Einträge zur Auswahl anbieten und
+die ID des gewählten Eintrags übergeben – ebenfalls ohne den Nutzer nach der ID zu fragen.
+
+Die Tools lösen Namen serverseitig auf. Bei Mehrdeutigkeit oder fehlendem Treffer liefern sie
+eine Liste der passenden Einträge zurück – diese dem Nutzer zur Auswahl anbieten. Die *_id-
+Parameter sind nur ein optionaler Fallback, falls die ID bereits bekannt ist.
 TXT)]
 class EinundzwanzigServer extends Server
 {

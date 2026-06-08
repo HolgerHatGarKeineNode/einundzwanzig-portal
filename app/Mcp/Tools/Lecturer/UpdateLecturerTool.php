@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\Lecturer;
 
 use App\Http\Requests\Api\UpdateLecturerRequest;
 use App\Http\Resources\LecturerResource;
+use App\Mcp\Tools\Concerns\ResolvesEntities;
 use App\Models\Lecturer;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
@@ -13,15 +14,17 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Aktualisiert einen bestehenden Referenten. Nur der Ersteller oder ein Super-Admin darf ihn ändern.')]
+#[Description('Aktualisiert einen deiner Referenten (per Name angegeben). Nur der Ersteller oder ein Super-Admin darf ihn ändern.')]
 class UpdateLecturerTool extends Tool
 {
+    use ResolvesEntities;
+
     public function handle(Request $request): Response
     {
-        $lecturer = Lecturer::find($request->get('id'));
+        $lecturer = $this->resolveOwnedByName($request, Lecturer::class, 'Referenten', 'lecturer');
 
-        if (! $lecturer) {
-            return Response::error('Referent nicht gefunden.');
+        if ($lecturer instanceof Response) {
+            return $lecturer;
         }
 
         $user = $request->user();
@@ -43,8 +46,9 @@ class UpdateLecturerTool extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'id' => $schema->integer()->description('ID des zu aktualisierenden Referenten.')->required(),
-            'name' => $schema->string()->description('Name des Referenten.'),
+            'lecturer' => $schema->string()->description('Name des zu ändernden Referenten (aus deinen Referenten, siehe list-my-lecturers).'),
+            'id' => $schema->integer()->description('Optional: ID des Referenten, falls bereits bekannt (Alternative zu "lecturer").'),
+            'name' => $schema->string()->description('Neuer Name des Referenten.'),
             'subtitle' => $schema->string()->description('Untertitel.'),
             'intro' => $schema->string()->description('Einleitungstext.'),
             'description' => $schema->string()->description('Beschreibung.'),

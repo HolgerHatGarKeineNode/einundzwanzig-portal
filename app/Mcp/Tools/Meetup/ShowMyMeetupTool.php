@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools\Meetup;
 
 use App\Http\Resources\MeetupResource;
+use App\Mcp\Tools\Concerns\ResolvesEntities;
 use App\Models\Meetup;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
@@ -14,15 +15,17 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('Zeigt ein einzelnes, vom authentifizierten Nutzer erstelltes Meetup.')]
+#[Description('Zeigt eines deiner Meetups (per Name angegeben).')]
 class ShowMyMeetupTool extends Tool
 {
+    use ResolvesEntities;
+
     public function handle(Request $request): Response
     {
-        $meetup = Meetup::find($request->get('id'));
+        $meetup = $this->resolveOwnedByName($request, Meetup::class, 'Meetups', 'meetup');
 
-        if (! $meetup) {
-            return Response::error('Meetup nicht gefunden.');
+        if ($meetup instanceof Response) {
+            return $meetup;
         }
 
         $user = $request->user();
@@ -40,7 +43,8 @@ class ShowMyMeetupTool extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'id' => $schema->integer()->description('ID des Meetups.')->required(),
+            'meetup' => $schema->string()->description('Name des Meetups (aus deinen Meetups, siehe list-my-meetups).'),
+            'id' => $schema->integer()->description('Optional: ID des Meetups, falls bereits bekannt (Alternative zu "meetup").'),
         ];
     }
 }
