@@ -22,3 +22,13 @@ it('registers every domain tool on the server', function () {
         ->and($tools)->toContain(UpdateCourseEventTool::class)
         ->and($tools)->toContain(SearchCitiesTool::class);
 });
+
+it('serves every tool on a single tools/list page', function () {
+    $reflection = new ReflectionClass(EinundzwanzigServer::class);
+    $tools = $reflection->getProperty('tools')->getDefaultValue();
+    $defaultPerPage = $reflection->getProperty('defaultPaginationLength')->getDefaultValue();
+
+    // Some MCP clients (e.g. the Claude.ai web connector) only load the first
+    // tools/list page and do not follow the nextCursor, so every tool must fit on it.
+    expect($defaultPerPage)->toBeGreaterThanOrEqual(count($tools));
+});

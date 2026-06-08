@@ -68,6 +68,16 @@ TXT)]
 class EinundzwanzigServer extends Server
 {
     /**
+     * tools/list wird vom Paket cursor-paginiert (Default 15/Seite). Manche Clients
+     * (z. B. der Claude.ai-Web-Connector) laden nur die erste Seite und folgen dem
+     * nextCursor nicht – dann fehlt die Hälfte der Tools. Wir heben die Seitengröße an,
+     * sodass alle Tools auf eine Seite passen.
+     */
+    public int $maxPaginationLength = 100;
+
+    public int $defaultPaginationLength = 100;
+
+    /**
      * The tools registered with this MCP server.
      *
      * @var array<int, class-string<Tool>>
