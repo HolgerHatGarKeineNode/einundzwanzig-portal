@@ -76,6 +76,27 @@ it('completes a Lightning login and redirects to the dashboard when a recent Log
     $this->assertAuthenticatedAs($user);
 });
 
+it('resumes the intended OAuth url after a Lightning login instead of going to the dashboard', function () {
+    $user = User::factory()->create();
+    $k1 = bin2hex(random_bytes(32));
+    LoginKey::factory()->create([
+        'user_id' => $user->id,
+        'k1' => $k1,
+        'created_at' => now(),
+    ]);
+
+    $intended = url('/oauth/authorize?client_id=1&response_type=code&scope=mcp:use');
+
+    $response = $this->withSession([
+        'lang_country' => 'de-DE',
+        'locale' => 'de',
+        'url.intended' => $intended,
+    ])->get(route('auth.ln.complete', ['k1' => $k1]));
+
+    $response->assertRedirect($intended);
+    $this->assertAuthenticatedAs($user);
+});
+
 it('redirects to login when the LoginKey is older than 5 minutes', function () {
     $user = User::factory()->create();
     $k1 = bin2hex(random_bytes(32));

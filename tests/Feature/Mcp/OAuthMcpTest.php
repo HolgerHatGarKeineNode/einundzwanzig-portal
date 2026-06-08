@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
 
 it('configures the passport-backed api guard', function () {
@@ -96,4 +97,26 @@ it('rejects an authorize request that uses plain PKCE instead of S256', function
 
     $this->get('/oauth/authorize?response_type=code&client_id=1&redirect_uri=https%3A%2F%2Fclaude.ai%2Fcb&code_challenge=abc123&code_challenge_method=plain')
         ->assertStatus(400);
+});
+
+it('redirects a guest from the authorize endpoint to login and stores the intended url', function () {
+    $clients = app(ClientRepository::class);
+    $client = $clients->createAuthorizationCodeGrantClient(
+        name: 'Claude',
+        redirectUris: ['https://claude.ai/api/mcp/auth_callback'],
+        confidential: false,
+    );
+
+    $response = $this->get('/oauth/authorize?'.http_build_query([
+        'client_id' => $client->getKey(),
+        'redirect_uri' => 'https://claude.ai/api/mcp/auth_callback',
+        'response_type' => 'code',
+        'scope' => 'mcp:use',
+        'state' => 'xyz',
+        'code_challenge' => str_repeat('a', 43),
+        'code_challenge_method' => 'S256',
+    ]));
+
+    $response->assertRedirect(route('login'));
+    expect(session('url.intended'))->toContain('/oauth/authorize');
 });

@@ -211,20 +211,28 @@ final class LnurlAuthController extends Controller
 
         // Auth::login() calls Session::migrate(destroy: true) internally,
         // which wipes the previous session payload. Capture lang_country
-        // before the login and restore it on the fresh session so the
-        // dashboard URL keeps the user's chosen locale.
+        // and the post-login intended URL before the login and restore them
+        // on the fresh session. The intended URL lets the OAuth2 flow resume:
+        // a guest who clicked "Connect" in an MCP client is bounced to login
+        // and, after logging in, is sent back to /oauth/authorize instead of
+        // landing on the dashboard.
         $langCountry = session('lang_country', config('app.domain_country'));
+        $intendedUrl = session('url.intended');
 
         Auth::login($user);
 
         session(['lang_country' => $langCountry]);
+
+        if ($intendedUrl !== null) {
+            session(['url.intended' => $intendedUrl]);
+        }
 
         $country = str($langCountry)
             ->after('-')
             ->lower()
             ->value();
 
-        return redirect()->route('dashboard', ['country' => $country]);
+        return redirect()->intended(route('dashboard', ['country' => $country]));
     }
 
     /**

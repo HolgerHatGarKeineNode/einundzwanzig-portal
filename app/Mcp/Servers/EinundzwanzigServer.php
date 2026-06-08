@@ -30,6 +30,12 @@ use App\Mcp\Tools\Search\SearchCoursesTool;
 use App\Mcp\Tools\Search\SearchLecturersTool;
 use App\Mcp\Tools\Search\SearchMeetupsTool;
 use App\Mcp\Tools\Search\SearchVenuesTool;
+use App\Mcp\Tools\SuperAdmin\SuperAdminCreateRecordTool;
+use App\Mcp\Tools\SuperAdmin\SuperAdminDescribeModelTool;
+use App\Mcp\Tools\SuperAdmin\SuperAdminListModelsTool;
+use App\Mcp\Tools\SuperAdmin\SuperAdminListRecordsTool;
+use App\Mcp\Tools\SuperAdmin\SuperAdminShowRecordTool;
+use App\Mcp\Tools\SuperAdmin\SuperAdminUpdateRecordTool;
 use App\Mcp\Tools\Venue\CreateVenueTool;
 use App\Mcp\Tools\Venue\ListMyVenuesTool;
 use App\Mcp\Tools\Venue\ShowMyVenueTool;
@@ -72,6 +78,14 @@ die ID des gewählten Eintrags übergeben – ebenfalls ohne den Nutzer nach der
 Die Tools lösen Namen serverseitig auf. Bei Mehrdeutigkeit oder fehlendem Treffer liefern sie
 eine Liste der passenden Einträge zurück – diese dem Nutzer zur Auswahl anbieten. Die *_id-
 Parameter sind nur ein optionaler Fallback, falls die ID bereits bekannt ist.
+
+Super-Admins sehen zusätzlich generische super-admin-* Tools, mit denen JEDES Model bearbeitet
+werden kann (ohne Ownership-Beschränkung). Vorgehen: erst super-admin-list-models, dann
+super-admin-describe-model (für die Felder), dann super-admin-list-records / -show-record zum
+Finden und schließlich super-admin-create-record / -update-record zum Bearbeiten.
+Sicherheitskritische Felder (Passwörter, Auth-Tokens, Rollen) lassen sich über diese Tools
+NICHT setzen – Rollen und Passwörter werden ausschließlich über die dafür vorgesehenen Wege
+verwaltet.
 TXT)]
 class EinundzwanzigServer extends Server
 {
@@ -81,9 +95,9 @@ class EinundzwanzigServer extends Server
      * nextCursor nicht – dann fehlt die Hälfte der Tools. Wir heben die Seitengröße an,
      * sodass alle Tools auf eine Seite passen.
      */
-    public int $maxPaginationLength = 100;
+    public int $maxPaginationLength = 1000;
 
-    public int $defaultPaginationLength = 100;
+    public int $defaultPaginationLength = 1000;
 
     /**
      * The tools registered with this MCP server.
@@ -138,5 +152,14 @@ class EinundzwanzigServer extends Server
         SearchLecturersTool::class,
         SearchCoursesTool::class,
         ListCountriesTool::class,
+
+        // Super-Admin: generische Tools für ALLE Models (nur für Super-Admins sichtbar,
+        // via shouldRegister; created_by/Ownership-Beschränkungen entfallen hier bewusst).
+        SuperAdminListModelsTool::class,
+        SuperAdminDescribeModelTool::class,
+        SuperAdminListRecordsTool::class,
+        SuperAdminShowRecordTool::class,
+        SuperAdminCreateRecordTool::class,
+        SuperAdminUpdateRecordTool::class,
     ];
 }
