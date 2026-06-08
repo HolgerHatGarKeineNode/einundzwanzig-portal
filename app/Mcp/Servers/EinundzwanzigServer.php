@@ -15,6 +15,7 @@ use App\Mcp\Tools\Lecturer\CreateLecturerTool;
 use App\Mcp\Tools\Lecturer\ListMyLecturersTool;
 use App\Mcp\Tools\Lecturer\ShowMyLecturerTool;
 use App\Mcp\Tools\Lecturer\UpdateLecturerTool;
+use App\Mcp\Tools\Meetup\AddMeetupToMineTool;
 use App\Mcp\Tools\Meetup\CreateMeetupTool;
 use App\Mcp\Tools\Meetup\ListMyMeetupsTool;
 use App\Mcp\Tools\Meetup\ShowMyMeetupTool;
@@ -93,6 +94,7 @@ class EinundzwanzigServer extends Server
         // Meetups
         CreateMeetupTool::class,
         UpdateMeetupTool::class,
+        AddMeetupToMineTool::class,
         ListMyMeetupsTool::class,
         ShowMyMeetupTool::class,
 

@@ -30,15 +30,28 @@ it('mounts meetups.create when authenticated', function () {
     Livewire::test('meetups.create')->assertStatus(200);
 });
 
-it('mounts meetups.edit when the authenticated user has added the meetup to My-Meetups', function () {
-    $owner = actingAsUser();
-    $meetup = Meetup::factory()->create(['city_id' => $this->city->id]);
-    $meetup->users()->attach($owner);
+it('mounts meetups.edit for the creator of the meetup', function () {
+    $creator = actingAsUser();
+    $meetup = Meetup::factory()->create([
+        'city_id' => $this->city->id,
+        'created_by' => $creator->id,
+    ]);
+    $meetup->users()->attach($creator);
 
     Livewire::test('meetups.edit', ['meetup' => $meetup])->assertStatus(200);
 });
 
-it('mounts meetups.edit for a My-Meetups member even if another user created the meetup', function () {
+it('mounts meetups.edit for the creator even without a My-Meetups pivot entry', function () {
+    $creator = actingAsUser();
+    $meetup = Meetup::factory()->create([
+        'city_id' => $this->city->id,
+        'created_by' => $creator->id,
+    ]);
+
+    Livewire::test('meetups.edit', ['meetup' => $meetup])->assertStatus(200);
+});
+
+it('aborts meetups.edit with 403 for a member who did not create the meetup', function () {
     $creator = User::factory()->create();
     $member = actingAsUser();
     $meetup = Meetup::factory()->create([
@@ -47,23 +60,13 @@ it('mounts meetups.edit for a My-Meetups member even if another user created the
     ]);
     $meetup->users()->attach($member);
 
-    Livewire::test('meetups.edit', ['meetup' => $meetup])->assertStatus(200);
+    Livewire::test('meetups.edit', ['meetup' => $meetup])->assertStatus(403);
 });
 
-it('aborts meetups.edit with 403 when the authenticated user has not added the meetup to My-Meetups', function () {
+it('aborts meetups.edit with 403 when the user is neither creator nor super-admin', function () {
     actingAsUser();
 
     Livewire::test('meetups.edit', ['meetup' => $this->meetup])->assertStatus(403);
-});
-
-it('aborts meetups.edit with 403 when the authenticated user is only the creator but not in My-Meetups', function () {
-    $creator = actingAsUser();
-    $meetup = Meetup::factory()->create([
-        'city_id' => $this->city->id,
-        'created_by' => $creator->id,
-    ]);
-
-    Livewire::test('meetups.edit', ['meetup' => $meetup])->assertStatus(403);
 });
 
 it('mounts meetups.create-edit-events for new event', function () {

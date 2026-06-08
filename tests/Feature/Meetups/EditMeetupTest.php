@@ -3,6 +3,7 @@
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
+use App\Models\User;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -10,13 +11,14 @@ beforeEach(function () {
     $this->city = City::factory()->create(['country_id' => $country->id]);
 });
 
-it('updates an existing Meetup name when the user has it in My-Meetups', function () {
-    $member = actingAsUser();
+it('updates an existing Meetup name as the creator', function () {
+    $creator = actingAsUser();
     $meetup = Meetup::factory()->create([
         'city_id' => $this->city->id,
         'name' => 'Original Name',
+        'created_by' => $creator->id,
     ]);
-    $meetup->users()->attach($member);
+    $meetup->users()->attach($creator);
 
     Livewire::test('meetups.edit', ['meetup' => $meetup])
         ->set('name', 'Updated Name')
@@ -29,12 +31,13 @@ it('updates an existing Meetup name when the user has it in My-Meetups', functio
 });
 
 it('rejects update when name collides with another existing Meetup', function () {
-    $member = actingAsUser();
+    $creator = actingAsUser();
     $meetup = Meetup::factory()->create([
         'city_id' => $this->city->id,
         'name' => 'Original Name',
+        'created_by' => $creator->id,
     ]);
-    $meetup->users()->attach($member);
+    $meetup->users()->attach($creator);
     Meetup::factory()->create(['name' => 'Other Name', 'city_id' => $this->city->id]);
 
     Livewire::test('meetups.edit', ['meetup' => $meetup])
@@ -44,12 +47,13 @@ it('rejects update when name collides with another existing Meetup', function ()
 });
 
 it('allows update when name is unchanged (Rule::unique ignores own id)', function () {
-    $member = actingAsUser();
+    $creator = actingAsUser();
     $meetup = Meetup::factory()->create([
         'city_id' => $this->city->id,
         'name' => 'Original Name',
+        'created_by' => $creator->id,
     ]);
-    $meetup->users()->attach($member);
+    $meetup->users()->attach($creator);
 
     Livewire::test('meetups.edit', ['meetup' => $meetup])
         ->set('name', 'Original Name')
@@ -58,11 +62,12 @@ it('allows update when name is unchanged (Rule::unique ignores own id)', functio
         ->assertHasNoErrors();
 });
 
-it('blocks updateMeetup when the user has not added the meetup to My-Meetups', function () {
+it('blocks updateMeetup when the user is not the creator', function () {
     actingAsUser();
     $meetup = Meetup::factory()->create([
         'city_id' => $this->city->id,
         'name' => 'Original Name',
+        'created_by' => User::factory()->create()->id,
     ]);
 
     Livewire::test('meetups.edit', ['meetup' => $meetup])

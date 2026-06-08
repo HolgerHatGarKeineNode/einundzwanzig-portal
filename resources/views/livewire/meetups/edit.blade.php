@@ -84,23 +84,14 @@ class extends Component {
     }
 
     /**
-     * Enforce that only users who have added the meetup to their personal
-     * "My-Meetups" list (the meetup_user pivot) may load or update this view.
-     * Editing is intentionally not restricted to the original `created_by`
-     * — any member of the meetup's user list is treated as an editor.
+     * Stammdaten eines Meetups dürfen ausschließlich vom Ersteller (created_by) oder
+     * einem Super-Admin bearbeitet werden – einheitlich mit MeetupPolicy, der REST-API
+     * und den MCP-Tools. Reine Mitglieder (meetup_user-Pivot) dürfen nur Termine anlegen
+     * (siehe meetups.create-edit-events), nicht aber die Stammdaten ändern.
      */
     protected function authorizeAccess(): void
     {
-        if (! auth()->check()) {
-            abort(403);
-        }
-
-        $isMember = $this->meetup
-            ->users()
-            ->whereKey(auth()->id())
-            ->exists();
-
-        if (! $isMember) {
+        if (auth()->guest() || auth()->user()->cannot('update', $this->meetup)) {
             abort(403);
         }
     }

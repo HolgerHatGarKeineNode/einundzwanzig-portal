@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -67,6 +68,17 @@ class Meetup extends Model implements HasMedia
                 $model->created_by = auth()->id();
             }
         });
+
+        // Der Ersteller wird automatisch als Leiter in die meetup_user-Pivot eingetragen,
+        // damit das Meetup einheitlich (MCP, REST-API, Livewire) in „Meine Meetups"
+        // erscheint – egal über welchen Pfad es angelegt wurde.
+        static::created(function (Meetup $model): void {
+            if ($model->created_by !== null) {
+                $model->users()->syncWithoutDetaching([
+                    $model->created_by => ['is_leader' => true],
+                ]);
+            }
+        });
     }
 
     public function getSlugOptions(): SlugOptions
@@ -107,6 +119,18 @@ class Meetup extends Model implements HasMedia
     public function users()
     {
         return $this->belongsToMany(User::class);
+    }
+
+    /**
+     * Meetups, die dem Nutzer zugeordnet sind: selbst erstellt (created_by) ODER
+     * Mitglied über die meetup_user-Pivot. Entspricht „Meine Meetups" im Portal.
+     */
+    public function scopeAssociatedWith(Builder $query, int $userId): void
+    {
+        $query->where(function (Builder $inner) use ($userId): void {
+            $inner->where('created_by', $userId)
+                ->orWhereHas('users', fn (Builder $user) => $user->whereKey($userId));
+        });
     }
 
     public function city(): BelongsTo

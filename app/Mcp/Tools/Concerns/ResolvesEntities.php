@@ -55,6 +55,40 @@ trait ResolvesEntities
     }
 
     /**
+     * Löst einen Datensatz per ID oder Name STRIKT innerhalb des übergebenen Scopes auf
+     * (der Scope ist zugleich die Autorisierung). Bei Mehrdeutigkeit oder fehlendem Treffer
+     * wird eine Auswahlliste der Einträge des Scopes zurückgegeben.
+     */
+    protected function resolveInScope(Builder $scope, Request $request, string $label, string $nameParam, string $column = 'name'): Model|Response
+    {
+        $id = $request->get('id');
+
+        if ($this->present($id)) {
+            $byId = (clone $scope)->whereKey($id)->first();
+
+            if ($byId !== null) {
+                return $byId;
+            }
+        }
+
+        $name = $request->get($nameParam);
+
+        if ($this->present($name)) {
+            $matches = $this->matchByName(clone $scope, (string) $name, $column);
+
+            if ($matches->count() === 1) {
+                return $matches->first();
+            }
+
+            if ($matches->count() > 1) {
+                return Response::error("Mehrere {$label} passen zu \"{$name}\": ".$matches->pluck($column)->join('; ').'. Bitte den genauen Namen angeben.');
+            }
+        }
+
+        return $this->optionsError(clone $scope, $label, $column);
+    }
+
+    /**
      * Löst einen Fremdschlüssel über den Namen auf und schreibt die ID in den Request,
      * damit die nachgelagerte Validierung sie sieht. Gibt null zurück, wenn nichts zu tun
      * ist (ID bereits gesetzt, oder optionaler FK ohne Namen), sonst eine Fehler-Response.

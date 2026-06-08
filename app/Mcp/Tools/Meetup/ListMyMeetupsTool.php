@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('Listet alle vom authentifizierten Nutzer erstellten Meetups, alphabetisch sortiert.')]
+#[Description('Listet die Meetups des authentifizierten Nutzers (selbst erstellte UND beigetretene), alphabetisch sortiert.')]
 class ListMyMeetupsTool extends Tool
 {
     public function handle(Request $request): Response
@@ -24,7 +24,7 @@ class ListMyMeetupsTool extends Tool
         }
 
         $meetups = Meetup::query()
-            ->where('created_by', $user->getAuthIdentifier())
+            ->associatedWith($user->getAuthIdentifier())
             ->orderBy('name')
             ->get();
 

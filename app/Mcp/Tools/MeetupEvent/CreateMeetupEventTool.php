@@ -29,7 +29,12 @@ class CreateMeetupEventTool extends Tool
         }
 
         if (! $this->present($request->get('meetup_id'))) {
-            $meetup = $this->resolveOwnedByName($request, Meetup::class, 'Meetups', 'meetup');
+            $meetup = $this->resolveInScope(
+                Meetup::query()->associatedWith($user->getAuthIdentifier()),
+                $request,
+                'Meetups',
+                'meetup',
+            );
 
             if ($meetup instanceof Response) {
                 return $meetup;

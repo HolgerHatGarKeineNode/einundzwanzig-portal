@@ -94,10 +94,8 @@ class extends Component {
 
         $meetup = Meetup::create($validated + ['created_by' => auth()->id()]);
 
-        // Attach the creator to meetup_user so they appear under "My-Meetups"
-        // and pass the new edit-permission check (which is based on this pivot,
-        // not on created_by).
-        $meetup->users()->attach(auth()->id());
+        // Der Ersteller wird über das Meetup::created-Model-Event automatisch als Leiter
+        // in die meetup_user-Pivot eingetragen (einheitlich mit MCP und REST-API).
 
         if ($this->logo) {
             $meetup
