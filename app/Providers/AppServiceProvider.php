@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Laravel\Nightwatch\Http\Middleware\Sample;
+use Laravel\Passport\Passport;
 use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
@@ -39,6 +40,15 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
 
         Gate::define('viewApiDocs', fn (?Authenticatable $user = null): bool => true);
+
+        // OAuth-2.1-Flow des MCP-Servers (Claude.ai Web-Connector).
+        Passport::authorizationView(fn ($parameters) => view('mcp.authorize', $parameters));
+
+        // Kurze Access-Token-Lebensdauer mit Refresh-Rotation begrenzt den Schaden eines
+        // geleakten Tokens (öffentliche PKCE-Clients ohne Client-Secret). Passport-Default
+        // wäre sonst 1 Jahr für Access- UND Refresh-Token.
+        Passport::tokensExpireIn(now()->addHours(8));
+        Passport::refreshTokensExpireIn(now()->addDays(14));
 
         if ($this->app->environment('production')) {
             URL::forceScheme('https');

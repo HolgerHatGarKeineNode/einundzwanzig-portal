@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\DomainMiddleware;
+use App\Http\Middleware\EnforcePkceS256;
 use App\Http\Middleware\SetTimezone;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Foundation\Application;
@@ -28,6 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
             DomainMiddleware::class,
             LangCountrySession::class,
             SetTimezone::class,
+            // Erzwingt PKCE-S256 auf dem Passport-Authorize-Endpunkt (oauth/authorize).
+            EnforcePkceS256::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
