@@ -59,7 +59,63 @@ class Meetup extends Model implements HasMedia
         'simplified_geojson' => 'array',
         'is_active' => 'boolean',
         'last_event_at' => 'datetime',
+        'restore_point' => 'array',
     ];
+
+    /**
+     * Stammdaten, die im Restore-Point gesichert und wiederhergestellt werden.
+     *
+     * @var list<string>
+     */
+    public const RESTORE_POINT_ATTRIBUTES = [
+        'name',
+        'slug',
+        'city_id',
+        'intro',
+        'telegram_link',
+        'webpage',
+        'twitter_username',
+        'matrix_group',
+        'nostr',
+        'simplex',
+        'signal',
+        'community',
+        'github_data',
+        'visible_on_map',
+    ];
+
+    /**
+     * Sichert den aktuellen Stand der Stammdaten als Restore-Point.
+     * restore_point ist bewusst nicht fillable und nur per Command erreichbar.
+     */
+    public function captureRestorePoint(): void
+    {
+        $this->forceFill([
+            'restore_point' => [
+                'captured_at' => now()->toIso8601String(),
+                'attributes' => $this->only(self::RESTORE_POINT_ATTRIBUTES),
+            ],
+        ])->saveQuietly();
+    }
+
+    /**
+     * Stellt die Stammdaten aus dem Restore-Point wieder her.
+     * Liefert false, wenn noch kein Restore-Point gesichert wurde.
+     */
+    public function restoreFromRestorePoint(): bool
+    {
+        $attributes = $this->restore_point['attributes'] ?? null;
+
+        if (! is_array($attributes)) {
+            return false;
+        }
+
+        $this->forceFill(
+            collect($attributes)->only(self::RESTORE_POINT_ATTRIBUTES)->all()
+        )->save();
+
+        return true;
+    }
 
     protected static function booted()
     {
@@ -119,6 +175,22 @@ class Meetup extends Model implements HasMedia
     public function users()
     {
         return $this->belongsToMany(User::class);
+    }
+
+    /**
+     * Ist der Nutzer über die meetup_user-Pivot Mitglied dieses Meetups?
+     */
+    public function hasMember(User $user): bool
+    {
+        return $this->users()->whereKey($user->id)->exists();
+    }
+
+    /**
+     * RateLimiter-Key für Meetup-Stammdaten-Updates über das Portal-Frontend.
+     */
+    public static function updateRateLimitKey(int $userId): string
+    {
+        return 'meetup-update:'.$userId;
     }
 
     /**

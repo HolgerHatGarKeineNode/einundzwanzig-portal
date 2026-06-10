@@ -29,4 +29,16 @@ class MeetupPolicy
     {
         return $this->owns($user, $meetup);
     }
+
+    /**
+     * Gelockerte Update-Regel ausschließlich für das Portal-Frontend (Livewire):
+     * Neben dem Ersteller darf auch jedes Mitglied der meetup_user-Pivot
+     * („Meine Meetups" im Dashboard) die Stammdaten bearbeiten. REST-API und
+     * MCP nutzen weiterhin die strikte update()-Ability. Übergangslösung, bis
+     * ein echtes Rollen-/Freigabekonzept existiert.
+     */
+    public function updateViaPortal(User $user, Meetup $meetup): bool
+    {
+        return $this->owns($user, $meetup) || $meetup->hasMember($user);
+    }
 }

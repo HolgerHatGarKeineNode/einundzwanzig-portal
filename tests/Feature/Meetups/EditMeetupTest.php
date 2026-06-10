@@ -4,6 +4,7 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\User;
+use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -62,7 +63,26 @@ it('allows update when name is unchanged (Rule::unique ignores own id)', functio
         ->assertHasNoErrors();
 });
 
-it('blocks updateMeetup when the user is not the creator', function () {
+it('allows updateMeetup for a member of the meetup_user pivot who is not the creator', function () {
+    $member = actingAsUser();
+    $meetup = Meetup::factory()->create([
+        'city_id' => $this->city->id,
+        'name' => 'Original Name',
+        'created_by' => User::factory()->create()->id,
+    ]);
+    $meetup->users()->attach($member);
+
+    Livewire::test('meetups.edit', ['meetup' => $meetup])
+        ->set('name', 'Updated By Member')
+        ->set('city_id', $this->city->id)
+        ->set('community', 'einundzwanzig')
+        ->call('updateMeetup')
+        ->assertHasNoErrors();
+
+    expect($meetup->refresh()->name)->toBe('Updated By Member');
+});
+
+it('blocks updateMeetup when the user is neither creator nor pivot member', function () {
     actingAsUser();
     $meetup = Meetup::factory()->create([
         'city_id' => $this->city->id,
@@ -72,6 +92,29 @@ it('blocks updateMeetup when the user is not the creator', function () {
 
     Livewire::test('meetups.edit', ['meetup' => $meetup])
         ->assertStatus(403);
+
+    expect($meetup->refresh()->name)->toBe('Original Name');
+});
+
+it('blocks updateMeetup after exceeding the hourly rate limit', function () {
+    $creator = actingAsUser();
+    $meetup = Meetup::factory()->create([
+        'city_id' => $this->city->id,
+        'name' => 'Original Name',
+        'created_by' => $creator->id,
+    ]);
+    $meetup->users()->attach($creator);
+
+    for ($i = 0; $i < 10; $i++) {
+        RateLimiter::hit(Meetup::updateRateLimitKey($creator->id), 3600);
+    }
+
+    Livewire::test('meetups.edit', ['meetup' => $meetup])
+        ->set('name', 'Updated Name')
+        ->set('city_id', $this->city->id)
+        ->set('community', 'einundzwanzig')
+        ->call('updateMeetup')
+        ->assertHasErrors(['rateLimit']);
 
     expect($meetup->refresh()->name)->toBe('Original Name');
 });

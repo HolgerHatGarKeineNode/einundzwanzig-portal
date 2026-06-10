@@ -5,6 +5,7 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
 use App\Traits\SeoTrait;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
@@ -84,14 +85,15 @@ class extends Component {
     }
 
     /**
-     * Stammdaten eines Meetups dürfen ausschließlich vom Ersteller (created_by) oder
-     * einem Super-Admin bearbeitet werden – einheitlich mit MeetupPolicy, der REST-API
-     * und den MCP-Tools. Reine Mitglieder (meetup_user-Pivot) dürfen nur Termine anlegen
-     * (siehe meetups.create-edit-events), nicht aber die Stammdaten ändern.
+     * Portal-Frontend nutzt die gelockerte updateViaPortal-Ability: Ersteller,
+     * Super-Admins UND Mitglieder der meetup_user-Pivot („Meine Meetups") dürfen
+     * die Stammdaten bearbeiten. REST-API und MCP-Tools bleiben auf der strikten
+     * update()-Ability (nur Ersteller/Super-Admin). Übergangslösung, bis ein
+     * echtes Rollen-/Freigabekonzept existiert.
      */
     protected function authorizeAccess(): void
     {
-        if (auth()->guest() || auth()->user()->cannot('update', $this->meetup)) {
+        if (auth()->guest() || auth()->user()->cannot('updateViaPortal', $this->meetup)) {
             abort(403);
         }
     }
@@ -163,6 +165,15 @@ class extends Component {
     {
         $this->authorizeAccess();
 
+        $rateLimiterKey = Meetup::updateRateLimitKey(auth()->id());
+
+        if (RateLimiter::tooManyAttempts($rateLimiterKey, 10)) {
+            $this->addError('rateLimit',
+                __('Zu viele Änderungen in kurzer Zeit. Bitte versuche es in einer Stunde erneut.'));
+
+            return;
+        }
+
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('meetups')->ignore($this->meetup->id)],
             'city_id' => ['nullable', 'exists:cities,id'],
@@ -177,6 +188,8 @@ class extends Component {
             'community' => ['required', 'string', 'max:255'],
             'github_data' => ['nullable', 'json'],
         ]);
+
+        RateLimiter::hit($rateLimiterKey, 3600);
 
         $validated['github_data'] = $this->sanitizeGithubData($validated['github_data'] ?? null);
 
@@ -414,6 +427,12 @@ class extends Component {
                         {{ session('status') }}
                     </flux:text>
                 @endif
+
+                @error('rateLimit')
+                    <flux:text class="text-red-600 dark:text-red-400 font-medium">
+                        {{ $message }}
+                    </flux:text>
+                @enderror
 
                 <flux:button class="cursor-pointer" variant="primary" type="submit">
                     {{ __('Meetup aktualisieren') }}

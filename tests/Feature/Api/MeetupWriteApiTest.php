@@ -58,6 +58,18 @@ it('forbids updating someone elses', function () {
     ])->assertForbidden();
 });
 
+it('forbids updating as a pivot member who is not the creator', function () {
+    $owner = User::factory()->create();
+    $meetup = Meetup::factory()->create(['created_by' => $owner->id]);
+
+    Sanctum::actingAs($member = User::factory()->create());
+    $meetup->users()->attach($member);
+
+    $this->patchJson('/api/meetup/'.$meetup->id, [
+        'name' => 'Plan B Lugano',
+    ])->assertForbidden();
+});
+
 it('returns only own in mine index', function () {
     Sanctum::actingAs($user = User::factory()->create());
     $other = User::factory()->create();
