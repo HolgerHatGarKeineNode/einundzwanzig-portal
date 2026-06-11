@@ -8,7 +8,6 @@
         body { margin: 0; min-height: 100dvh; display: flex; align-items: center; justify-content: center;
                background: #09090b; color: #fafafa; font-family: ui-sans-serif, system-ui, sans-serif; }
         .card { text-align: center; padding: 2rem; max-width: 22rem; }
-        .logo { width: 5rem; height: 5rem; margin: 0 auto 1.5rem; }
         h1 { font-size: 1.25rem; margin: 0 0 .5rem; }
         p { color: #a1a1aa; line-height: 1.5; }
         button.launch { margin-top: 1.5rem; width: 100%; padding: 1rem 1.25rem; border: 0; border-radius: .75rem;
@@ -19,16 +18,18 @@
     <div class="card">
         <h1>{{ __('Anmeldung mit Nostr') }}</h1>
         <p>{{ __('Tippe auf den Button, um die Anmeldung mit deinem Nostr-Signer (z. B. Amber) zu signieren.') }}</p>
-        {{-- The signer MUST be launched from a user gesture: browsers only
-             attach the EXTRA_APPLICATION_ID that routes Amber into its
-             web-signing flow when the external-app launch is user-initiated.
-             An auto-redirect on load is rejected by Amber as malformed. --}}
+        {{-- Must be launched from a user gesture (browsers only dispatch the
+             external-app intent on user activation). --}}
         <button class="launch" onclick="launchSigner()">{{ __('Mit Amber signieren') }}</button>
     </div>
     <script>
-        // Build the NIP-55 signer URI in the browser with
-        // encodeURIComponent(JSON.stringify(event)) and launch via
-        // window.location so the intent carries category.BROWSABLE.
+        // Amber (v6.2+) reads the signer parameters from intent EXTRAS, not
+        // from the URI query, unless the browser sets EXTRA_APPLICATION_ID —
+        // which Chrome does NOT do for a plain nostrsigner: navigation. An
+        // intent:// URL lets us pass the event as the data URI AND the
+        // parameters as extras (S.* entries), so Amber's app-to-app flow
+        // accepts it. The query is also kept on the data URI as a fallback
+        // for the web flow.
         function launchSigner() {
             const event = {
                 kind: 22242,
@@ -36,9 +37,16 @@
                 content: '',
                 tags: [['challenge', @js($k1)]],
             };
-            window.location.href = 'nostrsigner:' + encodeURIComponent(JSON.stringify(event))
-                + '?compressionType=none&returnType=event&type=sign_event&appName=Einundzwanzig'
-                + '&callbackUrl=' + encodeURIComponent(@js($callbackUrl));
+            const eventEnc = encodeURIComponent(JSON.stringify(event));
+            const callbackUrl = @js($callbackUrl);
+            const query = 'compressionType=none&returnType=event&type=sign_event'
+                + '&appName=Einundzwanzig&callbackUrl=' + encodeURIComponent(callbackUrl);
+
+            window.location.href = 'intent:' + eventEnc + '?' + query
+                + '#Intent;scheme=nostrsigner;category=android.intent.category.BROWSABLE'
+                + ';S.type=sign_event;S.returnType=event;S.appName=Einundzwanzig'
+                + ';S.callbackUrl=' + callbackUrl
+                + ';end';
         }
     </script>
 </body>
