@@ -154,22 +154,14 @@ final class MobileAuthController extends Controller
 
         $k1 = bin2hex(random_bytes(32));
 
-        $event = [
-            'kind' => 22242,
-            'created_at' => now()->timestamp,
-            'content' => '',
-            'tags' => [['challenge', $k1]],
-        ];
-
-        $signerUri = 'nostrsigner:'.rawurlencode(json_encode($event)).'?'.http_build_query([
-            'compressionType' => 'none',
-            'returnType' => 'event',
-            'type' => 'sign_event',
-            'appName' => 'Einundzwanzig',
+        // The signer URI is assembled in the browser (see the view) with
+        // encodeURIComponent(JSON.stringify(event)) — the exact encoding
+        // Amber accepts. Building it server-side produced subtly different
+        // percent-encoding that Amber rejected as malformed.
+        return view('auth.mobile-nostr-launch', [
+            'k1' => $k1,
             'callbackUrl' => url('/auth/mobile/signed/'.$k1.'/'),
         ]);
-
-        return view('auth.mobile-nostr-launch', ['signerUri' => $signerUri]);
     }
 
     /**
