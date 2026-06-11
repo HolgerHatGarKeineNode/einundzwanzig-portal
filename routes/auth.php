@@ -44,6 +44,12 @@ Route::livewire('/auth/mobile', 'auth.mobile-login')
     ->middleware('throttle:30,1')
     ->name('auth.mobile');
 
+// Headless Nostr launcher: opened by the app in an in-app browser, fires
+// the NIP-55 signer (Amber) with category.BROWSABLE via window.location.
+Route::get('/auth/mobile/nostr', [MobileAuthController::class, 'nostrLauncher'])
+    ->middleware('throttle:30,1')
+    ->name('auth.mobile.nostr');
+
 Route::get('/auth/mobile/complete/{k1}', [MobileAuthController::class, 'complete'])
     ->where('k1', '[a-f0-9]{64}')
     ->middleware('throttle:30,1')

@@ -126,6 +126,53 @@ final class MobileAuthController extends Controller
     }
 
     /**
+     * Headless Nostr launcher for the mobile app.
+     *
+     * The app opens this page in an in-app browser (Chrome Custom Tab). It
+     * immediately launches the NIP-55 signer (e.g. Amber) via window.location
+     * so the intent carries category.BROWSABLE — which routes Amber into its
+     * web-signing flow (a direct ACTION_VIEW intent without that category
+     * lands in Amber's app-to-app path and is rejected as malformed).
+     *
+     * The signer signs the kind-22242 challenge locally and opens the
+     * /auth/mobile/signed callback, which issues the token and hands it back
+     * to the app via the verified App Link. No relay, no visible login UI.
+     */
+    public function nostrLauncher(Request $request)
+    {
+        $deviceName = str((string) $request->query('device_name', self::DEFAULT_DEVICE_NAME))
+            ->limit(64, '')
+            ->whenEmpty(fn () => str(self::DEFAULT_DEVICE_NAME))
+            ->value();
+
+        // The signed callback issues the token and reads the device name
+        // from this session (the callback shares the Custom Tab's cookies).
+        $request->session()->put('mobile_auth', [
+            'redirect_uri' => self::ALLOWED_REDIRECT_URIS[0],
+            'device_name' => $deviceName,
+        ]);
+
+        $k1 = bin2hex(random_bytes(32));
+
+        $event = [
+            'kind' => 22242,
+            'created_at' => now()->timestamp,
+            'content' => '',
+            'tags' => [['challenge', $k1]],
+        ];
+
+        $signerUri = 'nostrsigner:'.rawurlencode(json_encode($event)).'?'.http_build_query([
+            'compressionType' => 'none',
+            'returnType' => 'event',
+            'type' => 'sign_event',
+            'appName' => 'Einundzwanzig',
+            'callbackUrl' => url('/auth/mobile/signed/'.$k1.'/'),
+        ]);
+
+        return view('auth.mobile-nostr-launch', ['signerUri' => $signerUri]);
+    }
+
+    /**
      * Browser fallback for the app handoff URL (/app/auth?token=…).
      *
      * When the Android App Link is verified, navigation to this URL opens
