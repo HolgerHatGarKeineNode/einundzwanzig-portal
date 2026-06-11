@@ -9,8 +9,8 @@ use App\Models\LoginKey;
 use App\Models\User;
 use App\Support\NostrLogin;
 use Dedoc\Scramble\Attributes\ExcludeRouteFromDocs;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -235,16 +235,15 @@ final class MobileAuthController extends Controller
             'ip' => $request->ip(),
         ]);
 
-        return redirect()->to($this->issueToken($user, $request));
+        return $this->handoffResponse($user, $request);
     }
 
     /**
      * Complete a mobile login after the wallet/signer callback has stored a
      * matching LoginKey row. Called as a full-page GET from the mobile login
-     * component once wire:poll detects readiness. Issues the token and
-     * redirects into the app via the deep link.
+     * component once wire:poll detects readiness (Lightning flow).
      */
-    public function complete(Request $request, string $k1): RedirectResponse
+    public function complete(Request $request, string $k1): mixed
     {
         $loginKey = LoginKey::query()
             ->where('k1', $k1)
@@ -261,28 +260,36 @@ final class MobileAuthController extends Controller
             return redirect()->route('auth.mobile');
         }
 
-        return $this->issueTokenAndRedirect($user, $request);
+        return $this->handoffResponse($user, $request);
     }
 
     /**
      * Connect the app for a user who is already authenticated in the
      * in-app browser session (confirmation button on /auth/mobile).
      */
-    public function confirm(Request $request): RedirectResponse
+    public function confirm(Request $request): mixed
     {
-        return $this->issueTokenAndRedirect($request->user(), $request);
+        return $this->handoffResponse($request->user(), $request);
     }
 
-    private function issueTokenAndRedirect(User $user, Request $request): RedirectResponse
+    /**
+     * Issue the token and render the handoff page, whose "back to app"
+     * button carries the einundzwanzig:// deep link. The page is rendered
+     * directly (rather than 302-redirecting to the /app/auth App Link)
+     * because Chrome follows a server redirect internally and never
+     * dispatches the App Link intent — the signed callback opens in the
+     * browser, so the user lands here and taps once to return to the app.
+     */
+    private function handoffResponse(User $user, Request $request): View
     {
-        return redirect()->away($this->issueToken($user, $request));
+        return view('auth.app-handoff', [
+            'deepLink' => $this->issueToken($user, $request),
+        ]);
     }
 
     /**
      * Issue a personal access token for the session's device and build the
-     * app handoff URL. The handoff URL is a verified Android App Link, so
-     * navigating to it opens the app directly; its browser fallback page
-     * offers the einundzwanzig:// deep link behind a button.
+     * einundzwanzig:// deep link that hands it to the app.
      */
     private function issueToken(User $user, Request $request): string
     {
@@ -292,7 +299,7 @@ final class MobileAuthController extends Controller
 
         $token = $this->createDeviceToken($user, $deviceName);
 
-        return route('auth.mobile.handoff').'?token='.urlencode($token->plainTextToken);
+        return self::ALLOWED_REDIRECT_URIS[0].'?token='.urlencode($token->plainTextToken);
     }
 
     /**

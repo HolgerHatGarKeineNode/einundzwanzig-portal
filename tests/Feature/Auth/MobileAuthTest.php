@@ -86,7 +86,7 @@ it('rejects a nostr signer callback whose event is bound to a different challeng
     expect(LoginKey::query()->where('k1', $k1)->exists())->toBeFalse();
 });
 
-it('completes the login via the path-based signer callback and redirects to the app handoff', function () {
+it('completes the login via the path-based signer callback and renders the app handoff', function () {
     Queue::fake();
 
     $k1 = bin2hex(random_bytes(32));
@@ -98,8 +98,9 @@ it('completes the login via the path-based signer callback and redirects to the 
         ->withSession(['mobile_auth' => ['redirect_uri' => 'einundzwanzig://auth', 'device_name' => 'Pixel 10']])
         ->get('/auth/mobile/signed/'.$k1.'/'.rawurlencode(json_encode($signedEvent)));
 
-    $location = $response->headers->get('Location');
-    expect($location)->toStartWith(route('auth.mobile.handoff').'?token=');
+    // The signed callback renders the handoff page directly (no 302) so the
+    // user can tap the einundzwanzig:// deep-link button to return to the app.
+    $response->assertOk()->assertSee('einundzwanzig://auth?token=', false);
 
     $user = User::query()->where('nostr', $npub)->first();
     expect($user)->not->toBeNull();
@@ -111,10 +112,11 @@ it('completes the login via the path-based signer callback and redirects to the 
     expect(LoginKey::query()->where('k1', $k1)->exists())->toBeTrue();
     Queue::assertPushed(FetchNostrProfileJob::class);
 
-    // The handoff fallback page offers the deep link behind a button.
-    $this->get($location)
+    // The deep-link token must authenticate API requests.
+    $plainTextToken = urldecode(str($response->getContent())->after('einundzwanzig://auth?token=')->before('"')->value());
+    $this->getJson('/api/user', ['Authorization' => 'Bearer '.$plainTextToken])
         ->assertOk()
-        ->assertSee('einundzwanzig://auth?token=', false);
+        ->assertJsonPath('id', $user->id);
 });
 
 it('exchanges a signed event for a token via the mobile token endpoint', function () {
@@ -160,7 +162,7 @@ it('rejects a path-based signer callback with a tampered challenge', function ()
     expect(LoginKey::query()->where('k1', $k1)->exists())->toBeFalse();
 });
 
-it('issues a token and redirects into the app when completing a verified login', function () {
+it('issues a token and renders the handoff when completing a verified login', function () {
     $user = User::factory()->create();
     $k1 = bin2hex(random_bytes(32));
     LoginKey::query()->create(['k1' => $k1, 'user_id' => $user->id]);
@@ -169,15 +171,14 @@ it('issues a token and redirects into the app when completing a verified login',
         ->withSession(['mobile_auth' => ['redirect_uri' => 'einundzwanzig://auth', 'device_name' => 'Pixel 10']])
         ->get('/auth/mobile/complete/'.$k1);
 
-    $location = $response->headers->get('Location');
-    expect($location)->toStartWith(route('auth.mobile.handoff').'?token=');
+    $response->assertOk()->assertSee('einundzwanzig://auth?token=', false);
 
     $token = $user->tokens()->first();
     expect($token)->not->toBeNull()
         ->and($token->name)->toBe('Pixel 10');
 
     // The plain-text token handed to the app must authenticate API requests.
-    $plainTextToken = urldecode(str($location)->after('?token=')->value());
+    $plainTextToken = urldecode(str($response->getContent())->after('einundzwanzig://auth?token=')->before('"')->value());
     $this->getJson('/api/user', ['Authorization' => 'Bearer '.$plainTextToken])
         ->assertOk()
         ->assertJsonPath('id', $user->id);
@@ -197,7 +198,7 @@ it('lets an already authenticated user connect the app and replaces tokens of th
         ->withSession(['mobile_auth' => ['redirect_uri' => 'einundzwanzig://auth', 'device_name' => 'Pixel 10']])
         ->post('/auth/mobile/confirm');
 
-    expect($response->headers->get('Location'))->toStartWith(route('auth.mobile.handoff').'?token=');
+    $response->assertOk()->assertSee('einundzwanzig://auth?token=', false);
     expect($user->tokens()->where('name', 'Pixel 10')->count())->toBe(1);
 });
 
