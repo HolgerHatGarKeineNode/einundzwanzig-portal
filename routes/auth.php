@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\LnurlAuthController;
+use App\Http\Controllers\MobileAuthController;
 use App\Livewire\Actions\Logout;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +34,24 @@ Route::middleware('auth')
         Route::livewire('/confirm-password', 'auth.confirm-password')
             ->name('password.confirm');
     });
+
+/*
+ * Mobile app auth flow: works for guests (login via Lightning/Nostr) and
+ * for already authenticated users (confirmation screen), so it lives
+ * outside the guest group.
+ */
+Route::livewire('/auth/mobile', 'auth.mobile-login')
+    ->middleware('throttle:30,1')
+    ->name('auth.mobile');
+
+Route::get('/auth/mobile/complete/{k1}', [MobileAuthController::class, 'complete'])
+    ->where('k1', '[a-f0-9]{64}')
+    ->middleware('throttle:30,1')
+    ->name('auth.mobile.complete');
+
+Route::post('/auth/mobile/confirm', [MobileAuthController::class, 'confirm'])
+    ->middleware(['auth', 'throttle:30,1'])
+    ->name('auth.mobile.confirm');
 
 Route::post('logout', Logout::class)
     ->name('logout');

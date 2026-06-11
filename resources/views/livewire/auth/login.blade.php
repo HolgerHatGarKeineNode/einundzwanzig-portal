@@ -3,7 +3,7 @@
 use App\Attributes\SeoDataAttribute;
 use App\Jobs\FetchNostrProfileJob;
 use App\Models\LoginKey;
-use App\Models\User;
+use App\Support\NostrLogin;
 use App\Traits\SeoTrait;
 use eza\lnurl;
 use Illuminate\Auth\Events\Lockout;
@@ -18,8 +18,6 @@ use Livewire\Attributes\On;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use swentel\nostr\Event\Event as NostrEvent;
-use swentel\nostr\Key\Key as NostrKey;
 
 new #[Layout('components.layouts.auth')]
 class extends Component {
@@ -48,7 +46,7 @@ class extends Component {
     #[Locked]
     public ?string $nostrChallenge = null;
 
-    private const NOSTR_CHALLENGE_TTL_SECONDS = 300;
+    private const NOSTR_CHALLENGE_TTL_SECONDS = NostrLogin::CHALLENGE_TTL_SECONDS;
 
     /**
      * Handle authError property type conversion.
@@ -120,22 +118,8 @@ class extends Component {
     {
         $npub = $this->verifyNostrLoginEvent($signedEvent);
 
-        $user = User::query()->where('nostr', $npub)->first();
-        if (!$user) {
-            $fakeName = str()->random(10);
-            $user = User::create([
-                'public_key' => null,
-                'is_lecturer' => true,
-                'name' => $fakeName,
-                'email' => str($npub)->substr(-12).'@portal.einundzwanzig.space',
-                'nostr' => $npub,
-                'lnbits' => [
-                    'read_key' => null,
-                    'url' => null,
-                    'wallet_id' => null,
-                ],
-            ]);
-        }
+        $user = NostrLogin::findOrCreateUser($npub);
+
         FetchNostrProfileJob::dispatch($user);
         // Auth::loginUsingId() already regenerates the session id (see
         // SessionGuard::updateSession), so an explicit Session::regenerate()
@@ -187,21 +171,6 @@ class extends Component {
      */
     protected function verifyNostrLoginEvent(mixed $signedEvent): string
     {
-        if (!is_array($signedEvent)) {
-            throw ValidationException::withMessages(['email' => __('auth.failed')]);
-        }
-
-        $required = ['id', 'pubkey', 'created_at', 'kind', 'tags', 'content', 'sig'];
-        foreach ($required as $key) {
-            if (!array_key_exists($key, $signedEvent)) {
-                throw ValidationException::withMessages(['email' => __('auth.failed')]);
-            }
-        }
-
-        if ((int) $signedEvent['kind'] !== 22242) {
-            throw ValidationException::withMessages(['email' => __('auth.failed')]);
-        }
-
         $expectedChallenge = Session::get('nostr_login_challenge');
         $expiresAt = (int) Session::get('nostr_login_challenge_expires_at', 0);
 
@@ -210,47 +179,11 @@ class extends Component {
             throw ValidationException::withMessages(['email' => __('auth.failed')]);
         }
 
-        $challengeFromEvent = null;
-        foreach ($signedEvent['tags'] as $tag) {
-            if (is_array($tag) && ($tag[0] ?? null) === 'challenge') {
-                $challengeFromEvent = (string) ($tag[1] ?? '');
-                break;
-            }
-        }
-
-        if ($challengeFromEvent === null || !hash_equals($expectedChallenge, $challengeFromEvent)) {
-            throw ValidationException::withMessages(['email' => __('auth.failed')]);
-        }
-
-        $createdAt = (int) $signedEvent['created_at'];
-        if (abs(now()->timestamp - $createdAt) > self::NOSTR_CHALLENGE_TTL_SECONDS) {
-            throw ValidationException::withMessages(['email' => __('auth.failed')]);
-        }
-
-        $eventJson = json_encode([
-            'id' => (string) $signedEvent['id'],
-            'pubkey' => (string) $signedEvent['pubkey'],
-            'created_at' => $createdAt,
-            'kind' => 22242,
-            'tags' => $signedEvent['tags'],
-            'content' => (string) $signedEvent['content'],
-            'sig' => (string) $signedEvent['sig'],
-        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
-        $isValid = false;
-        try {
-            $isValid = (new NostrEvent())->verify($eventJson);
-        } catch (\Throwable $e) {
-            $isValid = false;
-        }
-
-        if (!$isValid) {
-            throw ValidationException::withMessages(['email' => __('auth.failed')]);
-        }
+        $npub = NostrLogin::verifyEvent($signedEvent, $expectedChallenge);
 
         Session::forget(['nostr_login_challenge', 'nostr_login_challenge_expires_at']);
 
-        return (new NostrKey())->convertPublicKeyToBech32((string) $signedEvent['pubkey']);
+        return $npub;
     }
 
     /**

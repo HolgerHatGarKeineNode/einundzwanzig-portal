@@ -10,8 +10,10 @@ use App\Http\Controllers\Api\MeetupController;
 use App\Http\Controllers\Api\MeetupEventController;
 use App\Http\Controllers\Api\MeetupMapController;
 use App\Http\Controllers\Api\NostrPlebController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VenueController;
 use App\Http\Controllers\LnurlAuthController;
+use App\Http\Controllers\MobileAuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['throttle:60,1'])
@@ -39,6 +41,8 @@ Route::middleware(['throttle:60,1'])
 Route::middleware('auth:sanctum')
     ->as('api.')
     ->group(function () {
+        Route::get('user', UserController::class)->name('user');
+
         Route::post('courses', [CourseController::class, 'store'])
             ->name('courses.store');
         Route::patch('courses/{course}', [CourseController::class, 'update'])
@@ -79,6 +83,11 @@ Route::middleware('auth:sanctum')
 
 Route::get('/lnurl-auth-callback', [LnurlAuthController::class, 'callback'])
     ->name('auth.ln.callback');
+
+// NIP-55 signer callback (e.g. Amber) for the mobile auth flow.
+Route::get('/nostr-login-callback', [MobileAuthController::class, 'nostrCallback'])
+    ->middleware('throttle:30,1')
+    ->name('auth.nostr.callback');
 
 Route::post('/check-auth-error', [LnurlAuthController::class, 'checkError'])
     ->name('auth.check-error');
