@@ -50,11 +50,18 @@ Route::get('/auth/mobile/complete/{k1}', [MobileAuthController::class, 'complete
     ->name('auth.mobile.complete');
 
 // NIP-55 signer callback (Amber): k1 in the path, the signer appends the
-// URL-encoded signed event after the trailing slash.
+// URL-encoded signed event after the trailing slash. With verified App
+// Links this URL opens the app directly; this web route is the fallback.
 Route::get('/auth/mobile/signed/{payload}', [MobileAuthController::class, 'signedCallback'])
     ->where('payload', '.*')
     ->middleware('throttle:30,1')
     ->name('auth.mobile.signed');
+
+// App handoff: verified Android App Link — opens the app with the token.
+// In the browser (unverified install) it renders a button-based fallback.
+Route::get('/app/auth', [MobileAuthController::class, 'handoff'])
+    ->middleware('throttle:30,1')
+    ->name('auth.mobile.handoff');
 
 Route::post('/auth/mobile/confirm', [MobileAuthController::class, 'confirm'])
     ->middleware(['auth', 'throttle:30,1'])

@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\NewAccessToken;
 
 /**
  * Auth flow for the Einundzwanzig mobile app.
@@ -77,6 +78,76 @@ final class MobileAuthController extends Controller
     }
 
     /**
+     * Exchange a NIP-55-signed login event for a personal access token.
+     *
+     * Used by the mobile app when the signer callback opens the app
+     * directly via a verified Android App Link: the app receives the
+     * signed event in the deep-link path and trades it in here.
+     */
+    public function token(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'k1' => ['required', 'string', 'size:64'],
+            'event' => ['required', 'array'],
+            'device_name' => ['nullable', 'string', 'max:64'],
+        ]);
+
+        if (! ctype_xdigit($validated['k1'])) {
+            return response()->json(['status' => 'ERROR', 'reason' => 'Invalid k1'], 400);
+        }
+
+        try {
+            $npub = NostrLogin::verifyEvent($validated['event'], $validated['k1']);
+        } catch (ValidationException) {
+            Log::warning('Mobile token exchange verification failed', [
+                'k1' => $validated['k1'],
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json(['status' => 'ERROR', 'reason' => 'Signature was NOT VERIFIED'], 400);
+        }
+
+        $user = NostrLogin::findOrCreateUser($npub);
+        FetchNostrProfileJob::dispatch($user);
+
+        $token = $this->createDeviceToken($user, $validated['device_name'] ?? self::DEFAULT_DEVICE_NAME);
+
+        Log::info('Mobile app token issued via token exchange', [
+            'user_id' => $user->id,
+        ]);
+
+        return response()->json([
+            'token' => $token->plainTextToken,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+            ],
+        ]);
+    }
+
+    /**
+     * Browser fallback for the app handoff URL (/app/auth?token=…).
+     *
+     * When the Android App Link is verified, navigation to this URL opens
+     * the app directly and this route never renders. Without verification
+     * (e.g. sideloaded build) the page offers the einundzwanzig:// deep
+     * link behind a button — a user gesture, so Chrome opens the app
+     * without its confirmation prompt.
+     */
+    public function handoff(Request $request)
+    {
+        $token = (string) $request->query('token', '');
+
+        if ($token === '') {
+            return redirect()->route('auth.mobile');
+        }
+
+        return view('auth.app-handoff', [
+            'deepLink' => self::ALLOWED_REDIRECT_URIS[0].'?token='.urlencode($token),
+        ]);
+    }
+
+    /**
      * Handle the NIP-55 signer callback in its path-based form.
      *
      * Amber rebuilds the callback URL and drops its query string, so the
@@ -125,9 +196,7 @@ final class MobileAuthController extends Controller
             'ip' => $request->ip(),
         ]);
 
-        return view('auth.mobile-bridge', [
-            'deepLink' => $this->issueToken($user, $request),
-        ]);
+        return redirect()->to($this->issueToken($user, $request));
     }
 
     /**
@@ -171,22 +240,30 @@ final class MobileAuthController extends Controller
     }
 
     /**
-     * Issue a personal access token named after the device and build the
-     * whitelisted deep link that hands it to the app. Existing tokens with
-     * the same device name are replaced so repeated logins don't accumulate
-     * tokens.
+     * Issue a personal access token for the session's device and build the
+     * app handoff URL. The handoff URL is a verified Android App Link, so
+     * navigating to it opens the app directly; its browser fallback page
+     * offers the einundzwanzig:// deep link behind a button.
      */
     private function issueToken(User $user, Request $request): string
     {
         $mobileAuth = (array) $request->session()->pull('mobile_auth', []);
 
-        $redirectUri = $mobileAuth['redirect_uri'] ?? self::ALLOWED_REDIRECT_URIS[0];
+        $deviceName = (string) ($mobileAuth['device_name'] ?? self::DEFAULT_DEVICE_NAME);
 
-        if (! in_array($redirectUri, self::ALLOWED_REDIRECT_URIS, true)) {
-            $redirectUri = self::ALLOWED_REDIRECT_URIS[0];
-        }
+        $token = $this->createDeviceToken($user, $deviceName);
 
-        $deviceName = str((string) ($mobileAuth['device_name'] ?? self::DEFAULT_DEVICE_NAME))
+        return route('auth.mobile.handoff').'?token='.urlencode($token->plainTextToken);
+    }
+
+    /**
+     * Create a personal access token named after the device. Existing
+     * tokens with the same device name are replaced so repeated logins
+     * don't accumulate tokens.
+     */
+    private function createDeviceToken(User $user, string $deviceName): NewAccessToken
+    {
+        $deviceName = str($deviceName)
             ->limit(64, '')
             ->whenEmpty(fn () => str(self::DEFAULT_DEVICE_NAME))
             ->value();
@@ -200,6 +277,6 @@ final class MobileAuthController extends Controller
             'device_name' => $deviceName,
         ]);
 
-        return $redirectUri.'?token='.urlencode($token->plainTextToken);
+        return $token;
     }
 }

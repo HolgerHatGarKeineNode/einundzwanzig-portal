@@ -1,0 +1,12 @@
+[
+    {
+        "relation": ["delegate_permission/common.handle_all_urls"],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "space.einundzwanzig.mobile",
+            "sha256_cert_fingerprints": [
+                "74:25:57:3B:24:69:97:97:45:8E:27:CC:1E:26:D7:A2:82:73:EC:BB:0D:B9:47:78:2A:18:B5:94:54:B0:79:ED"
+            ]
+        }
+    }
+]

@@ -89,5 +89,12 @@ Route::get('/nostr-login-callback', [MobileAuthController::class, 'nostrCallback
     ->middleware('throttle:30,1')
     ->name('auth.nostr.callback');
 
+// Token exchange for the mobile app: trades a NIP-55-signed login event
+// for a Sanctum personal access token (used when the signer callback
+// opens the app directly via a verified App Link).
+Route::post('/mobile/token', [MobileAuthController::class, 'token'])
+    ->middleware('throttle:30,1')
+    ->name('auth.mobile.token');
+
 Route::post('/check-auth-error', [LnurlAuthController::class, 'checkError'])
     ->name('auth.check-error');

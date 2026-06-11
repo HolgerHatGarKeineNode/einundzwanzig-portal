@@ -86,7 +86,7 @@ it('rejects a nostr signer callback whose event is bound to a different challeng
     expect(LoginKey::query()->where('k1', $k1)->exists())->toBeFalse();
 });
 
-it('completes the login via the path-based signer callback and shows the bridge page', function () {
+it('completes the login via the path-based signer callback and redirects to the app handoff', function () {
     Queue::fake();
 
     $k1 = bin2hex(random_bytes(32));
@@ -98,7 +98,8 @@ it('completes the login via the path-based signer callback and shows the bridge 
         ->withSession(['mobile_auth' => ['redirect_uri' => 'einundzwanzig://auth', 'device_name' => 'Pixel 10']])
         ->get('/auth/mobile/signed/'.$k1.'/'.rawurlencode(json_encode($signedEvent)));
 
-    $response->assertOk()->assertSee('einundzwanzig://auth?token=', false);
+    $location = $response->headers->get('Location');
+    expect($location)->toStartWith(route('auth.mobile.handoff').'?token=');
 
     $user = User::query()->where('nostr', $npub)->first();
     expect($user)->not->toBeNull();
@@ -109,6 +110,44 @@ it('completes the login via the path-based signer callback and shows the bridge 
 
     expect(LoginKey::query()->where('k1', $k1)->exists())->toBeTrue();
     Queue::assertPushed(FetchNostrProfileJob::class);
+
+    // The handoff fallback page offers the deep link behind a button.
+    $this->get($location)
+        ->assertOk()
+        ->assertSee('einundzwanzig://auth?token=', false);
+});
+
+it('exchanges a signed event for a token via the mobile token endpoint', function () {
+    Queue::fake();
+
+    $k1 = bin2hex(random_bytes(32));
+    [$signedEvent, $npub] = makeSignedMobileNostrEvent($k1);
+
+    $response = $this->postJson('/api/mobile/token', [
+        'k1' => $k1,
+        'event' => $signedEvent,
+        'device_name' => 'Pixel 10',
+    ]);
+
+    $response->assertOk()->assertJsonStructure(['token', 'user' => ['id', 'name']]);
+
+    $user = User::query()->where('nostr', $npub)->first();
+    expect($user)->not->toBeNull()
+        ->and($user->tokens()->first()->name)->toBe('Pixel 10');
+
+    $this->getJson('/api/user', ['Authorization' => 'Bearer '.$response->json('token')])
+        ->assertOk()
+        ->assertJsonPath('id', $user->id);
+});
+
+it('rejects a token exchange with a mismatched challenge', function () {
+    $k1 = bin2hex(random_bytes(32));
+    [$signedEvent] = makeSignedMobileNostrEvent(bin2hex(random_bytes(32)));
+
+    $this->postJson('/api/mobile/token', [
+        'k1' => $k1,
+        'event' => $signedEvent,
+    ])->assertBadRequest();
 });
 
 it('rejects a path-based signer callback with a tampered challenge', function () {
@@ -131,7 +170,7 @@ it('issues a token and redirects into the app when completing a verified login',
         ->get('/auth/mobile/complete/'.$k1);
 
     $location = $response->headers->get('Location');
-    expect($location)->toStartWith('einundzwanzig://auth?token=');
+    expect($location)->toStartWith(route('auth.mobile.handoff').'?token=');
 
     $token = $user->tokens()->first();
     expect($token)->not->toBeNull()
@@ -158,7 +197,7 @@ it('lets an already authenticated user connect the app and replaces tokens of th
         ->withSession(['mobile_auth' => ['redirect_uri' => 'einundzwanzig://auth', 'device_name' => 'Pixel 10']])
         ->post('/auth/mobile/confirm');
 
-    expect($response->headers->get('Location'))->toStartWith('einundzwanzig://auth?token=');
+    expect($response->headers->get('Location'))->toStartWith(route('auth.mobile.handoff').'?token=');
     expect($user->tokens()->where('name', 'Pixel 10')->count())->toBe(1);
 });
 

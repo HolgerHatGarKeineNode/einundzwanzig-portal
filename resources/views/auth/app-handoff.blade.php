@@ -16,14 +16,15 @@
     </style>
 </head>
 <body>
+    {{-- No auto-redirect here: a JS navigation to a custom scheme triggers
+         Chrome's confirmation prompt. The button tap is a user gesture and
+         opens the app directly. With verified App Links this page never
+         renders — Android opens the app before the request is made. --}}
     <div class="card">
         <div class="check">✅</div>
         <h1>{{ __('Login bestätigt') }}</h1>
-        <p>{{ __('Du wirst jetzt zurück in die Einundzwanzig-App geleitet. Falls nichts passiert, tippe auf den Button.') }}</p>
+        <p>{{ __('Tippe auf den Button, um zurück zur Einundzwanzig-App zu gelangen.') }}</p>
         <a class="button" href="{{ $deepLink }}">{{ __('Zurück zur App') }}</a>
     </div>
-    <script>
-        setTimeout(function () { window.location.href = @js($deepLink); }, 400);
-    </script>
 </body>
 </html>
