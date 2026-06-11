@@ -49,6 +49,13 @@ Route::get('/auth/mobile/complete/{k1}', [MobileAuthController::class, 'complete
     ->middleware('throttle:30,1')
     ->name('auth.mobile.complete');
 
+// NIP-55 signer callback (Amber): k1 in the path, the signer appends the
+// URL-encoded signed event after the trailing slash.
+Route::get('/auth/mobile/signed/{payload}', [MobileAuthController::class, 'signedCallback'])
+    ->where('payload', '.*')
+    ->middleware('throttle:30,1')
+    ->name('auth.mobile.signed');
+
 Route::post('/auth/mobile/confirm', [MobileAuthController::class, 'confirm'])
     ->middleware(['auth', 'throttle:30,1'])
     ->name('auth.mobile.confirm');

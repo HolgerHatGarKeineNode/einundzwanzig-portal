@@ -86,6 +86,41 @@ it('rejects a nostr signer callback whose event is bound to a different challeng
     expect(LoginKey::query()->where('k1', $k1)->exists())->toBeFalse();
 });
 
+it('completes the login via the path-based signer callback and shows the bridge page', function () {
+    Queue::fake();
+
+    $k1 = bin2hex(random_bytes(32));
+    [$signedEvent, $npub] = makeSignedMobileNostrEvent($k1);
+
+    // Amber appends the URL-encoded signed event after the trailing slash
+    // and drops any query string from the callback URL.
+    $response = $this
+        ->withSession(['mobile_auth' => ['redirect_uri' => 'einundzwanzig://auth', 'device_name' => 'Pixel 10']])
+        ->get('/auth/mobile/signed/'.$k1.'/'.rawurlencode(json_encode($signedEvent)));
+
+    $response->assertOk()->assertSee('einundzwanzig://auth?token=', false);
+
+    $user = User::query()->where('nostr', $npub)->first();
+    expect($user)->not->toBeNull();
+
+    $token = $user->tokens()->first();
+    expect($token)->not->toBeNull()
+        ->and($token->name)->toBe('Pixel 10');
+
+    expect(LoginKey::query()->where('k1', $k1)->exists())->toBeTrue();
+    Queue::assertPushed(FetchNostrProfileJob::class);
+});
+
+it('rejects a path-based signer callback with a tampered challenge', function () {
+    $k1 = bin2hex(random_bytes(32));
+    [$signedEvent] = makeSignedMobileNostrEvent(bin2hex(random_bytes(32)));
+
+    $this->get('/auth/mobile/signed/'.$k1.'/'.rawurlencode(json_encode($signedEvent)))
+        ->assertRedirect(route('auth.mobile'));
+
+    expect(LoginKey::query()->where('k1', $k1)->exists())->toBeFalse();
+});
+
 it('issues a token and redirects into the app when completing a verified login', function () {
     $user = User::factory()->create();
     $k1 = bin2hex(random_bytes(32));

@@ -77,6 +77,60 @@ final class MobileAuthController extends Controller
     }
 
     /**
+     * Handle the NIP-55 signer callback in its path-based form.
+     *
+     * Amber rebuilds the callback URL and drops its query string, so the
+     * mobile login page hands out callback URLs of the form
+     * /auth/mobile/signed/{k1}/ — the signer then appends the URL-encoded
+     * signed event, which arrives here as the rest of the path. Runs in the
+     * web middleware group: the signer opens the URL in the system browser,
+     * which shares cookies with the in-app browser session, so the flow
+     * state (device name, redirect target) is usually available and the
+     * login can complete right here via the deep link bridge page.
+     */
+    public function signedCallback(Request $request, string $payload)
+    {
+        $k1 = substr($payload, 0, 64);
+
+        if (strlen($payload) <= 64 || ! ctype_xdigit($k1)) {
+            return redirect()->route('auth.mobile');
+        }
+
+        $signedEvent = json_decode(ltrim(substr($payload, 64), '/'), true);
+
+        try {
+            $npub = NostrLogin::verifyEvent($signedEvent, $k1);
+        } catch (ValidationException) {
+            Log::warning('Mobile Nostr auth verification failed (path callback)', [
+                'k1' => $k1,
+                'ip' => $request->ip(),
+            ]);
+
+            return redirect()->route('auth.mobile');
+        }
+
+        $user = NostrLogin::findOrCreateUser($npub);
+        FetchNostrProfileJob::dispatch($user);
+
+        // Fallback for the polling login page in the in-app browser: if the
+        // deep link below doesn't fire (cookie isolation, blocked scheme),
+        // the original page still completes via checkAuth().
+        LoginKey::query()->updateOrCreate(
+            ['k1' => $k1],
+            ['user_id' => $user->id],
+        );
+
+        Log::info('Mobile Nostr auth successful (path callback)', [
+            'user_id' => $user->id,
+            'ip' => $request->ip(),
+        ]);
+
+        return view('auth.mobile-bridge', [
+            'deepLink' => $this->issueToken($user, $request),
+        ]);
+    }
+
+    /**
      * Complete a mobile login after the wallet/signer callback has stored a
      * matching LoginKey row. Called as a full-page GET from the mobile login
      * component once wire:poll detects readiness. Issues the token and
@@ -111,12 +165,18 @@ final class MobileAuthController extends Controller
         return $this->issueTokenAndRedirect($request->user(), $request);
     }
 
-    /**
-     * Issue a personal access token named after the device and hand it to
-     * the app via the whitelisted deep link. Existing tokens with the same
-     * device name are replaced so repeated logins don't accumulate tokens.
-     */
     private function issueTokenAndRedirect(User $user, Request $request): RedirectResponse
+    {
+        return redirect()->away($this->issueToken($user, $request));
+    }
+
+    /**
+     * Issue a personal access token named after the device and build the
+     * whitelisted deep link that hands it to the app. Existing tokens with
+     * the same device name are replaced so repeated logins don't accumulate
+     * tokens.
+     */
+    private function issueToken(User $user, Request $request): string
     {
         $mobileAuth = (array) $request->session()->pull('mobile_auth', []);
 
@@ -140,6 +200,6 @@ final class MobileAuthController extends Controller
             'device_name' => $deviceName,
         ]);
 
-        return redirect()->away($redirectUri.'?token='.urlencode($token->plainTextToken));
+        return $redirectUri.'?token='.urlencode($token->plainTextToken);
     }
 }

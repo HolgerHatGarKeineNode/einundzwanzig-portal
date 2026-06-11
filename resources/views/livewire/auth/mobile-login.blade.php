@@ -79,8 +79,10 @@ class extends Component {
 
         $this->lnurl = lnurl\encodeUrl($url);
 
-        // NIP-55 signers append the signed event JSON directly after "event=".
-        $this->signerCallbackUrl = url('/api/nostr-login-callback').'?k1='.$this->k1.'&event=';
+        // NIP-55 signers append the signed event JSON to the callback URL.
+        // Amber strips query strings when rebuilding the URL, so the k1
+        // travels in the path and the event lands after the trailing slash.
+        $this->signerCallbackUrl = url('/auth/mobile/signed').'/'.$this->k1.'/';
 
         $image = 'public/img/domains/'.session('lang_country', 'de-DE').'.jpg';
         if (! file_exists(base_path($image))) {
