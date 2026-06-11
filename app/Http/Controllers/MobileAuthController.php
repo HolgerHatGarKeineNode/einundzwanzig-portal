@@ -158,9 +158,15 @@ final class MobileAuthController extends Controller
         // encodeURIComponent(JSON.stringify(event)) — the exact encoding
         // Amber accepts. Building it server-side produced subtly different
         // percent-encoding that Amber rejected as malformed.
+        //
+        // The callback is the app's custom scheme, not a portal URL: the
+        // signer opens it directly after signing, so the app receives the
+        // signed event and exchanges it for a token via /api/mobile/token —
+        // no browser handoff page (which a signer-owned Custom Tab failed to
+        // display reliably).
         return view('auth.mobile-nostr-launch', [
             'k1' => $k1,
-            'callbackUrl' => url('/auth/mobile/signed/'.$k1.'/'),
+            'callbackUrl' => 'einundzwanzig://signed/'.$k1.'/',
         ]);
     }
 
