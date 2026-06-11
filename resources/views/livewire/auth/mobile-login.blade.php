@@ -1,19 +1,22 @@
 <?php
 
 use App\Http\Controllers\MobileAuthController;
-use App\Jobs\FetchNostrProfileJob;
 use App\Models\LoginKey;
-use App\Support\NostrLogin;
 use App\Traits\SeoTrait;
 use eza\lnurl;
-use Illuminate\Support\Facades\Session;
-use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
-use Livewire\Attributes\On;
 use Livewire\Component;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
+/**
+ * Lightning-only login page for the mobile app.
+ *
+ * The app opens this page in an in-app browser for the Lightning flow.
+ * The Nostr flow is driven entirely by the app itself (it launches the
+ * NIP-55 signer via an ACTION_VIEW intent and the signed event is posted
+ * back to /auth/mobile/signed), so there is no Nostr UI here.
+ */
 new #[Layout('components.layouts.auth')]
 class extends Component {
     use SeoTrait;
@@ -26,9 +29,6 @@ class extends Component {
 
     #[Locked]
     public ?string $deviceName = null;
-
-    #[Locked]
-    public ?string $nostrChallenge = null;
 
     public ?string $lnurl = null;
 
@@ -50,9 +50,9 @@ class extends Component {
             ->whenEmpty(fn () => str(MobileAuthController::DEFAULT_DEVICE_NAME))
             ->value();
 
-        // The completion/confirm controller reads the flow state from the
-        // session — the wallet callback arrives outside this session, so it
-        // can't carry the redirect target itself.
+        // The completion controller reads the flow state from the session —
+        // the wallet callback arrives outside this session, so it can't
+        // carry the redirect target itself.
         session([
             'mobile_auth' => [
                 'redirect_uri' => $this->redirectUri,
@@ -64,15 +64,13 @@ class extends Component {
             return;
         }
 
-        $this->issueNostrChallenge();
         $this->initChallenge();
     }
 
     /**
      * Generate a fresh k1 challenge for the LNURL flow. The Lightning
      * wallet signs it via LNURL-auth; the resulting LoginKey row is picked
-     * up by checkAuth() below. The Nostr flow reuses the same row keyed by
-     * the same k1 (see loginListener).
+     * up by checkAuth() below.
      */
     protected function initChallenge(): void
     {
@@ -98,65 +96,6 @@ class extends Component {
             ->generate($this->lnurl));
     }
 
-    /**
-     * Session-bound challenge for the window.nostr (NIP-07/NIP-46) login —
-     * identical mechanism to the regular login component.
-     */
-    protected function issueNostrChallenge(): string
-    {
-        $challenge = bin2hex(random_bytes(32));
-        $this->nostrChallenge = $challenge;
-        Session::put('nostr_login_challenge', $challenge);
-        Session::put('nostr_login_challenge_expires_at', now()->addSeconds(NostrLogin::CHALLENGE_TTL_SECONDS)->timestamp);
-
-        return $challenge;
-    }
-
-    public function requestNostrChallenge(): string
-    {
-        return $this->issueNostrChallenge();
-    }
-
-    /**
-     * window.nostr signed the kind-22242 challenge (via extension or a
-     * NIP-46 connection to e.g. Amber). Verify it, store the LoginKey and
-     * hand the navigation to the completion route, which issues the token
-     * and redirects into the app via the verified App Link.
-     */
-    #[On('nostrLoggedIn')]
-    public function loginListener($signedEvent = null): void
-    {
-        $npub = $this->verifyNostrLoginEvent($signedEvent);
-
-        $user = NostrLogin::findOrCreateUser($npub);
-
-        FetchNostrProfileJob::dispatch($user);
-
-        LoginKey::query()->updateOrCreate(
-            ['k1' => $this->k1],
-            ['user_id' => $user->id],
-        );
-
-        $this->redirect(route('auth.mobile.complete', ['k1' => $this->k1]));
-    }
-
-    protected function verifyNostrLoginEvent(mixed $signedEvent): string
-    {
-        $expectedChallenge = Session::get('nostr_login_challenge');
-        $expiresAt = (int) Session::get('nostr_login_challenge_expires_at', 0);
-
-        if (! is_string($expectedChallenge) || $expectedChallenge === '' || $expiresAt < now()->timestamp) {
-            Session::forget(['nostr_login_challenge', 'nostr_login_challenge_expires_at']);
-            throw ValidationException::withMessages(['email' => __('auth.failed')]);
-        }
-
-        $npub = NostrLogin::verifyEvent($signedEvent, $expectedChallenge);
-
-        Session::forget(['nostr_login_challenge', 'nostr_login_challenge_expires_at']);
-
-        return $npub;
-    }
-
     public function checkAuth(): void
     {
         $loginKey = LoginKey::query()
@@ -168,9 +107,9 @@ class extends Component {
             return;
         }
 
-        // Same handoff pattern as the Lightning login: navigate via the
-        // client instead of redirecting from inside wire:poll, so a stray
-        // poll tick can't race the completion request.
+        // Same handoff pattern as the desktop Lightning login: navigate via
+        // the client instead of redirecting from inside wire:poll, so a
+        // stray poll tick can't race the completion request.
         $this->dispatch(
             'mobile-login-ready',
             url: route('auth.mobile.complete', ['k1' => $this->k1]),
@@ -179,7 +118,6 @@ class extends Component {
 
     public function resetAuth(): void
     {
-        $this->issueNostrChallenge();
         $this->initChallenge();
     }
 
@@ -198,9 +136,8 @@ class extends Component {
 ?>
 
 <div class="flex min-h-screen justify-center"
-     x-data="nostrLogin"
-     data-nostr-challenge="{{ $nostrChallenge ?? '' }}"
-     @mobile-login-ready.window="lightningLoginInProgress = true; window.location.href = $event.detail.url">
+     x-data="{ loginInProgress: false }"
+     @mobile-login-ready.window="loginInProgress = true; window.location.href = $event.detail.url">
     <div class="flex justify-center items-center px-4 py-8">
         <div class="w-80 max-w-80 space-y-6">
             <div class="flex justify-center">
@@ -230,27 +167,11 @@ class extends Component {
                     </flux:button>
                 </div>
             @else
-                <flux:heading class="text-center" size="xl">{{ __('Anmelden für die App') }}</flux:heading>
+                <flux:heading class="text-center" size="xl">{{ __('Login mit Lightning ⚡') }}</flux:heading>
 
-                {{-- Nostr via window.nostr: extension or NIP-46 remote signer
-                     (Amber via bunker/nostrconnect — the window.nostr.js
-                     widget handles pairing and persists the connection). --}}
-                <flux:button variant="primary"
-                             @click="openNostrLogin"
-                             icon="cursor-arrow-ripple"
-                             x-bind:disabled="nostrLoginInProgress"
-                             x-bind:aria-busy="nostrLoginInProgress"
-                             class="w-full cursor-pointer">
-                    <span x-show="!nostrLoginInProgress">{{ __('Log in mit Nostr') }}</span>
-                    <span x-show="nostrLoginInProgress" x-cloak class="inline-flex items-center gap-2">
-                        <flux:icon.arrow-path class="animate-spin size-4" aria-hidden="true"/>
-                        {{ __('Signiere…') }}
-                    </span>
-                </flux:button>
-
-                <div class="text-center text-2xl text-gray-80 dark:text-gray-2000 mt-2">
-                    {{ __('Login with lightning ⚡') }}
-                </div>
+                <flux:text class="text-center">
+                    {{ __('Scanne den Code mit deiner Lightning-Wallet oder öffne sie direkt.') }}
+                </flux:text>
 
                 <div class="flex justify-center" wire:key="qrcode">
                     <a href="lightning:{{ $this->lnurl }}">
@@ -274,12 +195,12 @@ class extends Component {
                 </div>
 
                 {{-- Poll for the LoginKey row written by the LNURL callback.
-                     Paused while a login round-trip or navigation is in flight. --}}
-                <template x-if="!nostrLoginInProgress && !lightningLoginInProgress">
+                     Paused while the completion navigation is in flight. --}}
+                <template x-if="!loginInProgress">
                     <div wire:poll.4s="checkAuth" wire:key="checkAuth"></div>
                 </template>
 
-                <div x-show="lightningLoginInProgress" x-cloak class="flex items-center justify-center gap-2">
+                <div x-show="loginInProgress" x-cloak class="flex items-center justify-center gap-2">
                     <flux:icon.arrow-path class="animate-spin size-4" aria-hidden="true"/>
                     <flux:text>{{ __('Anmeldung wird abgeschlossen…') }}</flux:text>
                 </div>

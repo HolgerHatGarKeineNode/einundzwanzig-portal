@@ -201,27 +201,6 @@ it('lets an already authenticated user connect the app and replaces tokens of th
     expect($user->tokens()->where('name', 'Pixel 10')->count())->toBe(1);
 });
 
-it('completes a window.nostr login on the mobile page via LoginKey and the completion route', function () {
-    Queue::fake();
-
-    $component = Livewire\Livewire::withQueryParams(['redirect_uri' => 'einundzwanzig://auth', 'device_name' => 'Pixel 10'])
-        ->test('auth.mobile-login');
-
-    // Helper from NostrLoginTest: signs the challenge stored in the session.
-    [$signedEvent, $npub] = makeSignedNostrLoginEvent();
-
-    $k1 = $component->get('k1');
-
-    $component
-        ->dispatch('nostrLoggedIn', signedEvent: $signedEvent)
-        ->assertRedirect(route('auth.mobile.complete', ['k1' => $k1]));
-
-    $user = User::query()->where('nostr', $npub)->first();
-    expect($user)->not->toBeNull();
-    expect(LoginKey::query()->where('k1', $k1)->value('user_id'))->toBe($user->id);
-    Queue::assertPushed(FetchNostrProfileJob::class);
-});
-
 it('shows the confirmation screen instead of the login methods for authenticated users', function () {
     $user = User::factory()->create();
 
