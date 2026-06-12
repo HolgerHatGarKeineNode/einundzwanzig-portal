@@ -32,6 +32,7 @@ class VenueController extends Controller
      */
     #[QueryParameter(name: 'search', description: 'Teilstring-Suche im Namen des Veranstaltungsortes.', required: false, type: 'string')]
     #[QueryParameter(name: 'selected', description: 'Lädt gezielt die angegebenen Veranstaltungsort-IDs (umgeht die Begrenzung auf 10 Einträge).', required: false, type: 'array')]
+    #[QueryParameter(name: 'withDetails', description: 'Presence-Flag: hebt die Begrenzung auf 10 Einträge auf.', required: false, type: 'string')]
     public function index(Request $request)
     {
         return Venue::query()
@@ -46,7 +47,7 @@ class VenueController extends Controller
             ->when(
                 $request->exists('selected'),
                 fn (Builder $query) => $query->whereIn('id', $this->numericIds($request)),
-                fn (Builder $query) => $query->limit(10)
+                fn (Builder $query) => $request->exists('withDetails') ? $query : $query->limit(10)
             )
             ->get()
             ->map(function (Venue $venue) {

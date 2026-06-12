@@ -30,10 +30,13 @@ class CityController extends Controller
      */
     #[QueryParameter(name: 'search', description: 'Teilstring-Suche im Namen der Stadt.', required: false, type: 'string')]
     #[QueryParameter(name: 'selected', description: 'Lädt gezielt die angegebenen IDs.', required: false, type: 'array')]
+    #[QueryParameter(name: 'withDetails', description: 'Presence-Flag: liefert zusätzlich Country-Code und Flaggen-URL und hebt die Begrenzung auf 10 Einträge auf.', required: false, type: 'string')]
     public function index(Request $request)
     {
+        $withDetails = $request->exists('withDetails');
+
         return City::query()
-            ->with(['country:id,name'])
+            ->with([$withDetails ? 'country:id,name,code' : 'country:id,name'])
             ->select('id', 'name', 'country_id')
             ->orderBy('name')
             ->when(
@@ -44,9 +47,16 @@ class CityController extends Controller
             ->when(
                 $request->exists('selected'),
                 fn (Builder $query) => $query->whereIn('id', $this->numericIds($request)),
-                fn (Builder $query) => $query->limit(10)
+                fn (Builder $query) => $withDetails ? $query : $query->limit(10)
             )
-            ->get();
+            ->get()
+            ->map(function (City $city) use ($withDetails) {
+                if ($withDetails) {
+                    $city->flag = asset('vendor/blade-country-flags/4x3-'.$city->country->code.'.svg');
+                }
+
+                return $city;
+            });
     }
 
     /**
