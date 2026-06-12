@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\NewAccessToken;
+use Laravel\Sanctum\PersonalAccessToken;
 
 /**
  * Auth flow for the Einundzwanzig mobile app.
@@ -123,6 +124,28 @@ final class MobileAuthController extends Controller
                 'name' => $user->name,
             ],
         ]);
+    }
+
+    /**
+     * Revoke the personal access token that authenticated this request.
+     *
+     * Called by the mobile app on logout so the token does not linger
+     * server-side after the app has deleted it from the device keystore.
+     */
+    public function revoke(Request $request): JsonResponse
+    {
+        $token = $request->user()->currentAccessToken();
+
+        if ($token instanceof PersonalAccessToken) {
+            $token->delete();
+
+            Log::info('Mobile app token revoked', [
+                'user_id' => $request->user()->id,
+                'device_name' => $token->name,
+            ]);
+        }
+
+        return response()->json(['status' => 'OK']);
     }
 
     /**

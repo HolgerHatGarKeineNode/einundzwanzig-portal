@@ -224,3 +224,35 @@ it('returns the token owner profile on /api/user', function () {
 it('denies /api/user without a token', function () {
     $this->getJson('/api/user')->assertUnauthorized();
 });
+
+it('revokes the requesting token on mobile logout', function () {
+    $user = User::factory()->create();
+    $plainTextToken = $user->createToken('Pixel 10')->plainTextToken;
+
+    $this->deleteJson('/api/mobile/token', [], ['Authorization' => 'Bearer '.$plainTextToken])
+        ->assertOk()
+        ->assertJson(['status' => 'OK']);
+
+    expect($user->tokens()->count())->toBe(0);
+
+    // The revoked token no longer authenticates API requests. The guard
+    // caches the resolved user within a test, so reset it first.
+    $this->app['auth']->forgetGuards();
+    $this->getJson('/api/user', ['Authorization' => 'Bearer '.$plainTextToken])
+        ->assertUnauthorized();
+});
+
+it('only revokes the token used for the logout request', function () {
+    $user = User::factory()->create();
+    $phoneToken = $user->createToken('Pixel 10')->plainTextToken;
+    $user->createToken('Tablet');
+
+    $this->deleteJson('/api/mobile/token', [], ['Authorization' => 'Bearer '.$phoneToken])
+        ->assertOk();
+
+    expect($user->tokens()->pluck('name')->all())->toBe(['Tablet']);
+});
+
+it('denies the mobile logout without a token', function () {
+    $this->deleteJson('/api/mobile/token')->assertUnauthorized();
+});

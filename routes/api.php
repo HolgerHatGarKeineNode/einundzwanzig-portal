@@ -96,5 +96,12 @@ Route::post('/mobile/token', [MobileAuthController::class, 'token'])
     ->middleware('throttle:30,1')
     ->name('auth.mobile.token');
 
+// Logout for the mobile app: revokes the personal access token that
+// authenticated this request, so a local "disconnect" in the app also
+// invalidates the token server-side.
+Route::delete('/mobile/token', [MobileAuthController::class, 'revoke'])
+    ->middleware(['auth:sanctum', 'throttle:30,1'])
+    ->name('auth.mobile.token.revoke');
+
 Route::post('/check-auth-error', [LnurlAuthController::class, 'checkError'])
     ->name('auth.check-error');
