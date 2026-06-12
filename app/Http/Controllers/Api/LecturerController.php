@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreLecturerRequest;
 use App\Http\Requests\Api\UpdateLecturerRequest;
 use App\Http\Resources\LecturerResource;
+use App\Models\Course;
 use App\Models\Lecturer;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
@@ -26,15 +27,21 @@ class LecturerController extends Controller
     /**
      * Referenten auflisten und durchsuchen
      *
-     * Öffentlicher Endpunkt; liefert id und name, alphabetisch sortiert. Ohne den Parameter 'selected' wird die Liste auf 10 Einträge begrenzt. Jeder Referent enthält zusätzlich ein 'image' (Avatar-Thumbnail-URL).
+     * Öffentlicher Endpunkt; liefert id und name, alphabetisch sortiert. Ohne den Parameter 'selected' wird die Liste auf 10 Einträge begrenzt. Jeder Referent enthält zusätzlich ein 'image' (Avatar-Thumbnail-URL). Mit 'withDetails' entfällt das Limit und jeder Referent enthält zusätzlich subtitle und future_events_count (Anzahl kommender Kurs-Events).
      */
     #[QueryParameter(name: 'search', description: 'Teilstring-Suche im Namen.', required: false, type: 'string')]
     #[QueryParameter(name: 'selected', description: 'Lädt gezielt die angegebenen IDs.', required: false, type: 'array')]
+    #[QueryParameter(name: 'withDetails', description: 'Presence-Flag: liefert subtitle und future_events_count mit und hebt das 10-Einträge-Limit auf.', required: false, type: 'string')]
     public function index(Request $request)
     {
+        $withDetails = $request->exists('withDetails');
+
         return Lecturer::query()
-            ->select('id', 'name')
+            ->select($withDetails ? ['id', 'name', 'subtitle'] : ['id', 'name'])
+            ->with('media')
             ->orderBy('name')
+            ->when($withDetails, fn (Builder $query) => $query
+                ->withCount(['coursesEvents as future_events_count' => fn (Builder $events) => $events->where('from', '>=', now())]))
             ->when(
                 $request->search,
                 fn (Builder $query) => $query
@@ -43,7 +50,7 @@ class LecturerController extends Controller
             ->when(
                 $request->exists('selected'),
                 fn (Builder $query) => $query->whereIn('id', $this->numericIds($request)),
-                fn (Builder $query) => $query->limit(10)
+                fn (Builder $query) => $withDetails ? $query : $query->limit(10)
             )
             ->get()
             ->map(function (Lecturer $lecturer) {
@@ -52,6 +59,46 @@ class LecturerController extends Controller
 
                 return $lecturer;
             });
+    }
+
+    /**
+     * Referent anzeigen
+     *
+     * Öffentlicher Endpunkt; liefert das Profil eines Referenten (Avatar, Untertitel,
+     * Intro, Beschreibung, Nostr- und Web-Links) inklusive seiner Kurse mit deren
+     * nächstem zukünftigen Kurs-Event.
+     *
+     * @return array<string, mixed>
+     */
+    public function show(Lecturer $lecturer): array
+    {
+        $lecturer->load([
+            'media',
+            'courses' => fn ($query) => $query
+                ->orderBy('name')
+                ->with('media')
+                ->withMin(['courseEvents as next_event' => fn (Builder $events) => $events->where('from', '>=', now())], 'from'),
+        ]);
+
+        return [
+            'id' => $lecturer->id,
+            'name' => $lecturer->name,
+            'subtitle' => $lecturer->subtitle,
+            'intro' => $lecturer->intro,
+            'description' => $lecturer->description,
+            'image' => $lecturer->getFirstMediaUrl('avatar', 'preview'),
+            'active' => (bool) $lecturer->active,
+            'nostr' => $lecturer->nostr,
+            'website' => $lecturer->website,
+            'twitter_username' => $lecturer->twitter_username,
+            'lightning_address' => $lecturer->lightning_address,
+            'courses' => $lecturer->courses->map(fn (Course $course) => [
+                'id' => $course->id,
+                'name' => $course->name,
+                'image' => $course->getFirstMediaUrl('logo', 'thumb'),
+                'next_event' => $course->next_event,
+            ])->all(),
+        ];
     }
 
     /**

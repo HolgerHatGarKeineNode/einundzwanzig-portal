@@ -22,7 +22,7 @@ Route::middleware(['throttle:60,1'])
         Route::resource('countries', CountryController::class)->only(['index']);
         Route::get('meetup/ical', [MeetupController::class, 'ical'])->name('api.meetup.ical');
         Route::resource('meetup', MeetupController::class)->only(['index']);
-        Route::resource('lecturers', LecturerController::class)->only(['index']);
+        Route::resource('lecturers', LecturerController::class)->only(['index', 'show']);
         Route::resource('courses', CourseController::class)
             ->only(['index', 'show']);
         Route::resource('cities', CityController::class)->only(['index']);
