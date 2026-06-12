@@ -52,7 +52,7 @@ class CityController extends Controller
             ->get()
             ->map(function (City $city) use ($withDetails) {
                 if ($withDetails) {
-                    $city->flag = asset('vendor/blade-country-flags/4x3-'.$city->country->code.'.svg');
+                    $city->flag = asset('vendor/blade-flags/country-'.$city->country->code.'.svg');
                 }
 
                 return $city;

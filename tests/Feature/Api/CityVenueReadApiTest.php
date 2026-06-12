@@ -24,7 +24,7 @@ it('returns all cities with country code and flag on GET /api/cities?withDetails
     expect($first)
         ->toHaveKeys(['id', 'name', 'country_id', 'country', 'flag'])
         ->and($first['country'])->toHaveKeys(['id', 'name', 'code'])
-        ->and($first['flag'])->toContain('4x3-'.$cities->first()->country->code.'.svg');
+        ->and($first['flag'])->toContain('vendor/blade-flags/country-'.$cities->first()->country->code.'.svg');
 });
 
 it('limits GET /api/venues to 10 entries without withDetails', function () {

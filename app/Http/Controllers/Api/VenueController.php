@@ -51,7 +51,7 @@ class VenueController extends Controller
             )
             ->get()
             ->map(function (Venue $venue) {
-                $venue->flag = asset('vendor/blade-country-flags/4x3-'.$venue->city->country->code.'.svg');
+                $venue->flag = asset('vendor/blade-flags/country-'.$venue->city->country->code.'.svg');
                 $venue->description = $venue->city->name.', '.$venue->street;
 
                 return $venue;

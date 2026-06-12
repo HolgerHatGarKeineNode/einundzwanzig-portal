@@ -32,7 +32,7 @@ class ListCountriesTool extends Tool
             ->limit(10)
             ->get()
             ->map(function (Country $country) {
-                $country->flag = asset('vendor/blade-country-flags/4x3-'.$country->code.'.svg');
+                $country->flag = asset('vendor/blade-flags/country-'.$country->code.'.svg');
 
                 return $country;
             });
