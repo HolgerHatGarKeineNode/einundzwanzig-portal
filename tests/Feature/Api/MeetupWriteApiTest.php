@@ -87,6 +87,11 @@ it('returns the dashboard-selected meetups in mine index', function () {
     expect($ids)
         ->toContain(...$selected->pluck('id')->all())
         ->not->toContain($unselected->id);
+
+    collect($response->json('data'))->each(
+        fn ($meetup) => expect($meetup)->toHaveKey('logo')
+            ->and($meetup['logo'])->toBeString()
+    );
 });
 
 it('lets a pivot member view in mine show', function () {

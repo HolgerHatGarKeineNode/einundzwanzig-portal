@@ -115,6 +115,7 @@ class MeetupController extends Controller
 
         $meetups = $request->user()
             ->meetups()
+            ->with('media')
             ->orderBy('name')
             ->get();
 

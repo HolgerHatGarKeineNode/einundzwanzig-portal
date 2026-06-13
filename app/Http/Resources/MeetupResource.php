@@ -32,6 +32,7 @@ class MeetupResource extends JsonResource
             'community' => $this->community,
             'visible_on_map' => $this->visible_on_map,
             'is_active' => $this->is_active,
+            'logo' => $this->getFirstMediaUrl('logo', 'thumb'),
             'last_event_at' => $this->last_event_at,
             'created_by' => $this->created_by,
             'created_at' => $this->created_at,
