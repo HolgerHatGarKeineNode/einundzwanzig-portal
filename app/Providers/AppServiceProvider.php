@@ -5,7 +5,6 @@ namespace App\Providers;
 use App\Support\Carbon;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\DiagnosingHealth;
 use Illuminate\Http\Request;
@@ -39,22 +38,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureRateLimiting();
-
-        // Case-insensitive Teilstring-Suche DB-portabel halten: PostgreSQL
-        // kennt `ilike`, SQLite (lokales Dev / Tests) nicht — dort liefert ein
-        // hartkodiertes `ilike` einen Syntaxfehler. Auf SQLite ist `like`
-        // ohnehin case-insensitiv (ASCII), sodass das Produktionsverhalten
-        // (PostgreSQL/ilike) unverändert bleibt. Verwendung in den API-
-        // Controllern: ->whereLike('name', "%{$search}%").
-        Builder::macro('whereLike', function (string $column, string $value, string $boolean = 'and') {
-            $operator = $this->getConnection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
-
-            return $this->where($column, $operator, $value, $boolean);
-        });
-
-        Builder::macro('orWhereLike', function (string $column, string $value) {
-            return $this->whereLike($column, $value, 'or');
-        });
 
         Gate::define('viewApiDocs', fn (?Authenticatable $user = null): bool => true);
 

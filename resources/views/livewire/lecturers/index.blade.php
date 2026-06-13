@@ -40,9 +40,9 @@ class extends Component {
                     fn($query) => $query->where('countries.code', $this->country))
                 ->when($this->search, fn($query)
                     => $query
-                    ->where('name', 'ilike', '%'.$this->search.'%')
-                    ->orWhere('description', 'ilike', '%'.$this->search.'%')
-                    ->orWhere('subtitle', 'ilike', '%'.$this->search.'%'),
+                    ->whereLike('name', '%'.$this->search.'%')
+                    ->orWhereLike('description', '%'.$this->search.'%')
+                    ->orWhereLike('subtitle', '%'.$this->search.'%'),
                 )
                 ->orderByDesc('has_future_events')
                 ->orderBy('name', 'asc')

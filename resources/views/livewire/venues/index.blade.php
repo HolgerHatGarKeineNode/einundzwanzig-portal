@@ -25,7 +25,7 @@ class extends Component {
         return [
             'venues' => Venue::with(['city.country', 'createdBy'])
                 ->when($this->search, fn($query)
-                    => $query->where('name', 'ilike', '%'.$this->search.'%'),
+                    => $query->whereLike('name', '%'.$this->search.'%'),
                 )
                 ->whereHas('city.country', fn($query) => $query->where('countries.code', $this->country))
                 ->orderBy('name')

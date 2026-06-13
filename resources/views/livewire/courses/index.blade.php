@@ -29,8 +29,8 @@ class extends Component {
                 ])
                 ->when($this->search, fn($query)
                     => $query
-                    ->where('name', 'ilike', '%'.$this->search.'%')
-                    ->orWhere('description', 'ilike', '%'.$this->search.'%'),
+                    ->whereLike('name', '%'.$this->search.'%')
+                    ->orWhereLike('description', '%'.$this->search.'%'),
                 )
                 ->whereHas('courseEvents.venue.city.country', fn($query) => $query->where('countries.code', $this->country))
                 ->orderByDesc('has_future_events')

@@ -40,7 +40,7 @@ class extends Component {
                     $query->whereHas('city.country', fn($query) => $query->where('countries.code', $this->country))
                 )
                 ->when($this->search, fn($query)
-                    => $query->where('meetups.name', 'ilike', '%'.$this->search.'%'),
+                    => $query->whereLike('meetups.name', '%'.$this->search.'%'),
                 )
                 ->orderByDesc('has_future_events')
                 ->orderByRaw('next_event_start ASC NULLS LAST')
