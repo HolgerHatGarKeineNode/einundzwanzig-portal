@@ -20,6 +20,17 @@ class MeetupPolicy
         return $this->owns($user, $meetup);
     }
 
+    /**
+     * Sichtbarkeit der „Meine Meetups"-Detailansicht: Neben dem Ersteller darf
+     * jedes Mitglied der meetup_user-Pivot („Meine Meetups" im Dashboard) das
+     * abonnierte Meetup über die REST-API ansehen. Spiegelt die Listen-Semantik
+     * von MeetupController::mine(), die ebenfalls die Pivot-Mitgliedschaft nutzt.
+     */
+    public function viewMine(User $user, Meetup $meetup): bool
+    {
+        return $this->owns($user, $meetup) || $meetup->hasMember($user);
+    }
+
     public function create(User $user): bool
     {
         return true;

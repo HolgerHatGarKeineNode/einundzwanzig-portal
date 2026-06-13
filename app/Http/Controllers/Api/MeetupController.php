@@ -106,14 +106,15 @@ class MeetupController extends Controller
     /**
      * Eigene Meetups auflisten
      *
-     * Liefert alle vom authentifizierten Nutzer erstellten Meetups, alphabetisch sortiert.
+     * Liefert die im Dashboard ausgewählten Meetups des authentifizierten Nutzers
+     * (meetup_user-Pivot, „Meine Meetups"), alphabetisch sortiert.
      */
     public function mine(Request $request): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', Meetup::class);
 
-        $meetups = Meetup::query()
-            ->where('created_by', $request->user()->id)
+        $meetups = $request->user()
+            ->meetups()
             ->orderBy('name')
             ->get();
 
@@ -123,12 +124,12 @@ class MeetupController extends Controller
     /**
      * Eigenes Meetup anzeigen
      *
-     * Zeigt ein einzelnes, vom authentifizierten Nutzer erstelltes Meetup.
+     * Zeigt ein einzelnes der im Dashboard ausgewählten Meetups (meetup_user-Pivot).
      */
-    #[Response(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf das Meetup sehen.')]
+    #[Response(status: 403, description: 'Nur der Ersteller oder ein Mitglied (meetup_user-Pivot) darf das Meetup sehen.')]
     public function mineShow(Meetup $meetup): MeetupResource
     {
-        Gate::authorize('view', $meetup);
+        Gate::authorize('viewMine', $meetup);
 
         return MeetupResource::make($meetup);
     }

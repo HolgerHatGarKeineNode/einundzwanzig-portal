@@ -70,23 +70,36 @@ it('forbids updating as a pivot member who is not the creator', function () {
     ])->assertForbidden();
 });
 
-it('returns only own in mine index', function () {
+it('returns the dashboard-selected meetups in mine index', function () {
     Sanctum::actingAs($user = User::factory()->create());
-    $other = User::factory()->create();
 
-    Meetup::factory()->count(2)->create(['created_by' => $user->id]);
-    Meetup::factory()->create(['created_by' => $other->id]);
+    $selected = Meetup::factory()->count(2)->create();
+    $unselected = Meetup::factory()->create();
+
+    $user->meetups()->attach($selected);
 
     $response = $this->getJson('/api/my-meetups');
 
     $response->assertSuccessful();
     expect($response->json('data'))->toHaveCount(2);
-    collect($response->json('data'))->each(
-        fn ($meetup) => expect($meetup['created_by'])->toBe($user->id)
-    );
+
+    $ids = collect($response->json('data'))->pluck('id')->all();
+    expect($ids)
+        ->toContain(...$selected->pluck('id')->all())
+        ->not->toContain($unselected->id);
 });
 
-it('forbids viewing someone elses in mine show', function () {
+it('lets a pivot member view in mine show', function () {
+    Sanctum::actingAs($user = User::factory()->create());
+    $meetup = Meetup::factory()->create();
+    $user->meetups()->attach($meetup);
+
+    $this->getJson('/api/my-meetups/'.$meetup->id)
+        ->assertSuccessful()
+        ->assertJsonPath('data.id', $meetup->id);
+});
+
+it('forbids viewing a meetup the user has not selected in mine show', function () {
     $owner = User::factory()->create();
     $meetup = Meetup::factory()->create(['created_by' => $owner->id]);
 
