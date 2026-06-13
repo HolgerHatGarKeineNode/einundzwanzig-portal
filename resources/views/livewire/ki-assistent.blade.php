@@ -30,7 +30,7 @@ class extends Component {
         return [
             [
                 'number' => 1,
-                'image' => 'Screenshot_20260608_084046.png',
+                'image' => 'step-1.png',
                 'width' => 2863,
                 'height' => 1548,
                 'title' => 'Connectors öffnen',
@@ -38,7 +38,7 @@ class extends Component {
             ],
             [
                 'number' => 2,
-                'image' => 'Screenshot_20260608_094034.png',
+                'image' => 'step-2.png',
                 'width' => 918,
                 'height' => 873,
                 'title' => 'Connector hinzufügen',
@@ -46,7 +46,7 @@ class extends Component {
             ],
             [
                 'number' => 3,
-                'image' => 'Screenshot_20260608_094048.png',
+                'image' => 'step-3.png',
                 'width' => 2858,
                 'height' => 1547,
                 'title' => 'Verbindung herstellen',
@@ -54,7 +54,7 @@ class extends Component {
             ],
             [
                 'number' => 4,
-                'image' => 'Screenshot_20260608_094912.png',
+                'image' => 'step-4.png',
                 'width' => 833,
                 'height' => 757,
                 'title' => 'Anmelden & Zugriff erlauben',
@@ -62,7 +62,7 @@ class extends Component {
             ],
             [
                 'number' => 5,
-                'image' => 'Screenshot_20260608_094950.png',
+                'image' => 'step-5.png',
                 'width' => 2406,
                 'height' => 1502,
                 'title' => 'Berechtigungen festlegen',
@@ -70,7 +70,7 @@ class extends Component {
             ],
             [
                 'number' => 6,
-                'image' => 'Screenshot_20260608_123314.png',
+                'image' => 'step-6.png',
                 'width' => 2792,
                 'height' => 1543,
                 'title' => 'Fertig – einfach loslegen!',
@@ -231,9 +231,9 @@ class extends Component {
                             <span class="size-2.5 rounded-full bg-yellow-400"></span>
                             <span class="size-2.5 rounded-full bg-green-400"></span>
                         </div>
-                        <a href="{{ asset('storage/screenshots/'.$step['image']) }}" target="_blank"
+                        <a href="{{ asset('img/ki-assistent/'.$step['image']) }}" target="_blank"
                            aria-label="{{ __('Screenshot zu Schritt :number vergrößern', ['number' => $step['number']]) }}">
-                            <img src="{{ asset('storage/screenshots/'.$step['image']) }}"
+                            <img src="{{ asset('img/ki-assistent/'.$step['image']) }}"
                                  alt="{{ __($step['title']) }}"
                                  loading="lazy"
                                  width="{{ $step['width'] }}"

@@ -48,8 +48,8 @@ it('renders the KI-Assistent guide with the connector URL and all setup screensh
     $response->assertSuccessful()
         ->assertSee(__('EINUNDZWANZIG mit Claude verbinden'))
         ->assertSee(url('/mcp'))
-        ->assertSee('storage/screenshots/Screenshot_20260608_084046.png')
-        ->assertSee('storage/screenshots/Screenshot_20260608_123314.png')
+        ->assertSee('img/ki-assistent/step-1.png')
+        ->assertSee('img/ki-assistent/step-6.png')
         ->assertSee(route('scramble.docs.ui'));
 });
 
