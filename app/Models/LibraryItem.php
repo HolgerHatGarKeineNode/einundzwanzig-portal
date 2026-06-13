@@ -157,7 +157,7 @@ class LibraryItem extends Model implements Feedable, HasMedia, Sortable
             ->latest('id');
 
         if ($value) {
-            $query->where('name', 'ilike', "%{$value}%");
+            $query->whereLike('name', "%{$value}%");
         }
 
         return $query->get();

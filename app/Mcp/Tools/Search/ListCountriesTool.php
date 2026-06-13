@@ -26,8 +26,8 @@ class ListCountriesTool extends Tool
             ->when(
                 $search,
                 fn (Builder $query) => $query
-                    ->where('name', 'ilike', "%{$search}%")
-                    ->orWhere('code', 'ilike', "%{$search}%"),
+                    ->whereLike('name', "%{$search}%")
+                    ->orWhereLike('code', "%{$search}%"),
             )
             ->limit(10)
             ->get()

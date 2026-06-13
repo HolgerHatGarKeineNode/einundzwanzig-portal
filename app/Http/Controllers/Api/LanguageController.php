@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use JoeDixon\Translation\Language;
 use JoeDixon\Translation\Translation;
 
@@ -21,15 +22,14 @@ class LanguageController extends Controller
             ->orderBy('name')
             ->when(
                 $request->search,
-                fn(Builder $query)
-                    => $query
-                    ->where('name', 'ilike', "%{$request->search}%")
-                    ->orWhere('language', 'ilike', "%{$request->search}%"),
+                fn (Builder $query) => $query
+                    ->whereLike('name', "%{$request->search}%")
+                    ->orWhereLike('language', "%{$request->search}%"),
             )
             ->when(
                 $request->exists('selected'),
-                fn(Builder $query) => $query->whereIn('language', $request->input('selected', [])),
-                fn(Builder $query) => $query->limit(10),
+                fn (Builder $query) => $query->whereIn('language', $request->input('selected', [])),
+                fn (Builder $query) => $query->limit(10),
             )
             ->get()
             ->map(function ($language) {
@@ -61,7 +61,7 @@ class LanguageController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -71,8 +71,7 @@ class LanguageController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param    $language
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show(Language $language)
     {
@@ -82,8 +81,7 @@ class LanguageController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param    $language
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, Language $language)
     {
@@ -93,8 +91,7 @@ class LanguageController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param    $language
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy(Language $language)
     {

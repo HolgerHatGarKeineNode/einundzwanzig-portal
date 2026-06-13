@@ -28,8 +28,8 @@ class CountryController extends Controller
             ->when(
                 $request->search,
                 fn (Builder $query) => $query
-                    ->where('name', 'ilike', "%{$request->search}%")
-                    ->orWhere('code', 'ilike', "%{$request->search}%"),
+                    ->whereLike('name', "%{$request->search}%")
+                    ->orWhereLike('code', "%{$request->search}%"),
             )
             ->when(
                 $request->exists('selected'),

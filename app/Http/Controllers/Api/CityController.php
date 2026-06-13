@@ -42,7 +42,7 @@ class CityController extends Controller
             ->when(
                 $request->search,
                 fn (Builder $query) => $query
-                    ->where('name', 'ilike', "%{$request->search}%")
+                    ->whereLike('name', "%{$request->search}%")
             )
             ->when(
                 $request->exists('selected'),

@@ -27,7 +27,7 @@ class SearchCitiesTool extends Tool
             ->when(
                 $search,
                 fn (Builder $query) => $query
-                    ->where('name', 'ilike', "%{$search}%")
+                    ->whereLike('name', "%{$search}%")
             )
             ->limit(10)
             ->get();

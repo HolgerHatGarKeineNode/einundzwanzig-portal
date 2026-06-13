@@ -55,9 +55,9 @@ class MeetupController extends Controller
             ->when(
                 $request->search,
                 fn (Builder $query) => $query
-                    ->where('name', 'like', "%{$request->search}%")
+                    ->whereLike('name', "%{$request->search}%")
                     ->orWhereHas('city',
-                        fn (Builder $query) => $query->where('cities.name', 'ilike', "%{$request->search}%")),
+                        fn (Builder $query) => $query->whereLike('cities.name', "%{$request->search}%")),
             )
             ->when(
                 $request->exists('selected'),
