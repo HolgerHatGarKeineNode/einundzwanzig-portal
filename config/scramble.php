@@ -49,6 +49,12 @@ return [
         Meetups und ihre Termine, Kurse und Kurs-Events, Referenten, Veranstaltungsorte sowie die
         Geo-Daten für die Community-Karte.
 
+        ## Lieber per KI-Assistent?
+
+        Du musst nicht programmieren, um Daten anzulegen: Verbinde das Portal als Connector mit
+        **claude.ai** und verwalte Meetups, Termine und Kurse einfach per Chat. Die bebilderte
+        Schritt-für-Schritt-Anleitung findest du unter [/ki-assistent](/ki-assistent).
+
         ## Authentifizierung
 
         Die meisten **Lese-Endpunkte** sind öffentlich und benötigen kein Token.

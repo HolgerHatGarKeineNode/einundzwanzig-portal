@@ -288,6 +288,14 @@ class SeoDataAttribute
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
+            'ki_assistent' => new SEOData(
+                title: __('EINUNDZWANZIG mit Claude verbinden'),
+                description: __('Verwalte deine Meetups, Termine und Kurse ganz einfach per Chat – mit der KI von claude.ai. Ganz ohne Technikwissen.'),
+                author: $domainAuthor,
+                image: $domainImage,
+                twitter_username: $domainTwitter,
+                site_name: $domainSiteName,
+            ),
             // Add more as needed
             'default' => new SEOData(
                 title: __('Willkommen'),

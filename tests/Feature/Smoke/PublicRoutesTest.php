@@ -24,6 +24,7 @@ it('returns a successful response for the listed public route', function (string
     $this->get($path)->assertSuccessful();
 })->with([
     'welcome' => '/welcome',
+    'ki-assistent' => '/ki-assistent',
     'login' => '/login',
     'forgot password' => '/forgot-password',
     'meetups index' => '/de/meetups',
@@ -39,6 +40,17 @@ it('returns a successful response for the listed public route', function (string
 
 it('redirects / to /welcome', function () {
     $this->get('/')->assertRedirect('/welcome');
+});
+
+it('renders the KI-Assistent guide with the connector URL and all setup screenshots', function () {
+    $response = $this->get('/ki-assistent');
+
+    $response->assertSuccessful()
+        ->assertSee(__('EINUNDZWANZIG mit Claude verbinden'))
+        ->assertSee(url('/mcp'))
+        ->assertSee('storage/screenshots/Screenshot_20260608_084046.png')
+        ->assertSee('storage/screenshots/Screenshot_20260608_123314.png')
+        ->assertSee(route('scramble.docs.ui'));
 });
 
 it('returns 404 for /register because public registration is disabled', function () {

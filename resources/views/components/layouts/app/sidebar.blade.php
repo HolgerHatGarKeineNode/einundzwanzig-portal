@@ -127,6 +127,12 @@
     <flux:spacer/>
 
     <flux:navlist variant="outline">
+        <flux:navlist.item icon="sparkles"
+                           :href="route('ki-assistent')"
+                           :current="request()->routeIs('ki-assistent')"
+                           wire:navigate>
+            {{ __('KI-Assistent') }}
+        </flux:navlist.item>
         <flux:navlist.item icon="book-open-text"
                            :href="route('scramble.docs.ui')"
                            target="_blank">

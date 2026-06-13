@@ -33,6 +33,9 @@ Route::get('/img-public/{path}', ImageController::class)
 // Welcome page route using Volt component
 Route::livewire('/welcome', 'welcome')->name('welcome');
 
+// Public guide explaining the MCP/AI connector and the claude.ai setup
+Route::livewire('/ki-assistent', 'ki-assistent')->name('ki-assistent');
+
 // Stream calendar route to download meetup calendar as ICS file
 Route::get('stream-calendar', DownloadMeetupCalendar::class)
     ->name('ics')
