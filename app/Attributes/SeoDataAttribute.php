@@ -21,7 +21,7 @@ class SeoDataAttribute
         $domainImage = $domainAttributes['image'];
         $domainAuthor = $domainAttributes['author'];
         $domainTwitter = $domainAttributes['twitter'];
-        $domainSiteName = __('Einundzwanzig Portal');
+        $domainSiteName = __('EINUNDZWANZIG Portal');
 
         self::$seoDefinitions = [
             'login' => new SEOData(

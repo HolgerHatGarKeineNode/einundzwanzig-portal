@@ -30,7 +30,7 @@ final class MobileAuthController extends Controller
     /** @var list<string> */
     public const ALLOWED_REDIRECT_URIS = ['einundzwanzig://auth'];
 
-    public const DEFAULT_DEVICE_NAME = 'Einundzwanzig Mobile App';
+    public const DEFAULT_DEVICE_NAME = 'EINUNDZWANZIG Mobile App';
 
     /**
      * Handle the NIP-55 signer callback (e.g. Amber on Android).

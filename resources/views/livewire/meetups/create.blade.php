@@ -278,7 +278,7 @@ class extends Component {
                     <flux:label>{{ __('Gemeinschaft') }}</flux:label>
                     <flux:select wire:model="community">
                         <flux:select.option value="">{{ __('Keine') }}</flux:select.option>
-                        <flux:select.option value="einundzwanzig">{{ __('Einundzwanzig Community') }}</flux:select.option>
+                        <flux:select.option value="einundzwanzig">{{ __('EINUNDZWANZIG Community') }}</flux:select.option>
                         <flux:select.option value="bitcoin">{{ __('Allgemeine Bitcoin Community') }}</flux:select.option>
                     </flux:select>
                     <flux:description>{{ __('Gemeinschafts- oder Organisationsname') }}</flux:description>

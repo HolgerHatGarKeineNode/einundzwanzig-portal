@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ __('Login bestätigt') }} — Einundzwanzig</title>
+    <title>{{ __('Login bestätigt') }} — EINUNDZWANZIG</title>
     <style>
         body { margin: 0; min-height: 100dvh; display: flex; align-items: center; justify-content: center;
                background: #09090b; color: #fafafa; font-family: ui-sans-serif, system-ui, sans-serif; }
@@ -23,7 +23,7 @@
     <div class="card">
         <div class="check">✅</div>
         <h1>{{ __('Login bestätigt') }}</h1>
-        <p>{{ __('Tippe auf den Button, um zurück zur Einundzwanzig-App zu gelangen.') }}</p>
+        <p>{{ __('Tippe auf den Button, um zurück zur EINUNDZWANZIG-App zu gelangen.') }}</p>
         <a class="button" href="{{ $deepLink }}">{{ __('Zurück zur App') }}</a>
     </div>
 </body>

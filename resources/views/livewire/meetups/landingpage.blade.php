@@ -149,7 +149,7 @@ class extends Component {
                             @if ($meetup->community === 'bitcoin')
                                 {{ __('Allgemeine Bitcoin Community') }}
                             @elseif ($meetup->community === 'einundzwanzig')
-                                {{ __('Einundzwanzig Community') }}
+                                {{ __('EINUNDZWANZIG Community') }}
                             @else
                                 {{ $meetup->community }}
                             @endif

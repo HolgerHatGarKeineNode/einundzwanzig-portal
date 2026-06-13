@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\LibraryItem;
+
 return [
     'feeds' => [
         'main' => [
@@ -11,14 +13,14 @@ return [
              * You can also pass an argument to that method. Note that their key must be the name of the parameter:
              * [App\Model::class, 'getAllFeedItems', 'parameterName' => 'argument']
              */
-            'items' => [\App\Models\LibraryItem::class, 'getFeedItems'],
+            'items' => [LibraryItem::class, 'getFeedItems'],
 
             /*
              * The feed will be available on this url.
              */
             'url' => 'feed',
 
-            'title' => 'Einundzwanzig - Feed',
+            'title' => 'EINUNDZWANZIG - Feed',
             'description' => 'Toximalist infotainment for bullish bitcoiners.',
             'language' => 'de',
 

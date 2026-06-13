@@ -46,10 +46,10 @@ use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Version;
 use Laravel\Mcp\Server\Tool;
 
-#[Name('Einundzwanzig API')]
+#[Name('EINUNDZWANZIG API')]
 #[Version('1.0.0')]
 #[Instructions(<<<'TXT'
-Dieser Server spiegelt die authentifizierte Einundzwanzig-API. Jeder Aufruf läuft im Kontext
+Dieser Server spiegelt die authentifizierte EINUNDZWANZIG-API. Jeder Aufruf läuft im Kontext
 des angemeldeten Nutzers; beim Anlegen wird der Ersteller (created_by) automatisch gesetzt.
 Schreib- und Eigentums-Operationen (update, show-my-*) sind nur für den Ersteller oder einen
 Super-Admin erlaubt.

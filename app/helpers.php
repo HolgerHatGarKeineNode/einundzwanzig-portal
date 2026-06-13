@@ -1,9 +1,9 @@
 <?php
 
-if (!function_exists('route_with_country')) {
+if (! function_exists('route_with_country')) {
     function route_with_country(string $name, array $parameters = [], bool $absolute = true): string
     {
-        if (!isset($parameters['country'])) {
+        if (! isset($parameters['country'])) {
             $country = request()->route('country') ?? 'de';
         } else {
             $country = str(session('lang_country', 'de'))->after('-')->lower();
@@ -14,13 +14,13 @@ if (!function_exists('route_with_country')) {
     }
 }
 
-if (!function_exists('get_domain_attributes')) {
+if (! function_exists('get_domain_attributes')) {
     function get_domain_attributes(): array
     {
         $langCountry = session('lang_country', 'de-DE');
 
         // Check if specific domain image exists
-        if (!file_exists(public_path('img/domains/'.$langCountry.'.jpg'))) {
+        if (! file_exists(public_path('img/domains/'.$langCountry.'.jpg'))) {
             $langCountry = 'de-DE';
         }
 
@@ -73,7 +73,7 @@ if (!function_exists('get_domain_attributes')) {
 
         $author = $countryAuthorMapping[$langCountry] ?? 'einundzwanzig';
         $twitter = $countryTwitterMapping[$langCountry] ?? '_einundzwanzig_';
-        $siteName = $countrySiteNameMapping[$langCountry] ?? 'Einundzwanzig Portal';
+        $siteName = $countrySiteNameMapping[$langCountry] ?? 'EINUNDZWANZIG Portal';
 
         return [
             'image' => $image,

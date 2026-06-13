@@ -42,8 +42,8 @@ return [
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
         'description' => <<<'MARKDOWN'
-        Willkommen bei der **Einundzwanzig API** – der öffentlichen Schnittstelle der
-        [Einundzwanzig](https://portal.einundzwanzig.space) Bitcoin-Community-Plattform.
+        Willkommen bei der **EINUNDZWANZIG API** – der öffentlichen Schnittstelle der
+        [EINUNDZWANZIG](https://portal.einundzwanzig.space) Bitcoin-Community-Plattform.
 
         Über diese API erreichst du die Daten der dezentralen deutschsprachigen Bitcoin-Bewegung:
         Meetups und ihre Termine, Kurse und Kurs-Events, Referenten, Veranstaltungsorte sowie die
@@ -68,7 +68,7 @@ return [
     ],
 
     'ui' => [
-        'title' => 'Einundzwanzig API',
+        'title' => 'EINUNDZWANZIG API',
     ],
 
     'renderer' => 'scalar',

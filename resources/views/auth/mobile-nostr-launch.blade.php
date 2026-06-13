@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ __('Anmeldung mit Nostr') }} — Einundzwanzig</title>
+    <title>{{ __('Anmeldung mit Nostr') }} — EINUNDZWANZIG</title>
     <style>
         body { margin: 0; min-height: 100dvh; display: flex; align-items: center; justify-content: center;
                background: #09090b; color: #fafafa; font-family: ui-sans-serif, system-ui, sans-serif; }
@@ -40,11 +40,11 @@
             const eventEnc = encodeURIComponent(JSON.stringify(event));
             const callbackUrl = @js($callbackUrl);
             const query = 'compressionType=none&returnType=event&type=sign_event'
-                + '&appName=Einundzwanzig&callbackUrl=' + encodeURIComponent(callbackUrl);
+                + '&appName=EINUNDZWANZIG&callbackUrl=' + encodeURIComponent(callbackUrl);
 
             window.location.href = 'intent:' + eventEnc + '?' + query
                 + '#Intent;scheme=nostrsigner;category=android.intent.category.BROWSABLE'
-                + ';S.type=sign_event;S.returnType=event;S.appName=Einundzwanzig'
+                + ';S.type=sign_event;S.returnType=event;S.appName=EINUNDZWANZIG'
                 + ';S.callbackUrl=' + callbackUrl
                 + ';end';
         }
