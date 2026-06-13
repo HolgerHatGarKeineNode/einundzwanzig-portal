@@ -735,5 +735,6 @@
     "Claude handelt ausschließlich mit deiner Erlaubnis und im Kontext deines eigenen Kontos. Du kannst die Verbindung jederzeit in claude.ai unter »Connectors« wieder trennen.": "A Claude kizárólag a te engedélyeddel és a saját fiókod kontextusában jár el. A kapcsolatot bármikor megszüntetheted a claude.ai-ban a »Connectors« alatt.",
     "Du bist Entwickler?": "Fejlesztő vagy?",
     "Du möchtest die Daten direkt über die Schnittstelle nutzen? In der API-Dokumentation findest du alle Endpunkte – inklusive Authentifizierung per persönlichem Token.": "Közvetlenül a felületen keresztül szeretnéd használni az adatokat? Az API-dokumentációban minden végpontot megtalálsz – beleértve a személyes tokennel történő hitelesítést is.",
-    "API-Dokumentation öffnen": "API-dokumentáció megnyitása"
+    "API-Dokumentation öffnen": "API-dokumentáció megnyitása",
+    "Schließen": "Bezárás"
 }

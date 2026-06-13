@@ -710,5 +710,6 @@
     "Claude handelt ausschließlich mit deiner Erlaubnis und im Kontext deines eigenen Kontos. Du kannst die Verbindung jederzeit in claude.ai unter »Connectors« wieder trennen.": "Claude rīkojas tikai ar tavu atļauju un tava konta kontekstā. Tu jebkurā laikā vari atvienoties claude.ai sadaļā »Connectors«.",
     "Du bist Entwickler?": "Vai esi izstrādātājs?",
     "Du möchtest die Daten direkt über die Schnittstelle nutzen? In der API-Dokumentation findest du alle Endpunkte – inklusive Authentifizierung per persönlichem Token.": "Vēlies izmantot datus tieši caur saskarni? API dokumentācijā atradīsi visus galapunktus – tostarp autentifikāciju ar personīgo tokenu.",
-    "API-Dokumentation öffnen": "Atvērt API dokumentāciju"
+    "API-Dokumentation öffnen": "Atvērt API dokumentāciju",
+    "Schließen": "Aizvērt"
 }

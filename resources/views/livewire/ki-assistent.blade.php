@@ -96,7 +96,10 @@ class extends Component {
     }
 }; ?>
 
-<div class="relative min-h-screen overflow-hidden text-zinc-900 dark:text-white">
+<div class="relative min-h-screen overflow-hidden text-zinc-900 dark:text-white"
+     x-data="{ lightboxSrc: null, lightboxAlt: '' }"
+     x-effect="document.body.style.overflow = lightboxSrc ? 'hidden' : ''"
+     @keydown.escape.window="lightboxSrc = null">
     {{-- Dekorativer Hintergrund-Glow --}}
     <div aria-hidden="true"
          class="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[40rem] bg-[radial-gradient(60rem_30rem_at_50%_-10%,rgba(249,115,22,0.18),transparent)]"></div>
@@ -231,15 +234,17 @@ class extends Component {
                             <span class="size-2.5 rounded-full bg-yellow-400"></span>
                             <span class="size-2.5 rounded-full bg-green-400"></span>
                         </div>
-                        <a href="{{ asset('img/ki-assistent/'.$step['image']) }}" target="_blank"
-                           aria-label="{{ __('Screenshot zu Schritt :number vergrößern', ['number' => $step['number']]) }}">
+                        <button type="button"
+                                class="block w-full cursor-zoom-in"
+                                @click="lightboxSrc = '{{ asset('img/ki-assistent/'.$step['image']) }}'; lightboxAlt = @js(__($step['title']))"
+                                aria-label="{{ __('Screenshot zu Schritt :number vergrößern', ['number' => $step['number']]) }}">
                             <img src="{{ asset('img/ki-assistent/'.$step['image']) }}"
                                  alt="{{ __($step['title']) }}"
                                  loading="lazy"
                                  width="{{ $step['width'] }}"
                                  height="{{ $step['height'] }}"
                                  class="h-auto w-full transition hover:opacity-90"/>
-                        </a>
+                        </button>
                     </figure>
                 </div>
             @endforeach
@@ -294,4 +299,24 @@ class extends Component {
             </flux:button>
         </div>
     </section>
+
+    {{-- Lightbox --}}
+    <div x-show="lightboxSrc"
+         x-transition.opacity
+         @click="lightboxSrc = null"
+         role="dialog"
+         aria-modal="true"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm sm:p-8"
+         style="display: none">
+        <button type="button"
+                @click="lightboxSrc = null"
+                aria-label="{{ __('Schließen') }}"
+                class="absolute right-4 top-4 flex size-10 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
+            <flux:icon name="x-mark" class="size-6"/>
+        </button>
+        <img :src="lightboxSrc"
+             :alt="lightboxAlt"
+             @click.stop
+             class="max-h-[90vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"/>
+    </div>
 </div>

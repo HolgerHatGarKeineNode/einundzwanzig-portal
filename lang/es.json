@@ -739,5 +739,6 @@
     "Claude handelt ausschließlich mit deiner Erlaubnis und im Kontext deines eigenen Kontos. Du kannst die Verbindung jederzeit in claude.ai unter »Connectors« wieder trennen.": "Claude actúa exclusivamente con tu permiso y en el contexto de tu propia cuenta. Puedes desconectar en cualquier momento en claude.ai en »Connectors«.",
     "Du bist Entwickler?": "¿Eres desarrollador?",
     "Du möchtest die Daten direkt über die Schnittstelle nutzen? In der API-Dokumentation findest du alle Endpunkte – inklusive Authentifizierung per persönlichem Token.": "¿Quieres usar los datos directamente a través de la interfaz? En la documentación de la API encontrarás todos los endpoints, incluida la autenticación con un token personal.",
-    "API-Dokumentation öffnen": "Abrir la documentación de la API"
+    "API-Dokumentation öffnen": "Abrir la documentación de la API",
+    "Schließen": "Cerrar"
 }
