@@ -123,6 +123,27 @@ class MeetupController extends Controller
     }
 
     /**
+     * Bestehendes Meetup zu „Meine Meetups" hinzufügen
+     *
+     * Fügt ein bereits existierendes Meetup zur „Meine Meetups"-Liste des authentifizierten
+     * Nutzers hinzu (meetup_user-Pivot als Mitglied, is_leader=false). Idempotent: ein bereits
+     * hinzugefügtes Meetup bleibt unverändert. Die Stammdaten bleiben dem Ersteller vorbehalten.
+     */
+    #[Response(status: 401, description: 'Nicht authentifiziert.')]
+    public function addToMine(Request $request, Meetup $meetup): JsonResponse
+    {
+        Gate::authorize('addToMine', $meetup);
+
+        $wasAdded = $meetup->addMember($request->user());
+
+        return MeetupResource::make($meetup)
+            ->response()
+            ->setStatusCode($wasAdded
+                ? \Symfony\Component\HttpFoundation\Response::HTTP_CREATED
+                : \Symfony\Component\HttpFoundation\Response::HTTP_OK);
+    }
+
+    /**
      * Eigenes Meetup anzeigen
      *
      * Zeigt ein einzelnes der im Dashboard ausgewählten Meetups (meetup_user-Pivot).

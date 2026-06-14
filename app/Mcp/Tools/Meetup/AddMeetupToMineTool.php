@@ -39,17 +39,13 @@ class AddMeetupToMineTool extends Tool
             }
         }
 
-        $alreadyMember = $meetup->users()->whereKey($user->getAuthIdentifier())->exists();
-
-        $meetup->users()->syncWithoutDetaching([
-            $user->getAuthIdentifier() => ['is_leader' => false],
-        ]);
+        $wasAdded = $meetup->addMember($user);
 
         return Response::json([
             'meetup' => MeetupResource::make($meetup)->resolve(),
-            'message' => $alreadyMember
-                ? '„'.$meetup->name.'" war bereits Teil deiner Meetups.'
-                : '„'.$meetup->name.'" wurde zu deinen Meetups hinzugefügt.',
+            'message' => $wasAdded
+                ? '„'.$meetup->name.'" wurde zu deinen Meetups hinzugefügt.'
+                : '„'.$meetup->name.'" war bereits Teil deiner Meetups.',
         ]);
     }
 

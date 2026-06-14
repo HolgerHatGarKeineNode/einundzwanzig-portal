@@ -36,6 +36,17 @@ class MeetupPolicy
         return true;
     }
 
+    /**
+     * Ein bestehendes Meetup zu „Meine Meetups" hinzufügen (meetup_user-Pivot als
+     * Mitglied, nicht als Leader). Jeder authentifizierte Nutzer darf das — die
+     * Stammdaten bleiben dem Ersteller vorbehalten (siehe update()). Spiegelt die
+     * offene Semantik des AddMeetupToMineTool (MCP).
+     */
+    public function addToMine(User $user, Meetup $meetup): bool
+    {
+        return true;
+    }
+
     public function update(User $user, Meetup $meetup): bool
     {
         return $this->owns($user, $meetup);

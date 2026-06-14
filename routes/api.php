@@ -73,6 +73,7 @@ Route::middleware('auth:sanctum')
         Route::post('meetup', [MeetupController::class, 'store'])->name('meetup.store');
         Route::patch('meetup/{meetup}', [MeetupController::class, 'update'])->name('meetup.update');
         Route::get('my-meetups', [MeetupController::class, 'mine'])->name('meetup.mine');
+        Route::post('my-meetups/{meetup:slug}', [MeetupController::class, 'addToMine'])->name('meetup.mine.add');
         Route::get('my-meetups/{meetup}', [MeetupController::class, 'mineShow'])->name('meetup.mine.show');
 
         Route::post('meetup-events', [MeetupEventController::class, 'store'])->name('meetup-events.store');

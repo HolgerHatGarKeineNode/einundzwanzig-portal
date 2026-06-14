@@ -186,6 +186,23 @@ class Meetup extends Model implements HasMedia
     }
 
     /**
+     * Den Nutzer als Mitglied (nicht Leader) zu „Meine Meetups" hinzufügen.
+     * Idempotent: ein bereits hinzugefügter Nutzer bleibt unverändert. Gibt
+     * true zurück, wenn neu hinzugefügt (false = war bereits Mitglied).
+     * Geteilt von REST-Controller (addToMine) und MCP-Tool (AddMeetupToMineTool).
+     */
+    public function addMember(User $user): bool
+    {
+        $wasMember = $this->hasMember($user);
+
+        $this->users()->syncWithoutDetaching([
+            $user->getKey() => ['is_leader' => false],
+        ]);
+
+        return ! $wasMember;
+    }
+
+    /**
      * RateLimiter-Key für Meetup-Stammdaten-Updates über das Portal-Frontend.
      */
     public static function updateRateLimitKey(int $userId): string

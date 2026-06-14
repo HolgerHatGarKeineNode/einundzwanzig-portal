@@ -112,3 +112,44 @@ it('forbids viewing a meetup the user has not selected in mine show', function (
 
     $this->getJson('/api/my-meetups/'.$meetup->id)->assertForbidden();
 });
+
+it('rejects a guest adding a meetup to mine', function () {
+    $meetup = Meetup::factory()->create();
+
+    $this->postJson('/api/my-meetups/'.$meetup->slug)->assertUnauthorized();
+});
+
+it('lets an authenticated user add an existing foreign meetup to mine by slug', function () {
+    $owner = User::factory()->create();
+    $meetup = Meetup::factory()->create(['created_by' => $owner->id]);
+
+    Sanctum::actingAs($user = User::factory()->create());
+
+    $this->postJson('/api/my-meetups/'.$meetup->slug)
+        ->assertCreated()
+        ->assertJsonPath('data.id', $meetup->id);
+
+    $this->assertDatabaseHas('meetup_user', [
+        'meetup_id' => $meetup->id,
+        'user_id' => $user->id,
+        'is_leader' => false,
+    ]);
+});
+
+it('is idempotent and returns 200 when the meetup is already mine', function () {
+    Sanctum::actingAs($user = User::factory()->create());
+    $meetup = Meetup::factory()->create();
+    $user->meetups()->attach($meetup, ['is_leader' => false]);
+
+    $this->postJson('/api/my-meetups/'.$meetup->slug)
+        ->assertOk()
+        ->assertJsonPath('data.id', $meetup->id);
+
+    expect($user->meetups()->whereKey($meetup->id)->count())->toBe(1);
+});
+
+it('returns 404 for an unknown meetup slug', function () {
+    Sanctum::actingAs(User::factory()->create());
+
+    $this->postJson('/api/my-meetups/does-not-exist-9999')->assertNotFound();
+});
