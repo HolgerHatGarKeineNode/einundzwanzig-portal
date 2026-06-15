@@ -153,3 +153,61 @@ it('returns 404 for an unknown meetup slug', function () {
 
     $this->postJson('/api/my-meetups/does-not-exist-9999')->assertNotFound();
 });
+
+it('rejects a guest removing a meetup from mine', function () {
+    $meetup = Meetup::factory()->create();
+
+    $this->deleteJson('/api/my-meetups/'.$meetup->slug)->assertUnauthorized();
+});
+
+it('lets an authenticated user remove a meetup from mine by slug', function () {
+    Sanctum::actingAs($user = User::factory()->create());
+    $meetup = Meetup::factory()->create();
+    $user->meetups()->attach($meetup, ['is_leader' => false]);
+
+    $this->deleteJson('/api/my-meetups/'.$meetup->slug)
+        ->assertOk()
+        ->assertJsonPath('data.id', $meetup->id);
+
+    // Nur die Pivot-Zuordnung wird gelöst — die Stammdaten bleiben erhalten.
+    $this->assertDatabaseMissing('meetup_user', [
+        'meetup_id' => $meetup->id,
+        'user_id' => $user->id,
+    ]);
+    $this->assertDatabaseHas('meetups', ['id' => $meetup->id]);
+});
+
+it('is idempotent and returns 200 when the meetup is not mine', function () {
+    Sanctum::actingAs(User::factory()->create());
+    $meetup = Meetup::factory()->create();
+
+    $this->deleteJson('/api/my-meetups/'.$meetup->slug)
+        ->assertOk()
+        ->assertJsonPath('data.id', $meetup->id);
+});
+
+it('only removes the acting users membership, not other members', function () {
+    $other = User::factory()->create();
+    $meetup = Meetup::factory()->create();
+    $meetup->users()->attach($other, ['is_leader' => false]);
+
+    Sanctum::actingAs($user = User::factory()->create());
+    $meetup->users()->attach($user, ['is_leader' => false]);
+
+    $this->deleteJson('/api/my-meetups/'.$meetup->slug)->assertOk();
+
+    $this->assertDatabaseHas('meetup_user', [
+        'meetup_id' => $meetup->id,
+        'user_id' => $other->id,
+    ]);
+    $this->assertDatabaseMissing('meetup_user', [
+        'meetup_id' => $meetup->id,
+        'user_id' => $user->id,
+    ]);
+});
+
+it('returns 404 when removing an unknown meetup slug', function () {
+    Sanctum::actingAs(User::factory()->create());
+
+    $this->deleteJson('/api/my-meetups/does-not-exist-9999')->assertNotFound();
+});

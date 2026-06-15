@@ -145,6 +145,24 @@ class MeetupController extends Controller
     }
 
     /**
+     * Meetup aus „Meine Meetups" entfernen
+     *
+     * Entfernt ein Meetup aus der „Meine Meetups"-Liste des authentifizierten Nutzers
+     * (löst die meetup_user-Pivot-Mitgliedschaft). Die Stammdaten des Meetups bleiben
+     * erhalten — Gegenstück zu addToMine(). Idempotent: war das Meetup nicht (mehr)
+     * zugeordnet, bleibt die Antwort 200 OK.
+     */
+    #[Response(status: 401, description: 'Nicht authentifiziert.')]
+    public function removeFromMine(Request $request, Meetup $meetup): MeetupResource
+    {
+        Gate::authorize('removeFromMine', $meetup);
+
+        $meetup->removeMember($request->user());
+
+        return MeetupResource::make($meetup);
+    }
+
+    /**
      * Eigenes Meetup anzeigen
      *
      * Zeigt ein einzelnes der im Dashboard ausgewählten Meetups (meetup_user-Pivot).

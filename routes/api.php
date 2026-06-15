@@ -78,6 +78,7 @@ Route::middleware('auth:sanctum')
         Route::post('meetup/{meetup}/logo', [MeetupController::class, 'uploadLogo'])->name('meetup.logo');
         Route::get('my-meetups', [MeetupController::class, 'mine'])->name('meetup.mine');
         Route::post('my-meetups/{meetup:slug}', [MeetupController::class, 'addToMine'])->name('meetup.mine.add');
+        Route::delete('my-meetups/{meetup:slug}', [MeetupController::class, 'removeFromMine'])->name('meetup.mine.remove');
         Route::get('my-meetups/{meetup}', [MeetupController::class, 'mineShow'])->name('meetup.mine.show');
 
         Route::post('meetup-events', [MeetupEventController::class, 'store'])->name('meetup-events.store');

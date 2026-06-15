@@ -47,6 +47,17 @@ class MeetupPolicy
         return true;
     }
 
+    /**
+     * Ein Meetup wieder aus „Meine Meetups" entfernen (löst die meetup_user-Pivot
+     * des Nutzers). Spiegelt die offene Semantik von addToMine(): jeder
+     * authentifizierte Nutzer darf seine eigene Zuordnung lösen. Die Stammdaten
+     * bleiben dem Ersteller vorbehalten (siehe update()).
+     */
+    public function removeFromMine(User $user, Meetup $meetup): bool
+    {
+        return true;
+    }
+
     public function update(User $user, Meetup $meetup): bool
     {
         return $this->owns($user, $meetup);

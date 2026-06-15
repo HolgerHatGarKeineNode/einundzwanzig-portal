@@ -203,6 +203,17 @@ class Meetup extends Model implements HasMedia
     }
 
     /**
+     * Den Nutzer wieder aus „Meine Meetups" entfernen (löst die meetup_user-Pivot).
+     * Idempotent: war der Nutzer kein Mitglied, passiert nichts. Gibt true zurück,
+     * wenn tatsächlich eine Zuordnung gelöst wurde (false = war kein Mitglied).
+     * Gegenstück zu {@see addMember()}; die Stammdaten bleiben unberührt.
+     */
+    public function removeMember(User $user): bool
+    {
+        return $this->users()->detach($user->getKey()) > 0;
+    }
+
+    /**
      * RateLimiter-Key für Meetup-Stammdaten-Updates über das Portal-Frontend.
      */
     public static function updateRateLimitKey(int $userId): string
