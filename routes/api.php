@@ -85,6 +85,8 @@ Route::middleware('auth:sanctum')
         Route::patch('meetup-events/{meetupEvent}', [MeetupEventController::class, 'update'])->name('meetup-events.update');
         Route::get('my-meetup-events', [MeetupEventController::class, 'mine'])->name('meetup-events.mine');
         Route::get('my-meetup-events/{meetupEvent}', [MeetupEventController::class, 'mineShow'])->name('meetup-events.mine.show');
+        Route::get('meetup-events/{meetupEvent}/rsvp', [MeetupEventController::class, 'rsvpStatus'])->name('meetup-events.rsvp.show');
+        Route::post('meetup-events/{meetupEvent}/rsvp', [MeetupEventController::class, 'rsvp'])->name('meetup-events.rsvp');
     });
 
 Route::get('/lnurl-auth-callback', [LnurlAuthController::class, 'callback'])

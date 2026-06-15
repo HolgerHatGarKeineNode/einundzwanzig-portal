@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\MeetupEvents\CreateMeetupEventSeries;
+use App\Enums\RsvpStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\RsvpMeetupEventRequest;
 use App\Http\Requests\Api\StoreMeetupEventRequest;
 use App\Http\Requests\Api\UpdateMeetupEventRequest;
 use App\Http\Resources\MeetupEventResource;
 use App\Models\MeetupEvent;
+use App\Models\User;
 use Carbon\Carbon;
 use Carbon\Exceptions\InvalidFormatException;
 use Dedoc\Scramble\Attributes\Group;
@@ -157,5 +160,50 @@ class MeetupEventController extends Controller
         Gate::authorize('view', $meetupEvent);
 
         return MeetupEventResource::make($meetupEvent);
+    }
+
+    /**
+     * RSVP-Status eines Termins anzeigen
+     *
+     * Liefert den eigenen Teilnahme-Status des authentifizierten Nutzers für
+     * diesen Termin sowie die aktuellen Zähler der Zu- und Vielleicht-Sagen.
+     */
+    public function rsvpStatus(Request $request, MeetupEvent $meetupEvent): JsonResponse
+    {
+        return response()->json($this->rsvpPayload($meetupEvent, $request->user()));
+    }
+
+    /**
+     * Für einen Termin zu- oder absagen
+     *
+     * Trägt den authentifizierten Nutzer als Teilnehmer („attending"),
+     * Vielleicht-Teilnehmer („maybe") oder gar nicht („none", = absagen) ein.
+     * Der Anzeigename wird automatisch aus dem Profil übernommen. Idempotent:
+     * derselbe Status mehrfach gesetzt verändert nichts.
+     */
+    #[ResponseAttribute(status: 401, description: 'Nicht authentifiziert.')]
+    #[ResponseAttribute(status: 422, description: 'Validierungsfehler (unbekannter Status).')]
+    public function rsvp(RsvpMeetupEventRequest $request, MeetupEvent $meetupEvent): JsonResponse
+    {
+        $user = $request->user();
+        $status = RsvpStatus::from($request->validated('status'));
+
+        $meetupEvent->setRsvpFor($user, $status, (string) $user->name);
+
+        return response()->json($this->rsvpPayload($meetupEvent->fresh(), $user));
+    }
+
+    /**
+     * Einheitliche RSVP-Antwort: eigener Status + aktuelle Zähler.
+     *
+     * @return array{status: string, attendees: int, might_attendees: int}
+     */
+    private function rsvpPayload(MeetupEvent $meetupEvent, User $user): array
+    {
+        return [
+            'status' => $meetupEvent->rsvpStatusFor($user)->value,
+            'attendees' => count($meetupEvent->attendees ?? []),
+            'might_attendees' => count($meetupEvent->might_attendees ?? []),
+        ];
     }
 }
