@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Concerns\FiltersNumericIds;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreLecturerRequest;
 use App\Http\Requests\Api\UpdateLecturerRequest;
+use App\Http\Requests\Api\UploadMediaRequest;
 use App\Http\Resources\LecturerResource;
 use App\Models\Course;
 use App\Models\Lecturer;
@@ -142,6 +143,7 @@ class LecturerController extends Controller
         Gate::authorize('viewAny', Lecturer::class);
 
         $lecturers = Lecturer::query()
+            ->with('media')
             ->where('created_by', $request->user()->id)
             ->orderBy('name')
             ->get();
@@ -160,5 +162,23 @@ class LecturerController extends Controller
         Gate::authorize('view', $lecturer);
 
         return LecturerResource::make($lecturer);
+    }
+
+    /**
+     * Referenten-Avatar hochladen
+     *
+     * Lädt einen Avatar (multipart, Feld „file") in die singleFile-Collection „avatar" und
+     * ersetzt dabei ein vorhandenes Bild. Nur für den Ersteller oder einen Super-Admin. Die
+     * Antwort enthält die frische Avatar-URL.
+     */
+    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf den Avatar ersetzen.')]
+    #[ResponseAttribute(status: 422, description: 'Validierungsfehler (kein Bild, falscher MIME-Typ, zu groß oder zu große Abmessungen).')]
+    public function uploadAvatar(UploadMediaRequest $request, Lecturer $lecturer): LecturerResource
+    {
+        $lecturer->addMedia($request->file('file')->getRealPath())
+            ->usingName($lecturer->name)
+            ->toMediaCollection('avatar');
+
+        return LecturerResource::make($lecturer->fresh());
     }
 }

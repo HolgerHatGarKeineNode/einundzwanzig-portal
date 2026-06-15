@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\MeetupEvents\ExpandRecurrenceSeries;
 use App\Attributes\SeoDataAttribute;
 use App\Enums\RecurrenceType;
 use App\Models\Meetup;
@@ -45,158 +46,14 @@ class extends Component {
             $startDate = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $this->startDate . ' ' . $this->startTime, $timezone);
             $endDate = \Carbon\Carbon::createFromFormat('Y-m-d', $this->endDate, $timezone);
 
-            // Use custom recurrence when dayOfWeek and dayPosition are set (e.g., "last Friday of month")
-            if ($this->recurrenceDayOfWeek && $this->recurrenceDayPosition) {
-                return $this->generateCustomRecurrenceDates($startDate, $endDate, $timezone, true);
-            }
-
-            // For weekly recurrence with a specific day of week (no position),
-            // shift start date to the next occurrence of that weekday
-            if ($this->recurrenceType === RecurrenceType::Weekly && $this->recurrenceDayOfWeek) {
-                $dayOfWeekNumber = $this->getDayOfWeekNumber($this->recurrenceDayOfWeek);
-                if ($dayOfWeekNumber !== null) {
-                    $adjustedStartDate = $startDate->copy();
-                    // Find the next occurrence of the specified weekday
-                    while ($adjustedStartDate->dayOfWeek !== $dayOfWeekNumber) {
-                        $adjustedStartDate->addDay();
-                    }
-                    // Generate weekly dates from the adjusted start
-                    $dates = [];
-                    $currentDate = $adjustedStartDate->copy();
-                    while ($currentDate->lessThanOrEqualTo($endDate) && count($dates) < 100) {
-                        $dates[] = [
-                            'date' => $currentDate->copy(),
-                            'formatted' => $currentDate->translatedFormat('l, d.m.Y'),
-                            'time' => $currentDate->format('H:i'),
-                        ];
-                        $currentDate->addWeek();
-                    }
-                    return $dates;
-                }
-            }
-
-            // Default: generate dates based on recurrence type
-            $currentDate = $startDate->copy();
-            $dates = [];
-
-            while ($currentDate->lessThanOrEqualTo($endDate) && count($dates) < 100) {
-                $dates[] = [
-                    'date' => $currentDate->copy(),
-                    'formatted' => $currentDate->translatedFormat('l, d.m.Y'),
-                    'time' => $currentDate->format('H:i'),
-                ];
-
-                if ($this->recurrenceType === RecurrenceType::Weekly) {
-                    $currentDate->addWeek();
-                } else {
-                    $currentDate->addMonth();
-                }
-            }
-
-            return $dates;
+            return array_map(fn (\Carbon\Carbon $date): array => [
+                'date' => $date,
+                'formatted' => $date->translatedFormat('l, d.m.Y'),
+                'time' => $date->format('H:i'),
+            ], $this->generateEventDates($startDate, $endDate));
         } catch (\Exception $e) {
             return [];
         }
-    }
-
-    private function generateCustomRecurrenceDates(\Carbon\Carbon $startDate, \Carbon\Carbon $endDate, string $timezone, bool $formatted = false): array
-    {
-        $dates = [];
-
-        // Start from the beginning of the month containing startDate
-        $currentDate = $startDate->copy()->startOfMonth();
-        // Preserve the time from startDate for the occurrences
-        $time = $startDate->format('H:i:s');
-
-        while ($currentDate->lessThanOrEqualTo($endDate) && count($dates) < 100) {
-            $occurrenceDate = $this->findNextOccurrence($currentDate, $timezone);
-
-            if ($occurrenceDate && $occurrenceDate->lessThanOrEqualTo($endDate)) {
-                // Set the time from startDate, preserving the date
-                $occurrenceWithTime = $occurrenceDate->copy()->setTimeFrom($startDate);
-
-                // Only add if this is after or on the start date
-                if ($occurrenceWithTime->gte($startDate)) {
-                    if ($formatted) {
-                        $dates[] = [
-                            'date' => $occurrenceWithTime,
-                            'formatted' => $occurrenceWithTime->translatedFormat('l, d.m.Y'),
-                            'time' => $time,
-                        ];
-                    } else {
-                        $dates[] = $occurrenceWithTime;
-                    }
-                }
-
-                // Move to the next month
-                $currentDate = $currentDate->copy()->addMonth();
-            } else {
-                break;
-            }
-        }
-
-        return $dates;
-    }
-
-    private function findNextOccurrence(\Carbon\Carbon $currentDate, string $timezone): ?\Carbon\Carbon
-    {
-        if (!$this->recurrenceDayOfWeek || !$this->recurrenceDayPosition) {
-            return $currentDate;
-        }
-
-        $dayOfWeek = $this->getDayOfWeekNumber($this->recurrenceDayOfWeek);
-        $dayPosition = $this->getDayPositionNumber($this->recurrenceDayPosition);
-
-        if ($dayOfWeek === null || $dayPosition === null) {
-            return $currentDate;
-        }
-
-        // Find the Nth dayOfWeek in the current month
-        $date = $currentDate->copy()->startOfMonth();
-
-        if ($dayPosition === -1) {
-            return $date->lastOfMonth($dayOfWeek)->setTime($currentDate->hour, $currentDate->minute, $currentDate->second);
-        }
-
-        $count = 0;
-        while ($date->month === $currentDate->month) {
-            if ($date->dayOfWeek === $dayOfWeek) {
-                $count++;
-                if ($count === $dayPosition) {
-                    return $date->copy()->setTime($currentDate->hour, $currentDate->minute, $currentDate->second);
-                }
-            }
-            $date->addDay();
-        }
-
-        // If we didn't find enough occurrences in this month, return null
-        return null;
-    }
-
-    private function getDayOfWeekNumber(string $day): ?int
-    {
-        return match (strtolower($day)) {
-            'monday', 'montag' => \Carbon\Carbon::MONDAY,
-            'tuesday', 'dienstag' => \Carbon\Carbon::TUESDAY,
-            'wednesday', 'mittwoch' => \Carbon\Carbon::WEDNESDAY,
-            'thursday', 'donnerstag' => \Carbon\Carbon::THURSDAY,
-            'friday', 'freitag' => \Carbon\Carbon::FRIDAY,
-            'saturday', 'samstag' => \Carbon\Carbon::SATURDAY,
-            'sunday', 'sonntag' => \Carbon\Carbon::SUNDAY,
-            default => null,
-        };
-    }
-
-    private function getDayPositionNumber(string $position): ?int
-    {
-        return match (strtolower($position)) {
-            'first', 'erster' => 1,
-            'second', 'zweiter' => 2,
-            'third', 'dritter' => 3,
-            'fourth', 'vierter' => 4,
-            'last', 'letzter' => -1,
-            default => null,
-        };
     }
 
     public function getRecurrenceTypesProperty(): array
@@ -338,7 +195,7 @@ class extends Component {
 
         $eventsCreated = 0;
 
-        $dates = $this->generateEventDates($startDate, $endDate, $timezone);
+        $dates = $this->generateEventDates($startDate, $endDate);
 
         foreach ($dates as $date) {
             $utcDateTime = $date->copy()->setTimezone('UTC');
@@ -359,47 +216,18 @@ class extends Component {
         session()->flash('status', __(':count Events erfolgreich erstellt!', ['count' => $eventsCreated]));
     }
 
-    private function generateEventDates(\Carbon\Carbon $startDate, \Carbon\Carbon $endDate, string $timezone): array
+    /**
+     * @return array<int, \Carbon\Carbon>
+     */
+    private function generateEventDates(\Carbon\Carbon $startDate, \Carbon\Carbon $endDate): array
     {
-        // Use custom recurrence when dayOfWeek and dayPosition are set (e.g., "last Friday of month")
-        if ($this->recurrenceDayOfWeek && $this->recurrenceDayPosition) {
-            return $this->generateCustomRecurrenceDates($startDate, $endDate, $timezone);
-        }
-
-        // For weekly recurrence with a specific day of week (no position),
-        // shift start date to the next occurrence of that weekday
-        if ($this->recurrenceType === RecurrenceType::Weekly && $this->recurrenceDayOfWeek) {
-            $dayOfWeekNumber = $this->getDayOfWeekNumber($this->recurrenceDayOfWeek);
-            if ($dayOfWeekNumber !== null) {
-                $adjustedStartDate = $startDate->copy();
-                while ($adjustedStartDate->dayOfWeek !== $dayOfWeekNumber) {
-                    $adjustedStartDate->addDay();
-                }
-                $dates = [];
-                $currentDate = $adjustedStartDate->copy();
-                while ($currentDate->lessThanOrEqualTo($endDate)) {
-                    $dates[] = $currentDate->copy();
-                    $currentDate->addWeek();
-                }
-                return $dates;
-            }
-        }
-
-        // Default: generate dates based on recurrence type
-        $dates = [];
-        $currentDate = $startDate->copy();
-
-        while ($currentDate->lessThanOrEqualTo($endDate)) {
-            $dates[] = $currentDate->copy();
-
-            if ($this->recurrenceType === RecurrenceType::Weekly) {
-                $currentDate->addWeek();
-            } else {
-                $currentDate->addMonth();
-            }
-        }
-
-        return $dates;
+        return app(ExpandRecurrenceSeries::class)->handle(
+            $startDate,
+            $endDate,
+            $this->recurrenceType,
+            $this->recurrenceDayOfWeek ?: null,
+            $this->recurrenceDayPosition ?: null,
+        );
     }
 
     public function delete(): void

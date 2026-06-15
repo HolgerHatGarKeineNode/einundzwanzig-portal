@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Concerns\FiltersNumericIds;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreMeetupRequest;
 use App\Http\Requests\Api\UpdateMeetupRequest;
+use App\Http\Requests\Api\UploadMediaRequest;
 use App\Http\Resources\MeetupResource;
 use App\Models\Meetup;
 use Dedoc\Scramble\Attributes\ExcludeRouteFromDocs;
@@ -154,5 +155,23 @@ class MeetupController extends Controller
         Gate::authorize('viewMine', $meetup);
 
         return MeetupResource::make($meetup);
+    }
+
+    /**
+     * Meetup-Logo hochladen
+     *
+     * Lädt ein Logo (multipart, Feld „file") in die singleFile-Collection „logo" und ersetzt
+     * dabei ein vorhandenes Logo. Nur für den Ersteller oder einen Super-Admin. Die Antwort
+     * enthält die frische Logo-URL.
+     */
+    #[Response(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf das Logo ersetzen.')]
+    #[Response(status: 422, description: 'Validierungsfehler (kein Bild, falscher MIME-Typ, zu groß oder zu große Abmessungen).')]
+    public function uploadLogo(UploadMediaRequest $request, Meetup $meetup): MeetupResource
+    {
+        $meetup->addMedia($request->file('file')->getRealPath())
+            ->usingName($meetup->name)
+            ->toMediaCollection('logo');
+
+        return MeetupResource::make($meetup->fresh());
     }
 }

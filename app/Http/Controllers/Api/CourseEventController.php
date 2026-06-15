@@ -3,14 +3,17 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\StoreCourseEventRequest;
+use App\Http\Requests\Api\UpdateCourseEventRequest;
+use App\Http\Resources\CourseEventResource;
 use App\Models\CourseEvent;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
 use Dedoc\Scramble\Attributes\Response as ResponseAttribute;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
 #[Group(name: 'Kurs-Events', weight: 2)]
@@ -22,13 +25,11 @@ class CourseEventController extends Controller
      * Liefert alle vom authentifizierten Nutzer erstellten Kurs-Events (inkl. zugehörigem
      * Kurs und Veranstaltungsort), absteigend nach Startdatum. Ideal für idempotente
      * Synchronisierung durch externe Clients.
-     *
-     * @return Collection<int, CourseEvent>
      */
     #[QueryParameter(name: 'course_id', description: 'Filtert die Kurs-Events auf einen bestimmten Kurs.', required: false, type: 'integer')]
-    public function index(Request $request): Collection
+    public function index(Request $request): AnonymousResourceCollection
     {
-        return CourseEvent::query()
+        $courseEvents = CourseEvent::query()
             ->with(['course:id,name', 'venue:id,name'])
             ->where('created_by', $request->user()->id)
             ->when(
@@ -37,6 +38,8 @@ class CourseEventController extends Controller
             )
             ->orderByDesc('from')
             ->get();
+
+        return CourseEventResource::collection($courseEvents);
     }
 
     /**
@@ -45,21 +48,13 @@ class CourseEventController extends Controller
      * Erlaubt einem authentifizierten Referenten, ein datiertes Kurs-Event programmatisch anzulegen.
      */
     #[ResponseAttribute(status: 403, description: 'Nur Referenten (is_lecturer) dürfen Kurs-Events anlegen.')]
-    public function store(Request $request): JsonResponse
+    public function store(StoreCourseEventRequest $request): JsonResponse
     {
-        abort_unless((bool) $request->user()->is_lecturer, Response::HTTP_FORBIDDEN);
+        $courseEvent = CourseEvent::create($request->validated());
 
-        $validated = $request->validate([
-            'course_id' => ['required', 'integer', 'exists:courses,id'],
-            'venue_id' => ['required', 'integer', 'exists:venues,id'],
-            'from' => ['required', 'date'],
-            'to' => ['required', 'date', 'after_or_equal:from'],
-            'link' => ['required', 'url', 'max:255'],
-        ]);
-
-        $courseEvent = CourseEvent::create($validated);
-
-        return response()->json($courseEvent->fresh(), Response::HTTP_CREATED);
+        return CourseEventResource::make($courseEvent->fresh())
+            ->response()
+            ->setStatusCode(Response::HTTP_CREATED);
     }
 
     /**
@@ -68,23 +63,10 @@ class CourseEventController extends Controller
      * Aktualisiert ein Kurs-Event; nur für den Ersteller oder einen Super-Admin.
      */
     #[ResponseAttribute(status: 403, description: 'Nur der Ersteller des Kurs-Events oder ein Super-Admin darf es ändern.')]
-    public function update(Request $request, CourseEvent $courseEvent): JsonResponse
+    public function update(UpdateCourseEventRequest $request, CourseEvent $courseEvent): CourseEventResource
     {
-        abort_unless(
-            (int) $courseEvent->created_by === $request->user()->id || $request->user()->hasRole('super-admin'),
-            Response::HTTP_FORBIDDEN
-        );
+        $courseEvent->update($request->validated());
 
-        $validated = $request->validate([
-            'course_id' => ['sometimes', 'required', 'integer', 'exists:courses,id'],
-            'venue_id' => ['sometimes', 'required', 'integer', 'exists:venues,id'],
-            'from' => ['sometimes', 'required', 'date'],
-            'to' => ['sometimes', 'required', 'date', 'after_or_equal:from'],
-            'link' => ['sometimes', 'required', 'url', 'max:255'],
-        ]);
-
-        $courseEvent->update($validated);
-
-        return response()->json($courseEvent->fresh());
+        return CourseEventResource::make($courseEvent->fresh());
     }
 }

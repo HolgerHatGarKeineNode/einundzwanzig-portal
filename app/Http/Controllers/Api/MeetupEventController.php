@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\MeetupEvents\CreateMeetupEventSeries;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreMeetupEventRequest;
 use App\Http\Requests\Api\UpdateMeetupEventRequest;
@@ -87,12 +88,27 @@ class MeetupEventController extends Controller
      *
      * Erlaubt einem authentifizierten Nutzer, ein Meetup-Event programmatisch anzulegen.
      * Der Ersteller (created_by) wird automatisch gesetzt.
+     *
+     * Werden sowohl `recurrence_type` als auch `recurrence_end_date` übergeben, wird – wie im
+     * Web-Editor – eine Serie einzelner Termine erzeugt (gemeinsame Expansions-Action, harte
+     * Obergrenze von 100 Terminen) und die Antwort enthält die Liste aller erstellten Events.
+     * Ohne diese Felder entsteht ein einzelner Termin.
      */
     #[ResponseAttribute(status: 401, description: 'Nicht authentifiziert.')]
     #[ResponseAttribute(status: 422, description: 'Validierungsfehler.')]
-    public function store(StoreMeetupEventRequest $request): JsonResponse
+    public function store(StoreMeetupEventRequest $request, CreateMeetupEventSeries $createSeries): JsonResponse
     {
-        $meetupEvent = MeetupEvent::create($request->validated());
+        $validated = $request->validated();
+
+        if (! empty($validated['recurrence_type']) && ! empty($validated['recurrence_end_date'])) {
+            $events = $createSeries->handle($validated);
+
+            return MeetupEventResource::collection($events)
+                ->response()
+                ->setStatusCode(Response::HTTP_CREATED);
+        }
+
+        $meetupEvent = MeetupEvent::create($validated);
 
         return MeetupEventResource::make($meetupEvent->fresh())
             ->response()

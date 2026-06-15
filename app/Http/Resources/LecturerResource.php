@@ -32,6 +32,7 @@ class LecturerResource extends JsonResource
             'node_id' => $this->node_id,
             'paynym' => $this->paynym,
             'team_id' => $this->team_id,
+            'avatar' => $this->getFirstMediaUrl('avatar', 'thumb'),
             'created_by' => $this->created_by,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

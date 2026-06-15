@@ -47,6 +47,8 @@ Route::middleware('auth:sanctum')
             ->name('courses.store');
         Route::patch('courses/{course}', [CourseController::class, 'update'])
             ->name('courses.update');
+        Route::post('courses/{course}/logo', [CourseController::class, 'uploadLogo'])
+            ->name('courses.logo');
 
         Route::get('course-events', [CourseEventController::class, 'index'])
             ->name('course-events.index');
@@ -57,6 +59,7 @@ Route::middleware('auth:sanctum')
 
         Route::post('lecturers', [LecturerController::class, 'store'])->name('lecturers.store');
         Route::patch('lecturers/{lecturer}', [LecturerController::class, 'update'])->name('lecturers.update');
+        Route::post('lecturers/{lecturer}/avatar', [LecturerController::class, 'uploadAvatar'])->name('lecturers.avatar');
         Route::get('my-lecturers', [LecturerController::class, 'mine'])->name('lecturers.mine');
         Route::get('my-lecturers/{lecturer}', [LecturerController::class, 'mineShow'])->name('lecturers.mine.show');
 
@@ -72,6 +75,7 @@ Route::middleware('auth:sanctum')
 
         Route::post('meetup', [MeetupController::class, 'store'])->name('meetup.store');
         Route::patch('meetup/{meetup}', [MeetupController::class, 'update'])->name('meetup.update');
+        Route::post('meetup/{meetup}/logo', [MeetupController::class, 'uploadLogo'])->name('meetup.logo');
         Route::get('my-meetups', [MeetupController::class, 'mine'])->name('meetup.mine');
         Route::post('my-meetups/{meetup:slug}', [MeetupController::class, 'addToMine'])->name('meetup.mine.add');
         Route::get('my-meetups/{meetup}', [MeetupController::class, 'mineShow'])->name('meetup.mine.show');

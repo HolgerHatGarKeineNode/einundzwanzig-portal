@@ -36,12 +36,43 @@ it('lets a lecturer create a course', function () {
         'description' => 'Hardware-Wallet selbst bauen.',
     ])
         ->assertCreated()
-        ->assertJsonPath('name', 'Specter Shield Lite Workshop');
+        ->assertJsonPath('data.name', 'Specter Shield Lite Workshop')
+        ->assertJsonPath('data.created_by', $user->id);
 
     $this->assertDatabaseHas('courses', [
         'name' => 'Specter Shield Lite Workshop',
         'created_by' => $user->id,
     ]);
+});
+
+it('fails course validation without required fields', function () {
+    Sanctum::actingAs(User::factory()->lecturer()->create());
+
+    $this->postJson('/api/courses', [])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['name', 'lecturer_id']);
+});
+
+it('lets the owner update their course', function () {
+    Sanctum::actingAs($user = User::factory()->lecturer()->create());
+    $course = Course::factory()->create(['created_by' => $user->id]);
+
+    $this->patchJson('/api/courses/'.$course->id, [
+        'name' => 'Aktualisierter Kurs',
+    ])
+        ->assertSuccessful()
+        ->assertJsonPath('data.name', 'Aktualisierter Kurs');
+});
+
+it('forbids updating a course owned by someone else', function () {
+    $owner = User::factory()->lecturer()->create();
+    $course = Course::factory()->create(['created_by' => $owner->id]);
+
+    Sanctum::actingAs(User::factory()->lecturer()->create());
+
+    $this->patchJson('/api/courses/'.$course->id, [
+        'name' => 'Übernommen',
+    ])->assertForbidden();
 });
 
 it('lets a lecturer create a course event', function () {
@@ -57,13 +88,27 @@ it('lets a lecturer create a course event', function () {
         'link' => 'https://clavastack.com/produkt/specter-shield-lite-workshop',
     ])
         ->assertCreated()
-        ->assertJsonPath('course_id', $course->id);
+        ->assertJsonPath('data.course_id', $course->id);
 
     $this->assertDatabaseHas('course_events', [
         'course_id' => $course->id,
         'venue_id' => $venue->id,
         'created_by' => $user->id,
     ]);
+});
+
+it('forbids a non-lecturer from creating a course event', function () {
+    Sanctum::actingAs(User::factory()->create(['is_lecturer' => false]));
+    $course = Course::factory()->create();
+    $venue = Venue::factory()->create();
+
+    $this->postJson('/api/course-events', [
+        'course_id' => $course->id,
+        'venue_id' => $venue->id,
+        'from' => '2026-07-01 18:00:00',
+        'to' => '2026-07-01 21:00:00',
+        'link' => 'https://example.com/event',
+    ])->assertForbidden();
 });
 
 it('fails course event validation without required fields', function () {
@@ -84,8 +129,8 @@ it('returns only the authenticated user\'s own course events', function () {
     $response = $this->getJson('/api/course-events');
 
     $response->assertSuccessful();
-    expect($response->json())->toHaveCount(2);
-    collect($response->json())->each(
+    expect($response->json('data'))->toHaveCount(2);
+    collect($response->json('data'))->each(
         fn ($event) => expect($event['created_by'])->toBe($user->id)
     );
 });
@@ -99,8 +144,8 @@ it('filters own course events by course_id', function () {
     $response = $this->getJson('/api/course-events?course_id='.$event->course_id);
 
     $response->assertSuccessful();
-    expect($response->json())->toHaveCount(1)
-        ->and($response->json('0.id'))->toBe($event->id);
+    expect($response->json('data'))->toHaveCount(1)
+        ->and($response->json('data.0.id'))->toBe($event->id);
 });
 
 it('lets the owner update their course event', function () {
@@ -111,7 +156,7 @@ it('lets the owner update their course event', function () {
         'link' => 'https://einundzwanzig.space/courses/updated',
     ])
         ->assertSuccessful()
-        ->assertJsonPath('link', 'https://einundzwanzig.space/courses/updated');
+        ->assertJsonPath('data.link', 'https://einundzwanzig.space/courses/updated');
 });
 
 it('forbids updating a course event owned by someone else', function () {

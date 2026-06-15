@@ -4,6 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\Concerns\FiltersNumericIds;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\StoreCourseRequest;
+use App\Http\Requests\Api\UpdateCourseRequest;
+use App\Http\Requests\Api\UploadMediaRequest;
+use App\Http\Resources\CourseResource;
 use App\Models\Course;
 use App\Models\CourseEvent;
 use App\Models\Lecturer;
@@ -100,21 +104,16 @@ class CourseController extends Controller
      * Kurs anlegen
      *
      * Erlaubt einem authentifizierten Referenten, einen Kurs programmatisch anzulegen.
+     * Der Ersteller (created_by) wird automatisch auf den angemeldeten Nutzer gesetzt.
      */
     #[ResponseAttribute(status: 403, description: 'Nur Referenten (is_lecturer) dürfen Kurse anlegen.')]
-    public function store(Request $request): JsonResponse
+    public function store(StoreCourseRequest $request): JsonResponse
     {
-        abort_unless((bool) $request->user()->is_lecturer, Response::HTTP_FORBIDDEN);
+        $course = Course::create($request->validated());
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'lecturer_id' => ['required', 'exists:lecturers,id'],
-            'description' => ['nullable', 'string'],
-        ]);
-
-        $course = Course::create($validated);
-
-        return response()->json($course->fresh(), Response::HTTP_CREATED);
+        return CourseResource::make($course->fresh())
+            ->response()
+            ->setStatusCode(Response::HTTP_CREATED);
     }
 
     /**
@@ -178,22 +177,29 @@ class CourseController extends Controller
      * Aktualisiert einen Kurs; nur für den Ersteller oder einen Super-Admin.
      */
     #[ResponseAttribute(status: 403, description: 'Nur der Ersteller des Kurses oder ein Super-Admin darf ihn ändern.')]
-    public function update(Request $request, Course $course): JsonResponse
+    public function update(UpdateCourseRequest $request, Course $course): CourseResource
     {
-        abort_unless(
-            (int) $course->created_by === $request->user()->id || $request->user()->hasRole('super-admin'),
-            Response::HTTP_FORBIDDEN
-        );
+        $course->update($request->validated());
 
-        $validated = $request->validate([
-            'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'lecturer_id' => ['sometimes', 'required', 'exists:lecturers,id'],
-            'description' => ['sometimes', 'nullable', 'string'],
-        ]);
+        return CourseResource::make($course->fresh());
+    }
 
-        $course->update($validated);
+    /**
+     * Kurs-Logo hochladen
+     *
+     * Lädt ein Logo (multipart, Feld „file") in die singleFile-Collection „logo" und ersetzt
+     * dabei ein vorhandenes Logo. Nur für den Ersteller oder einen Super-Admin. Die Antwort
+     * enthält die frische Logo-URL.
+     */
+    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf das Logo ersetzen.')]
+    #[ResponseAttribute(status: 422, description: 'Validierungsfehler (kein Bild, falscher MIME-Typ, zu groß oder zu große Abmessungen).')]
+    public function uploadLogo(UploadMediaRequest $request, Course $course): CourseResource
+    {
+        $course->addMedia($request->file('file')->getRealPath())
+            ->usingName($course->name)
+            ->toMediaCollection('logo');
 
-        return response()->json($course->fresh());
+        return CourseResource::make($course->fresh());
     }
 
     #[ExcludeRouteFromDocs]
