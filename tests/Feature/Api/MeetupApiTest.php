@@ -80,7 +80,9 @@ it('returns meetup events as JSON on GET /api/meetup-events', function () {
 
     $response = $this->getJson('/api/meetup-events');
 
-    $response->assertSuccessful();
+    $response->assertSuccessful()
+        // id + Zähler werden für das RSVP im mobilen Slide-In gebraucht.
+        ->assertJsonStructure([['id', 'start', 'attendees', 'might_attendees', 'meetup.name']]);
     expect($response->json())->toBeArray()->not->toBeEmpty();
 });
 

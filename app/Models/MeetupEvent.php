@@ -66,6 +66,19 @@ class MeetupEvent extends Model
     }
 
     /**
+     * Anzahl der Zusagen bzw. Vielleicht-Sagen (die Listen sind JSON-Arrays).
+     */
+    public function attendeesCount(): int
+    {
+        return count($this->attendees ?? []);
+    }
+
+    public function mightAttendeesCount(): int
+    {
+        return count($this->might_attendees ?? []);
+    }
+
+    /**
      * Eindeutige Kennung eines angemeldeten Nutzers in den Teilnehmer-Listen.
      * Einträge werden als `id_<userId>|<name>` abgelegt; der angehängte Pipe
      * grenzt z. B. `id_5` sauber von `id_50` ab.

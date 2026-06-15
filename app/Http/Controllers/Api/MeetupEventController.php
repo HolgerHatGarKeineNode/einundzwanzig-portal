@@ -59,10 +59,13 @@ class MeetupEventController extends Controller
             ->get();
 
         return $events->map(fn ($event) => [
+            'id' => $event->id,
             'start' => $event->start->format('Y-m-d H:i'),
             'location' => $event->location,
             'description' => $event->description,
             'link' => $event->link,
+            'attendees' => $event->attendeesCount(),
+            'might_attendees' => $event->mightAttendeesCount(),
             'meetup.name' => $event->meetup->name,
             'meetup.portalLink' => url()->route(
                 'meetups.landingpage',
@@ -202,8 +205,8 @@ class MeetupEventController extends Controller
     {
         return [
             'status' => $meetupEvent->rsvpStatusFor($user)->value,
-            'attendees' => count($meetupEvent->attendees ?? []),
-            'might_attendees' => count($meetupEvent->might_attendees ?? []),
+            'attendees' => $meetupEvent->attendeesCount(),
+            'might_attendees' => $meetupEvent->mightAttendeesCount(),
         ];
     }
 }

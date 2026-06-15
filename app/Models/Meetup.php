@@ -272,8 +272,8 @@ class Meetup extends Model implements HasMedia
                 'location' => $nextEvent->location,
                 'description' => $nextEvent->description,
                 'link' => $nextEvent->link,
-                'attendees' => count($nextEvent->attendees ?? []),
-                'might_attendees' => count($nextEvent->might_attendees ?? []),
+                'attendees' => $nextEvent->attendeesCount(),
+                'might_attendees' => $nextEvent->mightAttendeesCount(),
                 'nostr_note' => str($nextEvent->nostr_status)->after('Sent event ')->before(' to '),
             ] : null,
         );
