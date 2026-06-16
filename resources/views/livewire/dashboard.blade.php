@@ -179,15 +179,20 @@ class extends Component {
                                     </a>
                                 </div>
                                 <div class="flex flex-row items-center gap-2 w-full sm:w-auto">
-                                    <flux:button
-                                        :href="route_with_country('meetups.events.create', ['meetup' => $meetup])"
-                                        variant="primary" icon="calendar" size="xs">
-                                        {{ __('Neues Event erstellen') }}
-                                    </flux:button>
-                                    <flux:button :href="route_with_country('meetups.edit', ['meetup' => $meetup])"
-                                                 size="xs" variant="ghost" icon="pencil" class="w-full sm:w-auto">
-                                        {{ __('Bearbeiten') }}
-                                    </flux:button>
+                                    {{-- Termine & Stammdaten nur für Leader dieses Meetups
+                                         (meetup_user.is_leader); Mitglieder ohne Leaderschaft
+                                         können das Meetup nur aus „Meine“ entfernen. --}}
+                                    @if($meetup->pivot->is_leader)
+                                        <flux:button
+                                            :href="route_with_country('meetups.events.create', ['meetup' => $meetup])"
+                                            variant="primary" icon="calendar" size="xs">
+                                            {{ __('Neues Event erstellen') }}
+                                        </flux:button>
+                                        <flux:button :href="route_with_country('meetups.edit', ['meetup' => $meetup])"
+                                                     size="xs" variant="ghost" icon="pencil" class="w-full sm:w-auto">
+                                            {{ __('Bearbeiten') }}
+                                        </flux:button>
+                                    @endif
                                     <flux:modal.trigger :name="'remove-meetup-' . $meetup->id">
                                         <flux:button class="cursor-pointer" size="xs" variant="danger"
                                                      icon="trash"></flux:button>

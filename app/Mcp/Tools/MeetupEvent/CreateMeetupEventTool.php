@@ -30,7 +30,7 @@ class CreateMeetupEventTool extends Tool
 
         if (! $this->present($request->get('meetup_id'))) {
             $meetup = $this->resolveInScope(
-                Meetup::query()->associatedWith($user->getAuthIdentifier()),
+                Meetup::query()->ledBy($user->getAuthIdentifier()),
                 $request,
                 'Meetups',
                 'meetup',
@@ -41,6 +41,15 @@ class CreateMeetupEventTool extends Tool
             }
 
             $request->merge(['meetup_id' => $meetup->id]);
+        }
+
+        // Nur Leader/Ersteller des Ziel-Meetups dürfen Termine anlegen (gleiche
+        // Berechtigung wie die Stammdaten). Greift auch, wenn meetup_id direkt
+        // übergeben wurde und damit den ledBy-Scope oben umgeht.
+        $targetMeetup = Meetup::find($request->get('meetup_id'));
+
+        if ($targetMeetup === null || Gate::forUser($user)->denies('update', $targetMeetup)) {
+            return Response::error('Nur Leader oder der Ersteller dürfen Termine für dieses Meetup anlegen.');
         }
 
         $storeRequest = new StoreMeetupEventRequest;

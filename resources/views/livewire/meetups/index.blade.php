@@ -185,11 +185,10 @@ class extends Component {
 
                     <flux:table.cell>
                         <div class="flex flex-col space-y-2">
-                            @if(auth()->check() && $meetup->belongsToMe)
+                            @if(auth()->check() && $meetup->leadByMe)
                                 <div>
                                     <flux:button
-                                        :disabled="!$meetup->belongsToMe"
-                                        :href="$meetup->belongsToMe ? route_with_country('meetups.edit', ['meetup' => $meetup]) : null"
+                                        :href="route_with_country('meetups.edit', ['meetup' => $meetup])"
                                         size="xs"
                                         variant="filled" icon="pencil">
                                         {{ __('Bearbeiten') }}

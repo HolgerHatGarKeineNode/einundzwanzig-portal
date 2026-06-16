@@ -25,8 +25,23 @@ class MeetupEventPolicy
         return true;
     }
 
+    /**
+     * Termin bearbeiten: der Ersteller des Termins ODER ein Leader des
+     * zugehörigen Meetups (bzw. Super-Admin). Damit dürfen Meetup-Leader die
+     * Termine ihres Meetups pflegen, auch wenn sie sie nicht selbst angelegt
+     * haben — analog zur Stammdaten-Bearbeitung (MeetupPolicy::update).
+     */
     public function update(User $user, MeetupEvent $meetupEvent): bool
     {
-        return $this->owns($user, $meetupEvent);
+        return $this->owns($user, $meetupEvent)
+            || ($meetupEvent->meetup !== null && $meetupEvent->meetup->isLeader($user));
+    }
+
+    /**
+     * Termin löschen: gleiche Regel wie das Bearbeiten.
+     */
+    public function delete(User $user, MeetupEvent $meetupEvent): bool
+    {
+        return $this->update($user, $meetupEvent);
     }
 }

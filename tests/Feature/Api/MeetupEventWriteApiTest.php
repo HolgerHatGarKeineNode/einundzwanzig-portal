@@ -11,11 +11,13 @@ it('rejects a guest', function () {
     $response->assertUnauthorized();
 });
 
-it('lets an authenticated user create', function () {
+it('lets a leader of the meetup create an event', function () {
     Sanctum::actingAs($user = User::factory()->create());
+    // Ersteller wird per booted-Hook automatisch Leader des Meetups.
+    $meetup = Meetup::factory()->create(['created_by' => $user->id]);
 
     $response = $this->postJson('/api/meetup-events', [
-        'meetup_id' => Meetup::factory()->create()->id,
+        'meetup_id' => $meetup->id,
         'start' => '2026-08-01 18:00:00',
         'location' => 'Marktplatz',
     ]);
@@ -26,6 +28,47 @@ it('lets an authenticated user create', function () {
         'location' => 'Marktplatz',
         'created_by' => $user->id,
     ]);
+});
+
+it('lets a delegated leader create an event for the meetup', function () {
+    $meetup = Meetup::factory()->create(['created_by' => User::factory()->create()->id]);
+    $leader = User::factory()->create();
+    $meetup->users()->syncWithoutDetaching([$leader->id => ['is_leader' => true]]);
+
+    Sanctum::actingAs($leader);
+    $this->postJson('/api/meetup-events', [
+        'meetup_id' => $meetup->id,
+        'start' => '2026-08-01 18:00:00',
+        'location' => 'Marktplatz',
+    ])->assertCreated();
+});
+
+it('forbids creating an event for a meetup the user does not lead', function () {
+    $meetup = Meetup::factory()->create(['created_by' => User::factory()->create()->id]);
+    $member = User::factory()->create();
+    $meetup->addMember($member); // is_leader = false
+
+    Sanctum::actingAs($member);
+    $this->postJson('/api/meetup-events', [
+        'meetup_id' => $meetup->id,
+        'start' => '2026-08-01 18:00:00',
+        'location' => 'Marktplatz',
+    ])->assertForbidden();
+});
+
+it('lets a meetup leader edit an event created by someone else', function () {
+    $meetup = Meetup::factory()->create(['created_by' => User::factory()->create()->id]);
+    $leader = User::factory()->create();
+    $meetup->users()->syncWithoutDetaching([$leader->id => ['is_leader' => true]]);
+    $event = MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+        'created_by' => User::factory()->create()->id,
+    ]);
+
+    Sanctum::actingAs($leader);
+    $this->patchJson("/api/meetup-events/{$event->id}", ['location' => 'Rathaus'])
+        ->assertSuccessful()
+        ->assertJsonPath('data.location', 'Rathaus');
 });
 
 it('fails validation', function () {

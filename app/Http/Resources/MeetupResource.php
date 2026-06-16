@@ -32,6 +32,10 @@ class MeetupResource extends JsonResource
             'community' => $this->community,
             'visible_on_map' => $this->visible_on_map,
             'is_active' => $this->is_active,
+            // Nur gesetzt, wenn die meetup_user-Pivot geladen ist (z. B. via
+            // /api/my-meetups). Sagt der App, ob der Token-Inhaber Leader dieses
+            // Meetups ist (darf bearbeiten + Leader verwalten).
+            'is_leader' => $this->whenPivotLoaded('meetup_user', fn (): bool => (bool) $this->pivot->is_leader),
             'logo' => $this->getFirstMediaUrl('logo', 'thumb'),
             'last_event_at' => $this->last_event_at,
             'created_by' => $this->created_by,

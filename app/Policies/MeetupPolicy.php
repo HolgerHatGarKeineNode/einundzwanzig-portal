@@ -58,20 +58,26 @@ class MeetupPolicy
         return true;
     }
 
+    /**
+     * Stammdaten bearbeiten: der Ersteller (bzw. Super-Admin) ODER ein
+     * delegierter Leader (meetup_user.is_leader = true). Die bloße
+     * „Meine Meetups"-Mitgliedschaft (is_leader = false) berechtigt NICHT
+     * mehr zum Bearbeiten — Leader werden über manageLeaders() vergeben.
+     * Gilt einheitlich für REST-API, MCP und Portal-Frontend.
+     */
     public function update(User $user, Meetup $meetup): bool
     {
-        return $this->owns($user, $meetup);
+        return $this->owns($user, $meetup) || $meetup->isLeader($user);
     }
 
     /**
-     * Gelockerte Update-Regel ausschließlich für das Portal-Frontend (Livewire):
-     * Neben dem Ersteller darf auch jedes Mitglied der meetup_user-Pivot
-     * („Meine Meetups" im Dashboard) die Stammdaten bearbeiten. REST-API und
-     * MCP nutzen weiterhin die strikte update()-Ability. Übergangslösung, bis
-     * ein echtes Rollen-/Freigabekonzept existiert.
+     * Weitere Leader einsetzen/entziehen: nur ein bestehender Leader bzw. der
+     * Ersteller/Super-Admin. Delegation ist damit selbsttragend — jeder Leader
+     * kann neue Leader benennen (der Ersteller selbst kann nie entzogen werden,
+     * das erzwingt der Controller).
      */
-    public function updateViaPortal(User $user, Meetup $meetup): bool
+    public function manageLeaders(User $user, Meetup $meetup): bool
     {
-        return $this->owns($user, $meetup) || $meetup->hasMember($user);
+        return $this->owns($user, $meetup) || $meetup->isLeader($user);
     }
 }

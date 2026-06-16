@@ -51,7 +51,9 @@ class UserController extends Controller
             'email' => $user->email,
             'nostr' => $user->nostr,
             'is_lecturer' => (bool) $user->is_lecturer,
-            'is_leader' => (bool) $user->is_leader,
+            // Leader-Rolle ist pro Meetup (meetup_user.is_leader); global = ist
+            // der Nutzer Leader IRGENDEINES Meetups. Treibt das Rollen-Badge.
+            'is_leader' => $user->meetups()->wherePivot('is_leader', true)->exists(),
             'avatar' => $user->profile_photo_url,
         ];
     }

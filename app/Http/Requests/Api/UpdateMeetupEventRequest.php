@@ -3,14 +3,27 @@
 namespace App\Http\Requests\Api;
 
 use App\Enums\RecurrenceType;
+use App\Models\Meetup;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateMeetupEventRequest extends FormRequest
 {
+    /**
+     * Bearbeiten darf der Ersteller des Termins oder ein Leader des Meetups
+     * (siehe MeetupEventPolicy::update). Ein Verschieben in ein anderes Meetup
+     * (geändertes meetup_id) ist nur erlaubt, wenn der Nutzer auch dieses
+     * Ziel-Meetup führt.
+     */
     public function authorize(): bool
     {
-        return $this->user()->can('update', $this->route('meetupEvent'));
+        if (! $this->user()->can('update', $this->route('meetupEvent'))) {
+            return false;
+        }
+
+        $target = $this->filled('meetup_id') ? Meetup::find($this->input('meetup_id')) : null;
+
+        return $target === null || $this->user()->can('update', $target);
     }
 
     /**

@@ -105,7 +105,7 @@ class User extends Authenticatable implements CipherSweetEncrypted
 
     public function meetups()
     {
-        return $this->belongsToMany(Meetup::class);
+        return $this->belongsToMany(Meetup::class)->withPivot('is_leader');
     }
 
     public function reputations()

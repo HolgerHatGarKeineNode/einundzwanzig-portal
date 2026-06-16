@@ -63,23 +63,38 @@ it('allows update when name is unchanged (Rule::unique ignores own id)', functio
         ->assertHasNoErrors();
 });
 
-it('allows updateMeetup for a member of the meetup_user pivot who is not the creator', function () {
+it('allows updateMeetup for a delegated leader who is not the creator', function () {
+    $leader = actingAsUser();
+    $meetup = Meetup::factory()->create([
+        'city_id' => $this->city->id,
+        'name' => 'Original Name',
+        'created_by' => User::factory()->create()->id,
+    ]);
+    $meetup->users()->attach($leader, ['is_leader' => true]);
+
+    Livewire::test('meetups.edit', ['meetup' => $meetup])
+        ->set('name', 'Updated By Leader')
+        ->set('city_id', $this->city->id)
+        ->set('community', 'einundzwanzig')
+        ->call('updateMeetup')
+        ->assertHasNoErrors();
+
+    expect($meetup->refresh()->name)->toBe('Updated By Leader');
+});
+
+it('blocks updateMeetup for a plain member (is_leader = false) who is not the creator', function () {
     $member = actingAsUser();
     $meetup = Meetup::factory()->create([
         'city_id' => $this->city->id,
         'name' => 'Original Name',
         'created_by' => User::factory()->create()->id,
     ]);
-    $meetup->users()->attach($member);
+    $meetup->users()->attach($member, ['is_leader' => false]);
 
     Livewire::test('meetups.edit', ['meetup' => $meetup])
-        ->set('name', 'Updated By Member')
-        ->set('city_id', $this->city->id)
-        ->set('community', 'einundzwanzig')
-        ->call('updateMeetup')
-        ->assertHasNoErrors();
+        ->assertStatus(403);
 
-    expect($meetup->refresh()->name)->toBe('Updated By Member');
+    expect($meetup->refresh()->name)->toBe('Original Name');
 });
 
 it('blocks updateMeetup when the user is neither creator nor pivot member', function () {

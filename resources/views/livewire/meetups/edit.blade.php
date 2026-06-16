@@ -85,15 +85,13 @@ class extends Component {
     }
 
     /**
-     * Portal-Frontend nutzt die gelockerte updateViaPortal-Ability: Ersteller,
-     * Super-Admins UND Mitglieder der meetup_user-Pivot („Meine Meetups") dürfen
-     * die Stammdaten bearbeiten. REST-API und MCP-Tools bleiben auf der strikten
-     * update()-Ability (nur Ersteller/Super-Admin). Übergangslösung, bis ein
-     * echtes Rollen-/Freigabekonzept existiert.
+     * Stammdaten bearbeiten dürfen der Ersteller, Super-Admins UND delegierte
+     * Leader (meetup_user.is_leader). Einheitliche update-Ability für Portal-
+     * Frontend, REST-API und MCP-Tools (MeetupPolicy::update).
      */
     protected function authorizeAccess(): void
     {
-        if (auth()->guest() || auth()->user()->cannot('updateViaPortal', $this->meetup)) {
+        if (auth()->guest() || auth()->user()->cannot('update', $this->meetup)) {
             abort(403);
         }
     }

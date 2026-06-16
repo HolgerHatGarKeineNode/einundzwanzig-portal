@@ -186,6 +186,19 @@ class Meetup extends Model implements HasMedia
     }
 
     /**
+     * Ist der Nutzer Leader dieses Meetups (meetup_user.is_leader = true)?
+     * Nur Leader (und der Ersteller/Super-Admin) dürfen Stammdaten bearbeiten
+     * und weitere Leader einsetzen/entziehen.
+     */
+    public function isLeader(User $user): bool
+    {
+        return $this->users()
+            ->whereKey($user->id)
+            ->wherePivot('is_leader', true)
+            ->exists();
+    }
+
+    /**
      * Den Nutzer als Mitglied (nicht Leader) zu „Meine Meetups" hinzufügen.
      * Idempotent: ein bereits hinzugefügter Nutzer bleibt unverändert. Gibt
      * true zurück, wenn neu hinzugefügt (false = war bereits Mitglied).
@@ -231,6 +244,32 @@ class Meetup extends Model implements HasMedia
             $inner->where('created_by', $userId)
                 ->orWhereHas('users', fn (Builder $user) => $user->whereKey($userId));
         });
+    }
+
+    /**
+     * Meetups, die der Nutzer als Leader führt (meetup_user.is_leader = true).
+     * Maßgeblich dafür, wer Stammdaten UND Termine bearbeiten darf.
+     */
+    public function scopeLedBy(Builder $query, int $userId): void
+    {
+        $query->whereHas('users', fn (Builder $user) => $user->whereKey($userId)->wherePivot('is_leader', true));
+    }
+
+    /**
+     * Führt der eingeloggte Nutzer dieses Meetup als Leader? Steuert die
+     * Sichtbarkeit der Bearbeiten-/Termin-Affordances im Portal-Frontend
+     * (Gegenstück zu {@see belongsToMe()}, aber leader- statt mitgliedschafts-
+     * basiert).
+     */
+    protected function leadByMe(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): bool => auth()->check() && DB::table('meetup_user')
+                ->where('meetup_id', $this->id)
+                ->where('user_id', auth()->id())
+                ->where('is_leader', true)
+                ->exists()
+        );
     }
 
     public function city(): BelongsTo

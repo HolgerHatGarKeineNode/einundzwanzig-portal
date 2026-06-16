@@ -7,7 +7,7 @@ use Laravel\Sanctum\Sanctum;
 
 it('creates a weekly series of individual events', function () {
     Sanctum::actingAs($user = User::factory()->create());
-    $meetup = Meetup::factory()->create();
+    $meetup = Meetup::factory()->create(['created_by' => $user->id]);
 
     $response = $this->postJson('/api/meetup-events', [
         'meetup_id' => $meetup->id,
@@ -32,8 +32,8 @@ it('creates a weekly series of individual events', function () {
 });
 
 it('creates a monthly series of individual events', function () {
-    Sanctum::actingAs(User::factory()->create());
-    $meetup = Meetup::factory()->create();
+    Sanctum::actingAs($user = User::factory()->create());
+    $meetup = Meetup::factory()->create(['created_by' => $user->id]);
 
     $response = $this->postJson('/api/meetup-events', [
         'meetup_id' => $meetup->id,
@@ -48,8 +48,8 @@ it('creates a monthly series of individual events', function () {
 });
 
 it('caps the series at 100 occurrences', function () {
-    Sanctum::actingAs(User::factory()->create());
-    $meetup = Meetup::factory()->create();
+    Sanctum::actingAs($user = User::factory()->create());
+    $meetup = Meetup::factory()->create(['created_by' => $user->id]);
 
     $response = $this->postJson('/api/meetup-events', [
         'meetup_id' => $meetup->id,
@@ -63,8 +63,8 @@ it('caps the series at 100 occurrences', function () {
 });
 
 it('still creates a single event without recurrence fields', function () {
-    Sanctum::actingAs(User::factory()->create());
-    $meetup = Meetup::factory()->create();
+    Sanctum::actingAs($user = User::factory()->create());
+    $meetup = Meetup::factory()->create(['created_by' => $user->id]);
 
     $response = $this->postJson('/api/meetup-events', [
         'meetup_id' => $meetup->id,
@@ -78,8 +78,8 @@ it('still creates a single event without recurrence fields', function () {
 });
 
 it('creates a single event when recurrence_type is set but no end date', function () {
-    Sanctum::actingAs(User::factory()->create());
-    $meetup = Meetup::factory()->create();
+    Sanctum::actingAs($user = User::factory()->create());
+    $meetup = Meetup::factory()->create(['created_by' => $user->id]);
 
     $response = $this->postJson('/api/meetup-events', [
         'meetup_id' => $meetup->id,

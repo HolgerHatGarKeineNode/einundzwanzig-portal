@@ -3,15 +3,23 @@
 namespace App\Http\Requests\Api;
 
 use App\Enums\RecurrenceType;
-use App\Models\MeetupEvent;
+use App\Models\Meetup;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StoreMeetupEventRequest extends FormRequest
 {
+    /**
+     * Termine darf nur anlegen, wer das zugehörige Meetup bearbeiten darf
+     * (Ersteller/Leader/Super-Admin) — dieselbe Berechtigung wie die
+     * Stammdaten. Existenz/Pflicht von meetup_id prüft rules() (422); ist ein
+     * gültiges Meetup angegeben, muss der Nutzer dafür berechtigt sein.
+     */
     public function authorize(): bool
     {
-        return $this->user()->can('create', MeetupEvent::class);
+        $meetup = Meetup::find($this->input('meetup_id'));
+
+        return $meetup === null || $this->user()->can('update', $meetup);
     }
 
     /**

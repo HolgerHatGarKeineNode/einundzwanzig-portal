@@ -23,7 +23,7 @@ class extends Component {
 
     public function deleteEvent(MeetupEvent $event): void
     {
-        if ($this->meetup->belongsToMe) {
+        if ($this->meetup->leadByMe) {
             $event->delete();
             $this->dispatch('event-deleted');
             Flux::modals()->close();
@@ -231,7 +231,7 @@ class extends Component {
         <div class="mt-16">
             <div class="flex flex-col sm:flex-row items-center sm:space-x-4 space-y-4 sm:space-y-0 mb-6">
                 <flux:heading size="xl">{{ __('Kommende Veranstaltungen') }}</flux:heading>
-                @if(auth()->user() && auth()->user()->meetups()->find($meetup->id)?->exists)
+                @if($meetup->leadByMe)
                     <flux:button :href="route_with_country('meetups.events.create', ['meetup' => $meetup])"
                                  variant="primary" icon="calendar">
                         {{ __('Neues Event erstellen') }}
@@ -281,7 +281,7 @@ class extends Component {
                             >
                                 {{ __('Öffnen/RSVP') }}
                             </flux:button>
-                            @if($meetup->belongsToMe)
+                            @if($meetup->leadByMe)
                                 <flux:button
                                     :href="route_with_country('meetups.events.edit', ['meetup' => $meetup, 'event' => $event])"
                                     size="xs"
@@ -332,7 +332,7 @@ class extends Component {
     @else
         <div class="mt-16">
             <div class="flex items-center space-x-4 mb-6">
-                @if(auth()->user() && auth()->user()->meetups()->find($meetup->id)?->exists)
+                @if($meetup->leadByMe)
                     <flux:button :href="route_with_country('meetups.events.create', ['meetup' => $meetup])"
                                  variant="primary" icon="calendar">
                         {{ __('Neues Event erstellen') }}

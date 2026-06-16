@@ -44,7 +44,11 @@ class extends Component {
             // Ensure timezone is always set - use fallback if not initialized yet
             $timezone = $this->userTimezone ?: (auth()->user()->timezone ?? 'Europe/Berlin');
             $startDate = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $this->startDate . ' ' . $this->startTime, $timezone);
-            $endDate = \Carbon\Carbon::createFromFormat('Y-m-d', $this->endDate, $timezone);
+            // Enddatum kommt aus einem reinen Datums-Picker: bis zum Ende des
+            // gewählten Tages (inklusiv). endOfDay() macht das deterministisch —
+            // createFromFormat('Y-m-d', …) würde sonst die AKTUELLE Uhrzeit
+            // einsetzen und das letzte Vorkommen je nach Laufzeit ein-/ausschließen.
+            $endDate = \Carbon\Carbon::createFromFormat('Y-m-d', $this->endDate, $timezone)->endOfDay();
 
             return array_map(fn (\Carbon\Carbon $date): array => [
                 'date' => $date,
@@ -97,8 +101,21 @@ class extends Component {
     #[Validate('required|url|max:255')]
     public ?string $link = null;
 
+    /**
+     * Termine darf nur verwalten, wer das zugehörige Meetup bearbeiten darf
+     * (Ersteller/Leader/Super-Admin) — dieselbe update-Ability wie die
+     * Stammdaten. Spiegelt meetups.edit::authorizeAccess().
+     */
+    protected function authorizeManage(): void
+    {
+        if (auth()->guest() || auth()->user()->cannot('update', $this->meetup)) {
+            abort(403);
+        }
+    }
+
     public function mount(): void
     {
+        $this->authorizeManage();
         $this->country = request()->route('country', config('app.domain_country'));
         $this->userTimezone = auth()->user()->timezone ?? 'Europe/Berlin';
         $timezone = $this->userTimezone;
@@ -130,6 +147,8 @@ class extends Component {
 
     public function save(): void
     {
+        $this->authorizeManage();
+
         $validationRules = [
             'startDate' => 'required|date',
             'startTime' => 'required',
@@ -191,7 +210,9 @@ class extends Component {
     private function createEventSeries(string $timezone): void
     {
         $startDate = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $this->startDate . ' ' . $this->startTime, $timezone);
-        $endDate = \Carbon\Carbon::createFromFormat('Y-m-d', $this->endDate, $timezone);
+        // Inklusiv bis zum Ende des gewählten Tages, deterministisch (siehe
+        // getPreviewDatesProperty) — Vorschau und Anlegen erzeugen so dieselbe Liste.
+        $endDate = \Carbon\Carbon::createFromFormat('Y-m-d', $this->endDate, $timezone)->endOfDay();
 
         $eventsCreated = 0;
 

@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\CourseEventController;
 use App\Http\Controllers\Api\LecturerController;
 use App\Http\Controllers\Api\MeetupController;
 use App\Http\Controllers\Api\MeetupEventController;
+use App\Http\Controllers\Api\MeetupLeaderController;
 use App\Http\Controllers\Api\MeetupMapController;
 use App\Http\Controllers\Api\NostrPlebController;
 use App\Http\Controllers\Api\UserController;
@@ -81,6 +82,12 @@ Route::middleware('auth:sanctum')
         Route::post('my-meetups/{meetup:slug}', [MeetupController::class, 'addToMine'])->name('meetup.mine.add');
         Route::delete('my-meetups/{meetup:slug}', [MeetupController::class, 'removeFromMine'])->name('meetup.mine.remove');
         Route::get('my-meetups/{meetup}', [MeetupController::class, 'mineShow'])->name('meetup.mine.show');
+
+        // Leader-Delegation: bestehende Leader setzen weitere Leader per npub
+        // ein bzw. entziehen sie (meetup_user.is_leader). Siehe MeetupPolicy.
+        Route::get('meetup/{meetup}/leaders', [MeetupLeaderController::class, 'index'])->name('meetup.leaders.index');
+        Route::post('meetup/{meetup}/leaders', [MeetupLeaderController::class, 'store'])->name('meetup.leaders.store');
+        Route::delete('meetup/{meetup}/leaders/{user}', [MeetupLeaderController::class, 'destroy'])->name('meetup.leaders.destroy');
 
         Route::post('meetup-events', [MeetupEventController::class, 'store'])->name('meetup-events.store');
         Route::patch('meetup-events/{meetupEvent}', [MeetupEventController::class, 'update'])->name('meetup-events.update');

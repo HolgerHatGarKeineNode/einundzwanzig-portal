@@ -15,7 +15,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Aktualisiert einen bestehenden Meetup-Termin. Nur der Ersteller oder ein Super-Admin darf ihn ändern.')]
+#[Description('Aktualisiert einen bestehenden Meetup-Termin. Nur der Ersteller des Termins, ein Leader des zugehörigen Meetups oder ein Super-Admin darf ihn ändern.')]
 class UpdateMeetupEventTool extends Tool
 {
     use ResolvesEntities;
@@ -31,10 +31,10 @@ class UpdateMeetupEventTool extends Tool
         $user = $request->user();
 
         if ($user === null || Gate::forUser($user)->denies('update', $meetupEvent)) {
-            return Response::error('Nur der Ersteller oder ein Super-Admin darf diesen Meetup-Termin ändern.');
+            return Response::error('Nur der Ersteller des Termins, ein Leader des Meetups oder ein Super-Admin darf diesen Meetup-Termin ändern.');
         }
 
-        if ($error = $this->mergeForeignKey($request, 'meetup', 'meetup_id', Meetup::query()->where('created_by', $user->getAuthIdentifier()), 'Meetups', false)) {
+        if ($error = $this->mergeForeignKey($request, 'meetup', 'meetup_id', Meetup::query()->ledBy($user->getAuthIdentifier()), 'Meetups', false)) {
             return $error;
         }
 
