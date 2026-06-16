@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -196,6 +197,45 @@ class Meetup extends Model implements HasMedia
             ->whereKey($user->id)
             ->wherePivot('is_leader', true)
             ->exists();
+    }
+
+    /**
+     * Aktuelle Leader dieses Meetups (meetup_user.is_leader = true), Ersteller
+     * zuerst. Gemeinsame Quelle für REST-API (MeetupLeaderController) und das
+     * Portal-Frontend (meetups.edit).
+     *
+     * @return Collection<int, User>
+     */
+    public function leaders(): Collection
+    {
+        return $this->users()
+            ->wherePivot('is_leader', true)
+            ->get()
+            ->sortByDesc(fn (User $user): bool => $user->getKey() === $this->created_by)
+            ->values();
+    }
+
+    /**
+     * Nutzer zum Leader befördern (meetup_user.is_leader = true). Idempotent.
+     * Geteilt von REST-Controller, MCP-Tools und Portal-Frontend.
+     */
+    public function promoteLeader(User $user): void
+    {
+        $this->users()->syncWithoutDetaching([$user->getKey() => ['is_leader' => true]]);
+    }
+
+    /**
+     * Nutzer die Leader-Rolle entziehen (Demote; bleibt Mitglied). Der Ersteller
+     * des Meetups ist geschützt und wird nie entzogen (Domain-Invariante) —
+     * Aufrufer dürfen zusätzlich mit 403 antworten.
+     */
+    public function demoteLeader(User $user): void
+    {
+        if ($user->getKey() === $this->created_by) {
+            return;
+        }
+
+        $this->users()->updateExistingPivot($user->getKey(), ['is_leader' => false]);
     }
 
     /**

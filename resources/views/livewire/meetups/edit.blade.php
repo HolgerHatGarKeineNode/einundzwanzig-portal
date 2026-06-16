@@ -4,9 +4,14 @@ use App\Attributes\SeoDataAttribute;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
+use App\Models\User;
+use App\Rules\ValidNpub;
+use App\Support\NostrLogin;
 use App\Traits\SeoTrait;
+use Flux\Flux;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -14,9 +19,10 @@ use Livewire\WithFileUploads;
 
 new
 #[SeoDataAttribute(key: 'meetups_edit')]
-class extends Component {
-    use WithFileUploads;
+class extends Component
+{
     use SeoTrait;
+    use WithFileUploads;
 
     #[Validate('image|mimes:jpeg,png,webp,avif|max:5120|dimensions:max_width=4000,max_height=4000')]
     public $logo;
@@ -25,23 +31,35 @@ class extends Component {
 
     // Basic Information
     public string $name = '';
+
     public ?int $city_id = null;
+
     public string $slug = '';
+
     public ?string $intro = null;
 
     // Links and Social Media
     public ?string $telegram_link = null;
+
     public ?string $webpage = null;
+
     public ?string $twitter_username = null;
+
     public ?string $matrix_group = null;
+
     public ?string $nostr = null;
+
     public ?string $nostr_status = null;
+
     public ?string $simplex = null;
+
     public ?string $signal = null;
 
     // Additional Information
     public ?string $community = null;
+
     public ?string $github_data = null;
+
     public bool $visible_on_map = false;
 
     // System fields (read-only) - locked to prevent client-side tampering
@@ -54,10 +72,16 @@ class extends Component {
     #[Locked]
     public ?string $updated_at = null;
 
+    // Leader management (Delegation): npub des einzusetzenden Leaders.
+    public string $leaderNpub = '';
+
     // New City Modal
     public string $newCityName = '';
+
     public ?int $newCityCountryId = null;
+
     public ?float $newCityLatitude = null;
+
     public ?float $newCityLongitude = null;
 
     public function createCity(): void
@@ -81,7 +105,7 @@ class extends Component {
         $this->city_id = $city->id;
         $this->reset(['newCityName', 'newCityCountryId', 'newCityLatitude', 'newCityLongitude']);
 
-        \Flux\Flux::modal('add-city')->close();
+        Flux::modal('add-city')->close();
     }
 
     /**
@@ -97,6 +121,49 @@ class extends Component {
     }
 
     /**
+     * Aktuelle Leader dieses Meetups (meetup_user.is_leader = true), Ersteller
+     * zuerst. Treibt die Leader-Verwaltungsliste auf der Bearbeiten-Seite.
+     */
+    #[Computed]
+    public function leaders()
+    {
+        return $this->meetup->leaders();
+    }
+
+    /**
+     * Einen weiteren Leader per npub einsetzen. Nur Leader/Ersteller dürfen das
+     * (manageLeaders). Existiert noch kein Account für den npub, wird er angelegt
+     * (greift beim ersten Login). Idempotent: ein bereits gesetzter Leader bleibt.
+     */
+    public function addLeader(): void
+    {
+        abort_unless(auth()->user()?->can('manageLeaders', $this->meetup), 403);
+
+        $validated = $this->validate(['leaderNpub' => ['required', 'string', new ValidNpub]]);
+
+        $this->meetup->promoteLeader(NostrLogin::findOrCreateUser($validated['leaderNpub']));
+
+        $this->leaderNpub = '';
+        unset($this->leaders);
+        session()->flash('leaderStatus', __('Leader eingesetzt.'));
+    }
+
+    /**
+     * Einem Nutzer die Leader-Rolle entziehen (Demote; bleibt Mitglied). Der
+     * Ersteller des Meetups ist geschützt und kann nie entzogen werden.
+     */
+    public function removeLeader(int $userId): void
+    {
+        abort_unless(auth()->user()?->can('manageLeaders', $this->meetup), 403);
+        abort_if($userId === $this->meetup->created_by, 403, __('Der Ersteller des Meetups kann nicht entzogen werden.'));
+
+        $this->meetup->demoteLeader(User::findOrFail($userId));
+
+        unset($this->leaders);
+        session()->flash('leaderStatus', __('Leader entzogen.'));
+    }
+
+    /**
      * Whitelist the keys allowed inside github_data and coerce types so a
      * tampered payload cannot smuggle arbitrary keys into the stored JSON.
      */
@@ -107,7 +174,7 @@ class extends Component {
         }
 
         $decoded = json_decode($raw, true);
-        if (!is_array($decoded)) {
+        if (! is_array($decoded)) {
             return null;
         }
 
@@ -438,6 +505,64 @@ class extends Component {
             </div>
         </div>
     </form>
+
+    <!-- Leader-Verwaltung (Delegation) -->
+    <flux:fieldset class="space-y-6 mt-10 pt-10 border-t border-gray-200 dark:border-gray-700">
+        <flux:legend>{{ __('Leader verwalten') }}</flux:legend>
+
+        <div class="rounded-xl border border-amber-300 bg-amber-50 p-4 space-y-2 dark:border-amber-500/40 dark:bg-amber-500/10">
+            <div class="flex items-center gap-2 font-semibold text-amber-800 dark:text-amber-300">
+                <flux:icon name="information-circle" class="size-5"/>
+                {{ __('Was ist ein Leader?') }}
+            </div>
+            <flux:text>
+                {{ __('Leader dürfen dieses Meetup bearbeiten und selbst weitere Leader einsetzen. Setze nur Personen ein, denen du vertraust.') }}
+            </flux:text>
+            <flux:text>
+                {{ __('Frag die Person nach ihrem Nostr-Schlüssel (npub). Sie findet ihn in ihrer Nostr-App oder in ihrem Portal-Profil — er beginnt mit „npub1…“.') }}
+            </flux:text>
+        </div>
+
+        <form wire:submit="addLeader" class="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <flux:field class="flex-1">
+                <flux:label>{{ __('npub der Person') }}</flux:label>
+                <flux:input wire:model="leaderNpub" placeholder="npub1…"/>
+                <flux:error name="leaderNpub"/>
+            </flux:field>
+            <flux:button class="cursor-pointer" type="submit" variant="primary" icon="user-plus">
+                {{ __('Als Leader einsetzen') }}
+            </flux:button>
+        </form>
+
+        @if (session('leaderStatus'))
+            <flux:text class="font-medium text-green-600 dark:text-green-400">{{ session('leaderStatus') }}</flux:text>
+        @endif
+
+        <div class="space-y-2">
+            <flux:text class="font-medium">{{ __('Aktuelle Leader') }}</flux:text>
+            @foreach ($this->leaders as $leader)
+                <div class="flex items-center gap-3 rounded-xl border border-zinc-200 p-3 dark:border-zinc-700"
+                     wire:key="leader-{{ $leader->id }}">
+                    <flux:avatar size="sm" circle :name="$leader->name" src="{{ $leader->profile_photo_url }}"/>
+                    <div class="flex min-w-0 flex-1 flex-col">
+                        <span class="truncate font-semibold">{{ $leader->name }}</span>
+                        @if ($leader->nostr)
+                            <span class="truncate font-mono text-xs text-zinc-500 dark:text-zinc-400">{{ $leader->nostr }}</span>
+                        @endif
+                    </div>
+                    @if ($leader->id === $meetup->created_by)
+                        <flux:badge color="amber" icon="star">{{ __('Ersteller') }}</flux:badge>
+                    @else
+                        <flux:button class="cursor-pointer" size="sm" variant="ghost" icon="user-minus"
+                                     wire:click="removeLeader({{ $leader->id }})"
+                                     wire:confirm="{{ __(':name die Leader-Rolle entziehen? Die Person bleibt Mitglied, kann das Meetup aber nicht mehr bearbeiten.', ['name' => $leader->name]) }}">
+                            {{ __('Entziehen') }}
+                        </flux:button>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+    </flux:fieldset>
 
     <!-- Add City Modal -->
     <flux:modal name="add-city" variant="flyout" wire:key="add-city-modal">

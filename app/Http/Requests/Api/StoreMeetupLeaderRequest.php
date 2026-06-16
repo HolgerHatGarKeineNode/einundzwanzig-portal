@@ -2,9 +2,8 @@
 
 namespace App\Http\Requests\Api;
 
-use Closure;
+use App\Rules\ValidNpub;
 use Illuminate\Foundation\Http\FormRequest;
-use swentel\nostr\Key\Key as NostrKey;
 
 /**
  * Setzt einen weiteren Leader für ein Meetup per Nostr-npub ein. Nur ein
@@ -24,18 +23,7 @@ class StoreMeetupLeaderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'npub' => [
-                'required',
-                'string',
-                'starts_with:npub1',
-                function (string $attribute, mixed $value, Closure $fail): void {
-                    try {
-                        (new NostrKey)->convertToHex((string) $value);
-                    } catch (\Throwable) {
-                        $fail(__('Das ist kein gültiger npub.'));
-                    }
-                },
-            ],
+            'npub' => ['required', 'string', new ValidNpub],
         ];
     }
 }

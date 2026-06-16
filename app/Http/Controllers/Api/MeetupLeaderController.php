@@ -48,9 +48,7 @@ class MeetupLeaderController extends Controller
     {
         $user = NostrLogin::findOrCreateUser($request->string('npub')->toString());
 
-        $meetup->users()->syncWithoutDetaching([
-            $user->getKey() => ['is_leader' => true],
-        ]);
+        $meetup->promoteLeader($user);
 
         return response()->json(['data' => $this->leaders($meetup)], HttpResponse::HTTP_CREATED);
     }
@@ -69,7 +67,7 @@ class MeetupLeaderController extends Controller
 
         abort_if($user->getKey() === $meetup->created_by, HttpResponse::HTTP_FORBIDDEN, __('Der Ersteller des Meetups kann nicht entzogen werden.'));
 
-        $meetup->users()->updateExistingPivot($user->getKey(), ['is_leader' => false]);
+        $meetup->demoteLeader($user);
 
         return response()->json(['data' => $this->leaders($meetup)]);
     }
@@ -81,9 +79,7 @@ class MeetupLeaderController extends Controller
      */
     private function leaders(Meetup $meetup): array
     {
-        return $meetup->users()
-            ->wherePivot('is_leader', true)
-            ->get()
+        return $meetup->leaders()
             ->map(fn (User $user): array => [
                 'id' => $user->getKey(),
                 'name' => $user->name,
@@ -91,8 +87,6 @@ class MeetupLeaderController extends Controller
                 'avatar' => $user->profile_photo_url,
                 'is_creator' => $user->getKey() === $meetup->created_by,
             ])
-            ->sortByDesc('is_creator')
-            ->values()
             ->all();
     }
 }
