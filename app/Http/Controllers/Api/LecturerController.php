@@ -28,11 +28,11 @@ class LecturerController extends Controller
     /**
      * Referenten auflisten und durchsuchen
      *
-     * Öffentlicher Endpunkt; liefert id und name, alphabetisch sortiert. Ohne den Parameter 'selected' wird die Liste auf 10 Einträge begrenzt. Jeder Referent enthält zusätzlich ein 'image' (Avatar-Thumbnail-URL). Mit 'withDetails' entfällt das Limit und jeder Referent enthält zusätzlich subtitle und future_events_count (Anzahl kommender Kurs-Events).
+     * Öffentlicher Endpunkt; liefert id und name, alphabetisch sortiert. Ohne den Parameter 'selected' wird die Liste auf 10 Einträge begrenzt. Jeder Referent enthält zusätzlich ein 'image' (Avatar-Thumbnail-URL). Mit 'withDetails' entfällt das Limit und jeder Referent enthält zusätzlich subtitle, future_events_count (Anzahl kommender Kurs-Events) und next_event (Datum des nächsten kommenden Kurs-Events, oder null).
      */
     #[QueryParameter(name: 'search', description: 'Teilstring-Suche im Namen.', required: false, type: 'string')]
     #[QueryParameter(name: 'selected', description: 'Lädt gezielt die angegebenen IDs.', required: false, type: 'array')]
-    #[QueryParameter(name: 'withDetails', description: 'Presence-Flag: liefert subtitle und future_events_count mit und hebt das 10-Einträge-Limit auf.', required: false, type: 'string')]
+    #[QueryParameter(name: 'withDetails', description: 'Presence-Flag: liefert subtitle, future_events_count und next_event mit und hebt das 10-Einträge-Limit auf.', required: false, type: 'string')]
     public function index(Request $request)
     {
         $withDetails = $request->exists('withDetails');
@@ -42,7 +42,8 @@ class LecturerController extends Controller
             ->with('media')
             ->orderBy('name')
             ->when($withDetails, fn (Builder $query) => $query
-                ->withCount(['coursesEvents as future_events_count' => fn (Builder $events) => $events->where('from', '>=', now())]))
+                ->withCount(['coursesEvents as future_events_count' => fn (Builder $events) => $events->where('from', '>=', now())])
+                ->withMin(['coursesEvents as next_event' => fn (Builder $events) => $events->where('from', '>=', now())], 'from'))
             ->when(
                 $request->search,
                 fn (Builder $query) => $query

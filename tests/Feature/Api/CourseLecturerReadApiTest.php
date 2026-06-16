@@ -93,8 +93,9 @@ it('returns all lecturers with details on GET /api/lecturers?withDetails', funct
     $first = collect($response->json())->firstWhere('id', $lecturers->first()->id);
 
     expect($first)
-        ->toHaveKeys(['id', 'name', 'subtitle', 'image', 'future_events_count'])
-        ->and($first['future_events_count'])->toBe(2);
+        ->toHaveKeys(['id', 'name', 'subtitle', 'image', 'future_events_count', 'next_event'])
+        ->and($first['future_events_count'])->toBe(2)
+        ->and($first['next_event'])->not->toBeNull();
 });
 
 it('shows a lecturer profile with courses on GET /api/lecturers/{lecturer}', function () {
