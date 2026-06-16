@@ -102,4 +102,9 @@ class Venue extends Model implements HasMedia
     {
         return $this->hasMany(CourseEvent::class);
     }
+
+    public function bitcoinEvents(): HasMany
+    {
+        return $this->hasMany(BitcoinEvent::class);
+    }
 }
