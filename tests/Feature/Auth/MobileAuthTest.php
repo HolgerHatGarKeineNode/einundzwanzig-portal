@@ -225,6 +225,36 @@ it('denies /api/user without a token', function () {
     $this->getJson('/api/user')->assertUnauthorized();
 });
 
+it('updates the token owner display name', function () {
+    $user = User::factory()->create(['name' => 'Old Name']);
+    Sanctum::actingAs($user);
+
+    $this->patchJson('/api/user', ['name' => 'Satoshi'])
+        ->assertOk()
+        ->assertJsonPath('name', 'Satoshi');
+
+    expect($user->fresh()->name)->toBe('Satoshi');
+});
+
+it('does not let the user change roles via the profile update', function () {
+    $user = User::factory()->create(['is_lecturer' => false]);
+    Sanctum::actingAs($user);
+
+    $this->patchJson('/api/user', ['name' => 'Satoshi', 'is_lecturer' => true])
+        ->assertOk();
+
+    expect((bool) $user->fresh()->is_lecturer)->toBeFalse();
+});
+
+it('rejects an empty display name', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user);
+
+    $this->patchJson('/api/user', ['name' => ''])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('name');
+});
+
 it('revokes the requesting token on mobile logout', function () {
     $user = User::factory()->create();
     $plainTextToken = $user->createToken('Pixel 10')->plainTextToken;

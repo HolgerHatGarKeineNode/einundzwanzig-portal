@@ -42,6 +42,7 @@ Route::middleware('auth:sanctum')
     ->as('api.')
     ->group(function () {
         Route::get('user', UserController::class)->name('user');
+        Route::patch('user', [UserController::class, 'update'])->name('user.update');
 
         Route::post('courses', [CourseController::class, 'store'])
             ->name('courses.store');

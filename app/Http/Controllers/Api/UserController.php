@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,9 +19,33 @@ class UserController extends Controller
      */
     public function __invoke(Request $request): JsonResponse
     {
-        $user = $request->user();
+        return response()->json($this->profilePayload($request->user()));
+    }
 
-        return response()->json([
+    /**
+     * Profil aktualisieren
+     *
+     * Erlaubt dem Token-Inhaber, den eigenen Anzeigenamen zu ändern.
+     * Rollen (is_lecturer/is_leader) sind bewusst NICHT änderbar.
+     */
+    public function update(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+        ]);
+
+        $user = $request->user();
+        $user->update(['name' => $validated['name']]);
+
+        return response()->json($this->profilePayload($user->fresh()));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function profilePayload(User $user): array
+    {
+        return [
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
@@ -28,6 +53,6 @@ class UserController extends Controller
             'is_lecturer' => (bool) $user->is_lecturer,
             'is_leader' => (bool) $user->is_leader,
             'avatar' => $user->profile_photo_url,
-        ]);
+        ];
     }
 }
