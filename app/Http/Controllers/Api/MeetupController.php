@@ -124,7 +124,7 @@ class MeetupController extends Controller
     }
 
     /**
-     * Bestehendes Meetup zu „Meine Meetups" hinzufügen
+     * Bestehendes Meetup zu „Meine Meetups“ hinzufügen
      *
      * Fügt ein bereits existierendes Meetup zur „Meine Meetups"-Liste des authentifizierten
      * Nutzers hinzu (meetup_user-Pivot als Mitglied, is_leader=false). Idempotent: ein bereits
@@ -145,7 +145,7 @@ class MeetupController extends Controller
     }
 
     /**
-     * Meetup aus „Meine Meetups" entfernen
+     * Meetup aus „Meine Meetups“ entfernen
      *
      * Entfernt ein Meetup aus der „Meine Meetups"-Liste des authentifizierten Nutzers
      * (löst die meetup_user-Pivot-Mitgliedschaft). Die Stammdaten des Meetups bleiben
