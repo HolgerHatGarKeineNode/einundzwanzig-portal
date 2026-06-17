@@ -53,10 +53,26 @@ it('makes the creator a leader so the meetup shows in my meetups', function () {
     ]);
 });
 
-it('lets a member add an event to a joined meetup', function () {
+it('forbids a non-leader member from adding an event but allows a leader', function () {
     $user = User::factory()->create();
     $meetup = Meetup::factory()->create(['name' => 'Einundzwanzig Dortmund']);
     $meetup->users()->attach($user->id, ['is_leader' => false]);
+
+    // Reines Mitglied (is_leader = false) darf keinen Termin anlegen.
+    EinundzwanzigServer::actingAs($user)
+        ->tool(CreateMeetupEventTool::class, [
+            'meetup' => 'Einundzwanzig Dortmund',
+            'start' => '2026-08-01 18:00:00',
+        ])
+        ->assertHasErrors();
+
+    $this->assertDatabaseMissing('meetup_events', [
+        'meetup_id' => $meetup->id,
+        'created_by' => $user->id,
+    ]);
+
+    // Als Leader darf derselbe Nutzer den Termin anlegen.
+    $meetup->users()->syncWithoutDetaching([$user->id => ['is_leader' => true]]);
 
     EinundzwanzigServer::actingAs($user)
         ->tool(CreateMeetupEventTool::class, [

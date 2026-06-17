@@ -136,16 +136,17 @@ class MeetupEventController extends Controller
     }
 
     /**
-     * Eigene Meetup-Events auflisten
+     * Bearbeitbare Meetup-Events auflisten
      *
-     * Liefert alle vom authentifizierten Nutzer erstellten Meetup-Events, nach Startzeit absteigend sortiert.
+     * Liefert alle Meetup-Events, die der authentifizierte Nutzer bearbeiten darf
+     * (selbst angelegt ODER Leader des zugehörigen Meetups), nach Startzeit absteigend sortiert.
      */
     public function mine(Request $request): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', MeetupEvent::class);
 
         $meetupEvents = MeetupEvent::query()
-            ->where('created_by', $request->user()->id)
+            ->editableBy($request->user()->id)
             ->orderByDesc('start')
             ->get();
 

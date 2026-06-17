@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('Listet alle vom authentifizierten Nutzer erstellten Meetup-Termine, nach Startzeitpunkt absteigend sortiert.')]
+#[Description('Listet alle Meetup-Termine, die der authentifizierte Nutzer bearbeiten darf (selbst angelegt oder Leader des Meetups), nach Startzeitpunkt absteigend sortiert.')]
 class ListMyMeetupEventsTool extends Tool
 {
     public function handle(Request $request): Response
@@ -24,7 +24,7 @@ class ListMyMeetupEventsTool extends Tool
         }
 
         $meetupEvents = MeetupEvent::query()
-            ->where('created_by', $user->getAuthIdentifier())
+            ->editableBy((int) $user->getAuthIdentifier())
             ->orderByDesc('start')
             ->get();
 

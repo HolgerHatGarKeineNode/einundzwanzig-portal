@@ -106,17 +106,28 @@ it('forbids updating someone elses', function () {
     $response->assertForbidden();
 });
 
-it('returns only own in mine index', function () {
+it('returns own and led-meetup events in mine index', function () {
     Sanctum::actingAs($user = User::factory()->create());
 
+    // 2 selbst angelegt
     MeetupEvent::factory()->count(2)->create(['created_by' => $user->id]);
+
+    // 1 Termin eines Co-Leaders im selben (von $user geführten) Meetup -> sichtbar
+    $ledMeetup = Meetup::factory()->create();
+    $ledMeetup->users()->syncWithoutDetaching([$user->id => ['is_leader' => true]]);
+    MeetupEvent::factory()->create([
+        'meetup_id' => $ledMeetup->id,
+        'created_by' => User::factory()->create()->id,
+    ]);
+
+    // 1 fremder Termin in einem Meetup ohne Leaderschaft -> NICHT sichtbar
     MeetupEvent::factory()->create(['created_by' => User::factory()->create()->id]);
 
     $response = $this->getJson('/api/my-meetup-events');
 
     $response->assertSuccessful();
 
-    expect($response->json('data'))->toHaveCount(2);
+    expect($response->json('data'))->toHaveCount(3);
 });
 
 it('forbids viewing someone elses in mine show', function () {

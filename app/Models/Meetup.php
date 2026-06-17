@@ -292,7 +292,7 @@ class Meetup extends Model implements HasMedia
      */
     public function scopeLedBy(Builder $query, int $userId): void
     {
-        $query->whereHas('users', fn (Builder $user) => $user->whereKey($userId)->wherePivot('is_leader', true));
+        $query->whereHas('users', fn (Builder $user) => $user->whereKey($userId)->where('meetup_user.is_leader', true));
     }
 
     /**

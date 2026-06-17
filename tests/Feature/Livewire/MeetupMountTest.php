@@ -70,12 +70,14 @@ it('aborts meetups.edit with 403 when the user is neither creator nor super-admi
 });
 
 it('mounts meetups.create-edit-events for new event', function () {
-    actingAsUser();
+    $leader = actingAsUser();
+    $this->meetup->users()->syncWithoutDetaching([$leader->id => ['is_leader' => true]]);
     Livewire::test('meetups.create-edit-events', ['meetup' => $this->meetup])->assertStatus(200);
 });
 
 it('mounts meetups.create-edit-events for existing event', function () {
-    actingAsUser();
+    $leader = actingAsUser();
+    $this->meetup->users()->syncWithoutDetaching([$leader->id => ['is_leader' => true]]);
     Livewire::test('meetups.create-edit-events', [
         'meetup' => $this->meetup,
         'event' => $this->event,
@@ -83,7 +85,8 @@ it('mounts meetups.create-edit-events for existing event', function () {
 });
 
 it('does not crash with PropertyNotFoundException when startDate is set to null in series mode', function () {
-    actingAsUser();
+    $leader = actingAsUser();
+    $this->meetup->users()->syncWithoutDetaching([$leader->id => ['is_leader' => true]]);
     Livewire::test('meetups.create-edit-events', ['meetup' => $this->meetup])
         ->set('seriesMode', true)
         ->set('endDate', '2026-10-27')
@@ -93,7 +96,8 @@ it('does not crash with PropertyNotFoundException when startDate is set to null 
 });
 
 it('does not crash when endDate is set to null in series mode', function () {
-    actingAsUser();
+    $leader = actingAsUser();
+    $this->meetup->users()->syncWithoutDetaching([$leader->id => ['is_leader' => true]]);
     Livewire::test('meetups.create-edit-events', ['meetup' => $this->meetup])
         ->set('seriesMode', true)
         ->set('endDate', null)
@@ -102,7 +106,8 @@ it('does not crash when endDate is set to null in series mode', function () {
 });
 
 it('does not crash when startTime is set to null', function () {
-    actingAsUser();
+    $leader = actingAsUser();
+    $this->meetup->users()->syncWithoutDetaching([$leader->id => ['is_leader' => true]]);
     Livewire::test('meetups.create-edit-events', ['meetup' => $this->meetup])
         ->set('startTime', null)
         ->assertStatus(200)

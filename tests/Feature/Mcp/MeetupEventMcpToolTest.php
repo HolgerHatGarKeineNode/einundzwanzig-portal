@@ -11,7 +11,7 @@ use App\Models\User;
 
 it('lets an authenticated user create a meetup event and stamps created_by', function () {
     $user = User::factory()->create();
-    $meetup = Meetup::factory()->create();
+    $meetup = Meetup::factory()->create(['created_by' => $user->id]);
 
     $response = EinundzwanzigServer::actingAs($user)->tool(CreateMeetupEventTool::class, [
         'meetup_id' => $meetup->id,

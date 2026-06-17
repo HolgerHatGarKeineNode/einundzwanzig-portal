@@ -6,6 +6,7 @@ use App\Enums\RecurrenceType;
 use App\Enums\RsvpStatus;
 use App\Observers\MeetupEventObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -52,6 +53,18 @@ class MeetupEvent extends Model
             if (! $model->created_by) {
                 $model->created_by = auth()->id();
             }
+        });
+    }
+
+    /**
+     * Termine, die der Nutzer bearbeiten darf: selbst angelegt ODER Leader des
+     * zugehörigen Meetups (deckungsgleich mit MeetupEventPolicy::update).
+     */
+    public function scopeEditableBy(Builder $query, int $userId): void
+    {
+        $query->where(function (Builder $query) use ($userId) {
+            $query->where('created_by', $userId)
+                ->orWhereHas('meetup', fn (Builder $meetup) => $meetup->ledBy($userId));
         });
     }
 
