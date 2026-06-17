@@ -33,10 +33,12 @@ class CountryController extends Controller
             )
             ->when(
                 $request->exists('selected'),
-                fn (Builder $query) => $query
-                    ->whereIn('code', $request->input('selected', []))
-                    ->orWhereIn('id',
-                        $request->input('selected', [])),
+                function (Builder $query) use ($request) {
+                    $selected = $request->input('selected', []);
+
+                    $query->whereIn('code', $selected)
+                        ->orWhereIn('id', array_filter($selected, 'is_numeric'));
+                },
                 fn (Builder $query) => $query->limit(10),
             )
             ->get()
