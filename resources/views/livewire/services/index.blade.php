@@ -42,6 +42,8 @@ class extends Component {
 }; ?>
 
 <div>
+    <x-service-disclaimer/>
+
     <div class="flex items-center justify-between flex-col md:flex-row mb-6">
         <flux:heading size="xl">{{ __('Self Hosted Services') }}</flux:heading>
         <div class="flex flex-col md:flex-row items-center gap-4">
@@ -193,6 +195,14 @@ class extends Component {
                             <div class="flex items-center gap-2">
                                 <flux:avatar size="xs" src="{{ $service->createdBy->profile_photo_url }}"/>
                                 <span>{{ Str::length($service->createdBy->name) > 20 ? Str::substr($service->createdBy->name, 0, 4) . '...' . Str::substr($service->createdBy->name, -3) : $service->createdBy->name }}</span>
+                                @if($service->createdBy->nostr)
+                                    <flux:tooltip content="{{ __('Ersteller auf Nostr validieren (njump)') }}">
+                                        <flux:link :href="'https://njump.me/'.$service->createdBy->nostr" external
+                                                   variant="subtle" class="inline-flex items-center">
+                                            <flux:icon.magnifying-glass variant="mini" class="text-purple-600 dark:text-purple-400"/>
+                                        </flux:link>
+                                    </flux:tooltip>
+                                @endif
                             </div>
                         @endif
                     </flux:table.cell>

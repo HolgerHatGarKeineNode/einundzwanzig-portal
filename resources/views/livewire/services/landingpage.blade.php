@@ -52,6 +52,8 @@ class extends Component {
 @endsection
 
 <div class="container mx-auto px-4 py-8 max-w-5xl">
+    <x-service-disclaimer/>
+
     <!-- Header -->
     <div class="mb-8">
         <div class="flex items-center justify-between mb-4">
@@ -196,6 +198,14 @@ class extends Component {
                                 <flux:avatar size="xs" src="{{ $service->createdBy->profile_photo_url }}"/>
                                 <span class="font-medium">{{ $service->createdBy->name }}</span>
                             </div>
+                            @if($service->createdBy->nostr)
+                                <flux:link :href="'https://njump.me/'.$service->createdBy->nostr" external
+                                           variant="subtle"
+                                           class="mt-2 inline-flex items-center gap-1 text-purple-600 dark:text-purple-400">
+                                    <flux:icon.magnifying-glass variant="mini"/>
+                                    <span>{{ __('Ersteller auf Nostr validieren (njump)') }}</span>
+                                </flux:link>
+                            @endif
                         @endif
                     </div>
 
