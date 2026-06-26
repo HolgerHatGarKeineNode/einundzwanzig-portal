@@ -43,7 +43,7 @@ it('lets a permitted client register dynamically', function () {
         'client_name' => 'Claude',
         'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback'],
     ])
-        ->assertOk()
+        ->assertCreated()
         ->assertJsonStructure(['client_id', 'redirect_uris', 'scope'])
         ->assertJsonPath('scope', 'mcp:use');
 });
