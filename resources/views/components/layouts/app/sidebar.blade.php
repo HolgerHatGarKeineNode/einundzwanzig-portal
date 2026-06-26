@@ -223,7 +223,7 @@
 <!-- Mobile Header (Toggle + Quick Country Chooser) -->
 @auth
     <flux:header class="lg:hidden">
-        <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" aria-label="{{ __('Menü öffnen') }}"/>
+        <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" aria-label="{{ __('Menü öffnen') }}" data-test="sidebar-open"/>
 
         <flux:spacer/>
 

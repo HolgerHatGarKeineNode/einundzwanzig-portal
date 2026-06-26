@@ -14,7 +14,7 @@ it('renders the sidebar with the user profile reachable on mobile viewport', fun
     $page = visit('/de/dashboard');
 
     $page->resize(390, 844)
-        ->click('[aria-label="Menü öffnen"]')
+        ->click('[data-test="sidebar-open"]')
         ->assertSee('Dashboard')
         ->assertSee('Repository')
         ->assertSee('Sidebar Tester');
