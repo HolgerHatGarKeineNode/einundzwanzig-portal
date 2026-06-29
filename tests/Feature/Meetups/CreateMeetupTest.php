@@ -3,6 +3,7 @@
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -24,6 +25,19 @@ it('creates a Meetup when authenticated user submits a valid form', function () 
     $meetup = Meetup::query()->where('name', 'Berlin Bitcoin Meetup')->first();
     expect($meetup)->not->toBeNull()
         ->and($meetup->city_id)->toBe($this->city->id);
+});
+
+it('accepts an avif file into the logo media collection', function () {
+    Storage::fake('public');
+
+    $path = sys_get_temp_dir().'/'.uniqid('avif_', true).'.avif';
+    imageavif(imagecreatetruecolor(1, 1), $path);
+
+    $meetup = Meetup::factory()->create(['city_id' => $this->city->id]);
+
+    $meetup->addMedia($path)->toMediaCollection('logo');
+
+    expect($meetup->getFirstMedia('logo'))->not->toBeNull();
 });
 
 it('rejects creation without a name', function () {
