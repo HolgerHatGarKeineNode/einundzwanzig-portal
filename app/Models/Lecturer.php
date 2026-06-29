@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SetsCreatedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +21,7 @@ class Lecturer extends Model implements HasMedia
     use HasFactory;
     use HasSlug;
     use InteractsWithMedia;
+    use SetsCreatedBy;
 
     /**
      * @var array<int, string>
@@ -50,15 +52,6 @@ class Lecturer extends Model implements HasMedia
         'id' => 'integer',
         'active' => 'boolean',
     ];
-
-    protected static function booted()
-    {
-        static::creating(function ($model) {
-            if (! $model->created_by) {
-                $model->created_by = auth()->id();
-            }
-        });
-    }
 
     public function registerMediaConversions(?Media $media = null): void
     {
@@ -97,11 +90,6 @@ class Lecturer extends Model implements HasMedia
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function team(): BelongsTo
-    {
-        return $this->belongsTo(Team::class);
     }
 
     public function courses(): HasMany

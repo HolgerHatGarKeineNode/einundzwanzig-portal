@@ -11,7 +11,6 @@ use App\Http\Resources\CourseResource;
 use App\Models\Course;
 use App\Models\CourseEvent;
 use App\Models\Lecturer;
-use Dedoc\Scramble\Attributes\ExcludeRouteFromDocs;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
 use Dedoc\Scramble\Attributes\Response as ResponseAttribute;
@@ -200,11 +199,5 @@ class CourseController extends Controller
             ->toMediaCollection('logo');
 
         return CourseResource::make($course->fresh());
-    }
-
-    #[ExcludeRouteFromDocs]
-    public function destroy(Course $course)
-    {
-        //
     }
 }

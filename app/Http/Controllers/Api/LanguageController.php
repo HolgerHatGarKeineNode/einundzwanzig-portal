@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use JoeDixon\Translation\Language;
 use JoeDixon\Translation\Translation;
 
@@ -56,45 +55,5 @@ class LanguageController extends Controller
         }
 
         return response()->json($array);
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @return Response
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @return Response
-     */
-    public function show(Language $language)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @return Response
-     */
-    public function update(Request $request, Language $language)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @return Response
-     */
-    public function destroy(Language $language)
-    {
-        //
     }
 }

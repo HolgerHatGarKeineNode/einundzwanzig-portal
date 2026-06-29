@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Country;
-use Dedoc\Scramble\Attributes\ExcludeRouteFromDocs;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,29 +46,5 @@ class CountryController extends Controller
 
                 return $country;
             });
-    }
-
-    #[ExcludeRouteFromDocs]
-    public function store(Request $request)
-    {
-        //
-    }
-
-    #[ExcludeRouteFromDocs]
-    public function show(Country $country)
-    {
-        //
-    }
-
-    #[ExcludeRouteFromDocs]
-    public function update(Request $request, Country $country)
-    {
-        //
-    }
-
-    #[ExcludeRouteFromDocs]
-    public function destroy(Country $country)
-    {
-        //
     }
 }

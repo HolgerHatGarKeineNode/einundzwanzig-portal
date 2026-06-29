@@ -2,10 +2,11 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SetsCreatedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Spatie\Image\Manipulations;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -14,6 +15,7 @@ class BitcoinEvent extends Model implements HasMedia
 {
     use HasFactory;
     use InteractsWithMedia;
+    use SetsCreatedBy;
 
     /**
      * The attributes that aren't mass assignable.
@@ -34,23 +36,14 @@ class BitcoinEvent extends Model implements HasMedia
         'to' => 'datetime',
     ];
 
-    protected static function booted()
-    {
-        static::creating(function ($model) {
-            if (! $model->created_by) {
-                $model->created_by = auth()->id();
-            }
-        });
-    }
-
     public function registerMediaConversions(?Media $media = null): void
     {
         $this
             ->addMediaConversion('preview')
-            ->fit(Manipulations::FIT_CROP, 300, 300)
+            ->fit(Fit::Crop, 300, 300)
             ->nonQueued();
         $this->addMediaConversion('thumb')
-            ->fit(Manipulations::FIT_CROP, 130, 130)
+            ->fit(Fit::Crop, 130, 130)
             ->width(130)
             ->height(130);
     }

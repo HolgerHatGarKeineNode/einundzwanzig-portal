@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SetsCreatedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,14 +14,13 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 class Venue extends Model implements HasMedia
 {
     use HasFactory;
-    use HasRelationships;
     use HasSlug;
     use InteractsWithMedia;
+    use SetsCreatedBy;
 
     /**
      * The attributes that aren't mass assignable.
@@ -38,15 +38,6 @@ class Venue extends Model implements HasMedia
         'id' => 'integer',
         'city_id' => 'integer',
     ];
-
-    protected static function booted()
-    {
-        static::creating(function ($model) {
-            if (! $model->created_by) {
-                $model->created_by = auth()->id();
-            }
-        });
-    }
 
     public function registerMediaConversions(?Media $media = null): void
     {
@@ -86,16 +77,6 @@ class Venue extends Model implements HasMedia
     public function city(): BelongsTo
     {
         return $this->belongsTo(City::class);
-    }
-
-    public function lecturers()
-    {
-        return $this->hasManyDeepFromRelations($this->courses(), (new Course)->lecturer());
-    }
-
-    public function courses()
-    {
-        return $this->hasManyDeepFromRelations($this->events(), (new CourseEvent)->course());
     }
 
     public function courseEvents(): HasMany

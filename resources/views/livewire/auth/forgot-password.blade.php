@@ -30,11 +30,9 @@ class extends Component {
     <x-auth-header :title="__('Forgot password')"
                    :description="__('Enter your email to receive a password reset link')"/>
 
-    <!-- Session Status -->
     <x-auth-session-status class="text-center" :status="session('status')"/>
 
     <form wire:submit="sendPasswordResetLink" class="flex flex-col gap-6">
-        <!-- Email Address -->
         <flux:input
             wire:model="email"
             :label="__('Email Address')"

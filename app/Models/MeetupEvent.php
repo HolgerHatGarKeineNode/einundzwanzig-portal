@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\RecurrenceType;
 use App\Enums\RsvpStatus;
+use App\Models\Concerns\SetsCreatedBy;
 use App\Observers\MeetupEventObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,6 +17,7 @@ use Illuminate\Support\Collection;
 class MeetupEvent extends Model
 {
     use HasFactory;
+    use SetsCreatedBy;
 
     /**
      * The attributes that aren't mass assignable.
@@ -46,15 +48,6 @@ class MeetupEvent extends Model
     protected $enumCasts = [
         'recurrence_type' => RecurrenceType::class,
     ];
-
-    protected static function booted()
-    {
-        static::creating(function ($model) {
-            if (! $model->created_by) {
-                $model->created_by = auth()->id();
-            }
-        });
-    }
 
     /**
      * Termine, die der Nutzer bearbeiten darf: selbst angelegt ODER Leader des

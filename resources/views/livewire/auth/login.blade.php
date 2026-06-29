@@ -135,33 +135,6 @@ class extends Component {
                 ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()],
                 absolute: false),
         );
-
-        return;
-
-        $this->validate();
-
-        $this->ensureIsNotRateLimited();
-
-        if (!Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
-            RateLimiter::hit($this->throttleKey());
-
-            throw ValidationException::withMessages([
-                'email' => __('auth.failed'),
-            ]);
-        }
-
-        RateLimiter::clear($this->throttleKey());
-        Session::regenerate();
-        session([
-            'lang_country' => $this->currentLangCountry,
-        ]);
-
-        $this->redirectIntended(
-            default: route('dashboard',
-                ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()],
-                absolute: false),
-            navigate: true,
-        );
     }
 
     /**
@@ -276,7 +249,6 @@ class extends Component {
      data-nostr-challenge="{{ $nostrChallenge ?? '' }}">
     <div class="flex-1 flex justify-center items-center">
         <div class="w-80 max-w-80 space-y-6">
-            <!-- Logo -->
             <div class="flex justify-center">
                 <a href="/" class="group flex items-center gap-3">
                     <div class="h-24 m-12 [:where(&)]:size-32 [:where(&)]:text-base">
@@ -285,16 +257,12 @@ class extends Component {
                 </a>
             </div>
 
-            <!-- Welcome Heading -->
             <flux:heading class="text-center" size="xl">{{ __('Willkommen zurück') }}</flux:heading>
 
-            <!-- Session Status -->
             <x-auth-session-status class="text-center" :status="session('status')"/>
 
-            <!-- Login Form -->
             <div class="flex flex-col gap-6">
 
-                <!-- Submit Button -->
                 <flux:button variant="primary"
                              @click="openNostrLogin"
                              icon="cursor-arrow-ripple"
@@ -344,22 +312,18 @@ class extends Component {
                 </div>
             </div>
 
-            <!-- Language Selection Accordion -->
             <livewire:language.selector/>
         </div>
     </div>
 
-    <!-- Right Side Panel -->
     <div class="flex-1 p-4 max-lg:hidden">
         <div class="text-white relative rounded-lg h-full w-full bg-zinc-900 flex flex-col items-start justify-end p-16"
              style="background-image: url('https://dergigi.com/assets/images/bitcoin-is-time.jpg'); background-size: cover">
 
-            <!-- Testimonial -->
             <div class="mb-6 italic font-base text-3xl xl:text-4xl">
                 Bitcoin, not blockchain. Bitcoin, not crypto.
             </div>
 
-            <!-- Author Info -->
             <div class="flex gap-4">
                 <flux:avatar src="https://dergigi.com/assets/images/avatar.jpg" size="xl"/>
                 <div class="flex flex-col justify-center font-medium">

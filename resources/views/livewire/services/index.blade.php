@@ -107,71 +107,33 @@ class extends Component {
                     </flux:table.cell>
 
                     <flux:table.cell>
+                        @php
+                            $serviceUrls = [
+                                ['href' => $service->url_clearnet, 'color' => 'text-blue-600 dark:text-blue-400', 'icon' => 'globe-alt', 'label' => 'Clearnet'],
+                                ['href' => $service->url_onion, 'color' => 'text-purple-600 dark:text-purple-400', 'icon' => 'lock-closed', 'label' => 'Onion'],
+                                ['href' => $service->url_i2p, 'color' => 'text-green-600 dark:text-green-400', 'icon' => 'link', 'label' => 'I2P'],
+                                ['href' => $service->url_pkdns, 'color' => 'text-orange-600 dark:text-orange-400', 'icon' => 'link', 'label' => 'pkdns'],
+                            ];
+                        @endphp
                         <div class="flex flex-col gap-1">
-                            @if($service->url_clearnet)
-                                <div class="flex items-center gap-2">
-                                    <flux:tooltip content="{{ $service->url_clearnet }}">
-                                        <flux:link :href="$service->url_clearnet" external
-                                                   class="text-blue-600 dark:text-blue-400">
-                                            <flux:icon.globe-alt variant="mini" class="inline"/>
-                                            Clearnet
-                                        </flux:link>
-                                    </flux:tooltip>
-                                    <div x-copy-to-clipboard="'{{ $service->url_clearnet }}'">
-                                        <flux:button icon="clipboard" size="xs" variant="ghost" class="cursor-pointer">
-                                            {{ __('Copy') }}
-                                        </flux:button>
+                            @foreach($serviceUrls as $serviceUrl)
+                                @if($serviceUrl['href'])
+                                    <div class="flex items-center gap-2">
+                                        <flux:tooltip content="{{ $serviceUrl['href'] }}">
+                                            <flux:link :href="$serviceUrl['href']" external
+                                                       class="{{ $serviceUrl['color'] }}">
+                                                <flux:icon name="{{ $serviceUrl['icon'] }}" variant="mini" class="inline"/>
+                                                {{ $serviceUrl['label'] }}
+                                            </flux:link>
+                                        </flux:tooltip>
+                                        <div x-copy-to-clipboard="'{{ $serviceUrl['href'] }}'">
+                                            <flux:button icon="clipboard" size="xs" variant="ghost" class="cursor-pointer">
+                                                {{ __('Copy') }}
+                                            </flux:button>
+                                        </div>
                                     </div>
-                                </div>
-                            @endif
-                            @if($service->url_onion)
-                                <div class="flex items-center gap-2">
-                                    <flux:tooltip content="{{ $service->url_onion }}">
-                                        <flux:link :href="$service->url_onion" external
-                                                   class="text-purple-600 dark:text-purple-400">
-                                            <flux:icon.lock-closed variant="mini" class="inline"/>
-                                            Onion
-                                        </flux:link>
-                                    </flux:tooltip>
-                                    <div x-copy-to-clipboard="'{{ $service->url_onion }}'">
-                                        <flux:button icon="clipboard" size="xs" variant="ghost" class="cursor-pointer">
-                                            {{ __('Copy') }}
-                                        </flux:button>
-                                    </div>
-                                </div>
-                            @endif
-                            @if($service->url_i2p)
-                                <div class="flex items-center gap-2">
-                                    <flux:tooltip content="{{ $service->url_i2p }}">
-                                        <flux:link :href="$service->url_i2p" external
-                                                   class="text-green-600 dark:text-green-400">
-                                            <flux:icon.link variant="mini" class="inline"/>
-                                            I2P
-                                        </flux:link>
-                                    </flux:tooltip>
-                                    <div x-copy-to-clipboard="'{{ $service->url_i2p }}'">
-                                        <flux:button icon="clipboard" size="xs" variant="ghost" class="cursor-pointer">
-                                            {{ __('Copy') }}
-                                        </flux:button>
-                                    </div>
-                                </div>
-                            @endif
-                            @if($service->url_pkdns)
-                                <div class="flex items-center gap-2">
-                                    <flux:tooltip content="{{ $service->url_pkdns }}">
-                                        <flux:link :href="$service->url_pkdns" external
-                                                   class="text-orange-600 dark:text-orange-400">
-                                            <flux:icon.link variant="mini" class="inline"/>
-                                            pkdns
-                                        </flux:link>
-                                    </flux:tooltip>
-                                    <div x-copy-to-clipboard="'{{ $service->url_pkdns }}'">
-                                        <flux:button icon="clipboard" size="xs" variant="ghost" class="cursor-pointer">
-                                            {{ __('Copy') }}
-                                        </flux:button>
-                                    </div>
-                                </div>
-                            @endif
+                                @endif
+                            @endforeach
                             @if($service->ip)
                                 <div class="flex items-center gap-2">
                                     <span class="font-mono text-sm text-gray-700 dark:text-gray-300">

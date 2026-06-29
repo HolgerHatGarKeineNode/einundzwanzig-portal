@@ -60,7 +60,11 @@ final class LnurlAuthController extends Controller
             }
 
             $user = $this->findOrCreateUser($validated['k1'], $validated['key']);
-            $this->ensureLoginKeyExists($validated['k1'], $user->id);
+
+            LoginKey::query()->updateOrCreate(
+                ['k1' => $validated['k1']],
+                ['user_id' => $user->id],
+            );
 
             Log::info('LNURL auth successful', [
                 'user_id' => $user->id,
@@ -148,20 +152,6 @@ final class LnurlAuthController extends Controller
                 'wallet_id' => null,
             ],
         ]);
-    }
-
-    /**
-     * Ensure a login key record exists for the given challenge.
-     *
-     * @param  string  $k1  The challenge identifier
-     * @param  int  $userId  The user ID
-     */
-    private function ensureLoginKeyExists(string $k1, int $userId): void
-    {
-        LoginKey::query()->updateOrCreate(
-            ['k1' => $k1],
-            ['user_id' => $userId],
-        );
     }
 
     /**

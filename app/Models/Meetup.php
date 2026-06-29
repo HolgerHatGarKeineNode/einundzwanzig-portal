@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SetsCreatedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,6 +25,7 @@ class Meetup extends Model implements HasMedia
     use HasFactory;
     use HasSlug;
     use InteractsWithMedia;
+    use SetsCreatedBy;
 
     /**
      * @var array<int, string>
@@ -120,12 +122,6 @@ class Meetup extends Model implements HasMedia
 
     protected static function booted()
     {
-        static::creating(function ($model) {
-            if (! $model->created_by) {
-                $model->created_by = auth()->id();
-            }
-        });
-
         // Der Ersteller wird automatisch als Leiter in die meetup_user-Pivot eingetragen,
         // damit das Meetup einheitlich (MCP, REST-API, Livewire) in „Meine Meetups"
         // erscheint – egal über welchen Pfad es angelegt wurde.

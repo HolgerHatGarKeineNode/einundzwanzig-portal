@@ -87,6 +87,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Authorized Nostr Keys
+    |--------------------------------------------------------------------------
+    |
+    | These Nostr public keys (npub) are allowed to access the Horizon
+    | dashboard via the "viewHorizon" gate in non-local environments.
+    |
+    */
+
+    'authorized_nostr_keys' => [
+        'npub1kz50hl2fk8rkkax3mv8kzx7vdhh3nmuegncsaj8r23w2a49nf3wsne6ejy',
+        'npub1pt0kw36ue3w2g4haxq3wgm6a2fhtptmzsjlc2j2vphtcgle72qesgpjyc6',
+        'npub1qwj482ffpvnwy4g7twejs4ckgnag9yxpjndqslk6juagmngwwhfsqfe5vq',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Queue Wait Time Thresholds
     |--------------------------------------------------------------------------
     |

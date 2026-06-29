@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SetsCreatedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Podcast extends Model
 {
     use HasFactory;
+    use SetsCreatedBy;
 
     /**
      * The attributes that aren't mass assignable.
@@ -27,15 +29,6 @@ class Podcast extends Model
         'id' => 'integer',
         'data' => 'array',
     ];
-
-    protected static function booted()
-    {
-        static::creating(function ($model) {
-            if (! $model->created_by) {
-                $model->created_by = auth()->id();
-            }
-        });
-    }
 
     public function createdBy(): BelongsTo
     {

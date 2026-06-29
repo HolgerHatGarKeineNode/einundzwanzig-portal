@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SetsCreatedBy;
 use App\Support\CustomFeedItem;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\Cookie;
 use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
 use Spatie\Feed\Feedable;
-use Spatie\Image\Manipulations;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -27,6 +28,7 @@ class LibraryItem extends Model implements Feedable, HasMedia, Sortable
     use HasStatuses;
     use HasTags;
     use InteractsWithMedia;
+    use SetsCreatedBy;
     use SortableTrait;
 
     /**
@@ -60,15 +62,6 @@ class LibraryItem extends Model implements Feedable, HasMedia, Sortable
             ->get();
     }
 
-    protected static function booted()
-    {
-        static::creating(function ($model) {
-            if (! $model->created_by) {
-                $model->created_by = auth()->id();
-            }
-        });
-    }
-
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
@@ -81,13 +74,13 @@ class LibraryItem extends Model implements Feedable, HasMedia, Sortable
     {
         $this
             ->addMediaConversion('preview')
-            ->fit(Manipulations::FIT_CROP, 300, 300)
+            ->fit(Fit::Crop, 300, 300)
             ->nonQueued();
         $this->addMediaConversion('seo')
-            ->fit(Manipulations::FIT_CROP, 1200, 630)
+            ->fit(Fit::Crop, 1200, 630)
             ->nonQueued();
         $this->addMediaConversion('thumb')
-            ->fit(Manipulations::FIT_CROP, 130, 130)
+            ->fit(Fit::Crop, 130, 130)
             ->width(130)
             ->height(130);
     }
@@ -148,18 +141,5 @@ class LibraryItem extends Model implements Feedable, HasMedia, Sortable
             ->image($this->getFirstMediaUrl('main'))
             ->link(url()->route('article.view', ['libraryItem' => $this]))
             ->authorName($this->lecturer->name);
-    }
-
-    public static function searchLibraryItems($type, $value = null)
-    {
-        $query = self::query()
-            ->where('type', $type)
-            ->latest('id');
-
-        if ($value) {
-            $query->whereLike('name', "%{$value}%");
-        }
-
-        return $query->get();
     }
 }

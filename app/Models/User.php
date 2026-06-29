@@ -108,19 +108,9 @@ class User extends Authenticatable implements CipherSweetEncrypted
         return $this->belongsToMany(Meetup::class)->withPivot('is_leader');
     }
 
-    public function reputations()
-    {
-        return $this->morphMany('QCod\Gamify\Reputation', 'subject');
-    }
-
     public function votes()
     {
         return $this->hasMany(Vote::class);
-    }
-
-    public function paidArticles()
-    {
-        return $this->belongsToMany(LibraryItem::class, 'library_item_user', 'user_id', 'library_item_id');
     }
 
     public function updateProfilePhoto(UploadedFile $photo)

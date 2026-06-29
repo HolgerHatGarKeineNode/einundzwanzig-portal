@@ -138,48 +138,26 @@ class extends Component {
                     </flux:table.cell>
 
                     <flux:table.cell>
+                        @php
+                            $socialLinks = [
+                                ['value' => $meetup->telegram_link, 'href' => $meetup->telegram_link, 'icon' => 'paper-airplane', 'title' => __('Telegram')],
+                                ['value' => $meetup->webpage, 'href' => $meetup->webpage, 'icon' => 'globe-alt', 'title' => __('Website')],
+                                ['value' => $meetup->twitter_username, 'href' => 'https://twitter.com/'.$meetup->twitter_username, 'icon' => 'x-mark', 'title' => __('Twitter')],
+                                ['value' => $meetup->matrix_group, 'href' => $meetup->matrix_group, 'icon' => 'chat-bubble-left', 'title' => __('Matrix')],
+                                ['value' => $meetup->nostr, 'href' => 'https://njump.me/'.$meetup->nostr, 'icon' => 'bolt', 'title' => __('Nostr')],
+                                ['value' => $meetup->simplex, 'href' => $meetup->simplex, 'icon' => 'chat-bubble-bottom-center-text', 'title' => __('Simplex')],
+                                ['value' => $meetup->signal, 'href' => $meetup->signal, 'icon' => 'shield-check', 'title' => __('Signal')],
+                            ];
+                        @endphp
                         <div class="flex gap-2">
-                            @if($meetup->telegram_link)
-                                <flux:link :href="$meetup->telegram_link" external variant="subtle"
-                                           title="{{ __('Telegram') }}">
-                                    <flux:icon.paper-airplane variant="mini"/>
-                                </flux:link>
-                            @endif
-                            @if($meetup->webpage)
-                                <flux:link :href="$meetup->webpage" external variant="subtle"
-                                           title="{{ __('Website') }}">
-                                    <flux:icon.globe-alt variant="mini"/>
-                                </flux:link>
-                            @endif
-                            @if($meetup->twitter_username)
-                                <flux:link :href="'https://twitter.com/' . $meetup->twitter_username" external
-                                           variant="subtle" title="{{ __('Twitter') }}">
-                                    <flux:icon.x-mark variant="mini"/>
-                                </flux:link>
-                            @endif
-                            @if($meetup->matrix_group)
-                                <flux:link :href="$meetup->matrix_group" external variant="subtle"
-                                           title="{{ __('Matrix') }}">
-                                    <flux:icon.chat-bubble-left variant="mini"/>
-                                </flux:link>
-                            @endif
-                            @if($meetup->nostr)
-                                <flux:link :href="'https://njump.me/'.$meetup->nostr" external variant="subtle"
-                                           title="{{ __('Nostr') }}">
-                                    <flux:icon.bolt variant="mini"/>
-                                </flux:link>
-                            @endif
-                            @if($meetup->simplex)
-                                <flux:link :href="$meetup->simplex" external variant="subtle"
-                                           title="{{ __('Simplex') }}">
-                                    <flux:icon.chat-bubble-bottom-center-text variant="mini"/>
-                                </flux:link>
-                            @endif
-                            @if($meetup->signal)
-                                <flux:link :href="$meetup->signal" external variant="subtle" title="{{ __('Signal') }}">
-                                    <flux:icon.shield-check variant="mini"/>
-                                </flux:link>
-                            @endif
+                            @foreach($socialLinks as $socialLink)
+                                @if($socialLink['value'])
+                                    <flux:link :href="$socialLink['href']" external variant="subtle"
+                                               title="{{ $socialLink['title'] }}">
+                                        <flux:icon name="{{ $socialLink['icon'] }}" variant="mini"/>
+                                    </flux:link>
+                                @endif
+                            @endforeach
                         </div>
                     </flux:table.cell>
 

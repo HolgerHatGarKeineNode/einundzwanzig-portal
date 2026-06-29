@@ -11,24 +11,15 @@ class SetTimezone
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (
-            $request->user()
-            && $timezone = $request->user()->timezone
-        ) {
-            config([
-                'app.timezone' => $timezone,
-                'app.user-timezone' => $timezone,
-            ]);
+        $timezone = $request->user()?->timezone ?: 'Europe/Berlin';
 
-            return $next($request);
-        }
         config([
-            'app.timezone' => 'Europe/Berlin',
-            'app.user-timezone' => 'Europe/Berlin',
+            'app.timezone' => $timezone,
+            'app.user-timezone' => $timezone,
         ]);
 
         return $next($request);

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SetsCreatedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +19,7 @@ class Course extends Model implements HasMedia
     use HasFactory;
     use HasTags;
     use InteractsWithMedia;
+    use SetsCreatedBy;
 
     /**
      * @var array<int, string>
@@ -37,15 +39,6 @@ class Course extends Model implements HasMedia
         'id' => 'integer',
         'lecturer_id' => 'integer',
     ];
-
-    protected static function booted()
-    {
-        static::creating(function ($model) {
-            if (! $model->created_by) {
-                $model->created_by = auth()->id();
-            }
-        });
-    }
 
     public function registerMediaConversions(?Media $media = null): void
     {
