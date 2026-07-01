@@ -30,6 +30,30 @@ it('lets a leader of the meetup create an event', function () {
     ]);
 });
 
+it('creates a single event when recurrence fields are explicitly null', function () {
+    Sanctum::actingAs($user = User::factory()->create());
+    $meetup = Meetup::factory()->create(['created_by' => $user->id]);
+
+    // Payload wie ihn die Mobile-App fuer einen nicht-wiederkehrenden Termin schickt.
+    $response = $this->postJson('/api/meetup-events', [
+        'meetup_id' => $meetup->id,
+        'start' => '2026-08-01 18:00:00',
+        'location' => 'Marktplatz',
+        'recurrence_type' => null,
+        'recurrence_day_of_week' => null,
+        'recurrence_day_position' => null,
+        'recurrence_interval' => null,
+        'recurrence_end_date' => null,
+    ]);
+
+    $response->assertCreated();
+
+    $this->assertDatabaseHas('meetup_events', [
+        'location' => 'Marktplatz',
+        'recurrence_interval' => null,
+    ]);
+});
+
 it('lets a delegated leader create an event for the meetup', function () {
     $meetup = Meetup::factory()->create(['created_by' => User::factory()->create()->id]);
     $leader = User::factory()->create();
