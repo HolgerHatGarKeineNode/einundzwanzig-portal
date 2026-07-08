@@ -50,6 +50,8 @@ class MeetupMapController extends Controller
                 'simplex' => $meetup->simplex,
                 'signal' => $meetup->signal,
                 'nostr' => $meetup->nostr,
+                'rsvp_enabled' => $meetup->rsvp_enabled,
+                'attendees_public' => $meetup->attendees_public,
                 'next_event' => $meetup->nextEvent,
                 'intro' => $request->has('withIntro') ? $meetup->intro : null,
                 'logo' => $request->has('withLogos') ? $meetup->getFirstMediaUrl('logo') : null,

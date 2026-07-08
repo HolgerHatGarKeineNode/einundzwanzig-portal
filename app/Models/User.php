@@ -66,6 +66,7 @@ class User extends Authenticatable implements CipherSweetEncrypted
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'meetup_privacy_hint_dismissed_at' => 'datetime',
     ];
 
     /**

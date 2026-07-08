@@ -64,8 +64,9 @@ class MeetupEventController extends Controller
             'location' => $event->location,
             'description' => $event->description,
             'link' => $event->link,
-            'attendees' => $event->attendeesCount(),
-            'might_attendees' => $event->mightAttendeesCount(),
+            // null = Teilnehmerzahl ist für dieses Meetup nicht öffentlich (attendees_public=false).
+            'attendees' => $event->meetup->attendees_public ? $event->attendeesCount() : null,
+            'might_attendees' => $event->meetup->attendees_public ? $event->mightAttendeesCount() : null,
             'meetup.name' => $event->meetup->name,
             'meetup.portalLink' => url()->route(
                 'meetups.landingpage',
@@ -85,6 +86,7 @@ class MeetupEventController extends Controller
             'meetup.signal' => $event->meetup->signal,
             'meetup.nostr' => $event->meetup->nostr,
             'meetup.logo' => $event->meetup->getFirstMediaUrl('logo'),
+            'meetup.rsvp_enabled' => $event->meetup->rsvp_enabled,
         ],
         );
     }
@@ -184,11 +186,22 @@ class MeetupEventController extends Controller
      * Vielleicht-Teilnehmer („maybe") oder gar nicht („none", = absagen) ein.
      * Der Anzeigename wird automatisch aus dem Profil übernommen. Idempotent:
      * derselbe Status mehrfach gesetzt verändert nichts.
+     *
+     * Ist die Anmeldung für das zugehörige Meetup deaktiviert (`rsvp_enabled`=false),
+     * wird die Anfrage mit 422 abgelehnt. Die zurückgegebenen Zähler sind `null`,
+     * wenn die Teilnehmerliste für den Betrachter nicht sichtbar ist
+     * (`attendees_public`=false und kein Verwalter).
      */
     #[ResponseAttribute(status: 401, description: 'Nicht authentifiziert.')]
-    #[ResponseAttribute(status: 422, description: 'Validierungsfehler (unbekannter Status).')]
+    #[ResponseAttribute(status: 422, description: 'Validierungsfehler (unbekannter Status) oder Anmeldung für dieses Meetup deaktiviert.')]
     public function rsvp(RsvpMeetupEventRequest $request, MeetupEvent $meetupEvent): JsonResponse
     {
+        abort_if(
+            ! $meetupEvent->meetup->rsvp_enabled,
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+            __('Die Anmeldung ist für dieses Meetup deaktiviert.'),
+        );
+
         $user = $request->user();
         $status = RsvpStatus::from($request->validated('status'));
 
@@ -198,16 +211,20 @@ class MeetupEventController extends Controller
     }
 
     /**
-     * Einheitliche RSVP-Antwort: eigener Status + aktuelle Zähler.
+     * Einheitliche RSVP-Antwort: eigener Status + aktuelle Zähler. Die Zähler sind
+     * null, wenn die Teilnehmerliste für den Betrachter nicht sichtbar ist
+     * (attendees_public=false und kein Verwalter).
      *
-     * @return array{status: string, attendees: int, might_attendees: int}
+     * @return array{status: string, attendees: int|null, might_attendees: int|null}
      */
     private function rsvpPayload(MeetupEvent $meetupEvent, User $user): array
     {
+        $countsVisible = $meetupEvent->meetup->attendeesVisibleTo($user);
+
         return [
             'status' => $meetupEvent->rsvpStatusFor($user)->value,
-            'attendees' => $meetupEvent->attendeesCount(),
-            'might_attendees' => $meetupEvent->mightAttendeesCount(),
+            'attendees' => $countsVisible ? $meetupEvent->attendeesCount() : null,
+            'might_attendees' => $countsVisible ? $meetupEvent->mightAttendeesCount() : null,
         ];
     }
 }

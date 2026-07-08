@@ -32,6 +32,8 @@ class MeetupResource extends JsonResource
             'community' => $this->community,
             'visible_on_map' => $this->visible_on_map,
             'is_active' => $this->is_active,
+            'rsvp_enabled' => $this->rsvp_enabled,
+            'attendees_public' => $this->attendees_public,
             // Nur gesetzt, wenn die meetup_user-Pivot geladen ist (z. B. via
             // /api/my-meetups). Sagt der App, ob der Token-Inhaber Leader dieses
             // Meetups ist (darf bearbeiten + Leader verwalten).

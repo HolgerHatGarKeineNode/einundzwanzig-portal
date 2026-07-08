@@ -241,6 +241,9 @@ class extends Component {
                              icon="calendar-date-range">{{ __('Kalender-Stream-URL kopieren') }}</flux:button>
             </div>
 
+            {{-- Einmalig statt pro Karte: attendeesVisibleTo() löst sonst je Event
+                 den update-Policy-Check (is_leader-Pivot-Query) neu aus. --}}
+            @php($canSeeAttendees = $meetup->attendeesVisibleTo(auth()->user()))
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 @foreach($events as $event)
                     <flux:card size="sm" class="h-full flex flex-col">
@@ -264,13 +267,15 @@ class extends Component {
                             <flux:text class="mt-2">{{ Str::limit($event->description, 100) }}</flux:text>
                         @endif
 
-                        <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                            <div class="text-xs text-zinc-500 flex items-center gap-2">
-                                <span>{{ count($event->attendees ?? []) }} {{ __('Zusagen') }}</span>
-                                <flux:separator vertical/>
-                                <span>{{ count($event->might_attendees ?? []) }} {{ __('Vielleicht') }}</span>
-                            </div>
-                        </flux:text>
+                        @if($canSeeAttendees)
+                            <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                                <div class="text-xs text-zinc-500 flex items-center gap-2">
+                                    <span>{{ count($event->attendees ?? []) }} {{ __('Zusagen') }}</span>
+                                    <flux:separator vertical/>
+                                    <span>{{ count($event->might_attendees ?? []) }} {{ __('Vielleicht') }}</span>
+                                </div>
+                            </flux:text>
+                        @endif
 
                         <div class="mt-auto pt-4 flex gap-2">
                             <flux:button

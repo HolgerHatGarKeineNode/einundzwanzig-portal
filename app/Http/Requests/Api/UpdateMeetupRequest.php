@@ -30,6 +30,8 @@ class UpdateMeetupRequest extends FormRequest
             'community' => ['sometimes', 'nullable', 'string', 'max:255'],
             'visible_on_map' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
+            'rsvp_enabled' => ['sometimes', 'boolean'],
+            'attendees_public' => ['sometimes', 'boolean'],
         ];
     }
 

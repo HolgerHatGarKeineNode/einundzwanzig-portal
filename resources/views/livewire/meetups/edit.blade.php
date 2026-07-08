@@ -62,6 +62,11 @@ class extends Component
 
     public bool $visible_on_map = false;
 
+    // Anmeldung & Sichtbarkeit der Teilnehmer
+    public bool $rsvp_enabled = true;
+
+    public bool $attendees_public = true;
+
     // System fields (read-only) - locked to prevent client-side tampering
     #[Locked]
     public ?int $created_by = null;
@@ -219,6 +224,8 @@ class extends Component
         $this->github_data = $this->meetup->github_data ? json_encode($this->meetup->github_data,
             JSON_PRETTY_PRINT) : null;
         $this->visible_on_map = (bool) $this->meetup->visible_on_map;
+        $this->rsvp_enabled = (bool) $this->meetup->rsvp_enabled;
+        $this->attendees_public = (bool) $this->meetup->attendees_public;
 
         // System fields
         $this->created_by = $this->meetup->created_by;
@@ -252,6 +259,8 @@ class extends Component
             'signal' => ['nullable', 'string', 'max:255'],
             'community' => ['required', 'string', 'max:255'],
             'github_data' => ['nullable', 'json'],
+            'rsvp_enabled' => ['boolean'],
+            'attendees_public' => ['boolean'],
         ]);
 
         RateLimiter::hit($rateLimiterKey, 3600);
@@ -452,6 +461,28 @@ class extends Component
                     <flux:description>{{ __('Gemeinschafts- oder Organisationsname') }}</flux:description>
                     <flux:error name="community"/>
                 </flux:field>
+            </div>
+        </flux:fieldset>
+
+        <!-- Anmeldung & Sichtbarkeit -->
+        <flux:fieldset class="space-y-6" x-data="{ rsvp: $wire.entangle('rsvp_enabled') }">
+            <flux:legend>{{ __('Anmeldung & Sichtbarkeit') }}</flux:legend>
+
+            <div class="rounded-xl border border-zinc-200 p-4 space-y-5 dark:border-zinc-700">
+                <flux:switch
+                    wire:model.live="rsvp_enabled"
+                    :label="__('Anmeldung (RSVP) aktivieren')"
+                    :description="__('Besucher können sich für Termine an- oder abmelden („Ich komme“ / „Vielleicht“).')"/>
+
+                <flux:separator variant="subtle"/>
+
+                <div x-bind:class="rsvp ? '' : 'opacity-50 pointer-events-none'">
+                    <flux:switch
+                        wire:model="attendees_public"
+                        x-bind:disabled="!rsvp"
+                        :label="__('Teilnehmerliste öffentlich zeigen')"
+                        :description="__('Aus: Zu-/Absagen und Zähler bleiben öffentlich verborgen. Du und weitere Leader seht sie weiterhin.')"/>
+                </div>
             </div>
         </flux:fieldset>
 

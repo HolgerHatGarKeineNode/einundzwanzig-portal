@@ -23,10 +23,21 @@ class extends Component {
     public array $attendees = [];
     public array $mightAttendees = [];
 
+    // Anmeldung für dieses Meetup erlaubt? Teilnehmerliste für den Betrachter sichtbar?
+    public bool $rsvpEnabled = true;
+    public bool $attendeesPublic = true;
+    public bool $canSeeAttendees = true;
+
     public function mount(): void
     {
         $this->country = request()->route('country', config('app.domain_country'));
         $this->name = auth()->user()->name ?? '';
+
+        $meetup = $this->event->meetup;
+        $this->rsvpEnabled = (bool) $meetup->rsvp_enabled;
+        $this->attendeesPublic = (bool) $meetup->attendees_public;
+        $this->canSeeAttendees = $meetup->attendeesVisibleTo(auth()->user());
+
         $this->loadAttendees();
     }
 
@@ -64,8 +75,10 @@ class extends Component {
             $this->perhapsShowUp = true;
         }
 
-        $this->attendees = $this->mapAttendees($attendees);
-        $this->mightAttendees = $this->mapAttendees($mightAttendees);
+        // Namen nur für Berechtigte in den (an den Client serialisierten) Zustand
+        // legen – bei verborgener Liste bleiben die Arrays leer.
+        $this->attendees = $this->canSeeAttendees ? $this->mapAttendees($attendees) : [];
+        $this->mightAttendees = $this->canSeeAttendees ? $this->mapAttendees($mightAttendees) : [];
     }
 
     private function mapAttendees($collection): array
@@ -88,6 +101,10 @@ class extends Component {
 
     public function attend(): void
     {
+        if (! $this->rsvpEnabled) {
+            return;
+        }
+
         $this->validate();
         $this->removeFromLists();
 
@@ -104,6 +121,10 @@ class extends Component {
 
     public function mightAttend(): void
     {
+        if (! $this->rsvpEnabled) {
+            return;
+        }
+
         $this->validate();
         $this->removeFromLists();
 
@@ -217,6 +238,7 @@ class extends Component {
                     @endif
 
                     <!-- RSVP Section -->
+                    @if($rsvpEnabled)
                     <div class="pt-4 border-t border-zinc-200 dark:border-zinc-700">
                         <flux:heading size="lg" class="mb-4">{{ __('Teilnahme') }}</flux:heading>
 
@@ -273,6 +295,16 @@ class extends Component {
                             </div>
                         </div>
                     </div>
+
+                    @endif
+
+                    <!-- Hinweis für Leader, wenn die Liste öffentlich verborgen ist -->
+                    @if($canSeeAttendees && !$attendeesPublic)
+                        <flux:callout variant="secondary" icon="eye-slash" inline>
+                            <flux:callout.heading>{{ __('Teilnehmerliste ist öffentlich verborgen') }}</flux:callout.heading>
+                            <flux:callout.text>{{ __('Nur du und weitere Leader sehen, wer sich angemeldet hat.') }}</flux:callout.text>
+                        </flux:callout>
+                    @endif
 
                     <!-- Attendees -->
                     @if(count($attendees) > 0)

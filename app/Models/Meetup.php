@@ -48,6 +48,8 @@ class Meetup extends Model implements HasMedia
         'visible_on_map',
         'is_active',
         'last_event_at',
+        'rsvp_enabled',
+        'attendees_public',
     ];
 
     /**
@@ -63,6 +65,8 @@ class Meetup extends Model implements HasMedia
         'is_active' => 'boolean',
         'last_event_at' => 'datetime',
         'restore_point' => 'array',
+        'rsvp_enabled' => 'boolean',
+        'attendees_public' => 'boolean',
     ];
 
     /**
@@ -85,6 +89,8 @@ class Meetup extends Model implements HasMedia
         'community',
         'github_data',
         'visible_on_map',
+        'rsvp_enabled',
+        'attendees_public',
     ];
 
     /**
@@ -193,6 +199,16 @@ class Meetup extends Model implements HasMedia
             ->whereKey($user->id)
             ->wherePivot('is_leader', true)
             ->exists();
+    }
+
+    /**
+     * Darf der (ggf. anonyme) Betrachter die Teilnehmerliste/Zähler dieses Meetups
+     * sehen? Öffentlich, wenn attendees_public gesetzt ist – sonst nur für die, die
+     * das Meetup verwalten dürfen (Ersteller/Super-Admin/Leader, = update-Ability).
+     */
+    public function attendeesVisibleTo(?User $user): bool
+    {
+        return $this->attendees_public || ($user !== null && $user->can('update', $this));
     }
 
     /**
@@ -347,8 +363,9 @@ class Meetup extends Model implements HasMedia
                 'location' => $nextEvent->location,
                 'description' => $nextEvent->description,
                 'link' => $nextEvent->link,
-                'attendees' => $nextEvent->attendeesCount(),
-                'might_attendees' => $nextEvent->mightAttendeesCount(),
+                // null = Teilnehmerzahl öffentlich verborgen (attendees_public=false).
+                'attendees' => $this->attendees_public ? $nextEvent->attendeesCount() : null,
+                'might_attendees' => $this->attendees_public ? $nextEvent->mightAttendeesCount() : null,
                 'nostr_note' => str($nextEvent->nostr_status)->after('Sent event ')->before(' to '),
             ] : null,
         );

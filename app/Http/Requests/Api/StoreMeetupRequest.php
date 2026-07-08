@@ -31,6 +31,8 @@ class StoreMeetupRequest extends FormRequest
             'community' => ['nullable', 'string', 'max:255'],
             'visible_on_map' => ['boolean'],
             'is_active' => ['boolean'],
+            'rsvp_enabled' => ['boolean'],
+            'attendees_public' => ['boolean'],
         ];
     }
 
