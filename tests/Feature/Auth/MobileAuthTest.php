@@ -3,6 +3,7 @@
 use App\Jobs\FetchNostrProfileJob;
 use App\Models\LoginKey;
 use App\Models\User;
+use App\Support\NostrLogin;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
 use swentel\nostr\Event\Event as NostrEvent;
@@ -140,6 +141,83 @@ it('exchanges a signed event for a token via the mobile token endpoint', functio
     $this->getJson('/api/user', ['Authorization' => 'Bearer '.$response->json('token')])
         ->assertOk()
         ->assertJsonPath('id', $user->id);
+});
+
+it('issues a fresh single-use challenge for the replay-protected nostr exchange', function () {
+    $response = $this->getJson('/api/mobile/nostr/challenge');
+
+    $response->assertOk()
+        ->assertJsonStructure(['k1', 'ttl'])
+        ->assertJsonPath('ttl', NostrLogin::CHALLENGE_TTL_SECONDS);
+
+    $k1 = $response->json('k1');
+    expect($k1)->toMatch('/^[0-9a-f]{64}$/');
+
+    // The issued k1 is valid for exactly one exchange.
+    expect(NostrLogin::consumeChallenge($k1))->toBeTrue()
+        ->and(NostrLogin::consumeChallenge($k1))->toBeFalse();
+});
+
+it('exchanges a challenge-signed event for a token via the nostr endpoint and creates the user', function () {
+    Queue::fake();
+
+    $k1 = $this->getJson('/api/mobile/nostr/challenge')->json('k1');
+    [$signedEvent, $npub] = makeSignedMobileNostrEvent($k1);
+
+    $response = $this->postJson('/api/mobile/nostr/token', [
+        'k1' => $k1,
+        'event' => $signedEvent,
+        'device_name' => 'Pixel 10',
+    ]);
+
+    $response->assertOk()->assertJsonStructure(['token', 'user' => ['id', 'name']]);
+
+    $user = User::query()->where('nostr', $npub)->first();
+    expect($user)->not->toBeNull()
+        ->and($user->tokens()->first()->name)->toBe('Pixel 10');
+
+    $this->getJson('/api/user', ['Authorization' => 'Bearer '.$response->json('token')])
+        ->assertOk()
+        ->assertJsonPath('id', $user->id);
+
+    Queue::assertPushed(FetchNostrProfileJob::class);
+});
+
+it('rejects a nostr exchange whose k1 was never issued by the server', function () {
+    // Signature and challenge tag match, but the k1 is self-minted — the
+    // replay protection must reject it because the server never issued it.
+    $k1 = bin2hex(random_bytes(32));
+    [$signedEvent] = makeSignedMobileNostrEvent($k1);
+
+    $this->postJson('/api/mobile/nostr/token', [
+        'k1' => $k1,
+        'event' => $signedEvent,
+    ])->assertBadRequest()->assertJsonPath('reason', 'Unknown or expired challenge');
+});
+
+it('rejects replaying a captured nostr exchange with an already-used k1', function () {
+    Queue::fake();
+
+    $k1 = NostrLogin::issueChallenge();
+    [$signedEvent] = makeSignedMobileNostrEvent($k1);
+    $payload = ['k1' => $k1, 'event' => $signedEvent];
+
+    $this->postJson('/api/mobile/nostr/token', $payload)->assertOk();
+
+    // Same (k1, event) pair captured and replayed within the TTL window.
+    $this->postJson('/api/mobile/nostr/token', $payload)
+        ->assertBadRequest()
+        ->assertJsonPath('reason', 'Unknown or expired challenge');
+});
+
+it('rejects a nostr exchange whose event is bound to a different challenge', function () {
+    $k1 = NostrLogin::issueChallenge();
+    [$signedEvent] = makeSignedMobileNostrEvent(bin2hex(random_bytes(32)));
+
+    $this->postJson('/api/mobile/nostr/token', [
+        'k1' => $k1,
+        'event' => $signedEvent,
+    ])->assertBadRequest()->assertJsonPath('reason', 'Signature was NOT VERIFIED');
 });
 
 it('rejects a token exchange with a mismatched challenge', function () {

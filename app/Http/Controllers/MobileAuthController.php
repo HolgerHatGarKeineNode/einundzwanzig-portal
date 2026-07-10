@@ -127,6 +127,76 @@ final class MobileAuthController extends Controller
     }
 
     /**
+     * Issue a fresh single-use Nostr login challenge (k1) for the app's
+     * in-page welshman signer flow: the already-authenticated signer signs a
+     * kind-22242 event over this k1 and trades it via POST /api/mobile/nostr/token.
+     * The exchange only accepts a k1 issued here, which is consumed once —
+     * this is the replay protection the stateless token exchange needs.
+     */
+    public function nostrChallenge(): JsonResponse
+    {
+        return response()->json([
+            'k1' => NostrLogin::issueChallenge(),
+            'ttl' => NostrLogin::CHALLENGE_TTL_SECONDS,
+        ]);
+    }
+
+    /**
+     * Exchange a welshman-signed login event for a personal access token —
+     * replay-protected variant of the token exchange for the in-page signer
+     * flow.
+     *
+     * Distinct from the legacy token() endpoint on purpose: it additionally
+     * requires the k1 to have been issued by nostrChallenge() and consumes it
+     * once, so a captured (k1, event) pair cannot be replayed. Kept on its own
+     * URL so released app builds keep using the legacy endpoint unchanged.
+     */
+    public function nostrToken(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'k1' => ['required', 'string', 'size:64'],
+            'event' => ['required', 'array'],
+            'device_name' => ['nullable', 'string', 'max:64'],
+        ]);
+
+        if (! ctype_xdigit($validated['k1'])) {
+            return response()->json(['status' => 'ERROR', 'reason' => 'Invalid k1'], 400);
+        }
+
+        if (! NostrLogin::consumeChallenge($validated['k1'])) {
+            return response()->json(['status' => 'ERROR', 'reason' => 'Unknown or expired challenge'], 400);
+        }
+
+        try {
+            $npub = NostrLogin::verifyEvent($validated['event'], $validated['k1']);
+        } catch (ValidationException) {
+            Log::warning('Mobile Nostr token exchange verification failed', [
+                'k1' => $validated['k1'],
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json(['status' => 'ERROR', 'reason' => 'Signature was NOT VERIFIED'], 400);
+        }
+
+        $user = NostrLogin::findOrCreateUser($npub);
+        FetchNostrProfileJob::dispatch($user);
+
+        $token = $this->createDeviceToken($user, $validated['device_name'] ?? self::DEFAULT_DEVICE_NAME);
+
+        Log::info('Mobile app token issued via Nostr challenge exchange', [
+            'user_id' => $user->id,
+        ]);
+
+        return response()->json([
+            'token' => $token->plainTextToken,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+            ],
+        ]);
+    }
+
+    /**
      * Revoke the personal access token that authenticated this request.
      *
      * Called by the mobile app on logout so the token does not linger

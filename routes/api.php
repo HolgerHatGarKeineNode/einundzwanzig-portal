@@ -105,6 +105,19 @@ Route::get('/nostr-login-callback', [MobileAuthController::class, 'nostrCallback
     ->middleware('throttle:30,1')
     ->name('auth.nostr.callback');
 
+// Replay-protected Nostr login for the in-page welshman signer flow (new
+// app versions). challenge issues a single-use k1; nostr/token trades a
+// kind-22242 event signed over that k1 for a Sanctum token and consumes it
+// once. Separate URLs from the legacy /mobile/token below so released app
+// builds keep working unchanged.
+Route::get('/mobile/nostr/challenge', [MobileAuthController::class, 'nostrChallenge'])
+    ->middleware('throttle:30,1')
+    ->name('auth.mobile.nostr.challenge');
+
+Route::post('/mobile/nostr/token', [MobileAuthController::class, 'nostrToken'])
+    ->middleware('throttle:30,1')
+    ->name('auth.mobile.nostr.token');
+
 // Token exchange for the mobile app: trades a NIP-55-signed login event
 // for a Sanctum personal access token (used when the signer callback
 // opens the app directly via a verified App Link).

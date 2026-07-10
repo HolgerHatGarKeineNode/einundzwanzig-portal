@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use swentel\nostr\Event\Event as NostrEvent;
 use swentel\nostr\Key\Key as NostrKey;
@@ -19,6 +20,35 @@ use swentel\nostr\Key\Key as NostrKey;
 final class NostrLogin
 {
     public const CHALLENGE_TTL_SECONDS = 300;
+
+    /** Cache prefix for server-issued single-use login challenges (k1) of the token exchange. */
+    private const CHALLENGE_CACHE_PREFIX = 'mobile:nostr:k1:';
+
+    /**
+     * Issue a fresh single-use login challenge (k1) and remember it server-side.
+     *
+     * The token-minting endpoints only accept a k1 that was issued here and
+     * consume it exactly once — this is the replay protection the stateless
+     * token exchange otherwise lacks (the interactive web login already binds
+     * its challenge to the session).
+     */
+    public static function issueChallenge(): string
+    {
+        $k1 = bin2hex(random_bytes(32));
+        Cache::put(self::CHALLENGE_CACHE_PREFIX.$k1, true, self::CHALLENGE_TTL_SECONDS);
+
+        return $k1;
+    }
+
+    /**
+     * Consume a previously issued challenge. Returns true exactly once per
+     * issued k1 (single-use via Cache::pull); false for unknown, expired or
+     * already-used k1 — which blocks replay of a captured (k1, event) pair.
+     */
+    public static function consumeChallenge(string $k1): bool
+    {
+        return Cache::pull(self::CHALLENGE_CACHE_PREFIX.$k1) === true;
+    }
 
     /**
      * Verify a NIP-42-style signed login event against an expected challenge
