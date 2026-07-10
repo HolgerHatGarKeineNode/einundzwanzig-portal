@@ -19,7 +19,8 @@ class UserController extends Controller
      */
     public function __invoke(Request $request): JsonResponse
     {
-        return response()->json($this->profilePayload($request->user()));
+        return response()->json($this->profilePayload($request->user()))
+            ->header('Cache-Control', 'no-store, private');
     }
 
     /**
