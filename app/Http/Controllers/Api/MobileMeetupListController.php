@@ -48,12 +48,19 @@ class MobileMeetupListController extends Controller
                 'city.country:id,code',
                 'media',
             ])
-            // Wie in der App: Meetups mit dem nächsten Termin zuerst, Rest ans
-            // Ende, dann nach Name. Die App sortiert zwar erneut, aber so ist die
-            // Antwort bereits korrekt geordnet (u. a. für ein späteres Limit).
-            ->orderByRaw('next_event_start is null, next_event_start')
-            ->orderBy('name')
             ->get()
+            // In PHP sortieren, nicht in SQL: ORDER BY über den Subquery-Alias
+            // scheitert auf PostgreSQL (Alias nur als eigenständiger Schlüssel
+            // erlaubt, nicht im Ausdruck). Wie in der App: nächster Termin zuerst,
+            // terminlose ans Ende, dann nach Name. next_event_start ist als
+            // „Y-m-d H:i:s"-String lexikografisch = chronologisch sortierbar.
+            ->sortBy(fn (Meetup $meetup): string => sprintf(
+                '%d|%s|%s',
+                $meetup->next_event_start === null ? 1 : 0,
+                (string) $meetup->next_event_start,
+                mb_strtolower($meetup->name),
+            ))
+            ->values()
             ->map(fn (Meetup $meetup): array => [
                 'name' => $meetup->name,
                 'slug' => $meetup->slug,
