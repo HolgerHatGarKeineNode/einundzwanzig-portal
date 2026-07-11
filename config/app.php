@@ -19,6 +19,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Local Tunnel (Expose) Base URL
+    |--------------------------------------------------------------------------
+    |
+    | Public base URL of the local dev tunnel (e.g. Expose/ngrok) that Lightning
+    | wallets must reach for the LNURL-auth callback. The subdomain changes each
+    | tunnel session, so keep it in EXPOSE_URL and update it in one place.
+    | Only used in the local environment; falls back to APP_URL.
+    |
+    */
+
+    'expose_url' => env('EXPOSE_URL', env('APP_URL')),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

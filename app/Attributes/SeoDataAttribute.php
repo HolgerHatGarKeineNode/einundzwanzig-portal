@@ -200,6 +200,14 @@ class SeoDataAttribute
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
+            'settings_link_identity' => new SEOData(
+                title: __('Konten verbinden - Einstellungen'),
+                description: __('Verbinde dein Lightning- und Nostr-Konto, ohne deine Meetup-Leaderships zu verlieren.'),
+                author: $domainAuthor,
+                image: $domainImage,
+                twitter_username: $domainTwitter,
+                site_name: $domainSiteName,
+            ),
             'settings_api_tokens' => new SEOData(
                 title: __('API Tokens - Einstellungen'),
                 description: __('Verwalte deine persönlichen Zugriffstokens für den programmatischen API-Zugriff auf dein Bitcoin Meetup Konto.'),

@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\MeetupController;
 use App\Http\Controllers\Api\MeetupEventController;
 use App\Http\Controllers\Api\MeetupLeaderController;
 use App\Http\Controllers\Api\MeetupMapController;
+use App\Http\Controllers\Api\MobileMeetupListController;
 use App\Http\Controllers\Api\NostrPlebController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VenueController;
@@ -30,6 +31,9 @@ Route::middleware(['throttle:60,1'])
         Route::resource('venues', VenueController::class)->only(['index']);
         Route::get('nostrplebs', NostrPlebController::class);
         Route::get('meetups', MeetupMapController::class);
+        // Schlanke, schnelle Meetup-Liste eigens für die mobile App (getrennt von
+        // /api/meetups, damit andere Konsumenten der Karte unberührt bleiben).
+        Route::get('mobile/meetups', MobileMeetupListController::class);
         Route::get('meetup-events/{date?}', MeetupEventController::class);
         Route::get('btc-map-communities', BtcMapCommunityController::class);
     });

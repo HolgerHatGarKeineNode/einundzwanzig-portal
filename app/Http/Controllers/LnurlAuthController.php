@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
@@ -60,6 +61,20 @@ final class LnurlAuthController extends Controller
             }
 
             $user = $this->findOrCreateUser($validated['k1'], $validated['key']);
+
+            // Lightning was retired for this account by a Nostr merge: refuse the
+            // login (create no LoginKey) and leave a marker the frontend polls so
+            // it can point the user at Nostr. public_key still matched here, so no
+            // orphan account was created.
+            if ($user->lightning_retired_at !== null) {
+                Cache::put('lnurl:retired:'.$validated['k1'], true, 300);
+                Log::info('Refused login for retired Lightning credential', [
+                    'user_id' => $user->id,
+                    'ip' => $request->ip(),
+                ]);
+
+                return $this->errorResponse('Lightning login retired — please sign in with Nostr');
+            }
 
             LoginKey::query()->updateOrCreate(
                 ['k1' => $validated['k1']],
@@ -199,6 +214,15 @@ final class LnurlAuthController extends Controller
             return redirect()->route('login');
         }
 
+        // Require the k1 to belong to THIS browser session (set at login mount).
+        // Without this, possession of any recent k1 — which travels in the GET
+        // path and is therefore leak-prone — is enough to authenticate this
+        // browser as the k1's user (login CSRF / cross-device relay), which the
+        // auto-redirect into the merge wizard would then turn into account theft.
+        if (! hash_equals((string) session('lightning_login_k1'), $k1)) {
+            return redirect()->route('login');
+        }
+
         // Auth::login() calls Session::migrate(destroy: true) internally,
         // which wipes the previous session payload. Capture lang_country
         // and the post-login intended URL before the login and restore them
@@ -211,6 +235,10 @@ final class LnurlAuthController extends Controller
 
         Auth::login($user);
 
+        // Single-use: burn the login key so a captured k1 cannot be replayed
+        // within its 5-minute window.
+        LoginKey::query()->where('k1', $k1)->delete();
+
         session(['lang_country' => $langCountry]);
 
         if ($intendedUrl !== null) {
@@ -221,6 +249,15 @@ final class LnurlAuthController extends Controller
             ->after('-')
             ->lower()
             ->value();
+
+        // Lightning is being deprecated: send every Lightning user who has not
+        // yet linked a Nostr identity straight into the migration wizard, so
+        // they can consolidate their account (and keep their meetup
+        // leaderships) without hunting for it. An in-flight OAuth resume
+        // ($intendedUrl) takes precedence and is never hijacked.
+        if ($intendedUrl === null && $user->nostr === null) {
+            return redirect()->route('settings.link-identity', ['country' => $country]);
+        }
 
         return redirect()->intended(route('dashboard', ['country' => $country]));
     }
@@ -238,6 +275,12 @@ final class LnurlAuthController extends Controller
 
         if (! $k1) {
             return response()->json(['error' => null]);
+        }
+
+        if (Cache::pull('lnurl:retired:'.$k1) === true) {
+            return response()->json([
+                'error' => __('Dieser Lightning-Zugang wurde zu Nostr migriert. Bitte melde dich mit Nostr an.'),
+            ]);
         }
 
         $loginKey = LoginKey::query()

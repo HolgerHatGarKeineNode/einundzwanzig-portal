@@ -2,6 +2,7 @@
 
 use App\Models\LoginKey;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Livewire;
 
 it('returns invalid request parameters when k1 is missing', function () {
@@ -51,6 +52,20 @@ it('returns no error from /api/check-auth-error when a recent LoginKey exists', 
         ->assertJson(['error' => null]);
 });
 
+it('surfaces a Nostr-migration notice when a retired Lightning credential is used', function () {
+    $k1 = bin2hex(random_bytes(32));
+    Cache::put('lnurl:retired:'.$k1, true, 300);
+
+    $response = $this->postJson('/api/check-auth-error', ['k1' => $k1]);
+    $response->assertSuccessful();
+
+    expect($response->json('error'))->toContain('Nostr');
+
+    // Single-use: the notice is consumed, so a second poll no longer errors.
+    $this->postJson('/api/check-auth-error', ['k1' => $k1])
+        ->assertJson(['error' => null]);
+});
+
 it('returns a session-expired error when no LoginKey exists and elapsed_seconds exceeds 300', function () {
     $this->postJson('/api/check-auth-error', [
         'k1' => str_repeat('a', 64),
@@ -60,8 +75,8 @@ it('returns a session-expired error when no LoginKey exists and elapsed_seconds 
         ->assertJson(['error' => 'Session expired. Please try again.']);
 });
 
-it('completes a Lightning login and redirects to the dashboard when a recent LoginKey exists', function () {
-    $user = User::factory()->create();
+it('completes a Lightning login and redirects to the dashboard when the user already has Nostr', function () {
+    $user = User::factory()->create(['nostr' => 'npub1already'.str_repeat('0', 20)]);
     $k1 = bin2hex(random_bytes(32));
     LoginKey::factory()->create([
         'user_id' => $user->id,
@@ -69,10 +84,26 @@ it('completes a Lightning login and redirects to the dashboard when a recent Log
         'created_at' => now(),
     ]);
 
-    $response = $this->withSession(['lang_country' => 'de-DE', 'locale' => 'de'])
+    $response = $this->withSession(['lang_country' => 'de-DE', 'locale' => 'de', 'lightning_login_k1' => $k1])
         ->get(route('auth.ln.complete', ['k1' => $k1]));
 
     $response->assertRedirect(route('dashboard', ['country' => 'de']));
+    $this->assertAuthenticatedAs($user);
+});
+
+it('sends a Lightning user without a Nostr identity into the migration wizard', function () {
+    $user = User::factory()->create(['nostr' => null]);
+    $k1 = bin2hex(random_bytes(32));
+    LoginKey::factory()->create([
+        'user_id' => $user->id,
+        'k1' => $k1,
+        'created_at' => now(),
+    ]);
+
+    $response = $this->withSession(['lang_country' => 'de-DE', 'locale' => 'de', 'lightning_login_k1' => $k1])
+        ->get(route('auth.ln.complete', ['k1' => $k1]));
+
+    $response->assertRedirect(route('settings.link-identity', ['country' => 'de']));
     $this->assertAuthenticatedAs($user);
 });
 
@@ -91,10 +122,42 @@ it('resumes the intended OAuth url after a Lightning login instead of going to t
         'lang_country' => 'de-DE',
         'locale' => 'de',
         'url.intended' => $intended,
+        'lightning_login_k1' => $k1,
     ])->get(route('auth.ln.complete', ['k1' => $k1]));
 
     $response->assertRedirect($intended);
     $this->assertAuthenticatedAs($user);
+});
+
+it('rejects a completion whose k1 does not match the session (login CSRF / relay)', function () {
+    $victimAttackerAccount = User::factory()->create(['nostr' => null]);
+    $k1 = bin2hex(random_bytes(32));
+    LoginKey::factory()->create([
+        'user_id' => $victimAttackerAccount->id,
+        'k1' => $k1,
+        'created_at' => now(),
+    ]);
+
+    // A different browser (no matching session k1) tries to complete the login.
+    $this->withSession(['lang_country' => 'de-DE', 'lightning_login_k1' => 'someone-elses-k1'])
+        ->get(route('auth.ln.complete', ['k1' => $k1]))
+        ->assertRedirect(route('login'));
+
+    $this->assertGuest();
+});
+
+it('burns the login key so the same k1 cannot be replayed', function () {
+    $user = User::factory()->create(['nostr' => 'npub1x'.str_repeat('0', 20)]);
+    $k1 = bin2hex(random_bytes(32));
+    LoginKey::factory()->create(['user_id' => $user->id, 'k1' => $k1, 'created_at' => now()]);
+
+    $this->withSession(['lang_country' => 'de-DE', 'locale' => 'de', 'lightning_login_k1' => $k1])
+        ->get(route('auth.ln.complete', ['k1' => $k1]))
+        ->assertRedirect(route('dashboard', ['country' => 'de']));
+
+    // Burned: the LoginKey is gone, so the "no LoginKey -> redirect to login"
+    // path now blocks any replay of the same k1.
+    expect(LoginKey::where('k1', $k1)->exists())->toBeFalse();
 });
 
 it('redirects to login when the LoginKey is older than 5 minutes', function () {

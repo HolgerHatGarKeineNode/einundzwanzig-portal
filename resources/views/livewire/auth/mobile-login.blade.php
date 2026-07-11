@@ -77,7 +77,7 @@ class extends Component {
         $this->k1 = bin2hex(str()->random(32));
 
         if (app()->environment('local')) {
-            $url = 'https://mmy4dp8eab.sharedwithexpose.com/api/lnurl-auth-callback?tag=login&k1='.$this->k1.'&action=login';
+            $url = config('app.expose_url').'/api/lnurl-auth-callback?tag=login&k1='.$this->k1.'&action=login';
         } else {
             $url = url('/api/lnurl-auth-callback?tag=login&k1='.$this->k1.'&action=login');
         }

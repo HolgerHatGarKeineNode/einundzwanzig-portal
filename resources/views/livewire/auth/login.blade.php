@@ -94,8 +94,13 @@ class extends Component {
         // Nur beim ersten Mount initialisieren
         if ($this->k1 === null) {
             $this->k1 = bin2hex(str()->random(32));
+            // Bind this k1 to the browser session that started the login. The
+            // completion route requires the match, so a leaked/relayed k1 (it
+            // travels in a GET path) cannot log this browser in as someone else
+            // (login CSRF / cross-device QR relay).
+            Session::put('lightning_login_k1', $this->k1);
             if (app()->environment('local')) {
-                $this->url = 'https://mmy4dp8eab.sharedwithexpose.com/api/lnurl-auth-callback?tag=login&k1='.$this->k1.'&action=login';
+                $this->url = config('app.expose_url').'/api/lnurl-auth-callback?tag=login&k1='.$this->k1.'&action=login';
             } else {
                 $this->url = url('/api/lnurl-auth-callback?tag=login&k1='.$this->k1.'&action=login');
             }
@@ -276,40 +281,49 @@ class extends Component {
                     </span>
                 </flux:button>
 
-                <div class="text-center text-2xl text-gray-80 dark:text-gray-2000 mt-2">
-                    {{ __('Login with lightning ⚡') }}
-                </div>
+                <flux:callout variant="warning" icon="bolt" class="text-start">
+                    <flux:callout.heading>{{ __('Lightning-Login wird abgelöst') }}</flux:callout.heading>
+                    <flux:callout.text>
+                        {{ __('Melde dich hier noch einmal per Lightning an – danach führen wir dich automatisch durch die Verbindung mit Nostr. Deine Meetup-Leaderships bleiben dabei erhalten.') }}
+                    </flux:callout.text>
+                </flux:callout>
 
-                <div class="flex justify-center" wire:key="qrcode">
-                    <a href="lightning:{{ $this->lnurl }}">
-                        <div class="bg-white p-4">
-                            <img src="{{ 'data:image/png;base64, '. $this->qrCode }}" alt="qrcode">
+                <flux:accordion>
+                    <flux:accordion.item :heading="__('Lightning-Login anzeigen')">
+                        <div class="flex flex-col gap-4 pt-2">
+                            <div class="flex justify-center" wire:key="qrcode">
+                                <a href="lightning:{{ $this->lnurl }}">
+                                    <div class="bg-white p-4">
+                                        <img src="{{ 'data:image/png;base64, '. $this->qrCode }}" alt="qrcode">
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="flex flex-col space-y-2 justify-between w-full">
+                                <div x-copy-to-clipboard="'{{ $this->lnurl }}'">
+                                    <flux:button icon="clipboard" class="cursor-pointer">
+                                        {{ __('Copy') }}
+                                    </flux:button>
+                                </div>
+                                <div>
+                                    <flux:button
+                                        primary
+                                        href="lightning:{{ $this->lnurl }}"
+                                    >
+                                        {{ __('Click to connect') }}
+                                        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512"
+                                             height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+                                            <path fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"
+                                                  d="M461.81 53.81a4.4 4.4 0 00-3.3-3.39c-54.38-13.3-180 34.09-248.13 102.17a294.9 294.9 0 00-33.09 39.08c-21-1.9-42-.3-59.88 7.5-50.49 22.2-65.18 80.18-69.28 105.07a9 9 0 009.8 10.4l81.07-8.9a180.29 180.29 0 001.1 18.3 18.15 18.15 0 005.3 11.09l31.39 31.39a18.15 18.15 0 0011.1 5.3 179.91 179.91 0 0018.19 1.1l-8.89 81a9 9 0 0010.39 9.79c24.9-4 83-18.69 105.07-69.17 7.8-17.9 9.4-38.79 7.6-59.69a293.91 293.91 0 0039.19-33.09c68.38-68 115.47-190.86 102.37-247.95zM298.66 213.67a42.7 42.7 0 1160.38 0 42.65 42.65 0 01-60.38 0z"></path>
+                                            <path fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"
+                                                  d="M109.64 352a45.06 45.06 0 00-26.35 12.84C65.67 382.52 64 448 64 448s65.52-1.67 83.15-19.31A44.73 44.73 0 00160 402.32"></path>
+                                        </svg>
+                                    </flux:button>
+                                </div>
+                            </div>
                         </div>
-                    </a>
-                </div>
-
-                <div class="flex flex-col space-y-2 justify-between w-full">
-                    <div x-copy-to-clipboard="'{{ $this->lnurl }}'">
-                        <flux:button icon="clipboard" class="cursor-pointer">
-                            {{ __('Copy') }}
-                        </flux:button>
-                    </div>
-                    <div>
-                        <flux:button
-                            primary
-                            href="lightning:{{ $this->lnurl }}"
-                        >
-                            {{ __('Click to connect') }}
-                            <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512"
-                                 height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-                                <path fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"
-                                      d="M461.81 53.81a4.4 4.4 0 00-3.3-3.39c-54.38-13.3-180 34.09-248.13 102.17a294.9 294.9 0 00-33.09 39.08c-21-1.9-42-.3-59.88 7.5-50.49 22.2-65.18 80.18-69.28 105.07a9 9 0 009.8 10.4l81.07-8.9a180.29 180.29 0 001.1 18.3 18.15 18.15 0 005.3 11.09l31.39 31.39a18.15 18.15 0 0011.1 5.3 179.91 179.91 0 0018.19 1.1l-8.89 81a9 9 0 0010.39 9.79c24.9-4 83-18.69 105.07-69.17 7.8-17.9 9.4-38.79 7.6-59.69a293.91 293.91 0 0039.19-33.09c68.38-68 115.47-190.86 102.37-247.95zM298.66 213.67a42.7 42.7 0 1160.38 0 42.65 42.65 0 01-60.38 0z"></path>
-                                <path fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"
-                                      d="M109.64 352a45.06 45.06 0 00-26.35 12.84C65.67 382.52 64 448 64 448s65.52-1.67 83.15-19.31A44.73 44.73 0 00160 402.32"></path>
-                            </svg>
-                        </flux:button>
-                    </div>
-                </div>
+                    </flux:accordion.item>
+                </flux:accordion>
             </div>
 
             <livewire:language.selector/>

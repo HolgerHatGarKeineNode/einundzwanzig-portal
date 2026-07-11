@@ -3,14 +3,13 @@
 namespace App\Jobs;
 
 use App\Models\User;
+use App\Support\NostrProfilePhoto;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
-use Ramsey\Uuid\Uuid;
 use swentel\nostr\Filter\Filter;
 use swentel\nostr\Key\Key;
 use swentel\nostr\Message\RequestMessage;
@@ -31,8 +30,9 @@ class FetchNostrProfileJob implements ShouldQueue
     {
         // Determine which users to process
         if ($this->user) {
-            if (!$this->user->nostr) {
+            if (! $this->user->nostr) {
                 \Log::info('No nostr profile for user', ['user_id' => $this->user->id]);
+
                 return;
             }
             $users = collect([$this->user]);
@@ -44,20 +44,21 @@ class FetchNostrProfileJob implements ShouldQueue
         // Filter valid npub authors
         $authors = $users
             ->pluck('nostr')
-            ->map(fn($nostr) => trim($nostr))
-            ->filter(fn($nostr) => str_starts_with($nostr, 'npub1'))
+            ->map(fn ($nostr) => trim($nostr))
+            ->filter(fn ($nostr) => str_starts_with($nostr, 'npub1'))
             ->unique()
             ->values()
             ->toArray();
 
         if (empty($authors)) {
             \Log::warning('No valid nostr authors found');
+
             return;
         }
 
         // Setup filter for kind 0 (profile metadata)
-        $subscription = new Subscription();
-        $filter = new Filter();
+        $subscription = new Subscription;
+        $filter = new Filter;
         $filter->setAuthors($authors);
         $filter->setKinds([0]);
         $requestMessage = new RequestMessage($subscription->getId(), [$filter]);
@@ -66,7 +67,7 @@ class FetchNostrProfileJob implements ShouldQueue
         $relays = [
             new Relay('wss://nos.lol'),
         ];
-        $relaySet = new RelaySet();
+        $relaySet = new RelaySet;
         $relaySet->setRelays($relays);
 
         // Send request
@@ -86,7 +87,7 @@ class FetchNostrProfileJob implements ShouldQueue
                 \Log::info('Received messages from relay', ['url' => $relayUrl, 'count' => $messageCount]);
 
                 foreach ($relayResponses as $message) {
-                    if (!isset($message->event)) {
+                    if (! isset($message->event)) {
                         continue;
                     }
 
@@ -96,12 +97,17 @@ class FetchNostrProfileJob implements ShouldQueue
                         if (isset($profile['picture'])) {
                             $npub = (new Key)->convertPublicKeyToBech32($message->event->pubkey);
                             $user = User::query()->where('nostr', $npub)->first();
-                            if (isset($profile['name'])) {
-                                $user->name = $profile['name'];
-                                $user->save();
-                            }
 
+                            // Guard first: a relay may return an unrequested
+                            // author, so the lookup can miss. Touching a null user
+                            // here throws \Error, which the catch blocks below do
+                            // not catch and would abort the whole batch.
                             if ($user) {
+                                if (isset($profile['name'])) {
+                                    $user->name = $profile['name'];
+                                    $user->save();
+                                }
+
                                 $this->downloadAndSaveProfilePhoto($user, $profile['picture']);
                                 $updated++;
                             }
@@ -133,114 +139,20 @@ class FetchNostrProfileJob implements ShouldQueue
 
     private function downloadAndSaveProfilePhoto(User $user, string $photoUrl): void
     {
-        if (!$this->isPublicHttpUrl($photoUrl)) {
-            \Log::warning('Refused to download Nostr profile photo from disallowed URL', [
-                'user_id' => $user->id,
-                'url' => $photoUrl,
-            ]);
+        $path = NostrProfilePhoto::store($photoUrl);
 
+        if ($path === null) {
             return;
         }
 
-        try {
-            // Download the image from the URL
-            $response = Http::timeout(10)->get($photoUrl);
+        $previous = $user->profile_photo_path;
 
-            if (!$response->successful()) {
-                \Log::warning('Failed to download profile photo', [
-                    'user_id' => $user->id,
-                    'url' => $photoUrl,
-                    'status' => $response->status(),
-                ]);
-                return;
-            }
+        $user->forceFill(['profile_photo_path' => $path])->save();
 
-            // Store the file and update the user
-            tap($user->profile_photo_path, function ($previous) use ($user, $response, $photoUrl) {
-                $extension = $this->getImageExtension($response->header('Content-Type'), $photoUrl);
-                $path = 'profile-photos/'.Uuid::uuid1().$extension;
-                Storage::disk('public')
-                    ->put(
-                        $path,
-                        $response->body(),
-                    );
-
-                $user->forceFill([
-                    'profile_photo_path' => $path,
-                ])->save();
-
-                if ($previous) {
-                    Storage::disk('public')->delete($previous);
-                }
-            });
-
-            \Log::info('Profile photo updated from Nostr', [
-                'user_id' => $user->id,
-                'url' => $photoUrl,
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Failed to save profile photo', [
-                'user_id' => $user->id,
-                'url' => $photoUrl,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    /**
-     * Reject URLs that are not http(s) or that resolve to a private/loopback
-     * address, to prevent SSRF when fetching arbitrary profile photo URLs.
-     */
-    private function isPublicHttpUrl(string $url): bool
-    {
-        $parts = parse_url($url);
-        if ($parts === false || empty($parts['scheme']) || empty($parts['host'])) {
-            return false;
+        if ($previous) {
+            Storage::disk('public')->delete($previous);
         }
 
-        if (!in_array(strtolower($parts['scheme']), ['http', 'https'], true)) {
-            return false;
-        }
-
-        $host = $parts['host'];
-        $ips = filter_var($host, FILTER_VALIDATE_IP) ? [$host] : (gethostbynamel($host) ?: []);
-
-        if (empty($ips)) {
-            return false;
-        }
-
-        foreach ($ips as $ip) {
-            if (!filter_var(
-                $ip,
-                FILTER_VALIDATE_IP,
-                FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE,
-            )) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private function getImageExtension(?string $contentType, string $url): string
-    {
-        // Try to get extension from content type
-        if ($contentType) {
-            $mimeMap = [
-                'image/jpeg' => 'jpg',
-                'image/jpg' => 'jpg',
-                'image/png' => 'png',
-                'image/gif' => 'gif',
-                'image/webp' => 'webp',
-            ];
-
-            if (isset($mimeMap[$contentType])) {
-                return $mimeMap[$contentType];
-            }
-        }
-
-        // Fallback to URL extension
-        $pathInfo = pathinfo(parse_url($url, PHP_URL_PATH));
-        return $pathInfo['extension'] ?? 'jpg';
+        \Log::info('Profile photo updated from Nostr', ['user_id' => $user->id]);
     }
 }

@@ -45,6 +45,7 @@ class User extends Authenticatable implements CipherSweetEncrypted
         'lnbits',
         'change',
         'change_time',
+        'lightning_retired_at',
     ];
 
     /**
@@ -67,6 +68,7 @@ class User extends Authenticatable implements CipherSweetEncrypted
     protected $casts = [
         'email_verified_at' => 'datetime',
         'meetup_privacy_hint_dismissed_at' => 'datetime',
+        'lightning_retired_at' => 'datetime',
     ];
 
     /**
