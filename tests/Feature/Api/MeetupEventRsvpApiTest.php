@@ -74,6 +74,29 @@ it('reports the current status and counts', function () {
         ->assertJson(['status' => 'maybe', 'attendees' => 1, 'might_attendees' => 1]);
 });
 
+it('exposes attendee display names without the id prefix', function () {
+    Sanctum::actingAs(User::factory()->create());
+    $event = MeetupEvent::factory()->create([
+        'attendees' => ['id_999|Hal', 'id_50|Nick'],
+    ]);
+
+    $this->getJson("/api/meetup-events/{$event->id}/rsvp")
+        ->assertSuccessful()
+        ->assertJson(['attendee_names' => ['Hal', 'Nick']]);
+});
+
+it('hides attendee names when the list is not public', function () {
+    Sanctum::actingAs(User::factory()->create());
+    $event = MeetupEvent::factory()->create([
+        'attendees' => ['id_999|Hal'],
+    ]);
+    $event->meetup->update(['attendees_public' => false]);
+
+    $this->getJson("/api/meetup-events/{$event->id}/rsvp")
+        ->assertSuccessful()
+        ->assertJson(['attendees' => null, 'attendee_names' => null]);
+});
+
 it('validates the status value', function () {
     Sanctum::actingAs(User::factory()->create());
     $event = MeetupEvent::factory()->create();

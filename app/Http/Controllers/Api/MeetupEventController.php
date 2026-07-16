@@ -215,7 +215,7 @@ class MeetupEventController extends Controller
      * null, wenn die Teilnehmerliste für den Betrachter nicht sichtbar ist
      * (attendees_public=false und kein Verwalter).
      *
-     * @return array{status: string, attendees: int|null, might_attendees: int|null}
+     * @return array{status: string, attendees: int|null, might_attendees: int|null, attendee_names: list<string>|null}
      */
     private function rsvpPayload(MeetupEvent $meetupEvent, User $user): array
     {
@@ -225,6 +225,14 @@ class MeetupEventController extends Controller
             'status' => $meetupEvent->rsvpStatusFor($user)->value,
             'attendees' => $countsVisible ? $meetupEvent->attendeesCount() : null,
             'might_attendees' => $countsVisible ? $meetupEvent->mightAttendeesCount() : null,
+            // Anzeigenamen der Zusagen ohne `id_<userId>|`-Präfix. Gleiche
+            // Sichtbarkeitsregel wie die Zähler (attendees_public bzw. Verwalter).
+            'attendee_names' => $countsVisible
+                ? collect($meetupEvent->attendees ?? [])
+                    ->map(fn (string $entry): string => str($entry)->after('|')->toString())
+                    ->values()
+                    ->all()
+                : null,
         ];
     }
 }
