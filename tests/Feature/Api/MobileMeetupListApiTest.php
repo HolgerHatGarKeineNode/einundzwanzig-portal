@@ -36,12 +36,14 @@ it('returns only visible meetups in the lean mobile shape', function () {
     $response = $this->getJson('/api/mobile/meetups');
 
     $response->assertSuccessful()
-        ->assertJsonStructure([['name', 'slug', 'city', 'country', 'latitude', 'longitude', 'logo', 'next_event_start']]);
+        ->assertJsonStructure([['id', 'name', 'slug', 'city', 'country', 'latitude', 'longitude', 'logo', 'next_event_start']]);
 
     $payload = collect($response->json());
     expect($payload->pluck('name')->all())->toContain('Sichtbar')->not->toContain('Versteckt');
 
     $entry = $payload->firstWhere('name', 'Sichtbar');
+    // Stabile numerische DB-id als Bindungsschlüssel (additiv, non-breaking).
+    expect($entry['id'])->toBeInt()->toBe($meetup->id);
     expect($entry)
         ->slug->toBe('sichtbar')
         ->city->toBe('Berlin')

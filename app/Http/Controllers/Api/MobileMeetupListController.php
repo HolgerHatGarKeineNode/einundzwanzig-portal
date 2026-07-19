@@ -62,6 +62,9 @@ class MobileMeetupListController extends Controller
             ))
             ->values()
             ->map(fn (Meetup $meetup): array => [
+                // Stabile numerische DB-id als Bindungsschlüssel für Konsumenten
+                // (z. B. Meetup-Räume im Nostr-Client). Additiv, non-breaking.
+                'id' => $meetup->id,
                 'name' => $meetup->name,
                 'slug' => $meetup->slug,
                 'city' => $meetup->city?->name ?? '',
