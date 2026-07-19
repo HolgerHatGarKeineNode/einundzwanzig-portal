@@ -14,8 +14,10 @@ use App\Http\Controllers\Api\MobileMeetupListController;
 use App\Http\Controllers\Api\NostrPlebController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VenueController;
+use App\Http\Controllers\Api\VereinGatedMeetupController;
 use App\Http\Controllers\LnurlAuthController;
 use App\Http\Controllers\MobileAuthController;
+use App\Http\Middleware\VereinGateToken;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['throttle:60,1'])
@@ -100,6 +102,12 @@ Route::middleware('auth:sanctum')
         Route::get('meetup-events/{meetupEvent}/rsvp', [MeetupEventController::class, 'rsvpStatus'])->name('meetup-events.rsvp.show');
         Route::post('meetup-events/{meetupEvent}/rsvp', [MeetupEventController::class, 'rsvp'])->name('meetup-events.rsvp');
     });
+
+// Vereinsmitglied-gegatete Meetups für den Nostr-Client (Server-zu-Server,
+// Bearer-Token statt Sanctum-Session). Nur Meetups mit echtem Vereinsbezug.
+Route::get('/verein/gated-meetups', VereinGatedMeetupController::class)
+    ->middleware([VereinGateToken::class, 'throttle:60,1'])
+    ->name('api.verein.gated-meetups');
 
 Route::get('/lnurl-auth-callback', [LnurlAuthController::class, 'callback'])
     ->name('auth.ln.callback');

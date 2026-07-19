@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    /*
+     * Server-zu-Server Bearer-Token für den vereinsmitglied-gegateten Meetup-Endpunkt
+     * (GET /api/verein/gated-meetups). Wird gegen den Authorization: Bearer <token>
+     * Header geprüft. In Prod-.env als VEREIN_GATE_TOKEN setzen.
+     */
+    'verein_gate' => [
+        'token' => env('VEREIN_GATE_TOKEN'),
+    ],
+
 ];
