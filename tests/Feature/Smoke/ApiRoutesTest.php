@@ -9,8 +9,15 @@ use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Models\User;
 use App\Models\Venue;
+use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
+    // /api/meetups fragt das Vereinsmitglied-Gate ab (has_room) — hier ohne echten
+    // HTTP-Call: leere Mitgliedermenge genügt für den Smoke-Erfolg.
+    Http::fake([
+        'verein.einundzwanzig.space/api/members/*' => Http::response([], 200),
+    ]);
+
     $country = Country::factory()->create(['code' => 'de']);
     $city = City::factory()->create(['country_id' => $country->id]);
     Venue::factory()->create(['city_id' => $city->id]);

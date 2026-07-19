@@ -5,11 +5,18 @@ use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Sanctum\Sanctum;
 use Livewire\Livewire;
 
 beforeEach(function () {
+    // /api/meetups fragt das Vereinsmitglied-Gate ab (has_room) — ohne echten
+    // HTTP-Call: leere Mitgliedermenge genügt für diesen Test.
+    Http::fake([
+        'verein.einundzwanzig.space/api/members/*' => Http::response([], 200),
+    ]);
+
     $country = Country::factory()->create(['code' => 'de']);
     $this->city = City::factory()->create(['country_id' => $country->id]);
 });

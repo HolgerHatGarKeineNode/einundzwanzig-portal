@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Meetup;
+use App\Support\VereinMeetupGate;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Http\Request;
@@ -21,8 +22,12 @@ class MeetupMapController extends Controller
      */
     #[QueryParameter(name: 'withIntro', description: 'Presence-Flag: Bei Vorhandensein wird der Intro-Text mitgeliefert.', required: false, type: 'string')]
     #[QueryParameter(name: 'withLogos', description: 'Presence-Flag: Bei Vorhandensein wird die Logo-URL mitgeliefert.', required: false, type: 'string')]
-    public function __invoke(Request $request): Collection
+    public function __invoke(Request $request, VereinMeetupGate $gate): Collection
     {
+        // Einmal pro Request: die (gecachte) id-Menge der vereinsmitglied-gegateten
+        // Meetups. So kann die App die Raum-Existenz ohne Relay-Zugriff prüfen.
+        $gatedIds = $gate->gatedMeetupIds()->all();
+
         return Meetup::query()
             ->where('visible_on_map', true)
             ->with([
@@ -34,6 +39,8 @@ class MeetupMapController extends Controller
             ->map(fn ($meetup) => [
                 // Stabile numerische DB-id als Bindungsschlüssel (additiv, non-breaking).
                 'id' => $meetup->id,
+                // true, wenn vereinsmitglied-gegatet (= hat einen Nostr-Raum).
+                'has_room' => in_array($meetup->id, $gatedIds, true),
                 'name' => $meetup->name,
                 'portalLink' => url()->route(
                     'meetups.landingpage',

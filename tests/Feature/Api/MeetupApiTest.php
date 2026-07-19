@@ -4,13 +4,41 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
+use App\Models\User;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use swentel\nostr\Key\Key as NostrKey;
 
 beforeEach(function () {
+    // Frischer Gate-Cache (verein.gated_ids/members) pro Test.
+    Cache::flush();
+
     $country = Country::factory()->create(['code' => 'de']);
     $this->city = City::factory()->create(['country_id' => $country->id]);
 });
 
+/**
+ * Fakt die verein-Mitglieder-API. Ohne Argumente: leere Menge (→ has_room=false),
+ * verhindert einen echten HTTP-Call. Mit npubs: diese sind Vereinsmitglieder.
+ * Jeder Test registriert genau EINEN Stub (Http::fake ist first-match-wins).
+ */
+function fakeVereinMembersForMap(string ...$npubs): void
+{
+    $payload = collect($npubs)->values()->map(fn (string $npub, int $i): array => [
+        'id' => $i + 1,
+        'npub' => $npub,
+        'pubkey' => (new NostrKey)->convertToHex($npub),
+        'nip05_handle' => 'member'.$i.'@einundzwanzig.space',
+    ])->all();
+
+    Http::fake([
+        'verein.einundzwanzig.space/api/members/*' => Http::response($payload, 200),
+    ]);
+}
+
 it('returns visible meetups in JSON shape on GET /api/meetups', function () {
+    fakeVereinMembersForMap();
+
     $visible = Meetup::factory()->create([
         'city_id' => $this->city->id,
         'visible_on_map' => true,
@@ -35,7 +63,28 @@ it('returns visible meetups in JSON shape on GET /api/meetups', function () {
     expect($entry['id'])->toBeInt()->toBe($visible->id);
 });
 
+it('flags has_room true for verein-gated meetups and false otherwise', function () {
+    $npub = 'npub1sg6plzptd64u62a878hep2kev88swjh3tw00gjsfl8f237lmu63q0uf63m';
+
+    // Gegatet: sichtbares Meetup mit einem Vereinsmitglied in der Pivot.
+    $member = User::factory()->create(['nostr' => $npub]);
+    $gated = Meetup::factory()->create(['city_id' => $this->city->id, 'visible_on_map' => true, 'name' => 'Mit Raum']);
+    $gated->users()->attach($member->id, ['is_leader' => false]);
+
+    // Nicht gegatet: sichtbares Meetup ohne Vereinsmitglied.
+    $ungated = Meetup::factory()->create(['city_id' => $this->city->id, 'visible_on_map' => true, 'name' => 'Ohne Raum']);
+
+    fakeVereinMembersForMap($npub);
+
+    $payload = collect($this->getJson('/api/meetups')->json());
+
+    expect($payload->firstWhere('name', 'Mit Raum')['has_room'])->toBeTrue()
+        ->and($payload->firstWhere('name', 'Ohne Raum')['has_room'])->toBeFalse();
+});
+
 it('includes intro and logo when ?withIntro=1&withLogos=1 is provided', function () {
+    fakeVereinMembersForMap();
+
     Meetup::factory()->create([
         'city_id' => $this->city->id,
         'visible_on_map' => true,
