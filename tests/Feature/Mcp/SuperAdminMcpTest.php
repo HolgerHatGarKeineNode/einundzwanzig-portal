@@ -10,6 +10,7 @@ use App\Mcp\Tools\SuperAdmin\SuperAdminUpdateRecordTool;
 use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 
 function superAdmin(): User
@@ -79,6 +80,31 @@ it('lists and shows records of any model', function () {
         ->tool(SuperAdminShowRecordTool::class, ['model' => 'meetup', 'id' => $meetup->id])
         ->assertOk()
         ->assertSee('Sichtbar');
+});
+
+it('lists records of a keyless pivot model without ordering by a missing id column', function () {
+    $meetup = Meetup::factory()->create();
+    $user = User::factory()->create();
+    $meetup->users()->attach($user, ['is_leader' => false]);
+
+    DB::enableQueryLog();
+
+    EinundzwanzigServer::actingAs(superAdmin())
+        ->tool(SuperAdminListRecordsTool::class, ['model' => 'meetup-user'])
+        ->assertOk()
+        ->assertSee('MeetupUser');
+
+    // Treiberunabhängiger Regressions-Guard: SQLite deutet ein quotiertes "id" als
+    // String-Literal (kein Fehler), Postgres wirft 42703. Deshalb hier direkt prüfen,
+    // dass gar nicht mehr nach der fehlenden id-Spalte sortiert wird.
+    $selects = collect(DB::getQueryLog())
+        ->pluck('query')
+        ->filter(fn (string $sql): bool => str_contains($sql, 'from "meetup_user"'));
+
+    expect($selects)->not->toBeEmpty()
+        ->and($selects->every(fn (string $sql): bool => ! str_contains($sql, 'order by')))->toBeTrue();
+
+    DB::disableQueryLog();
 });
 
 it('reports an unknown model with the list of available ones', function () {

@@ -40,17 +40,43 @@ class SuperAdminListRecordsTool extends Tool
 
         $limit = max(1, min(100, (int) ($request->get('limit') ?? 25)));
 
-        $records = $class::query()
+        $query = $class::query()
             ->where($filters->all())
-            ->latest($model->getKeyName())
-            ->limit($limit)
-            ->get();
+            ->limit($limit);
+
+        if (($orderColumn = $this->orderColumn($model, $columns)) !== null) {
+            $query->latest($orderColumn);
+        }
+
+        $records = $query->get();
 
         return Response::json([
             'model' => class_basename($class),
             'count' => $records->count(),
             'records' => $records->map->toArray()->all(),
         ]);
+    }
+
+    /**
+     * Wählt eine sichere Spalte für die "neueste zuerst"-Sortierung: den Primärschlüssel
+     * nur, wenn er eine echte Spalte ist (Pivot-Models wie meetup_user haben keine id),
+     * sonst created_at, sonst keine Sortierung.
+     *
+     * @param  array<int, string>  $columns
+     */
+    private function orderColumn(Model $model, array $columns): ?string
+    {
+        $key = $model->getKeyName();
+
+        if (in_array($key, $columns, true)) {
+            return $key;
+        }
+
+        if (in_array($model->getCreatedAtColumn(), $columns, true)) {
+            return $model->getCreatedAtColumn();
+        }
+
+        return null;
     }
 
     /**
