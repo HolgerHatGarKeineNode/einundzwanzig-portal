@@ -32,6 +32,8 @@ class MeetupMapController extends Controller
             ])
             ->get()
             ->map(fn ($meetup) => [
+                // Stabile numerische DB-id als Bindungsschlüssel (additiv, non-breaking).
+                'id' => $meetup->id,
                 'name' => $meetup->name,
                 'portalLink' => url()->route(
                     'meetups.landingpage',

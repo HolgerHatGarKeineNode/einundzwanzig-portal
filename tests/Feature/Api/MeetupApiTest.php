@@ -11,7 +11,7 @@ beforeEach(function () {
 });
 
 it('returns visible meetups in JSON shape on GET /api/meetups', function () {
-    Meetup::factory()->create([
+    $visible = Meetup::factory()->create([
         'city_id' => $this->city->id,
         'visible_on_map' => true,
         'name' => 'Visible Meetup',
@@ -29,6 +29,10 @@ it('returns visible meetups in JSON shape on GET /api/meetups', function () {
     $names = collect($response->json())->pluck('name');
     expect($names->all())->toContain('Visible Meetup')
         ->not->toContain('Hidden Meetup');
+
+    // Stabile numerische DB-id als Bindungsschlüssel (additiv, non-breaking).
+    $entry = collect($response->json())->firstWhere('name', 'Visible Meetup');
+    expect($entry['id'])->toBeInt()->toBe($visible->id);
 });
 
 it('includes intro and logo when ?withIntro=1&withLogos=1 is provided', function () {
