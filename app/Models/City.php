@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Cookie;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -37,6 +38,38 @@ class City extends Model
         'osm_relation' => 'json',
         'simplified_geojson' => 'json',
     ];
+
+    /**
+     * Findet eine Stadt anhand ihres Namens; Städtenamen sind global eindeutig.
+     */
+    public static function findByName(string $name): ?self
+    {
+        return static::query()
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            ->first();
+    }
+
+    /**
+     * Legt die Stadt an oder liefert die bereits vorhandene gleichnamige Stadt zurueck.
+     *
+     * Staedte sind Stammdaten mit einem globalen Unique-Constraint auf dem Namen:
+     * ein zweiter Anlageversuch ist kein Fehler, sondern liefert den Bestand.
+     * `wasRecentlyCreated` unterscheidet Neuanlage von Treffer.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public static function createOrFindByName(array $attributes): self
+    {
+        if ($existing = static::findByName((string) $attributes['name'])) {
+            return $existing;
+        }
+
+        try {
+            return static::create($attributes);
+        } catch (UniqueConstraintViolationException $exception) {
+            return static::findByName((string) $attributes['name']) ?? throw $exception;
+        }
+    }
 
     /**
      * Get the options for generating the slug.

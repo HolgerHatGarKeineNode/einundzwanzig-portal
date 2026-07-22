@@ -15,7 +15,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Legt eine neue Stadt für den authentifizierten Nutzer an. Das Land wird über seinen Namen angegeben; der Ersteller (created_by) wird automatisch gesetzt.')]
+#[Description('Legt eine neue Stadt für den authentifizierten Nutzer an. Das Land wird über seinen Namen angegeben; der Ersteller (created_by) wird automatisch gesetzt. Städtenamen sind global eindeutig: existiert die Stadt bereits, wird sie mit "already_existed": true zurückgeliefert statt ein Duplikat anzulegen.')]
 class CreateCityTool extends Tool
 {
     use ResolvesEntities;
@@ -39,9 +39,12 @@ class CreateCityTool extends Tool
             $storeRequest->messages(),
         );
 
-        $city = City::create($validated);
+        $city = City::createOrFindByName($validated);
 
-        return Response::json(CityResource::make($city->fresh())->resolve());
+        return Response::json([
+            ...CityResource::make($city->fresh())->resolve(),
+            'already_existed' => ! $city->wasRecentlyCreated,
+        ]);
     }
 
     /**

@@ -64,16 +64,22 @@ class CityController extends Controller
      *
      * Erlaubt einem authentifizierten Nutzer, eine Stadt programmatisch anzulegen.
      * Der Ersteller (created_by) wird automatisch gesetzt.
+     *
+     * Staedtenamen sind global eindeutig: existiert die Stadt bereits, wird sie
+     * mit Status 200 zurueckgeliefert statt ein Duplikat anzulegen.
      */
+    #[ResponseAttribute(status: 200, description: 'Die Stadt existierte bereits und wird unveraendert zurueckgeliefert.')]
     #[ResponseAttribute(status: 401, description: 'Nicht authentifiziert.')]
     #[ResponseAttribute(status: 422, description: 'Validierungsfehler.')]
     public function store(StoreCityRequest $request): JsonResponse
     {
-        $city = City::create($request->validated());
+        $city = City::createOrFindByName($request->validated());
+
+        $status = $city->wasRecentlyCreated ? Response::HTTP_CREATED : Response::HTTP_OK;
 
         return CityResource::make($city->fresh())
             ->response()
-            ->setStatusCode(Response::HTTP_CREATED);
+            ->setStatusCode($status);
     }
 
     /**

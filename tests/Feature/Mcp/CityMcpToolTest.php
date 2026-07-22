@@ -28,6 +28,24 @@ it('lets an authenticated user create a city and stamps created_by', function ()
     ]);
 });
 
+it('returns the existing city instead of duplicating it', function () {
+    $user = User::factory()->create();
+    $country = Country::factory()->create();
+    City::factory()->create(['name' => 'Mannheim']);
+
+    EinundzwanzigServer::actingAs($user)
+        ->tool(CreateCityTool::class, [
+            'name' => 'Mannheim',
+            'country_id' => $country->id,
+            'longitude' => 8.474687,
+            'latitude' => 49.498203,
+        ])
+        ->assertOk()
+        ->assertSee('already_existed');
+
+    expect(City::query()->where('name', 'Mannheim')->count())->toBe(1);
+});
+
 it('fails validation for missing fields', function () {
     EinundzwanzigServer::actingAs(User::factory()->create())
         ->tool(CreateCityTool::class, [])

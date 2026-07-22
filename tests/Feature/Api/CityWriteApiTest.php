@@ -32,6 +32,43 @@ it('lets an authenticated user create', function () {
     ]);
 });
 
+it('returns the existing city instead of duplicating it', function () {
+    Sanctum::actingAs(User::factory()->create());
+
+    $existing = City::factory()->create(['name' => 'Mannheim']);
+
+    $response = $this->postJson('/api/cities', [
+        'name' => 'Mannheim',
+        'country_id' => Country::factory()->create()->id,
+        'longitude' => 8.474687,
+        'latitude' => 49.498203,
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('data.id', $existing->id)
+        ->assertJsonPath('data.name', 'Mannheim');
+
+    expect(City::query()->where('name', 'Mannheim')->count())->toBe(1);
+});
+
+it('matches an existing city case insensitively', function () {
+    Sanctum::actingAs(User::factory()->create());
+
+    $existing = City::factory()->create(['name' => 'Mannheim']);
+
+    $response = $this->postJson('/api/cities', [
+        'name' => 'mannheim',
+        'country_id' => Country::factory()->create()->id,
+        'longitude' => 8.474687,
+        'latitude' => 49.498203,
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('data.id', $existing->id);
+
+    expect(City::query()->count())->toBe(1);
+});
+
 it('fails validation', function () {
     Sanctum::actingAs(User::factory()->create());
 
