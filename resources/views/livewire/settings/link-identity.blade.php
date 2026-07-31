@@ -431,7 +431,13 @@ class extends Component {
         $this->applyChosenProfile($user, $chosen);
 
         Session::forget([self::VERIFIED_NPUB_KEY, self::NOSTR_PROFILE_KEY]);
-        Session::flash('status', __('Dein Nostr-Konto wurde erfolgreich verbunden. Lightning ist für dieses Konto jetzt deaktiviert — melde dich künftig mit Nostr an.'));
+
+        // Nur beim echten Merge verschwinden App-Tokens: sie hingen am gelöschten
+        // Konto (MergeUserAccounts::discardLoserTokens). Wurde die npub bloß
+        // gestempelt, bleibt jede Anmeldung bestehen — dann kein Hinweis.
+        Session::flash('status', $loser === null
+            ? __('Dein Nostr-Konto wurde erfolgreich verbunden. Lightning ist für dieses Konto jetzt deaktiviert — melde dich künftig mit Nostr an.')
+            : __('Dein Nostr-Konto wurde erfolgreich verbunden. Lightning ist für dieses Konto jetzt deaktiviert — melde dich künftig mit Nostr an. Die Companion-App wurde dabei abgemeldet: melde dich dort einmalig neu mit deinem Nostr-Schlüssel an.'));
 
         $this->redirect($this->dashboardUrl(), navigate: false);
     }

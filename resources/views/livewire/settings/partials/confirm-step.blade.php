@@ -62,6 +62,16 @@
                             {{ __('Jede Meetup-Leadership und jeder Inhalt des anderen Kontos wird vollständig in dein aktuelles Konto übertragen. Erst danach wird das dann leere Konto gelöscht — du verlierst nichts.') }}
                         </flux:callout.text>
                     </flux:callout>
+
+                    {{-- Die App-Tokens hängen am eingeschmolzenen Konto (MergeUserAccounts::discardLoserTokens)
+                         und werden mit ihm gelöscht. Ohne diesen Hinweis liest sich der stille Logout in der
+                         Companion-App wie ein Fehler des Merges. --}}
+                    <flux:callout variant="warning" icon="device-phone-mobile">
+                        <flux:callout.heading>{{ __('Deine App meldet sich einmalig ab') }}</flux:callout.heading>
+                        <flux:callout.text>
+                            {{ __('Bist du mit dieser npub in der Companion-App angemeldet, wird die App beim Verbinden abgemeldet. Melde dich dort danach einfach neu mit deinem Nostr-Schlüssel an — deine Meetups und Rechte sind unverändert.') }}
+                        </flux:callout.text>
+                    </flux:callout>
                 @else
                     <flux:callout variant="secondary" icon="information-circle">
                         <flux:callout.text>{{ __('Diese npub ist noch keinem Konto zugeordnet und wird einfach mit deinem aktuellen Konto verknüpft.') }}</flux:callout.text>

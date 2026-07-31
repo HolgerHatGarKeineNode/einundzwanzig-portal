@@ -120,6 +120,41 @@ it('retires the Lightning credential after a merge', function () {
     expect($lightningUser->fresh()->lightning_retired_at)->not->toBeNull();
 });
 
+it('warns about the app logout only when a merge actually deletes the tokens', function () {
+    $lightningUser = User::factory()->create(['nostr' => null, 'public_key' => 'bf'.str_repeat('0', 62)]);
+    $this->actingAs($lightningUser);
+
+    $component = Livewire::test('settings.link-identity');
+    [$signed, $npub] = makeSignedMergeEvent();
+    $nostrAccount = User::factory()->create(['nostr' => $npub]);
+    // Ein angemeldetes Handy am eingeschmolzenen Konto — genau dieses Token stirbt.
+    $nostrAccount->createToken('pixel-8');
+
+    $component->call('proveNostr', $signed)
+        ->assertSee(__('Deine App meldet sich einmalig ab'))
+        ->set('acknowledgedBackup', true)
+        ->call('confirmMerge');
+
+    expect(session('status'))->toContain('Companion-App')
+        ->and($nostrAccount->tokens()->count())->toBe(0);
+});
+
+it('does not warn about an app logout when the npub is merely stamped', function () {
+    $lightningUser = User::factory()->create(['nostr' => null, 'public_key' => 'c0'.str_repeat('0', 62)]);
+    $this->actingAs($lightningUser);
+
+    $component = Livewire::test('settings.link-identity');
+    [$signed] = makeSignedMergeEvent();
+
+    $component->call('proveNostr', $signed)
+        ->assertSet('willMerge', false)
+        ->assertDontSee(__('Deine App meldet sich einmalig ab'))
+        ->set('acknowledgedBackup', true)
+        ->call('confirmMerge');
+
+    expect(session('status'))->not->toContain('Companion-App');
+});
+
 it('refuses to merge without a verified signature in the session (anti-theft)', function () {
     $victimNostr = 'npub1victim'.str_repeat('0', 20);
     $victim = User::factory()->create(['nostr' => $victimNostr]);
