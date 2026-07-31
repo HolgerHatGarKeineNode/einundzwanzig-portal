@@ -255,16 +255,22 @@ class Meetup extends Model implements HasMedia
      * Idempotent: ein bereits hinzugefügter Nutzer bleibt unverändert. Gibt
      * true zurück, wenn neu hinzugefügt (false = war bereits Mitglied).
      * Geteilt von REST-Controller (addToMine) und MCP-Tool (AddMeetupToMineTool).
+     *
+     * Bewusst attach() statt syncWithoutDetaching([...  => ['is_leader' => false]]):
+     * sync() schreibt übergebene Pivot-Attribute per updateExistingPivot auch auf
+     * BESTEHENDE Zeilen. Ein Leader, der sein eigenes Meetup nochmals zu „Meine
+     * Meetups" hinzufügt, wurde dadurch still auf is_leader = false degradiert und
+     * verlor Schreibrechte auf Meetup und alle Termine (403 beim Termin-Anlegen).
      */
     public function addMember(User $user): bool
     {
-        $wasMember = $this->hasMember($user);
+        if ($this->hasMember($user)) {
+            return false;
+        }
 
-        $this->users()->syncWithoutDetaching([
-            $user->getKey() => ['is_leader' => false],
-        ]);
+        $this->users()->attach($user->getKey(), ['is_leader' => false]);
 
-        return ! $wasMember;
+        return true;
     }
 
     /**
