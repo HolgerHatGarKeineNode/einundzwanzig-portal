@@ -42,11 +42,13 @@ class MeetupLeaderController extends Controller
      * kein Account für den npub, wird er angelegt (greift, sobald die Person sich
      * erstmals einloggt). Idempotent: ein bereits gesetzter Leader bleibt Leader.
      */
-    #[Response(status: 403, description: 'Nur ein Leader darf weitere Leader einsetzen.')]
+    #[Response(status: 403, description: 'Nur ein Leader darf weitere Leader einsetzen; ein Meetup-Steward nicht sich selbst.')]
     #[Response(status: 422, description: 'Ungültiger npub.')]
     public function store(StoreMeetupLeaderRequest $request, Meetup $meetup): JsonResponse
     {
         $user = NostrLogin::findOrCreateUser($request->string('npub')->toString());
+
+        Gate::authorize('appointLeader', [$meetup, $user]);
 
         $meetup->promoteLeader($user);
 

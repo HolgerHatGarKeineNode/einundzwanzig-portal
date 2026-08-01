@@ -163,22 +163,30 @@ class extends Component {
 
                     <flux:table.cell>
                         <div class="flex flex-col space-y-2">
-                            @if(auth()->check() && $meetup->leadByMe)
-                                <div>
-                                    <flux:button
-                                        :href="route_with_country('meetups.edit', ['meetup' => $meetup])"
-                                        size="xs"
-                                        variant="filled" icon="pencil">
-                                        {{ __('Bearbeiten') }}
-                                    </flux:button>
-                                </div>
-                                <div>
-                                    <flux:button
-                                        :href="route_with_country('meetups.events.create', ['meetup' => $meetup])"
-                                        size="xs" variant="filled" icon="calendar">
-                                        {{ __('Neues Event erstellen') }}
-                                    </flux:button>
-                                </div>
+                            @if(auth()->check())
+                                {{-- Bearbeiten (inkl. Leader-Verwaltung) folgt der update-Ability:
+                                     Leader, Ersteller, Super-Admin und Meetup-Steward. --}}
+                                @if($meetup->leadByMe || auth()->user()->can('update', $meetup))
+                                    <div>
+                                        <flux:button
+                                            :href="route_with_country('meetups.edit', ['meetup' => $meetup])"
+                                            size="xs"
+                                            variant="filled" icon="pencil">
+                                            {{ __('Bearbeiten') }}
+                                        </flux:button>
+                                    </div>
+                                @endif
+                                {{-- Termin-Schaltfläche bleibt an der Pivot-Leaderschaft: sie ist
+                                     die Affordance für die eigenen Meetups, nicht die Rechtegrenze. --}}
+                                @if($meetup->leadByMe)
+                                    <div>
+                                        <flux:button
+                                            :href="route_with_country('meetups.events.create', ['meetup' => $meetup])"
+                                            size="xs" variant="filled" icon="calendar">
+                                            {{ __('Neues Event erstellen') }}
+                                        </flux:button>
+                                    </div>
+                                @endif
                             @elseif(!auth()->check())
                                 <flux:link :href="route('login')">{{ __('Log in') }}</flux:link>
                             @endif

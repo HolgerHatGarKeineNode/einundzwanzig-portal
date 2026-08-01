@@ -72,6 +72,36 @@ class User extends Authenticatable implements CipherSweetEncrypted
     ];
 
     /**
+     * Rolle mit uneingeschränkter Vollmacht über alles (MCP-SuperAdmin-Tools inklusive).
+     */
+    public const ROLE_SUPER_ADMIN = 'super-admin';
+
+    /**
+     * Rolle, die einen Nutzer zum Verwalter ALLER Meetups macht, ohne Ersteller
+     * oder Leader des einzelnen Meetups zu sein. Sie schaltet die update- und
+     * manageLeaders-Ability frei (MeetupPolicy) und damit alles, was daran
+     * hängt: Stammdaten, Logo, RSVP-Einstellungen, Teilnehmerlisten, das
+     * Anlegen und Bearbeiten von Terminen im Portal — plattformweit. Das ist
+     * die Vollmacht eines Erstellers, nur eben für jedes Meetup.
+     *
+     * Was sie bewusst NICHT tut: sie schreibt keine meetup_user-Pivot und setzt
+     * kein created_by um. „Meine Meetups" (Meetup::scopeAssociatedWith(),
+     * User::meetups()) bleibt dadurch klein, und der Entzug der Rolle entzieht
+     * die Rechte wirklich — es bleibt keine Pivot-Zeile zurück. Damit das hält,
+     * verbietet MeetupPolicy::appointLeader() die Selbstbeförderung.
+     */
+    public const ROLE_MEETUP_STEWARD = 'meetup-steward';
+
+    /**
+     * Darf dieser Nutzer jedes Meetup verwalten, ohne dessen Ersteller oder
+     * Leader zu sein? Maßgeblich für MeetupPolicy::update()/manageLeaders().
+     */
+    public function managesAllMeetups(): bool
+    {
+        return $this->hasAnyRole([self::ROLE_MEETUP_STEWARD, self::ROLE_SUPER_ADMIN]);
+    }
+
+    /**
      * Get the user's initials
      */
     public function initials(): string

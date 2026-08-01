@@ -60,24 +60,65 @@ class MeetupPolicy
 
     /**
      * Stammdaten bearbeiten: der Ersteller (bzw. Super-Admin) ODER ein
-     * delegierter Leader (meetup_user.is_leader = true). Die bloße
+     * delegierter Leader (meetup_user.is_leader = true) ODER ein Meetup-Steward
+     * (Rolle meetup-steward, gilt für alle Meetups). Die bloße
      * „Meine Meetups"-Mitgliedschaft (is_leader = false) berechtigt NICHT
      * mehr zum Bearbeiten — Leader werden über manageLeaders() vergeben.
      * Gilt einheitlich für REST-API, MCP und Portal-Frontend.
      */
     public function update(User $user, Meetup $meetup): bool
     {
-        return $this->owns($user, $meetup) || $meetup->isLeader($user);
+        return $this->owns($user, $meetup)
+            || $meetup->isLeader($user)
+            || $user->managesAllMeetups();
     }
 
     /**
-     * Weitere Leader einsetzen/entziehen: nur ein bestehender Leader bzw. der
-     * Ersteller/Super-Admin. Delegation ist damit selbsttragend — jeder Leader
-     * kann neue Leader benennen (der Ersteller selbst kann nie entzogen werden,
-     * das erzwingt der Controller).
+     * Weitere Leader einsetzen/entziehen: ein bestehender Leader, der
+     * Ersteller/Super-Admin oder ein Meetup-Steward (Rolle meetup-steward, für
+     * jedes Meetup). Delegation ist damit selbsttragend — jeder Leader kann
+     * neue Leader benennen (der Ersteller selbst kann nie entzogen werden, das
+     * erzwingt der Controller).
      */
     public function manageLeaders(User $user, Meetup $meetup): bool
     {
-        return $this->owns($user, $meetup) || $meetup->isLeader($user);
+        return $this->owns($user, $meetup)
+            || $meetup->isLeader($user)
+            || $user->managesAllMeetups();
+    }
+
+    /**
+     * Einen KONKRETEN Nutzer zum Leader befördern. Zusätzlich zu
+     * manageLeaders() gilt: wer nur kraft globaler Rolle (Meetup-Steward oder
+     * Super-Admin) autorisiert ist, darf sich nicht SELBST zum Leader dieses
+     * Meetups machen.
+     *
+     * Grund: die Beförderung schriebe eine meetup_user-Zeile, und die überlebt
+     * den Entzug der Rolle — sie brächte dauerhafte Termin-Rechte
+     * (MeetupEventPolicy::update() über isLeader()) und hängte das Meetup in
+     * „Meine Meetups" ein (Meetup::scopeAssociatedWith()). Genau das soll die
+     * Rolle nicht tun. Wer eine lokale Bindung an das Meetup hat (Ersteller
+     * oder bereits Leader), ist davon nicht betroffen.
+     */
+    public function appointLeader(User $user, Meetup $meetup, ?User $target = null): bool
+    {
+        if (! $this->manageLeaders($user, $meetup)) {
+            return false;
+        }
+
+        if ($target !== null && $target->is($user) && ! $this->hasLocalClaim($user, $meetup)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Bindung an dieses konkrete Meetup — Ersteller oder eingetragener Leader.
+     * Bewusst ohne die globalen Rollen aus owns()/managesAllMeetups().
+     */
+    private function hasLocalClaim(User $user, Meetup $meetup): bool
+    {
+        return (int) $meetup->created_by === $user->id || $meetup->isLeader($user);
     }
 }

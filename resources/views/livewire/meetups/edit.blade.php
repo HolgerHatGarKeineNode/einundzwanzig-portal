@@ -139,6 +139,7 @@ class extends Component
      * Einen weiteren Leader per npub einsetzen. Nur Leader/Ersteller dürfen das
      * (manageLeaders). Existiert noch kein Account für den npub, wird er angelegt
      * (greift beim ersten Login). Idempotent: ein bereits gesetzter Leader bleibt.
+     * Ein Meetup-Steward darf sich nicht selbst eintragen (appointLeader).
      */
     public function addLeader(): void
     {
@@ -146,7 +147,11 @@ class extends Component
 
         $validated = $this->validate(['leaderNpub' => ['required', 'string', new ValidNpub]]);
 
-        $this->meetup->promoteLeader(NostrLogin::findOrCreateUser($validated['leaderNpub']));
+        $target = NostrLogin::findOrCreateUser($validated['leaderNpub']);
+
+        abort_unless(auth()->user()->can('appointLeader', [$this->meetup, $target]), 403);
+
+        $this->meetup->promoteLeader($target);
 
         $this->leaderNpub = '';
         unset($this->leaders);
