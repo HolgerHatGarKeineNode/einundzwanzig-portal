@@ -66,6 +66,9 @@
         }
     },
     "autoload-dev": {
+        "files": [
+            "tests/tia-coverage-driver.php"
+        ],
         "psr-4": {
             "Tests\\": "tests/"
         }
