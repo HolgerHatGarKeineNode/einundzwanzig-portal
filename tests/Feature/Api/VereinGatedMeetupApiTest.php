@@ -34,7 +34,7 @@ beforeEach(function () {
 function seedMeetupWithMember(City $city, bool $isLeader, string $name, string $npub): array
 {
     $user = User::factory()->create(['nostr' => $npub]);
-    $meetup = Meetup::factory()->create(['city_id' => $city->id, 'name' => $name]);
+    $meetup = Meetup::factory()->creatorWithoutNostr()->create(['city_id' => $city->id, 'name' => $name]);
     $meetup->users()->attach($user->id, ['is_leader' => $isLeader]);
 
     return [$meetup, $user];
@@ -92,7 +92,7 @@ it('returns only meetups that have a verein member, filtering non-member meetups
 
     // Meetup mit einem User, der KEIN Vereinsmitglied ist → darf nicht erscheinen.
     $outsider = User::factory()->create(['nostr' => REAL_NPUBS[3]]);
-    $ungated = Meetup::factory()->create(['city_id' => $this->city->id, 'name' => 'Ohne Vereinsbezug']);
+    $ungated = Meetup::factory()->creatorWithoutNostr()->create(['city_id' => $this->city->id, 'name' => 'Ohne Vereinsbezug']);
     $ungated->users()->attach($outsider->id, ['is_leader' => false]);
 
     fakeVereinMembers($member); // nur $member ist im Verein

@@ -39,13 +39,13 @@ function fakeVereinMembersForMap(string ...$npubs): void
 it('returns visible meetups in JSON shape on GET /api/meetups', function () {
     fakeVereinMembersForMap();
 
-    $visible = Meetup::factory()->create([
+    $visible = Meetup::factory()->creatorWithoutNostr()->create([
         'city_id' => $this->city->id,
         'visible_on_map' => true,
         'name' => 'Visible Meetup',
         'community' => 'einundzwanzig',
     ]);
-    Meetup::factory()->create([
+    Meetup::factory()->creatorWithoutNostr()->create([
         'city_id' => $this->city->id,
         'visible_on_map' => false,
         'name' => 'Hidden Meetup',
@@ -68,11 +68,11 @@ it('flags has_room true for verein-gated meetups and false otherwise', function 
 
     // Gegatet: sichtbares Meetup mit einem Vereinsmitglied in der Pivot.
     $member = User::factory()->create(['nostr' => $npub]);
-    $gated = Meetup::factory()->create(['city_id' => $this->city->id, 'visible_on_map' => true, 'name' => 'Mit Raum']);
+    $gated = Meetup::factory()->creatorWithoutNostr()->create(['city_id' => $this->city->id, 'visible_on_map' => true, 'name' => 'Mit Raum']);
     $gated->users()->attach($member->id, ['is_leader' => false]);
 
     // Nicht gegatet: sichtbares Meetup ohne Vereinsmitglied.
-    $ungated = Meetup::factory()->create(['city_id' => $this->city->id, 'visible_on_map' => true, 'name' => 'Ohne Raum']);
+    $ungated = Meetup::factory()->creatorWithoutNostr()->create(['city_id' => $this->city->id, 'visible_on_map' => true, 'name' => 'Ohne Raum']);
 
     fakeVereinMembersForMap($npub);
 
@@ -85,7 +85,7 @@ it('flags has_room true for verein-gated meetups and false otherwise', function 
 it('includes intro and logo when ?withIntro=1&withLogos=1 is provided', function () {
     fakeVereinMembersForMap();
 
-    Meetup::factory()->create([
+    Meetup::factory()->creatorWithoutNostr()->create([
         'city_id' => $this->city->id,
         'visible_on_map' => true,
         'name' => 'WithExtras',
@@ -102,12 +102,12 @@ it('includes intro and logo when ?withIntro=1&withLogos=1 is provided', function
 });
 
 it('returns einundzwanzig community meetups in BTC-Map format', function () {
-    Meetup::factory()->create([
+    Meetup::factory()->creatorWithoutNostr()->create([
         'city_id' => $this->city->id,
         'community' => 'einundzwanzig',
         'name' => 'BTC Map Meetup',
     ]);
-    Meetup::factory()->create([
+    Meetup::factory()->creatorWithoutNostr()->create([
         'city_id' => $this->city->id,
         'community' => 'other',
         'name' => 'Excluded Meetup',
@@ -125,7 +125,7 @@ it('returns einundzwanzig community meetups in BTC-Map format', function () {
 });
 
 it('returns meetup events as JSON on GET /api/meetup-events', function () {
-    $meetup = Meetup::factory()->create(['city_id' => $this->city->id]);
+    $meetup = Meetup::factory()->creatorWithoutNostr()->create(['city_id' => $this->city->id]);
     MeetupEvent::factory()->create([
         'meetup_id' => $meetup->id,
         'start' => now()->addDay(),
@@ -140,7 +140,7 @@ it('returns meetup events as JSON on GET /api/meetup-events', function () {
 });
 
 it('filters /api/meetup-events by date when one is supplied', function () {
-    $meetup = Meetup::factory()->create(['city_id' => $this->city->id]);
+    $meetup = Meetup::factory()->creatorWithoutNostr()->create(['city_id' => $this->city->id]);
     MeetupEvent::factory()->create(['meetup_id' => $meetup->id, 'start' => now()->addMonth()->startOfMonth()->addDays(5)]);
 
     $date = now()->addMonth()->startOfMonth()->format('Y-m-d');

@@ -43,6 +43,23 @@ class MeetupFactory extends Factory
         ];
     }
 
+    /**
+     * Ersteller ohne npub — für Tests rund um das Vereinsmitglied-Gate.
+     *
+     * {@see Meetup::booted()} hängt created_by automatisch als Leader in die
+     * meetup_user-Pivot. Da UserFactory den npub zu 70 % aus der 18 Einträge
+     * langen {@see NostrHelper::realNpubs()}-Liste zieht — derselben, aus der
+     * die Gate-Tests ihre Vereinsmitglieder nehmen — kollidiert dieser
+     * ungewollte Leader gelegentlich mit einem gefakten Mitglied und gatet das
+     * Meetup fälschlich. Dieser State nimmt den Zufall aus der Gleichung.
+     */
+    public function creatorWithoutNostr(): static
+    {
+        return $this->state(fn (array $attrs) => [
+            'created_by' => User::factory()->create(['nostr' => null]),
+        ]);
+    }
+
     public function active(): static
     {
         return $this->state(fn (array $attrs) => [
