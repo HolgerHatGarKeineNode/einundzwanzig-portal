@@ -15,13 +15,21 @@ class SeoDataAttribute
     // Centralized SEO data definitions by key as SEOData instances (lazy initialized)
     private static array $seoDefinitions;
 
+    /**
+     * Sprache, Markenname und Länderbild, mit denen die Definitionen gebaut
+     * wurden. Ohne diesen Abgleich fror der erste Aufruf alles ein — die
+     * Definitionen stecken voller __()-Aufrufe, und ein zweiter Request im
+     * selben Prozess bekäme Titel in der Sprache des ersten.
+     */
+    private static ?string $definitionsSignature = null;
+
     private static function initDefinitions(): void
     {
         $domainAttributes = get_domain_attributes();
         $domainImage = $domainAttributes['image'];
         $domainAuthor = $domainAttributes['author'];
         $domainTwitter = $domainAttributes['twitter'];
-        $domainSiteName = __('EINUNDZWANZIG Portal');
+        $domainSiteName = $domainAttributes['siteName'];
 
         self::$seoDefinitions = [
             'login' => new SEOData(
@@ -319,8 +327,15 @@ class SeoDataAttribute
     // Static method to get SEO data by key as SEOData instance
     public static function getData(string $key): SEOData
     {
-        if (empty(self::$seoDefinitions)) {
+        $signature = implode('|', [
+            app()->getLocale(),
+            (string) config('app.name'),
+            (string) session('lang_country', 'de-DE'),
+        ]);
+
+        if (self::$definitionsSignature !== $signature) {
             self::initDefinitions();
+            self::$definitionsSignature = $signature;
         }
 
         return self::$seoDefinitions[$key] ?? self::$seoDefinitions['default'];

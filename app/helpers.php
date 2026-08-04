@@ -73,7 +73,12 @@ if (! function_exists('get_domain_attributes')) {
 
         $author = $countryAuthorMapping[$langCountry] ?? 'einundzwanzig';
         $twitter = $countryTwitterMapping[$langCountry] ?? '_einundzwanzig_';
-        $siteName = $countrySiteNameMapping[$langCountry] ?? 'EINUNDZWANZIG Portal';
+
+        // Der Markenname gehört zur Domain, nicht zur Nutzersprache: wer auf
+        // portal.eenentwintig.net liest, ist auf dem EENENTWINTIG Portaal —
+        // auch mit deutscher Oberfläche. DomainMiddleware setzt app.name je
+        // Host; für Hosts ohne Eintrag greift APP_NAME.
+        $siteName = config('app.name');
 
         return [
             'image' => $image,
