@@ -32,7 +32,7 @@
             <flux:navbar.item
                 class="h-10 max-lg:hidden [&>div>svg]:size-5"
                 icon="folder-git-2"
-                href="https://gitworkshop.dev/holgerhatgarkeinenode@einundzwanzig.space/einundzwanzig-app"
+                href="https://github.com/HolgerHatGarKeineNode/einundzwanzig-app"
                 target="_blank"
                 :label="__('Repository')"
             />
@@ -121,7 +121,7 @@
         </flux:navlist.item>
 
         <flux:navlist.item icon="folder-git-2"
-                           href="https://gitworkshop.dev/holgerhatgarkeinenode@einundzwanzig.space/einundzwanzig-app"
+                           href="https://github.com/HolgerHatGarKeineNode/einundzwanzig-app"
                            target="_blank">
             {{ __('Repository') }}
         </flux:navlist.item>
