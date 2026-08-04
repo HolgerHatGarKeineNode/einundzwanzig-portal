@@ -63,6 +63,55 @@ declare(strict_types=1);
 
 (static function (): void {
     /**
+     * Liefert den PHP-Code einer Datei ohne Kommentare.
+     *
+     * Die Konfigurationserkennung unten sucht in tests/Pest.php nach den
+     * Aufrufen "->tia(" und "->locally(". Ohne diesen Schritt wuerde jede
+     * Erwaehnung im Fliesstext als Konfiguration zaehlen — auch eine
+     * AUSKOMMENTIERTE Konfigurationszeile. Das kostet nicht nur den
+     * Neustart (~0,21 s) fuer nichts; ein Kommentar, der "->locally("
+     * erwaehnt, waehrend die Konfiguration in Wahrheit always() benutzt,
+     * wuerde den Neustart unter "--ci" faelschlich unterdruecken und TIA
+     * ohne Treiber laufen lassen. Pest normalisiert seine eigenen
+     * Content-Hashes aus demselben Grund ueber token_get_all
+     * (Tia\ContentHash::hashPhpContent).
+     *
+     * Faellt das Tokenisieren aus, wird der Rohtext zurueckgegeben. Das ist
+     * die sichere Richtung nur fuer die "->tia("-Erkennung (lieber einmal zu
+     * viel neu starten als TIA ohne Treiber) — fuer "->locally(" waere der
+     * Rohtext gerade die UNSICHERE Richtung, siehe oben. Vertretbar, weil der
+     * Zweig praktisch unerreichbar ist: token_get_all() liefert nur bei einer
+     * komplett leeren Zeichenkette ein leeres Array (Syntaxfehler und fehlendes
+     * PHP-Tag tokenisieren fehlertolerant weiter), und eine leere Datei
+     * enthaelt kein "->tia(" — die Funktion steigt dann vorher aus.
+     */
+    $codeWithoutComments = static function (string $raw): string {
+        $tokens = @token_get_all($raw);
+
+        if ($tokens === []) {
+            return $raw;
+        }
+
+        $code = '';
+
+        foreach ($tokens as $token) {
+            if (is_array($token)) {
+                if ($token[0] === T_COMMENT || $token[0] === T_DOC_COMMENT) {
+                    continue;
+                }
+
+                $code .= $token[1];
+
+                continue;
+            }
+
+            $code .= $token;
+        }
+
+        return $code;
+    };
+
+    /**
      * Braucht dieser Lauf ueberhaupt Line-Coverage?
      *
      * Drei Faelle, in denen Pest einen Treiber verlangt:
@@ -77,7 +126,7 @@ declare(strict_types=1);
      *
      * @param  array<int, string>  $arguments
      */
-    $coverageIsNeeded = static function (string $root, array $arguments): bool {
+    $coverageIsNeeded = static function (string $root, array $arguments) use ($codeWithoutComments): bool {
         foreach ($arguments as $argument) {
             if (str_starts_with($argument, '--coverage')) {
                 return true;
@@ -115,7 +164,29 @@ declare(strict_types=1);
 
         $contents = @file_get_contents($configuration);
 
-        return is_string($contents) && str_contains($contents, '->tia(');
+        if (! is_string($contents)) {
+            return false;
+        }
+
+        $contents = $codeWithoutComments($contents);
+
+        if (! str_contains($contents, '->tia(')) {
+            return false;
+        }
+
+        /*
+         * Dieselbe Rangfolge wie Pest\Plugins\Tia::isEnabledForRun(): ein
+         * ausdrueckliches "--tia"/PEST_TIA schlaegt "--ci" (oben schon
+         * behandelt), aber eine dauerhafte Konfiguration mit locally() wird
+         * von "--ci" abgeschaltet. Ohne diese Zeile wuerde der Hook fuer
+         * jeden "--ci"-Lauf umsonst neu starten (~0,21 s), obwohl TIA gar
+         * nicht laeuft. Bei always() bleibt der Neustart richtig.
+         */
+        if (str_contains($contents, '->locally(') && in_array('--ci', $arguments, true)) {
+            return false;
+        }
+
+        return true;
     };
 
     if (PHP_SAPI !== 'cli') {

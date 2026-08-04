@@ -109,7 +109,7 @@
         "test": [
             "@php artisan config:clear --ansi",
             "@test:lint",
-            "@php artisan test"
+            "@php artisan test --fresh"
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
