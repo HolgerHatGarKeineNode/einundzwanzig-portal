@@ -19,33 +19,28 @@ if (! function_exists('get_domain_attributes')) {
     {
         $langCountry = session('lang_country', 'de-DE');
 
-        // Check if specific domain image exists
-        if (! file_exists(public_path('img/domains/'.$langCountry.'.jpg'))) {
-            $langCountry = 'de-DE';
-        }
-
-        $southAmericanCountries = [
-            'ar-AR', // Argentina
-            'bo-BO', // Bolivia
-            'br-BR', // Brazil
-            'cl-CL', // Chile
-            'co-CO', // Colombia
-            'ec-EC', // Ecuador
-            'gy-GY', // Guyana
-            'py-PY', // Paraguay
-            'pe-PE', // Peru
-            'sr-SR', // Suriname
-            'uy-UY', // Uruguay
-            've-VE', // Venezuela
+        /*
+         * Spanischsprachiges Lateinamerika teilt sich ein Motiv und die
+         * veintiuno-Marke. Nur Länder, die auch in config/lang-country.php
+         * unter 'allowed' stehen — alles andere kann nie in lang_country
+         * landen und wäre toter Code. Kommt ein Land dazu, gehört es in
+         * beide Listen.
+         */
+        $latinAmerican = [
+            'es-CL', // Chile
+            'es-CO', // Kolumbien
         ];
 
-        $author = 'einundzwanzig';
-        $image = asset('img/domains/'.$langCountry.'.jpg');
-        // Use LAT image for South American countries
-        if (in_array($langCountry, $southAmericanCountries, true)) {
+        if (in_array($langCountry, $latinAmerican, true)) {
+            // Vor dem Bild-Fallback: lat.png ist kein .jpg, die Prüfung unten
+            // würde die Erkennung sonst auf de-DE zurückwerfen.
             $image = asset('img/domains/lat.png');
-            $author = 'veintiuno';
-            $twitter = 'veintiunolat';
+        } else {
+            if (! file_exists(public_path('img/domains/'.$langCountry.'.jpg'))) {
+                $langCountry = 'de-DE';
+            }
+
+            $image = asset('img/domains/'.$langCountry.'.jpg');
         }
 
         $countryAuthorMapping = [
@@ -55,6 +50,8 @@ if (! function_exists('get_domain_attributes')) {
             'en-GB' => 'twenty-one',
             'en-US' => 'twenty-one',
             'es-ES' => 'veintiuno',
+            'es-CL' => 'veintiuno',
+            'es-CO' => 'veintiuno',
             'nl-NL' => 'eenentwintig',
             'pl-PL' => 'dwadzieścia',
             'hu-HU' => 'huszonegy',
@@ -66,6 +63,8 @@ if (! function_exists('get_domain_attributes')) {
             'de-CH' => '_einundzwanzig_',
             'en-GB' => '_einundzwanzig_',
             'en-US' => '_einundzwanzig_',
+            'es-CL' => 'veintiunolat',
+            'es-CO' => 'veintiunolat',
             'nl-NL' => '_Eenentwintig_',
             'pl-PL' => '21BitcoinPolska',
             'hu-HU' => 'HUSZONEGYworld',

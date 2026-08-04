@@ -51,6 +51,35 @@ it('does not freeze the site name after the first lookup', function () {
     expect(SeoDataAttribute::getData('login')->site_name)->toBe('DWADZIEŚCIA JEDEN Portal');
 });
 
+it('gives spanish-speaking latin america the lat image and the veintiuno brand', function (string $langCountry) {
+    // Der Zweig war dreifach tot: falsch geformte Codes (ar-AR statt es-AR),
+    // keiner davon in config/lang-country.php, und der Bild-Fallback setzte
+    // lang_country vorher auf de-DE zurück, weil lat.png kein .jpg ist.
+    session(['lang_country' => $langCountry]);
+
+    expect(get_domain_attributes())
+        ->image->toContain('img/domains/lat.png')
+        ->author->toBe('veintiuno')
+        ->twitter->toBe('veintiunolat');
+})->with(['es-CL', 'es-CO']);
+
+it('falls back to the german image for countries without their own', function () {
+    session(['lang_country' => 'lv-LV']);
+
+    expect(get_domain_attributes())
+        ->image->toContain('img/domains/de-DE.jpg')
+        ->author->toBe('einundzwanzig');
+});
+
+it('keeps its own image for countries that have one', function () {
+    session(['lang_country' => 'hu-HU']);
+
+    expect(get_domain_attributes())
+        ->image->toContain('img/domains/hu-HU.jpg')
+        ->author->toBe('huszonegy')
+        ->twitter->toBe('HUSZONEGYworld');
+});
+
 it('keeps the brand when the user switches the interface language', function () {
     // Ein Deutscher auf der niederlaendischen Domain liest weiterhin auf dem
     // EENENTWINTIG Portaal — die Site heisst so, unabhaengig von der Sprache.
