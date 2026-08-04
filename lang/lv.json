@@ -713,5 +713,11 @@
     "Wird eingeschmolzen & gelöscht": "Tiks apvienots un dzēsts",
     "Wähle je Feld, welche Daten dein verbundenes Konto übernimmt. Nostr bringt oft ein Bild oder eine Lightning-Adresse mit, die du noch nicht hast.": "Katram laukam izvēlies, kurus datus pārņems tavs savienotais konts. Nostr bieži piedāvā attēlu vai Lightning adresi, kādas tev vēl nav.",
     "kein Lightning": "bez Lightning",
-    "kein Nostr": "bez Nostr"
+    "kein Nostr": "bez Nostr",
+    ":count Zusage|:count Zusagen": ":count dalībnieku|:count dalībnieks|:count dalībnieki",
+    ":count Vielleicht|:count Vielleicht": "Varbūt: :count|Varbūt: :count|Varbūt: :count",
+    ":count Anmeldung|:count Anmeldungen": ":count reģistrāciju|:count reģistrācija|:count reģistrācijas",
+    ":count weiterer Termin|:count weitere Termine": ":count papildu pasākumu|:count papildu pasākums|:count papildu pasākumi",
+    ":count Event|:count Events": ":count pasākumu|:count pasākums|:count pasākumi",
+    ":count Nutzer|:count Nutzer": ":count lietotāju|:count lietotājs|:count lietotāji"
 }

@@ -128,9 +128,9 @@ class extends Component {
                                         {{ $meetup->nextEvent['start']->asDateTime() }}
                                     </flux:badge>
                                     <div class="text-xs text-zinc-500 flex items-center gap-2">
-                                        <span>{{ $meetup->nextEvent['attendees'] }} {{ __('Zusagen') }}</span>
+                                        <span>{{ trans_choice(':count Zusage|:count Zusagen', $meetup->nextEvent['attendees']) }}</span>
                                         <flux:separator vertical/>
-                                        <span>{{ $meetup->nextEvent['might_attendees'] }} {{ __('Vielleicht') }}</span>
+                                        <span>{{ trans_choice(':count Vielleicht|:count Vielleicht', $meetup->nextEvent['might_attendees']) }}</span>
                                     </div>
                                 </div>
                             </a>

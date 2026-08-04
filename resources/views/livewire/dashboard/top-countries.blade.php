@@ -100,7 +100,7 @@ class extends Component {
                                      width="24" height="12"/>
                                 <div class="flex-1">
                                     <div class="font-medium">{{ $country->name }}</div>
-                                    <div class="text-xs text-zinc-500">{{ $country->user_count }} {{ __('User') }}</div>
+                                    <div class="text-xs text-zinc-500">{{ trans_choice(':count Nutzer|:count Nutzer', $country->user_count) }}</div>
                                 </div>
                             </div>
                         </a>

@@ -270,9 +270,9 @@ class extends Component {
                         @if($canSeeAttendees)
                             <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
                                 <div class="text-xs text-zinc-500 flex items-center gap-2">
-                                    <span>{{ count($event->attendees ?? []) }} {{ __('Zusagen') }}</span>
+                                    <span>{{ trans_choice(':count Zusage|:count Zusagen', count($event->attendees ?? [])) }}</span>
                                     <flux:separator vertical/>
-                                    <span>{{ count($event->might_attendees ?? []) }} {{ __('Vielleicht') }}</span>
+                                    <span>{{ trans_choice(':count Vielleicht|:count Vielleicht', count($event->might_attendees ?? [])) }}</span>
                                 </div>
                             </flux:text>
                         @endif

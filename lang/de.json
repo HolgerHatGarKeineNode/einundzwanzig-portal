@@ -713,5 +713,11 @@
     "Wird eingeschmolzen & gelöscht": "Wird eingeschmolzen & gelöscht",
     "Wähle je Feld, welche Daten dein verbundenes Konto übernimmt. Nostr bringt oft ein Bild oder eine Lightning-Adresse mit, die du noch nicht hast.": "Wähle je Feld, welche Daten dein verbundenes Konto übernimmt. Nostr bringt oft ein Bild oder eine Lightning-Adresse mit, die du noch nicht hast.",
     "kein Lightning": "kein Lightning",
-    "kein Nostr": "kein Nostr"
+    "kein Nostr": "kein Nostr",
+    ":count Zusage|:count Zusagen": ":count Zusage|:count Zusagen",
+    ":count Vielleicht|:count Vielleicht": ":count Vielleicht|:count Vielleicht",
+    ":count Anmeldung|:count Anmeldungen": ":count Anmeldung|:count Anmeldungen",
+    ":count weiterer Termin|:count weitere Termine": ":count weiterer Termin|:count weitere Termine",
+    ":count Event|:count Events": ":count Event|:count Events",
+    ":count Nutzer|:count Nutzer": ":count Nutzer|:count Nutzer"
 }

@@ -166,7 +166,7 @@ class extends Component {
 
                         <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
                             <div class="text-xs text-zinc-500 flex items-center gap-2">
-                                <span>{{ $event->registrations->count() }} {{ __('Anmeldungen') }}</span>
+                                <span>{{ trans_choice(':count Anmeldung|:count Anmeldungen', $event->registrations->count()) }}</span>
                             </div>
                         </flux:text>
 

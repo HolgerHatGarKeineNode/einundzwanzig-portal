@@ -101,7 +101,7 @@ class extends Component {
                                     @endunless
                                 </div>
                                 <div class="flex items-center space-x-2">
-                                    <div class="text-xs text-zinc-500">{{ $meetup->users_count }} {{ __('User') }}</div>
+                                    <div class="text-xs text-zinc-500">{{ trans_choice(':count Nutzer|:count Nutzer', $meetup->users_count) }}</div>
                                     <img
                                         alt="{{ strtolower($meetup->city->country->code) }}"
                                         src="{{ asset('vendor/blade-flags/country-'.strtolower($meetup->city->country->code).'.svg') }}"

@@ -713,5 +713,11 @@
     "Bitte bestätige, dass du deinen Nostr-Schlüssel gesichert hast.": "Please confirm that you have backed up your Nostr key.",
     "Dieser Lightning-Zugang wurde zu Nostr migriert. Bitte melde dich mit Nostr an.": "This Lightning login was migrated to Nostr. Please sign in with Nostr.",
     "Dein Nostr-Konto wurde erfolgreich verbunden. Lightning ist für dieses Konto jetzt deaktiviert — melde dich künftig mit Nostr an.": "Your Nostr account was linked successfully. Lightning is now disabled for this account — sign in with Nostr from now on.",
-    "Welcher Wochentag im Monat? (z.B. „letzter Freitag“)": "Which day of the month? (e.g. „last Friday“)"
+    "Welcher Wochentag im Monat? (z.B. „letzter Freitag“)": "Which day of the month? (e.g. „last Friday“)",
+    ":count Zusage|:count Zusagen": ":count attendee|:count attendees",
+    ":count Vielleicht|:count Vielleicht": ":count maybe|:count maybe",
+    ":count Anmeldung|:count Anmeldungen": ":count registration|:count registrations",
+    ":count weiterer Termin|:count weitere Termine": ":count more date|:count more dates",
+    ":count Event|:count Events": ":count event|:count events",
+    ":count Nutzer|:count Nutzer": ":count user|:count users"
 }

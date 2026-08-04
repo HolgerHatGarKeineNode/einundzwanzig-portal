@@ -383,7 +383,7 @@ class extends Component {
             <flux:card class="space-y-4">
                 <div class="flex items-center justify-between">
                     <flux:heading size="lg">{{ __('Vorschau der Termine') }}</flux:heading>
-                    <flux:badge color="zinc" size="lg">{{ count($this->previewDates) }} {{ __('Events') }}</flux:badge>
+                    <flux:badge color="zinc" size="lg">{{ trans_choice(':count Event|:count Events', count($this->previewDates)) }}</flux:badge>
                 </div>
 
                 <flux:separator />

@@ -713,5 +713,11 @@
     "Wird eingeschmolzen & gelöscht": "Vai ser fundida e eliminada",
     "Wähle je Feld, welche Daten dein verbundenes Konto übernimmt. Nostr bringt oft ein Bild oder eine Lightning-Adresse mit, die du noch nicht hast.": "Escolhe, campo a campo, que dados a tua conta ligada vai assumir. O Nostr traz muitas vezes uma imagem ou um endereço Lightning que ainda não tens.",
     "kein Lightning": "sem Lightning",
-    "kein Nostr": "sem Nostr"
+    "kein Nostr": "sem Nostr",
+    ":count Zusage|:count Zusagen": ":count confirmação|:count confirmações",
+    ":count Vielleicht|:count Vielleicht": ":count talvez|:count talvez",
+    ":count Anmeldung|:count Anmeldungen": ":count inscrição|:count inscrições",
+    ":count weiterer Termin|:count weitere Termine": ":count data adicional|:count datas adicionais",
+    ":count Event|:count Events": ":count evento|:count eventos",
+    ":count Nutzer|:count Nutzer": ":count utilizador|:count utilizadores"
 }

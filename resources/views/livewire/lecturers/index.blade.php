@@ -110,7 +110,7 @@ class extends Component {
                                 </a>
                                 @if($lecturer->future_events_count > 1)
                                     <div class="text-xs text-zinc-500">
-                                        +{{ $lecturer->future_events_count - 1 }} {{ __('weitere Termine') }}
+                                        +{{ trans_choice(':count weiterer Termin|:count weitere Termine', $lecturer->future_events_count - 1) }}
                                     </div>
                                 @endif
                             </div>

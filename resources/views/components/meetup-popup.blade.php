@@ -46,9 +46,9 @@
             @endif
 
             <flux:text class="flex items-center gap-2 mt-2">
-                <span class="text-xs text-zinc-200">{{ $meetup->nextEvent['attendees'] }} {{ __('Zusagen') }}</span>
+                <span class="text-xs text-zinc-200">{{ trans_choice(':count Zusage|:count Zusagen', $meetup->nextEvent['attendees']) }}</span>
                 <flux:separator vertical/>
-                <span class="text-xs text-zinc-200">{{ $meetup->nextEvent['might_attendees'] }} {{ __('Vielleicht') }}</span>
+                <span class="text-xs text-zinc-200">{{ trans_choice(':count Vielleicht|:count Vielleicht', $meetup->nextEvent['might_attendees']) }}</span>
             </flux:text>
         </div>
     @endif

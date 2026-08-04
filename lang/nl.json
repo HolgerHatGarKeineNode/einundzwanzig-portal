@@ -713,5 +713,11 @@
     "Wird eingeschmolzen & gelöscht": "Wordt samengevoegd & verwijderd",
     "Wähle je Feld, welche Daten dein verbundenes Konto übernimmt. Nostr bringt oft ein Bild oder eine Lightning-Adresse mit, die du noch nicht hast.": "Kies per veld welke gegevens je gekoppelde account overneemt. Nostr brengt vaak een foto of een Lightning-adres mee die je nog niet hebt.",
     "kein Lightning": "geen Lightning",
-    "kein Nostr": "geen Nostr"
+    "kein Nostr": "geen Nostr",
+    ":count Zusage|:count Zusagen": ":count deelnemer|:count deelnemers",
+    ":count Vielleicht|:count Vielleicht": ":count misschien|:count misschien",
+    ":count Anmeldung|:count Anmeldungen": ":count registratie|:count registraties",
+    ":count weiterer Termin|:count weitere Termine": ":count extra afspraak|:count extra afspraken",
+    ":count Event|:count Events": ":count evenement|:count evenementen",
+    ":count Nutzer|:count Nutzer": ":count gebruiker|:count gebruikers"
 }

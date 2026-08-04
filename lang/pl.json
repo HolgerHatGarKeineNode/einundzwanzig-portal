@@ -713,5 +713,11 @@
     "Wird eingeschmolzen & gelöscht": "Zostanie scalone i usunięte",
     "Wähle je Feld, welche Daten dein verbundenes Konto übernimmt. Nostr bringt oft ein Bild oder eine Lightning-Adresse mit, die du noch nicht hast.": "Wybierz dla każdego pola, jakie dane przejmie Twoje połączone konto. Nostr często wnosi zdjęcie lub adres Lightning, którego jeszcze nie masz.",
     "kein Lightning": "brak Lightning",
-    "kein Nostr": "brak Nostr"
+    "kein Nostr": "brak Nostr",
+    ":count Zusage|:count Zusagen": ":count potwierdzenie|:count potwierdzenia|:count potwierdzeń",
+    ":count Vielleicht|:count Vielleicht": "Może: :count|Może: :count|Może: :count",
+    ":count Anmeldung|:count Anmeldungen": ":count rejestracja|:count rejestracje|:count rejestracji",
+    ":count weiterer Termin|:count weitere Termine": ":count kolejny termin|:count kolejne terminy|:count kolejnych terminów",
+    ":count Event|:count Events": ":count wydarzenie|:count wydarzenia|:count wydarzeń",
+    ":count Nutzer|:count Nutzer": ":count użytkownik|:count użytkownicy|:count użytkowników"
 }

@@ -713,5 +713,11 @@
     "Bitte bestätige, dass du deinen Nostr-Schlüssel gesichert hast.": "Potvrď prosím, že máš svůj Nostr klíč zazálohovaný.",
     "Dieser Lightning-Zugang wurde zu Nostr migriert. Bitte melde dich mit Nostr an.": "Tento Lightning přístup byl převeden na Nostr. Přihlas se prosím přes Nostr.",
     "Dein Nostr-Konto wurde erfolgreich verbunden. Lightning ist für dieses Konto jetzt deaktiviert — melde dich künftig mit Nostr an.": "Tvůj Nostr účet byl úspěšně propojen. Lightning je pro tento účet nyní vypnutý – přihlašuj se napříště přes Nostr.",
-    "Welcher Wochentag im Monat? (z.B. „letzter Freitag“)": "Který den v týdnu v měsíci? (např. „poslední pátek“)"
+    "Welcher Wochentag im Monat? (z.B. „letzter Freitag“)": "Který den v týdnu v měsíci? (např. „poslední pátek“)",
+    ":count Zusage|:count Zusagen": ":count účastník|:count účastníci|:count účastníků",
+    ":count Vielleicht|:count Vielleicht": "Možná: :count|Možná: :count|Možná: :count",
+    ":count Anmeldung|:count Anmeldungen": ":count přihlášený|:count přihlášení|:count přihlášených",
+    ":count weiterer Termin|:count weitere Termine": ":count další termín|:count další termíny|:count dalších termínů",
+    ":count Event|:count Events": ":count událost|:count události|:count událostí",
+    ":count Nutzer|:count Nutzer": ":count uživatel|:count uživatelé|:count uživatelů"
 }

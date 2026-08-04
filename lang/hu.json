@@ -713,5 +713,11 @@
     "Wird eingeschmolzen & gelöscht": "Beolvad és törlődik",
     "Wähle je Feld, welche Daten dein verbundenes Konto übernimmt. Nostr bringt oft ein Bild oder eine Lightning-Adresse mit, die du noch nicht hast.": "Mezőnként válaszd ki, mely adatokat vegye át az összekapcsolt fiókod. A Nostr gyakran hoz magával olyan képet vagy Lightning címet, amilyened még nincs.",
     "kein Lightning": "nincs Lightning",
-    "kein Nostr": "nincs Nostr"
+    "kein Nostr": "nincs Nostr",
+    ":count Zusage|:count Zusagen": ":count résztvevő|:count résztvevő",
+    ":count Vielleicht|:count Vielleicht": ":count talán|:count talán",
+    ":count Anmeldung|:count Anmeldungen": ":count regisztráció|:count regisztráció",
+    ":count weiterer Termin|:count weitere Termine": ":count további időpont|:count további időpont",
+    ":count Event|:count Events": ":count esemény|:count esemény",
+    ":count Nutzer|:count Nutzer": ":count felhasználó|:count felhasználó"
 }
