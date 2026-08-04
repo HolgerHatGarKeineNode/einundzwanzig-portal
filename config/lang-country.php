@@ -7,6 +7,7 @@ return [
         'bn-BD',
         'bg-BG',
         'ca-ES',
+        'cs-CZ',
         'da-DA',
         'de-AT',
         'de-CH',
@@ -45,6 +46,7 @@ return [
     'fallback_based_on_current_locale' => false,
 
     'languages' => [
+        'cs' => ['name' => 'Čeština', 'countries' => ['cs-CZ']],
         'de' => ['name' => 'Deutsch', 'countries' => ['de-DE', 'de-AT', 'de-CH']],
         'en' => ['name' => 'English', 'countries' => ['en-GB', 'en-US', 'en-AU', 'en-CA']],
         'es' => ['name' => 'Español', 'countries' => ['es-ES', 'es-CL', 'es-CO']],

@@ -341,7 +341,7 @@ class extends Component {
                                 <flux:select.option value="{{ $key }}">{{ $label }}</flux:select.option>
                             @endforeach
                         </flux:select>
-                        <flux:description>{{ __('Welcher Wochentag im Monat? (z.B. "letzter Freitag")') }}</flux:description>
+                        <flux:description>{{ __('Welcher Wochentag im Monat? (z.B. „letzter Freitag“)') }}</flux:description>
                         <flux:error name="recurrenceDayPosition"/>
                     </flux:field>
                 </div>

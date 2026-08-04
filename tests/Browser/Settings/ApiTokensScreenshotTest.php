@@ -6,6 +6,12 @@ it('shows the api token management UI and the one-time token reveal', function (
     // Pre-existing token so the "Aktive Tokens" table is populated.
     $user->createToken('Mein Laptop');
 
+    // Das /de-Präfix ist der LÄNDER-Filter, nicht die Sprache: die Sprache kommt
+    // aus der Session, sonst greift der Fallback en-GB. Solange die Token-Strings
+    // in en.json leer waren, fiel Laravel auf den deutschen Key zurück und der
+    // Test war zufällig grün — mit echter englischer Übersetzung nicht mehr.
+    $this->withSession(['lang_country' => 'de-DE', 'locale' => 'de']);
+
     $page = visit('/de/settings/api-tokens');
 
     $page->assertSee('API Tokens')

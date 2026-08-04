@@ -1,0 +1,19 @@
+{
+  "country": "CZ",
+  "country_name": "Czechia",
+  "country_name_local": "Česko",
+  "lang": "cs",
+  "name": "Čeština",
+  "date_numbers": "j. n. Y",
+  "date_numbers_full_capitals": "D. M. YYYY",
+  "date_words_without_day": "j. F Y",
+  "date_words_with_day": "l j. F Y",
+  "date_birthday": "j. F",
+  "time_format": "H:i",
+  "emoji_flag": "🇨🇿",
+  "currency_code": "CZK",
+  "currency_symbol": "Kč",
+  "currency_symbol_local": "Kč",
+  "currency_name": "Czech koruna",
+  "currency_name_local": "koruna česká"
+}

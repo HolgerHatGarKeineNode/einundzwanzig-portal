@@ -3,6 +3,14 @@
 use App\Models\SelfHostedService;
 use App\Models\User;
 
+// Das country-Segment 'de' in der Route ist der LÄNDER-Filter, nicht die Sprache:
+// die Sprache kommt aus der Session, sonst greift der Fallback en-GB. Solange der
+// Disclaimer-String in en.json leer war, fiel Laravel auf den deutschen Key zurück
+// und die Assertions waren zufällig grün — mit echter englischer Übersetzung nicht.
+beforeEach(function () {
+    $this->withSession(['lang_country' => 'de-DE', 'locale' => 'de']);
+});
+
 it('shows the disclaimer and njump link on the services index', function () {
     SelfHostedService::factory()->for(
         User::factory()->create(['nostr' => 'npub1example']),
