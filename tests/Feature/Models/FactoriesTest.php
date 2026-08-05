@@ -6,8 +6,6 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Course;
 use App\Models\CourseEvent;
-use App\Models\EmailCampaign;
-use App\Models\EmailTexts;
 use App\Models\Episode;
 use App\Models\Lecturer;
 use App\Models\Library;
@@ -59,8 +57,6 @@ it('creates a valid persisted record via the factory', function (string $modelCl
     'SelfHostedService' => SelfHostedService::class,
     'Registration' => Registration::class,
     'Participant' => Participant::class,
-    'EmailCampaign' => EmailCampaign::class,
-    'EmailTexts' => EmailTexts::class,
     'LoginKey' => LoginKey::class,
     'Tag' => Tag::class,
 ]);

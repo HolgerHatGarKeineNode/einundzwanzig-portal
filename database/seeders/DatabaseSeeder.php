@@ -8,8 +8,6 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Course;
 use App\Models\CourseEvent;
-use App\Models\EmailCampaign;
-use App\Models\EmailTexts;
 use App\Models\Episode;
 use App\Models\Lecturer;
 use App\Models\Library;
@@ -50,7 +48,6 @@ class DatabaseSeeder extends Seeder
         Category::factory()->count(6)->create();
         Participant::factory()->count(30)->create();
         Tag::factory()->count(15)->create();
-        EmailCampaign::factory()->count(2)->create();
         TwitterAccount::factory()->count(2)->create();
 
         $users = User::all();
@@ -112,9 +109,6 @@ class DatabaseSeeder extends Seeder
             ->create();
         $proposals = ProjectProposal::factory()->count(8)
             ->recycle($users)
-            ->create();
-        EmailTexts::factory()->count(10)
-            ->recycle(EmailCampaign::all())
             ->create();
 
         $this->command->info('Phase 5: Pivots');
