@@ -81,8 +81,8 @@
             "@php artisan key:generate",
             "@php artisan ciphersweet:generate-key",
             "@php artisan migrate --force",
-            "yarn install",
-            "yarn run build"
+            "npm install",
+            "npm run build"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
@@ -114,7 +114,7 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fdba74,#86efac\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"yarn run dev\" --names=serve,queue,logs,vite --kill-others"
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fdba74,#86efac\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=serve,queue,logs,vite --kill-others"
         ]
     },
     "extra": {
