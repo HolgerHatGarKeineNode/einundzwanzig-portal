@@ -4,10 +4,32 @@
         "opencode",
         "phpstorm"
     ],
+    "cloud": false,
     "editors": [
         "claude_code",
         "opencode",
         "phpstorm"
     ],
-    "guidelines": []
+    "guidelines": true,
+    "packages": [
+        "pestphp/pest-plugin-agent",
+        "spatie/laravel-medialibrary",
+        "spatie/laravel-permission",
+        "spatie/laravel-sluggable"
+    ],
+    "skills": [
+        "laravel-best-practices",
+        "configuring-horizon",
+        "mcp-development",
+        "configure-nightwatch",
+        "passport-development",
+        "fluxui-development",
+        "livewire-development",
+        "pest-testing",
+        "tailwindcss-development",
+        "medialibrary-development",
+        "laravel-permission-development",
+        "sluggable-development",
+        "pest-plugin-agent"
+    ]
 }
