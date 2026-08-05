@@ -108,6 +108,7 @@
             "pint --parallel --test"
         ],
         "test": [
+            "Composer\\Config::disableProcessTimeout",
             "@php artisan config:clear --ansi",
             "@test:lint",
             "@php artisan test --fresh"
