@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::table('library_items', function (Blueprint $table) {
             $table->text('subtitle')
-                  ->nullable();
+                ->nullable();
             $table->text('excerpt')
-                  ->nullable();
+                ->nullable();
             $table->string('main_image_caption')
-                  ->nullable();
+                ->nullable();
             $table->string('read_time')
-                  ->nullable();
+                ->nullable();
         });
     }
 

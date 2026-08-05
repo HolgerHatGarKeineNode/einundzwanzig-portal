@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('meetups', function (Blueprint $table) {
             $table->json('github_data')
-                  ->nullable();
+                ->nullable();
         });
     }
 

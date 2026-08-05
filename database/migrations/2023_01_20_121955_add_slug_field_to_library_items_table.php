@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::table('library_items', function (Blueprint $table) {
             $table->string('slug')
-                  ->unique()
-                  ->nullable()
-                  ->after('id');
+                ->unique()
+                ->nullable()
+                ->after('id');
         });
     }
 

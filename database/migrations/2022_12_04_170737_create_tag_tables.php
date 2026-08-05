@@ -14,20 +14,20 @@ return new class extends Migration
             $table->json('name');
             $table->json('slug');
             $table->string('type')
-                  ->nullable();
+                ->nullable();
             $table->integer('order_column')
-                  ->nullable();
+                ->nullable();
 
             $table->string('icon')
-                  ->default('tag');
+                ->default('tag');
 
             $table->timestamps();
         });
 
         Schema::create('taggables', function (Blueprint $table) {
             $table->foreignId('tag_id')
-                  ->constrained()
-                  ->cascadeOnDelete();
+                ->constrained()
+                ->cascadeOnDelete();
 
             $table->morphs('taggable');
 

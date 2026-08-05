@@ -4,6 +4,8 @@ namespace App\Livewire\Forms;
 
 use App\Enums\SelfHostedServiceType;
 use App\Models\SelfHostedService;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Form;
@@ -121,8 +123,8 @@ class ServiceForm extends Form
     {
         if (empty($this->url_clearnet) && empty($this->url_onion) && empty($this->url_i2p) && empty($this->url_pkdns) && empty($this->ip)) {
             $this->addError('url_clearnet', __('Mindestens eine URL oder IP muss angegeben werden.'));
-            throw new \Illuminate\Validation\ValidationException(
-                \Illuminate\Support\Facades\Validator::make([], [])
+            throw new ValidationException(
+                Validator::make([], [])
             );
         }
     }

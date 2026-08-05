@@ -16,7 +16,7 @@ class Carbon extends CarbonImmutable
     public function asTime(): string
     {
         return $this->timezone(config('app.user-timezone'))->locale('de')
-                    ->format('H:i');
+            ->format('H:i');
     }
 
     public function asDayNameAndMonthName(): string

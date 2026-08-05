@@ -15,22 +15,22 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('public_key')
-                  ->unique()
-                  ->nullable();
+                ->unique()
+                ->nullable();
             $table->string('email')
-                  ->unique()
-                  ->nullable();
+                ->unique()
+                ->nullable();
             $table->timestamp('email_verified_at')
-                  ->nullable();
+                ->nullable();
             $table->string('password')
-                  ->nullable();
+                ->nullable();
             $table->rememberToken();
             $table->foreignId('current_team_id')
-                  ->nullable();
+                ->nullable();
             $table->string('profile_photo_path', 2048)
-                  ->nullable();
+                ->nullable();
             $table->boolean('is_lecturer')
-                  ->default(false);
+                ->default(false);
             $table->timestamps();
         });
     }

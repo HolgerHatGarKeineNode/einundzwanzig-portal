@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('orange_pills', function (Blueprint $table) {
             $table->text('comment')
-                  ->nullable();
+                ->nullable();
         });
     }
 

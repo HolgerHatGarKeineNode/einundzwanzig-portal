@@ -39,7 +39,7 @@ trait NostrTrait
         ];
     }
 
-    public function getText(Model $model, string $countryCode): string|null
+    public function getText(Model $model, string $countryCode): ?string
     {
         return match (true) {
             $model instanceof CourseEvent => __('nostr.course_event_text', [

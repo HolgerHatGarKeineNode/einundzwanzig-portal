@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Traits;
 
 use App\Attributes\SeoDataAttribute;
@@ -19,7 +20,7 @@ trait SeoTrait
         $reflection = new \ReflectionClass($this);
         $attributes = $reflection->getAttributes(SeoDataAttribute::class);
 
-        if (!empty($attributes)) {
+        if (! empty($attributes)) {
             $seoDataAttribute = $attributes[0]->newInstance();
             $seoData = $seoDataAttribute->resolve();
         } else {

@@ -17,23 +17,23 @@ return new class extends Migration
             $table->double('latitude');
             $table->double('longitude');
             $table->text('address')
-                  ->nullable();
+                ->nullable();
             $table->string('type');
             $table->string('open')
-                  ->nullable();
+                ->nullable();
             $table->text('comment')
-                  ->nullable();
+                ->nullable();
             $table->text('contact')
-                  ->nullable();
+                ->nullable();
             $table->text('bcz')
-                  ->nullable();
+                ->nullable();
             $table->boolean('digital');
             $table->string('icontype');
             $table->boolean('deactivated');
             $table->string('deactreason');
             $table->string('entrytype');
             $table->text('homepage')
-                  ->nullable();
+                ->nullable();
             $table->timestamps();
         });
     }

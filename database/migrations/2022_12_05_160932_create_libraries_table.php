@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('name')->unique();
             $table->boolean('is_public')
-                  ->default(true);
+                ->default(true);
             $table->json('language_codes')
-                  ->default('[]');
+                ->default('[]');
             $table->timestamps();
         });
     }

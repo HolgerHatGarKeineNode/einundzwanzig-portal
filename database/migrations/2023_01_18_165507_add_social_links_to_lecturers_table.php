@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::table('lecturers', function (Blueprint $table) {
             $table->string('twitter_username')
-                  ->nullable();
+                ->nullable();
             $table->string('website')
-                  ->nullable();
+                ->nullable();
         });
     }
 
