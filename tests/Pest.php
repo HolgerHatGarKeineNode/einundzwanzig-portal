@@ -7,6 +7,107 @@ use Tests\TestCase;
 
 /*
 |--------------------------------------------------------------------------
+| Host Chromium for Pest Browser tests
+|--------------------------------------------------------------------------
+|
+| phpunit.xml used to set PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH, but that env
+| var does not exist anywhere in pestphp/pest-plugin-browser's bundled
+| playwright-core (grepped coreBundle.js — zero references). It silently did
+| nothing, and Playwright fell back to its own pinned "Chrome for Testing"
+| build in ~/.cache/ms-playwright, downloaded on first run — exactly what
+| the project rule ("Browser-Tests nutzen IMMER das Host-Chromium") forbids.
+|
+| Playwright resolves an executable by joining PLAYWRIGHT_BROWSERS_PATH with
+| "{name}-{revision}/<platform-relative-path>" (see readDescriptors() /
+| EXECUTABLE_PATHS in node_modules/playwright-core/lib/coreBundle.js) and
+| only checks the path exists — no checksum. So we point
+| PLAYWRIGHT_BROWSERS_PATH at a repo-local, gitignored directory and symlink
+| both the "chromium" and "chromium-headless-shell" registry entries (Pest's
+| default headless:true launch resolves the *headless-shell* variant, not
+| plain chromium) to the actual host binary. The env vars are written to
+| $_SERVER/$_ENV as well as via putenv() — Symfony\Process builds its default
+| environment from $_SERVER/$_ENV, so putenv() alone never reaches the Node
+| process (measured: userAgent stayed on the Playwright build). This runs once,
+| before the first browser test boots the server.
+|
+| The revision comes from playwright-core's own browsers.json, not a
+| hardcoded constant — it changes on Playwright upgrades.
+*/
+(function (): void {
+    $browsersJsonPath = __DIR__.'/../node_modules/playwright-core/browsers.json';
+
+    // Jeder Ausstieg meldet sich. Ohne diese Zeilen fällt die Verdrahtung still aus und
+    // Playwright nimmt wieder seinen eigenen Build — genau der lautlose Fehlschlag, der
+    // PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH wirkungslos in phpunit.xml stehen ließ.
+    $ohneHostBrowser = function (string $grund): void {
+        fwrite(STDERR, "\n[Pest] Host-Chromium NICHT verdrahtet: {$grund}. Browser-Tests laufen damit nicht gegen den System-Browser.\n");
+    };
+
+    if (! is_file($browsersJsonPath)) {
+        $ohneHostBrowser('node_modules/playwright-core/browsers.json fehlt (npm install gelaufen?)');
+
+        return;
+    }
+
+    $hostChromium = trim((string) shell_exec('command -v chromium || command -v chromium-browser || command -v google-chrome-stable || command -v google-chrome 2>/dev/null'));
+
+    if ($hostChromium === '' || ! is_executable($hostChromium)) {
+        $ohneHostBrowser('kein ausführbares System-Chromium gefunden');
+
+        return;
+    }
+
+    $browsers = json_decode(file_get_contents($browsersJsonPath), true)['browsers'] ?? [];
+    $revisions = [];
+    foreach ($browsers as $browser) {
+        if (in_array($browser['name'], ['chromium', 'chromium-headless-shell'], true)) {
+            $revisions[$browser['name']] = $browser['revision'];
+        }
+    }
+
+    if (! isset($revisions['chromium'], $revisions['chromium-headless-shell'])) {
+        $ohneHostBrowser('browsers.json kennt chromium/chromium-headless-shell nicht mehr unter diesen Namen');
+
+        return;
+    }
+
+    $registryDir = __DIR__.'/../.pest-chromium';
+
+    $entries = [
+        'chromium-'.$revisions['chromium'] => ['chrome-linux64', 'chrome'],
+        'chromium_headless_shell-'.$revisions['chromium-headless-shell'] => ['chrome-headless-shell-linux64', 'chrome-headless-shell'],
+    ];
+
+    foreach ($entries as $dirName => $relativePath) {
+        $targetDir = $registryDir.'/'.$dirName.'/'.$relativePath[0];
+        if (! is_dir($targetDir)) {
+            mkdir($targetDir, 0755, true);
+        }
+
+        $executablePath = $targetDir.'/'.$relativePath[1];
+        if (is_link($executablePath) || file_exists($executablePath)) {
+            @unlink($executablePath);
+        }
+        symlink($hostChromium, $executablePath);
+
+        $marker = $registryDir.'/'.$dirName.'/INSTALLATION_COMPLETE';
+        if (! is_file($marker)) {
+            touch($marker);
+        }
+    }
+
+    // putenv() ALLEIN genügt nicht: Symfony\Process baut sein Default-Environment aus
+    // $_SERVER/$_ENV, nicht aus getenv(). Ohne die beiden folgenden Zeilen legt der Block
+    // die Symlinks zwar an, der Playwright-Node-Prozess sieht die Variable aber nie —
+    // gemessen: navigator.userAgent meldete weiter 149 (Playwright-Build) statt 151 (Host).
+    putenv('PLAYWRIGHT_BROWSERS_PATH='.$registryDir);
+    putenv('PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1');
+    $_ENV['PLAYWRIGHT_BROWSERS_PATH'] = $_SERVER['PLAYWRIGHT_BROWSERS_PATH'] = $registryDir;
+    $_ENV['PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD'] = $_SERVER['PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD'] = '1';
+})();
+
+/*
+|--------------------------------------------------------------------------
 | Test Case
 |--------------------------------------------------------------------------
 */

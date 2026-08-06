@@ -39,7 +39,13 @@
         <env name="APP_LOCALE" value="de"/>
         <env name="CIPHERSWEET_KEY" value="45186542ebd89a8c7d719543be7531c40a795c40582ceddfca758189d83ce356"/>
         <env name="PERMISSION_TESTING" value="true"/>
+        <!-- Hier stand PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium. Die Variable
+             existiert in playwright-core nicht (grep über coreBundle.js: 0 Treffer) und war
+             wirkungslos — sie sicherte zu, was nicht passierte: die Browser-Tests liefen
+             gegen Playwrights eigenen Build (HeadlessChrome/149.0.7827.55).
+             Die wirksame Verdrahtung steht jetzt in tests/Pest.php und läuft über
+             PLAYWRIGHT_BROWSERS_PATH; gemessen meldet navigator.userAgent seither
+             HeadlessChrome/151.0.0.0 — die Version des System-Chromium. -->
         <env name="PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD" value="1"/>
-        <env name="PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH" value="/usr/bin/chromium"/>
     </php>
 </phpunit>
