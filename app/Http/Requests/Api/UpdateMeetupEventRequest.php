@@ -50,7 +50,7 @@ class UpdateMeetupEventRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'meetup_id.exists' => 'Das angegebene Meetup existiert nicht.',
+            'meetup_id.exists' => __('Das angegebene Meetup existiert nicht.'),
         ];
     }
 }

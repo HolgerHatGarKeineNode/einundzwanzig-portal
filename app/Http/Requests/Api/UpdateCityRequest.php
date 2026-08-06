@@ -31,7 +31,7 @@ class UpdateCityRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'country_id.exists' => 'Das angegebene Land existiert nicht.',
+            'country_id.exists' => __('Das angegebene Land existiert nicht.'),
         ];
     }
 }

@@ -42,7 +42,7 @@ class MeetupEventController extends Controller
             try {
                 $date = Carbon::parse($date);
             } catch (InvalidFormatException) {
-                abort(Response::HTTP_BAD_REQUEST, 'Ungültiges Datum. Erwartet wird das Format Y-m-d.');
+                abort(Response::HTTP_BAD_REQUEST, __('Ungültiges Datum. Erwartet wird das Format Y-m-d.'));
             }
         }
         $events = MeetupEvent::query()

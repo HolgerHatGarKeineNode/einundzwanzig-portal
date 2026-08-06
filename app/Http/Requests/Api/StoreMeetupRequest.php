@@ -42,7 +42,7 @@ class StoreMeetupRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'city_id.exists' => 'Die angegebene Stadt existiert nicht.',
+            'city_id.exists' => __('Die angegebene Stadt existiert nicht.'),
         ];
     }
 }

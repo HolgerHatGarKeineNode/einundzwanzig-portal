@@ -30,7 +30,7 @@ class StoreCourseRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'lecturer_id.exists' => 'Der angegebene Referent existiert nicht.',
+            'lecturer_id.exists' => __('Der angegebene Referent existiert nicht.'),
         ];
     }
 }

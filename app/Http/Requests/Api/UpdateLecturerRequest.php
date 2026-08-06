@@ -39,7 +39,7 @@ class UpdateLecturerRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'team_id.exists' => 'Das angegebene Team existiert nicht.',
+            'team_id.exists' => __('Das angegebene Team existiert nicht.'),
         ];
     }
 }

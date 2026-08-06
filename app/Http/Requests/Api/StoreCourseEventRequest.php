@@ -32,8 +32,8 @@ class StoreCourseEventRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'course_id.exists' => 'Der angegebene Kurs existiert nicht.',
-            'venue_id.exists' => 'Der angegebene Veranstaltungsort existiert nicht.',
+            'course_id.exists' => __('Der angegebene Kurs existiert nicht.'),
+            'venue_id.exists' => __('Der angegebene Veranstaltungsort existiert nicht.'),
         ];
     }
 }

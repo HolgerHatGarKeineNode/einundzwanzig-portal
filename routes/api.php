@@ -17,10 +17,11 @@ use App\Http\Controllers\Api\VenueController;
 use App\Http\Controllers\Api\VereinGatedMeetupController;
 use App\Http\Controllers\LnurlAuthController;
 use App\Http\Controllers\MobileAuthController;
+use App\Http\Middleware\SetApiLocale;
 use App\Http\Middleware\VereinGateToken;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['throttle:60,1'])
+Route::middleware([SetApiLocale::class, 'throttle:60,1'])
     ->as('api.')
     ->group(function () {
         Route::resource('countries', CountryController::class)->only(['index']);
@@ -45,7 +46,7 @@ Route::middleware(['throttle:60,1'])
  * Lets a lecturer create/update their own courses and course events
  * programmatically, e.g. to sync events from an external system.
  */
-Route::middleware('auth:sanctum')
+Route::middleware([SetApiLocale::class, 'auth:sanctum'])
     ->as('api.')
     ->group(function () {
         Route::get('user', UserController::class)->name('user');
@@ -106,7 +107,7 @@ Route::middleware('auth:sanctum')
 // Vereinsmitglied-gegatete Meetups für den Nostr-Client (Server-zu-Server,
 // Bearer-Token statt Sanctum-Session). Nur Meetups mit echtem Vereinsbezug.
 Route::get('/verein/gated-meetups', VereinGatedMeetupController::class)
-    ->middleware([VereinGateToken::class, 'throttle:60,1'])
+    ->middleware([SetApiLocale::class, VereinGateToken::class, 'throttle:60,1'])
     ->name('api.verein.gated-meetups');
 
 Route::get('/lnurl-auth-callback', [LnurlAuthController::class, 'callback'])
@@ -123,25 +124,25 @@ Route::get('/nostr-login-callback', [MobileAuthController::class, 'nostrCallback
 // once. Separate URLs from the legacy /mobile/token below so released app
 // builds keep working unchanged.
 Route::get('/mobile/nostr/challenge', [MobileAuthController::class, 'nostrChallenge'])
-    ->middleware('throttle:30,1')
+    ->middleware([SetApiLocale::class, 'throttle:30,1'])
     ->name('auth.mobile.nostr.challenge');
 
 Route::post('/mobile/nostr/token', [MobileAuthController::class, 'nostrToken'])
-    ->middleware('throttle:30,1')
+    ->middleware([SetApiLocale::class, 'throttle:30,1'])
     ->name('auth.mobile.nostr.token');
 
 // Token exchange for the mobile app: trades a NIP-55-signed login event
 // for a Sanctum personal access token (used when the signer callback
 // opens the app directly via a verified App Link).
 Route::post('/mobile/token', [MobileAuthController::class, 'token'])
-    ->middleware('throttle:30,1')
+    ->middleware([SetApiLocale::class, 'throttle:30,1'])
     ->name('auth.mobile.token');
 
 // Logout for the mobile app: revokes the personal access token that
 // authenticated this request, so a local "disconnect" in the app also
 // invalidates the token server-side.
 Route::delete('/mobile/token', [MobileAuthController::class, 'revoke'])
-    ->middleware(['auth:sanctum', 'throttle:30,1'])
+    ->middleware([SetApiLocale::class, 'auth:sanctum', 'throttle:30,1'])
     ->name('auth.mobile.token.revoke');
 
 Route::post('/check-auth-error', [LnurlAuthController::class, 'checkError'])

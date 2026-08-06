@@ -719,5 +719,13 @@
     ":count Anmeldung|:count Anmeldungen": ":count registration|:count registrations",
     ":count weiterer Termin|:count weitere Termine": ":count more date|:count more dates",
     ":count Event|:count Events": ":count event|:count events",
-    ":count Nutzer|:count Nutzer": ":count user|:count users"
+    ":count Nutzer|:count Nutzer": ":count user|:count users",
+    "Das angegebene Land existiert nicht.": "The specified country does not exist.",
+    "Der angegebene Kurs existiert nicht.": "The specified course does not exist.",
+    "Der angegebene Veranstaltungsort existiert nicht.": "The specified venue does not exist.",
+    "Der angegebene Referent existiert nicht.": "The specified lecturer does not exist.",
+    "Das angegebene Team existiert nicht.": "The specified team does not exist.",
+    "Das angegebene Meetup existiert nicht.": "The specified meetup does not exist.",
+    "Die angegebene Stadt existiert nicht.": "The specified city does not exist.",
+    "Ungültiges Datum. Erwartet wird das Format Y-m-d.": "Invalid date. The expected format is Y-m-d."
 }
