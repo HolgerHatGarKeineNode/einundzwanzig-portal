@@ -18,21 +18,21 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\Response;
 
-#[Group(name: 'Stammdaten', weight: 5)]
+#[Group(name: 'Master Data', weight: 5)]
 class VenueController extends Controller
 {
     use FiltersNumericIds;
 
     /**
-     * Veranstaltungsorte auflisten und durchsuchen
+     * List and search venues
      *
-     * Öffentlicher Endpunkt; liefert id, name und die zugehörige Stadt/Land, alphabetisch sortiert.
-     * Ohne 'selected' wird die Liste auf 10 Einträge begrenzt. Jeder Ort enthält zusätzlich
-     * 'flag' (SVG-URL der Landesflagge) und 'description' (Stadt + Straße).
+     * Public endpoint; returns id, name and the associated city/country, sorted alphabetically.
+     * Without 'selected' the list is capped at 10 items. Every venue additionally contains
+     * 'flag' (SVG URL of the country flag) and 'description' (city + street).
      */
-    #[QueryParameter(name: 'search', description: 'Teilstring-Suche im Namen des Veranstaltungsortes.', required: false, type: 'string')]
-    #[QueryParameter(name: 'selected', description: 'Lädt gezielt die angegebenen Veranstaltungsort-IDs (umgeht die Begrenzung auf 10 Einträge).', required: false, type: 'array')]
-    #[QueryParameter(name: 'withDetails', description: 'Presence-Flag: hebt die Begrenzung auf 10 Einträge auf.', required: false, type: 'string')]
+    #[QueryParameter(name: 'search', description: 'Substring search in the venue name.', required: false, type: 'string')]
+    #[QueryParameter(name: 'selected', description: 'Loads exactly the given venue IDs (bypasses the 10-item limit).', required: false, type: 'array')]
+    #[QueryParameter(name: 'withDetails', description: 'Presence flag: lifts the 10-item limit.', required: false, type: 'string')]
     public function index(Request $request)
     {
         return Venue::query()
@@ -59,13 +59,13 @@ class VenueController extends Controller
     }
 
     /**
-     * Veranstaltungsort anlegen
+     * Create a venue
      *
-     * Erlaubt einem authentifizierten Nutzer, einen Veranstaltungsort programmatisch anzulegen.
-     * Der Ersteller (created_by) wird automatisch gesetzt.
+     * Allows an authenticated user to create a venue programmatically.
+     * The creator (created_by) is set automatically.
      */
-    #[ResponseAttribute(status: 401, description: 'Nicht authentifiziert.')]
-    #[ResponseAttribute(status: 422, description: 'Validierungsfehler.')]
+    #[ResponseAttribute(status: 401, description: 'Not authenticated.')]
+    #[ResponseAttribute(status: 422, description: 'Validation error.')]
     public function store(StoreVenueRequest $request): JsonResponse
     {
         $venue = Venue::create($request->validated());
@@ -76,12 +76,12 @@ class VenueController extends Controller
     }
 
     /**
-     * Veranstaltungsort aktualisieren
+     * Update a venue
      *
-     * Aktualisiert einen Veranstaltungsort; nur fuer den Ersteller oder einen Super-Admin.
+     * Updates a venue; only for the creator or a super admin.
      */
-    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf den Veranstaltungsort aendern.')]
-    #[ResponseAttribute(status: 422, description: 'Validierungsfehler.')]
+    #[ResponseAttribute(status: 403, description: 'Only the creator or a super admin may change the venue.')]
+    #[ResponseAttribute(status: 422, description: 'Validation error.')]
     public function update(UpdateVenueRequest $request, Venue $venue): VenueResource
     {
         $venue->update($request->validated());
@@ -90,9 +90,9 @@ class VenueController extends Controller
     }
 
     /**
-     * Eigene Veranstaltungsorte auflisten
+     * List own venues
      *
-     * Liefert alle vom authentifizierten Nutzer erstellten Veranstaltungsorte, alphabetisch sortiert.
+     * Returns all venues created by the authenticated user, sorted alphabetically.
      */
     public function mine(Request $request): AnonymousResourceCollection
     {
@@ -107,11 +107,11 @@ class VenueController extends Controller
     }
 
     /**
-     * Eigenen Veranstaltungsort anzeigen
+     * Show own venue
      *
-     * Zeigt einen einzelnen, vom authentifizierten Nutzer erstellten Veranstaltungsort.
+     * Shows a single venue created by the authenticated user.
      */
-    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf den Veranstaltungsort sehen.')]
+    #[ResponseAttribute(status: 403, description: 'Only the creator or a super admin may view the venue.')]
     public function mineShow(Venue $venue): VenueResource
     {
         Gate::authorize('view', $venue);

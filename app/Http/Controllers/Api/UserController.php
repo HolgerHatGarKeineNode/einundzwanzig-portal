@@ -8,14 +8,14 @@ use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-#[Group(name: 'Profil', weight: 8)]
+#[Group(name: 'Profile', weight: 8)]
 class UserController extends Controller
 {
     /**
-     * Eigenes Profil
+     * Own profile
      *
-     * Liefert das Profil des authentifizierten Nutzers (Token-Inhaber).
-     * Wird von der Mobile App direkt nach dem Login aufgerufen.
+     * Returns the profile of the authenticated user (token holder).
+     * Called by the mobile app directly after login.
      */
     public function __invoke(Request $request): JsonResponse
     {
@@ -24,10 +24,10 @@ class UserController extends Controller
     }
 
     /**
-     * Profil aktualisieren
+     * Update profile
      *
-     * Erlaubt dem Token-Inhaber, den eigenen Anzeigenamen zu ändern.
-     * Rollen (is_lecturer/is_leader) sind bewusst NICHT änderbar.
+     * Allows the token holder to change their own display name.
+     * Roles (is_lecturer/is_leader) are deliberately NOT changeable.
      */
     public function update(Request $request): JsonResponse
     {
@@ -52,8 +52,8 @@ class UserController extends Controller
             'email' => $user->email,
             'nostr' => $user->nostr,
             'is_lecturer' => (bool) $user->is_lecturer,
-            // Leader-Rolle ist pro Meetup (meetup_user.is_leader); global = ist
-            // der Nutzer Leader IRGENDEINES Meetups. Treibt das Rollen-Badge.
+            // The leader role is per meetup (meetup_user.is_leader); globally = is
+            // the user leader of ANY meetup. Drives the role badge.
             'is_leader' => $user->meetups()->wherePivot('is_leader', true)->exists(),
             'avatar' => $user->profile_photo_url,
         ];

@@ -10,10 +10,9 @@ use Illuminate\Validation\Rule;
 class UpdateMeetupEventRequest extends FormRequest
 {
     /**
-     * Bearbeiten darf der Ersteller des Termins oder ein Leader des Meetups
-     * (siehe MeetupEventPolicy::update). Ein Verschieben in ein anderes Meetup
-     * (geändertes meetup_id) ist nur erlaubt, wenn der Nutzer auch dieses
-     * Ziel-Meetup führt.
+     * The creator of the meetup event or a leader of the meetup may edit it
+     * (see MeetupEventPolicy::update). Moving it to another meetup (changed
+     * meetup_id) is only allowed if the user also leads that target meetup.
      */
     public function authorize(): bool
     {

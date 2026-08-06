@@ -3,9 +3,9 @@
 namespace App\Enums;
 
 /**
- * RSVP-Status eines Nutzers für einen Meetup-Termin. `None` bildet den Zustand
- * ab, dass der Nutzer in keiner der beiden Teilnehmer-Listen steht (= abgesagt
- * bzw. nie zugesagt) und dient zugleich als Eingabewert zum Austragen.
+ * RSVP status of a user for a meetup event. `None` represents the state that the
+ * user is on neither of the two attendee lists (= declined or never RSVP'd) and
+ * at the same time serves as the input value for withdrawing an RSVP.
  */
 enum RsvpStatus: string
 {

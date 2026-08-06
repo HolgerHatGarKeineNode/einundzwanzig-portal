@@ -10,10 +10,10 @@ use Illuminate\Validation\Rule;
 class StoreMeetupEventRequest extends FormRequest
 {
     /**
-     * Termine darf nur anlegen, wer das zugehörige Meetup bearbeiten darf
-     * (Ersteller/Leader/Super-Admin) — dieselbe Berechtigung wie die
-     * Stammdaten. Existenz/Pflicht von meetup_id prüft rules() (422); ist ein
-     * gültiges Meetup angegeben, muss der Nutzer dafür berechtigt sein.
+     * Only someone allowed to edit the associated meetup (creator/leader/super
+     * admin) may create meetup events — the same permission as for the master
+     * data. rules() checks that meetup_id is required and exists (422); if a
+     * valid meetup is given, the user must be authorized for it.
      */
     public function authorize(): bool
     {

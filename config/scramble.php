@@ -42,34 +42,33 @@ return [
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
         'description' => <<<'MARKDOWN'
-        Willkommen bei der **EINUNDZWANZIG API** – der öffentlichen Schnittstelle der
-        [EINUNDZWANZIG](https://portal.einundzwanzig.space) Bitcoin-Community-Plattform.
+        Welcome to the **EINUNDZWANZIG API** – the public interface of the
+        [EINUNDZWANZIG](https://portal.einundzwanzig.space) Bitcoin community platform.
 
-        Über diese API erreichst du die Daten der dezentralen deutschsprachigen Bitcoin-Bewegung:
-        Meetups und ihre Termine, Kurse und Kurs-Events, Referenten, Veranstaltungsorte sowie die
-        Geo-Daten für die Community-Karte.
+        This API gives you access to the data of the decentralized German-speaking Bitcoin
+        movement: meetups and their events, courses and course events, lecturers, venues and the
+        geo data behind the community map.
 
-        ## Lieber per KI-Assistent?
+        ## Prefer an AI assistant?
 
-        Du musst nicht programmieren, um Daten anzulegen: Verbinde das Portal als Connector mit
-        **claude.ai** und verwalte Meetups, Termine und Kurse einfach per Chat. Die bebilderte
-        Schritt-für-Schritt-Anleitung findest du unter [/ki-assistent](/ki-assistent).
+        You do not need to write code to create data: connect the portal to **claude.ai** as a
+        connector and manage meetups, events and courses straight from a chat. The illustrated
+        step-by-step guide (in German) is at [/ki-assistent](/ki-assistent).
 
-        ## Authentifizierung
+        ## Authentication
 
-        Die meisten **Lese-Endpunkte** sind öffentlich und benötigen kein Token.
+        Most **read endpoints** are public and require no token.
 
-        **Schreibende Endpunkte** (Kurse & Kurs-Events anlegen/aktualisieren) erfordern ein
-        persönliches Zugriffstoken. Erzeuge dir eines unter
-        *Einstellungen → API Tokens* und sende es als Bearer-Token:
+        **Write endpoints** (creating/updating courses & course events) require a personal access
+        token. Create one under *Settings → API Tokens* and send it as a bearer token:
 
         ```http
-        Authorization: Bearer <dein-token>
+        Authorization: Bearer <your-token>
         ```
 
         ## Rate Limiting
 
-        Öffentliche Endpunkte sind auf **60 Anfragen/Minute** begrenzt.
+        Public endpoints are limited to **60 requests/minute**.
         MARKDOWN,
     ],
 
@@ -99,6 +98,18 @@ return [
         'scalar' => [
             'view' => 'scramble::scalar',
             'cdn' => 'https://cdn.jsdelivr.net/npm/@scalar/api-reference',
+            /*
+             * Scalar has no end-user language switcher: the locale is set by config only and
+             * localizes the UI chrome (search, navigation, buttons, schema labels) — never the
+             * content of the OpenAPI document. Offering a second language would mean shipping a
+             * second, separately translated OpenAPI document via Scalar's `sources` option.
+             *
+             * @see https://scalar.com/products/api-references/localization
+             */
+            'localization' => [
+                'locale' => 'en',
+                'direction' => 'ltr',
+            ],
             'theme' => 'laravel',
             'proxyUrl' => '',
             'darkMode' => true,

@@ -13,25 +13,25 @@ use Illuminate\Support\Facades\Http;
 use swentel\nostr\Key\Key as NostrKey;
 
 /**
- * Vereinsmitglied-Gate für Meetups — die eine Quelle der Wahrheit dafür, welche
- * Meetups einen Nostr-Raum haben.
+ * Association-member gate for meetups — the single source of truth for which
+ * meetups have a Nostr room.
  *
- * Ein Meetup ist „gegatet", wenn es auf der Karte sichtbar ist (visible_on_map)
- * UND über die meetup_user-Pivot mindestens ein echtes EINUNDZWANZIG-Vereins-
- * mitglied führt. Vereinsmitglieder kommen aus der verein.einundzwanzig.space-API
- * des laufenden Jahres; der Abgleich läuft über den Nostr-Pubkey (users.nostr,
- * Klartext-npub, kanonisch nach hex normalisiert; users.public_key ist Cipher-
- * Sweet-verschlüsselt und wird bewusst NICHT verwendet).
+ * A meetup is "gated" when it is visible on the map (visible_on_map) AND at
+ * least one genuine EINUNDZWANZIG association member is attached to it through
+ * the meetup_user pivot. Association members come from the current year of the
+ * verein.einundzwanzig.space API; the match runs over the Nostr pubkey
+ * (users.nostr, plaintext npub, canonically normalized to hex; users.public_key
+ * is CipherSweet-encrypted and is deliberately NOT used).
  *
- * Geteilt von {@see VereinGatedMeetupController} (volle
- * Liste, Server-zu-Server) und {@see MeetupMapController}
- * (nur das has_room-Flag über die gecachte id-Menge).
+ * Shared by {@see VereinGatedMeetupController} (full
+ * list, server-to-server) and {@see MeetupMapController}
+ * (only the has_room flag, via the cached id set).
  */
 class VereinMeetupGate
 {
     /**
-     * Gegatete Meetups als angereicherte Liste (id, slug, name, country_code,
-     * logo_url, member_npubs). Für den Server-zu-Server-Endpunkt.
+     * Gated meetups as an enriched list (id, slug, name, country_code,
+     * logo_url, member_npubs). For the server-to-server endpoint.
      *
      * @return Collection<int, array<string, mixed>>
      */
@@ -52,7 +52,7 @@ class VereinMeetupGate
                 'city:id,name,country_id',
                 'city.country:id,code',
                 'media',
-                // Nur die gematchten Vereinsmitglieder je Meetup — konstante Query-Zahl.
+                // Only the matched association members per meetup — constant query count.
                 'users' => $constrain,
             ])
             ->orderBy('id')
@@ -62,7 +62,7 @@ class VereinMeetupGate
                 'slug' => $meetup->slug,
                 'name' => $meetup->name,
                 'country_code' => str($meetup->city?->country?->code)->upper()->value(),
-                // getFirstMedia-Guard: leer statt Fallback-Platzhalter-URL, wenn kein Logo.
+                // getFirstMedia guard: empty instead of the fallback placeholder URL when there is no logo.
                 'logo_url' => $meetup->getFirstMedia('logo') ? $meetup->getFirstMediaUrl('logo', 'thumb') : '',
                 'member_npubs' => $meetup->users
                     ->pluck('nostr')
@@ -74,9 +74,9 @@ class VereinMeetupGate
     }
 
     /**
-     * id-Menge der gegateten Meetups (jedes Pivot-Mitglied zählt, NICHT nur Leader).
-     * Für das has_room-Flag auf der Karte. Gecacht (verein-API + Pivot-Query dürfen
-     * nicht bei jedem /api/meetups-Request neu laufen); fail-soft über vereinUserIds.
+     * id set of the gated meetups (every pivot member counts, NOT only leaders).
+     * For the has_room flag on the map. Cached (the verein API + pivot query must
+     * not run on every /api/meetups request); fail-soft through vereinUserIds.
      *
      * @return Collection<int, int>
      */
@@ -97,9 +97,9 @@ class VereinMeetupGate
     }
 
     /**
-     * Constraint für whereHas (Builder) UND den users-Eager-Load (Relation): beide
-     * proxen whereIn/where auf denselben Query-Builder; die meetup_user-Pivot ist in
-     * beiden Fällen gejoint (vgl. {@see Meetup::scopeLedBy}).
+     * Constraint for whereHas (Builder) AND the users eager load (Relation): both
+     * proxy whereIn/where onto the same query builder; the meetup_user pivot is
+     * joined in either case (cf. {@see Meetup::scopeLedBy}).
      */
     private function memberConstraint(Collection $vereinUserIds, bool $leadersOnly): Closure
     {
@@ -115,7 +115,7 @@ class VereinMeetupGate
     }
 
     /**
-     * Portal-User-ids, deren nostr-npub (→ hex) in der Vereinsmitglieder-Menge liegt.
+     * Portal user ids whose nostr npub (→ hex) is part of the association member set.
      *
      * @return Collection<int, int>
      */
@@ -136,9 +136,9 @@ class VereinMeetupGate
     }
 
     /**
-     * hex-Pubkeys der Vereinsmitglieder des laufenden Jahres. Fail-soft: bei Fehler
-     * eine leere Collection (Aufrufer liefern dann leere Liste / has_room=false, kein
-     * 500). Erfolgreiche Antworten werden kurz gecacht; das Jahr ist immer dynamisch.
+     * hex pubkeys of the current year's association members. Fail-soft: an empty
+     * collection on error (callers then return an empty list / has_room=false, no
+     * 500). Successful responses are cached briefly; the year is always dynamic.
      *
      * @return Collection<int, string>
      */
@@ -167,7 +167,7 @@ class VereinMeetupGate
 
         return collect(is_array($members) ? $members : [])
             ->map(function (array $member): ?string {
-                // Bevorzugt den hex-pubkey; fällt auf den npub zurück.
+                // Prefers the hex pubkey; falls back to the npub.
                 if (filled($member['pubkey'] ?? null)) {
                     return mb_strtolower((string) $member['pubkey']);
                 }
@@ -180,7 +180,7 @@ class VereinMeetupGate
     }
 
     /**
-     * npub (bech32) → hex, fehlertolerant (null bei ungültigem/leerem Wert).
+     * npub (bech32) → hex, fault-tolerant (null for an invalid/empty value).
      */
     private function npubToHex(?string $npub): ?string
     {

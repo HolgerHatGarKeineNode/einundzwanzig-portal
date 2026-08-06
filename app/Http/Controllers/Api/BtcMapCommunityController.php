@@ -11,9 +11,9 @@ use Illuminate\Http\JsonResponse;
 class BtcMapCommunityController extends Controller
 {
     /**
-     * Einundzwanzig-Communities für BTC Map
+     * Einundzwanzig communities for BTC Map
      *
-     * Liefert die Einundzwanzig-Communities im BTC-Map-Format (GeoJSON-Tags).
+     * Returns the Einundzwanzig communities in BTC Map format (GeoJSON tags).
      */
     public function __invoke(): JsonResponse
     {

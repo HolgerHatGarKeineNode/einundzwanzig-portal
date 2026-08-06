@@ -10,7 +10,7 @@ class RsvpMeetupEventRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // Jeder authentifizierte Nutzer darf für einen Termin zu-/absagen.
+        // Any authenticated user may RSVP to or decline a meetup event.
         return $this->user() !== null;
     }
 

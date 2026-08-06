@@ -19,24 +19,24 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-#[Group(name: 'Kurse', weight: 1)]
+#[Group(name: 'Courses', weight: 1)]
 class CourseController extends Controller
 {
     use FiltersNumericIds;
 
     /**
-     * Kurse auflisten und durchsuchen
+     * List and search courses
      *
-     * Öffentlicher Endpunkt; liefert id und name, alphabetisch sortiert. Ohne den Parameter
-     * 'selected' wird das Ergebnis auf 10 Einträge begrenzt. Jeder Kurs enthält zusätzlich
-     * ein 'image' (Logo-Thumbnail-URL). Mit 'withDetails' entfällt das Limit und jeder Kurs
-     * enthält zusätzlich description, lecturer (id, name, subtitle, image) und next_event
-     * (Beginn des nächsten zukünftigen Kurs-Events oder null).
+     * Public endpoint; returns id and name, sorted alphabetically. Without the
+     * 'selected' parameter the result is capped at 10 items. Every course additionally
+     * contains an 'image' (logo thumbnail URL). With 'withDetails' the limit is dropped and
+     * every course additionally contains description, lecturer (id, name, subtitle, image) and
+     * next_event (start of the next upcoming course event, or null).
      */
-    #[QueryParameter(name: 'search', description: 'Teilstring-Suche im Namen des Kurses.', required: false, type: 'string')]
-    #[QueryParameter(name: 'user_id', description: 'Filtert die Kurse nach ihrem Ersteller.', required: false, type: 'integer')]
-    #[QueryParameter(name: 'selected', description: 'Lädt gezielt die angegebenen Kurs-IDs.', required: false, type: 'array')]
-    #[QueryParameter(name: 'withDetails', description: 'Presence-Flag: liefert description, lecturer und next_event mit und hebt das 10-Einträge-Limit auf.', required: false, type: 'string')]
+    #[QueryParameter(name: 'search', description: 'Substring search in the course name.', required: false, type: 'string')]
+    #[QueryParameter(name: 'user_id', description: 'Filters the courses by their creator.', required: false, type: 'integer')]
+    #[QueryParameter(name: 'selected', description: 'Loads exactly the given course IDs.', required: false, type: 'array')]
+    #[QueryParameter(name: 'withDetails', description: 'Presence flag: also returns description, lecturer and next_event and lifts the 10-item limit.', required: false, type: 'string')]
     public function index(Request $request)
     {
         $withDetails = $request->exists('withDetails');
@@ -81,7 +81,7 @@ class CourseController extends Controller
     }
 
     /**
-     * Referenten-Kurzinfo für Kurs-Antworten (Liste und Detail).
+     * Lecturer summary for course responses (list and detail).
      *
      * @return array<string, mixed>|null
      */
@@ -100,12 +100,12 @@ class CourseController extends Controller
     }
 
     /**
-     * Kurs anlegen
+     * Create a course
      *
-     * Erlaubt einem authentifizierten Referenten, einen Kurs programmatisch anzulegen.
-     * Der Ersteller (created_by) wird automatisch auf den angemeldeten Nutzer gesetzt.
+     * Allows an authenticated lecturer to create a course programmatically.
+     * The creator (created_by) is set automatically to the signed-in user.
      */
-    #[ResponseAttribute(status: 403, description: 'Nur Referenten (is_lecturer) dürfen Kurse anlegen.')]
+    #[ResponseAttribute(status: 403, description: 'Only lecturers (is_lecturer) may create courses.')]
     public function store(StoreCourseRequest $request): JsonResponse
     {
         $course = Course::create($request->validated());
@@ -116,11 +116,11 @@ class CourseController extends Controller
     }
 
     /**
-     * Kurs anzeigen
+     * Show a course
      *
-     * Öffentlicher Endpunkt; liefert einen Kurs mit Beschreibung, Logo, Referent
-     * und allen kommenden Kurs-Events (inkl. Veranstaltungsort und Stadt),
-     * aufsteigend nach Beginn sortiert.
+     * Public endpoint; returns a course with description, logo, lecturer
+     * and all upcoming course events (including venue and city),
+     * sorted ascending by start.
      *
      * @return array<string, mixed>
      */
@@ -171,11 +171,11 @@ class CourseController extends Controller
     }
 
     /**
-     * Kurs aktualisieren
+     * Update a course
      *
-     * Aktualisiert einen Kurs; nur für den Ersteller oder einen Super-Admin.
+     * Updates a course; only for the creator or a super admin.
      */
-    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller des Kurses oder ein Super-Admin darf ihn ändern.')]
+    #[ResponseAttribute(status: 403, description: 'Only the creator of the course or a super admin may change it.')]
     public function update(UpdateCourseRequest $request, Course $course): CourseResource
     {
         $course->update($request->validated());
@@ -184,14 +184,14 @@ class CourseController extends Controller
     }
 
     /**
-     * Kurs-Logo hochladen
+     * Upload a course logo
      *
-     * Lädt ein Logo (multipart, Feld „file") in die singleFile-Collection „logo" und ersetzt
-     * dabei ein vorhandenes Logo. Nur für den Ersteller oder einen Super-Admin. Die Antwort
-     * enthält die frische Logo-URL.
+     * Uploads a logo (multipart, field "file") into the singleFile collection "logo",
+     * replacing an existing logo. Only for the creator or a super admin. The response
+     * contains the fresh logo URL.
      */
-    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf das Logo ersetzen.')]
-    #[ResponseAttribute(status: 422, description: 'Validierungsfehler (kein Bild, falscher MIME-Typ, zu groß oder zu große Abmessungen).')]
+    #[ResponseAttribute(status: 403, description: 'Only the creator or a super admin may replace the logo.')]
+    #[ResponseAttribute(status: 422, description: 'Validation error (not an image, wrong MIME type, too large or dimensions too large).')]
     public function uploadLogo(UploadMediaRequest $request, Course $course): CourseResource
     {
         $course->addMedia($request->file('file')->getRealPath())

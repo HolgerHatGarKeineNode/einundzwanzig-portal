@@ -7,9 +7,9 @@ use Illuminate\Http\Request;
 trait FiltersNumericIds
 {
     /**
-     * Reduziert einen Query-Parameter auf seine numerischen Werte als Integer-Liste.
+     * Reduces a query parameter to its numeric values as a list of integers.
      *
-     * Schuetzt typsensitive whereIn('id', ...)-Klauseln vor nicht-numerischer Eingabe.
+     * Protects type-sensitive whereIn('id', ...) clauses from non-numeric input.
      *
      * @return array<int, int>
      */

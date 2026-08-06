@@ -20,19 +20,19 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\Response;
 
-#[Group(name: 'Referenten', weight: 4)]
+#[Group(name: 'Lecturers', weight: 4)]
 class LecturerController extends Controller
 {
     use FiltersNumericIds;
 
     /**
-     * Referenten auflisten und durchsuchen
+     * List and search lecturers
      *
-     * Öffentlicher Endpunkt; liefert id und name, alphabetisch sortiert. Ohne den Parameter 'selected' wird die Liste auf 10 Einträge begrenzt. Jeder Referent enthält zusätzlich ein 'image' (Avatar-Thumbnail-URL). Mit 'withDetails' entfällt das Limit und jeder Referent enthält zusätzlich subtitle, future_events_count (Anzahl kommender Kurs-Events) und next_event (Datum des nächsten kommenden Kurs-Events, oder null).
+     * Public endpoint; returns id and name, sorted alphabetically. Without the 'selected' parameter the list is capped at 10 items. Every lecturer additionally contains an 'image' (avatar thumbnail URL). With 'withDetails' the limit is dropped and every lecturer additionally contains subtitle, future_events_count (number of upcoming course events) and next_event (date of the next upcoming course event, or null).
      */
-    #[QueryParameter(name: 'search', description: 'Teilstring-Suche im Namen.', required: false, type: 'string')]
-    #[QueryParameter(name: 'selected', description: 'Lädt gezielt die angegebenen IDs.', required: false, type: 'array')]
-    #[QueryParameter(name: 'withDetails', description: 'Presence-Flag: liefert subtitle, future_events_count und next_event mit und hebt das 10-Einträge-Limit auf.', required: false, type: 'string')]
+    #[QueryParameter(name: 'search', description: 'Substring search in the name.', required: false, type: 'string')]
+    #[QueryParameter(name: 'selected', description: 'Loads exactly the given IDs.', required: false, type: 'array')]
+    #[QueryParameter(name: 'withDetails', description: 'Presence flag: also returns subtitle, future_events_count and next_event and lifts the 10-item limit.', required: false, type: 'string')]
     public function index(Request $request)
     {
         $withDetails = $request->exists('withDetails');
@@ -64,11 +64,11 @@ class LecturerController extends Controller
     }
 
     /**
-     * Referent anzeigen
+     * Show a lecturer
      *
-     * Öffentlicher Endpunkt; liefert das Profil eines Referenten (Avatar, Untertitel,
-     * Intro, Beschreibung, Nostr- und Web-Links) inklusive seiner Kurse mit deren
-     * nächstem zukünftigen Kurs-Event.
+     * Public endpoint; returns the profile of a lecturer (avatar, subtitle,
+     * intro, description, Nostr and web links) including their courses with their
+     * next upcoming course event.
      *
      * @return array<string, mixed>
      */
@@ -104,13 +104,13 @@ class LecturerController extends Controller
     }
 
     /**
-     * Referent anlegen
+     * Create a lecturer
      *
-     * Erlaubt einem authentifizierten Nutzer, einen Referenten programmatisch anzulegen.
-     * Der Ersteller (created_by) wird automatisch gesetzt.
+     * Allows an authenticated user to create a lecturer programmatically.
+     * The creator (created_by) is set automatically.
      */
-    #[ResponseAttribute(status: 401, description: 'Nicht authentifiziert.')]
-    #[ResponseAttribute(status: 422, description: 'Validierungsfehler.')]
+    #[ResponseAttribute(status: 401, description: 'Not authenticated.')]
+    #[ResponseAttribute(status: 422, description: 'Validation error.')]
     public function store(StoreLecturerRequest $request): JsonResponse
     {
         $lecturer = Lecturer::create($request->validated());
@@ -121,12 +121,12 @@ class LecturerController extends Controller
     }
 
     /**
-     * Referent aktualisieren
+     * Update a lecturer
      *
-     * Aktualisiert einen Referenten; nur fuer den Ersteller oder einen Super-Admin.
+     * Updates a lecturer; only for the creator or a super admin.
      */
-    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf den Referenten aendern.')]
-    #[ResponseAttribute(status: 422, description: 'Validierungsfehler.')]
+    #[ResponseAttribute(status: 403, description: 'Only the creator or a super admin may change the lecturer.')]
+    #[ResponseAttribute(status: 422, description: 'Validation error.')]
     public function update(UpdateLecturerRequest $request, Lecturer $lecturer): LecturerResource
     {
         $lecturer->update($request->validated());
@@ -135,9 +135,9 @@ class LecturerController extends Controller
     }
 
     /**
-     * Eigene Referenten auflisten
+     * List own lecturers
      *
-     * Liefert alle vom authentifizierten Nutzer erstellten Referenten, alphabetisch sortiert.
+     * Returns all lecturers created by the authenticated user, sorted alphabetically.
      */
     public function mine(Request $request): AnonymousResourceCollection
     {
@@ -153,11 +153,11 @@ class LecturerController extends Controller
     }
 
     /**
-     * Eigenen Referenten anzeigen
+     * Show own lecturer
      *
-     * Zeigt einen einzelnen, vom authentifizierten Nutzer erstellten Referenten.
+     * Shows a single lecturer created by the authenticated user.
      */
-    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf den Referenten sehen.')]
+    #[ResponseAttribute(status: 403, description: 'Only the creator or a super admin may view the lecturer.')]
     public function mineShow(Lecturer $lecturer): LecturerResource
     {
         Gate::authorize('view', $lecturer);
@@ -166,14 +166,14 @@ class LecturerController extends Controller
     }
 
     /**
-     * Referenten-Avatar hochladen
+     * Upload a lecturer avatar
      *
-     * Lädt einen Avatar (multipart, Feld „file") in die singleFile-Collection „avatar" und
-     * ersetzt dabei ein vorhandenes Bild. Nur für den Ersteller oder einen Super-Admin. Die
-     * Antwort enthält die frische Avatar-URL.
+     * Uploads an avatar (multipart, field "file") into the singleFile collection "avatar",
+     * replacing an existing image. Only for the creator or a super admin. The
+     * response contains the fresh avatar URL.
      */
-    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf den Avatar ersetzen.')]
-    #[ResponseAttribute(status: 422, description: 'Validierungsfehler (kein Bild, falscher MIME-Typ, zu groß oder zu große Abmessungen).')]
+    #[ResponseAttribute(status: 403, description: 'Only the creator or a super admin may replace the avatar.')]
+    #[ResponseAttribute(status: 422, description: 'Validation error (not an image, wrong MIME type, too large or dimensions too large).')]
     public function uploadAvatar(UploadMediaRequest $request, Lecturer $lecturer): LecturerResource
     {
         $lecturer->addMedia($request->file('file')->getRealPath())

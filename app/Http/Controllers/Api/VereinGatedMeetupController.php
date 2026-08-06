@@ -9,12 +9,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
 /**
- * Vereinsmitglied-gegatete Meetup-Liste (Server-zu-Server, Bearer-Auth).
+ * Association-member-gated meetup list (server-to-server, bearer auth).
  *
- * Liefert nur Meetups, die über die meetup_user-Pivot mindestens ein echtes
- * EINUNDZWANZIG-Vereinsmitglied führen und auf der Karte sichtbar sind. Grundlage
- * dafür, im Nostr-Client nur Meetups mit echtem Vereinsbezug als Chat-Räume
- * anzulegen. Die Gate-Logik liegt in {@see VereinMeetupGate} (geteilt mit
+ * Returns only meetups that carry at least one genuine EINUNDZWANZIG association
+ * member via the meetup_user pivot and are visible on the map. Basis for
+ * creating chat rooms in the Nostr client only for meetups with a genuine
+ * association link. The gate logic lives in {@see VereinMeetupGate} (shared with
  * {@see MeetupMapController}).
  */
 #[Group(name: 'Meetups', weight: 3)]
@@ -23,7 +23,7 @@ class VereinGatedMeetupController extends Controller
     public function __construct(private readonly VereinMeetupGate $gate) {}
 
     /**
-     * Vereinsmitglied-gegatete Meetups.
+     * Association-member-gated meetups.
      *
      * @return Collection<int, array<string, mixed>>
      */

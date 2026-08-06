@@ -9,16 +9,16 @@ use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
-#[Group(name: 'Stammdaten', weight: 5)]
+#[Group(name: 'Master Data', weight: 5)]
 class CountryController extends Controller
 {
     /**
-     * Länder auflisten und durchsuchen
+     * List and search countries
      *
-     * Öffentlicher Endpunkt; liefert id, name und code (Ländercode), alphabetisch sortiert. Ohne 'selected' wird das Ergebnis auf 10 Einträge begrenzt. Jedes Land enthält zusätzlich eine 'flag' (SVG-URL).
+     * Public endpoint; returns id, name and code (country code), sorted alphabetically. Without 'selected' the result is capped at 10 items. Every country additionally contains a 'flag' (SVG URL).
      */
-    #[QueryParameter(name: 'search', description: 'Suche in Name oder Code (Ländercode).', required: false, type: 'string')]
-    #[QueryParameter(name: 'selected', description: 'Lädt gezielt die angegebenen Codes oder IDs.', required: false, type: 'array')]
+    #[QueryParameter(name: 'search', description: 'Search in name or code (country code).', required: false, type: 'string')]
+    #[QueryParameter(name: 'selected', description: 'Loads exactly the given codes or IDs.', required: false, type: 'array')]
     public function index(Request $request)
     {
         return Country::query()

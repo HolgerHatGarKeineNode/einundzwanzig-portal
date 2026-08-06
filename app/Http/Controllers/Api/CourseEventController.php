@@ -16,17 +16,17 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
-#[Group(name: 'Kurs-Events', weight: 2)]
+#[Group(name: 'Course Events', weight: 2)]
 class CourseEventController extends Controller
 {
     /**
-     * Eigene Kurs-Events auflisten
+     * List own course events
      *
-     * Liefert alle vom authentifizierten Nutzer erstellten Kurs-Events (inkl. zugehörigem
-     * Kurs und Veranstaltungsort), absteigend nach Startdatum. Ideal für idempotente
-     * Synchronisierung durch externe Clients.
+     * Returns all course events created by the authenticated user (including the associated
+     * course and venue), descending by start date. Ideal for idempotent
+     * synchronization by external clients.
      */
-    #[QueryParameter(name: 'course_id', description: 'Filtert die Kurs-Events auf einen bestimmten Kurs.', required: false, type: 'integer')]
+    #[QueryParameter(name: 'course_id', description: 'Filters the course events down to a specific course.', required: false, type: 'integer')]
     public function index(Request $request): AnonymousResourceCollection
     {
         $courseEvents = CourseEvent::query()
@@ -43,11 +43,11 @@ class CourseEventController extends Controller
     }
 
     /**
-     * Kurs-Event anlegen
+     * Create a course event
      *
-     * Erlaubt einem authentifizierten Referenten, ein datiertes Kurs-Event programmatisch anzulegen.
+     * Allows an authenticated lecturer to create a dated course event programmatically.
      */
-    #[ResponseAttribute(status: 403, description: 'Nur Referenten (is_lecturer) dürfen Kurs-Events anlegen.')]
+    #[ResponseAttribute(status: 403, description: 'Only lecturers (is_lecturer) may create course events.')]
     public function store(StoreCourseEventRequest $request): JsonResponse
     {
         $courseEvent = CourseEvent::create($request->validated());
@@ -58,11 +58,11 @@ class CourseEventController extends Controller
     }
 
     /**
-     * Kurs-Event aktualisieren
+     * Update a course event
      *
-     * Aktualisiert ein Kurs-Event; nur für den Ersteller oder einen Super-Admin.
+     * Updates a course event; only for the creator or a super admin.
      */
-    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller des Kurs-Events oder ein Super-Admin darf es ändern.')]
+    #[ResponseAttribute(status: 403, description: 'Only the creator of the course event or a super admin may change it.')]
     public function update(UpdateCourseEventRequest $request, CourseEvent $courseEvent): CourseEventResource
     {
         $courseEvent->update($request->validated());

@@ -14,20 +14,20 @@ use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 /**
- * Leader-Delegation für Meetups: ein bestehender Leader (bzw. Ersteller/
- * Super-Admin) verwaltet die Leader eines Meetups (meetup_user.is_leader).
- * Leader dürfen die Stammdaten bearbeiten — siehe MeetupPolicy::update().
+ * Leader delegation for meetups: an existing leader (or creator/
+ * super admin) manages the leaders of a meetup (meetup_user.is_leader).
+ * Leaders may edit the master data — see MeetupPolicy::update().
  */
 #[Group(name: 'Meetups', weight: 3)]
 class MeetupLeaderController extends Controller
 {
     /**
-     * Leader auflisten
+     * List leaders
      *
-     * Liefert alle Leader eines Meetups (id, name, nostr, avatar, is_creator).
-     * Nur für Leader des Meetups sichtbar.
+     * Returns all leaders of a meetup (id, name, nostr, avatar, is_creator).
+     * Visible only to leaders of the meetup.
      */
-    #[Response(status: 403, description: 'Nur ein Leader darf die Leader-Liste sehen.')]
+    #[Response(status: 403, description: 'Only a leader may view the leader list.')]
     public function index(Meetup $meetup): JsonResponse
     {
         Gate::authorize('manageLeaders', $meetup);
@@ -36,14 +36,14 @@ class MeetupLeaderController extends Controller
     }
 
     /**
-     * Leader einsetzen
+     * Appoint leader
      *
-     * Setzt den Nutzer mit dem angegebenen npub als Leader ein. Existiert noch
-     * kein Account für den npub, wird er angelegt (greift, sobald die Person sich
-     * erstmals einloggt). Idempotent: ein bereits gesetzter Leader bleibt Leader.
+     * Appoints the user with the given npub as leader. If no account exists for
+     * the npub yet, it is created (takes effect as soon as the person signs in
+     * for the first time). Idempotent: an already appointed leader stays a leader.
      */
-    #[Response(status: 403, description: 'Nur ein Leader darf weitere Leader einsetzen; ein Meetup-Steward nicht sich selbst.')]
-    #[Response(status: 422, description: 'Ungültiger npub.')]
+    #[Response(status: 403, description: 'Only a leader may appoint further leaders; a meetup steward may not appoint themselves.')]
+    #[Response(status: 422, description: 'Invalid npub.')]
     public function store(StoreMeetupLeaderRequest $request, Meetup $meetup): JsonResponse
     {
         $user = NostrLogin::findOrCreateUser($request->string('npub')->toString());
@@ -56,13 +56,13 @@ class MeetupLeaderController extends Controller
     }
 
     /**
-     * Leader entziehen
+     * Revoke leader
      *
-     * Entzieht dem Nutzer die Leader-Rolle für dieses Meetup (Demote: bleibt
-     * Mitglied in „Meine Meetups", darf aber nicht mehr bearbeiten). Der
-     * Ersteller des Meetups kann nie entzogen werden.
+     * Revokes the user's leader role for this meetup (demote: stays a
+     * member in "My Meetups", but may no longer edit). The
+     * creator of the meetup can never be revoked.
      */
-    #[Response(status: 403, description: 'Nur ein Leader darf entziehen; der Ersteller ist geschützt.')]
+    #[Response(status: 403, description: 'Only a leader may revoke; the creator is protected.')]
     public function destroy(Meetup $meetup, User $user): JsonResponse
     {
         Gate::authorize('manageLeaders', $meetup);
@@ -75,7 +75,7 @@ class MeetupLeaderController extends Controller
     }
 
     /**
-     * Leader-Liste als flaches Array (Ersteller zuerst).
+     * Leader list as a flat array (creator first).
      *
      * @return array<int, array<string, mixed>>
      */

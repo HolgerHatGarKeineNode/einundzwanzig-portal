@@ -31,14 +31,14 @@ class MeetupController extends Controller
     }
 
     /**
-     * Eigene Meetups auflisten
+     * List own meetups
      *
-     * Liefert die Meetups des angemeldeten Nutzers (id, name, inklusive Stadt/Land und Profilbild),
-     * alphabetisch sortiert. Erfordert eine authentifizierte Sitzung (sonst 401).
+     * Returns the meetups of the signed-in user (id, name, including city/country and profile image),
+     * sorted alphabetically. Requires an authenticated session (otherwise 401).
      */
-    #[QueryParameter(name: 'search', description: 'Teilstring-Suche im Meetup- oder Stadtnamen.', required: false, type: 'string')]
-    #[QueryParameter(name: 'selected', description: 'Lädt gezielt die angegebenen Meetup-IDs.', required: false, type: 'array')]
-    #[Response(status: 401, description: 'Nicht authentifiziert.')]
+    #[QueryParameter(name: 'search', description: 'Substring search in the meetup or city name.', required: false, type: 'string')]
+    #[QueryParameter(name: 'selected', description: 'Loads exactly the given meetup IDs.', required: false, type: 'array')]
+    #[Response(status: 401, description: 'Not authenticated.')]
     public function index(Request $request)
     {
         $user = $request->user();
@@ -74,13 +74,13 @@ class MeetupController extends Controller
     }
 
     /**
-     * Meetup anlegen
+     * Create meetup
      *
-     * Erlaubt einem authentifizierten Nutzer, ein Meetup programmatisch anzulegen.
-     * Der Ersteller (created_by) wird automatisch gesetzt.
+     * Allows an authenticated user to create a meetup programmatically.
+     * The creator (created_by) is set automatically.
      */
-    #[Response(status: 401, description: 'Nicht authentifiziert.')]
-    #[Response(status: 422, description: 'Validierungsfehler.')]
+    #[Response(status: 401, description: 'Not authenticated.')]
+    #[Response(status: 422, description: 'Validation error.')]
     public function store(StoreMeetupRequest $request): JsonResponse
     {
         $meetup = Meetup::create($request->validated());
@@ -91,12 +91,12 @@ class MeetupController extends Controller
     }
 
     /**
-     * Meetup aktualisieren
+     * Update meetup
      *
-     * Aktualisiert ein Meetup; nur fuer den Ersteller oder einen Super-Admin.
+     * Updates a meetup; only for the creator or a super admin.
      */
-    #[Response(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf das Meetup aendern.')]
-    #[Response(status: 422, description: 'Validierungsfehler.')]
+    #[Response(status: 403, description: 'Only the creator or a super admin may change the meetup.')]
+    #[Response(status: 422, description: 'Validation error.')]
     public function update(UpdateMeetupRequest $request, Meetup $meetup): MeetupResource
     {
         $meetup->update($request->validated());
@@ -105,10 +105,10 @@ class MeetupController extends Controller
     }
 
     /**
-     * Eigene Meetups auflisten
+     * List own meetups
      *
-     * Liefert die im Dashboard ausgewählten Meetups des authentifizierten Nutzers
-     * (meetup_user-Pivot, „Meine Meetups"), alphabetisch sortiert.
+     * Returns the meetups the authenticated user selected in the dashboard
+     * (meetup_user pivot, "My Meetups"), sorted alphabetically.
      */
     public function mine(Request $request): AnonymousResourceCollection
     {
@@ -124,13 +124,13 @@ class MeetupController extends Controller
     }
 
     /**
-     * Bestehendes Meetup zu „Meine Meetups“ hinzufügen
+     * Add an existing meetup to "My Meetups"
      *
-     * Fügt ein bereits existierendes Meetup zur „Meine Meetups"-Liste des authentifizierten
-     * Nutzers hinzu (meetup_user-Pivot als Mitglied, is_leader=false). Idempotent: ein bereits
-     * hinzugefügtes Meetup bleibt unverändert. Die Stammdaten bleiben dem Ersteller vorbehalten.
+     * Adds an already existing meetup to the "My Meetups" list of the authenticated
+     * user (meetup_user pivot as member, is_leader=false). Idempotent: a meetup that has
+     * already been added remains unchanged. The master data stays reserved for the creator.
      */
-    #[Response(status: 401, description: 'Nicht authentifiziert.')]
+    #[Response(status: 401, description: 'Not authenticated.')]
     public function addToMine(Request $request, Meetup $meetup): JsonResponse
     {
         Gate::authorize('addToMine', $meetup);
@@ -145,14 +145,14 @@ class MeetupController extends Controller
     }
 
     /**
-     * Meetup aus „Meine Meetups“ entfernen
+     * Remove a meetup from "My Meetups"
      *
-     * Entfernt ein Meetup aus der „Meine Meetups"-Liste des authentifizierten Nutzers
-     * (löst die meetup_user-Pivot-Mitgliedschaft). Die Stammdaten des Meetups bleiben
-     * erhalten — Gegenstück zu addToMine(). Idempotent: war das Meetup nicht (mehr)
-     * zugeordnet, bleibt die Antwort 200 OK.
+     * Removes a meetup from the "My Meetups" list of the authenticated user
+     * (detaches the meetup_user pivot membership). The master data of the meetup is
+     * preserved — counterpart to addToMine(). Idempotent: if the meetup was not (or no
+     * longer) assigned, the response stays 200 OK.
      */
-    #[Response(status: 401, description: 'Nicht authentifiziert.')]
+    #[Response(status: 401, description: 'Not authenticated.')]
     public function removeFromMine(Request $request, Meetup $meetup): MeetupResource
     {
         Gate::authorize('removeFromMine', $meetup);
@@ -163,11 +163,11 @@ class MeetupController extends Controller
     }
 
     /**
-     * Eigenes Meetup anzeigen
+     * Show own meetup
      *
-     * Zeigt ein einzelnes der im Dashboard ausgewählten Meetups (meetup_user-Pivot).
+     * Shows a single one of the meetups selected in the dashboard (meetup_user pivot).
      */
-    #[Response(status: 403, description: 'Nur der Ersteller oder ein Mitglied (meetup_user-Pivot) darf das Meetup sehen.')]
+    #[Response(status: 403, description: 'Only the creator or a member (meetup_user pivot) may view the meetup.')]
     public function mineShow(Meetup $meetup): MeetupResource
     {
         Gate::authorize('viewMine', $meetup);
@@ -176,14 +176,14 @@ class MeetupController extends Controller
     }
 
     /**
-     * Meetup-Logo hochladen
+     * Upload meetup logo
      *
-     * Lädt ein Logo (multipart, Feld „file") in die singleFile-Collection „logo" und ersetzt
-     * dabei ein vorhandenes Logo. Nur für den Ersteller oder einen Super-Admin. Die Antwort
-     * enthält die frische Logo-URL.
+     * Uploads a logo (multipart, field "file") into the singleFile collection "logo",
+     * replacing an existing logo in the process. Only for the creator or a super admin.
+     * The response contains the fresh logo URL.
      */
-    #[Response(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf das Logo ersetzen.')]
-    #[Response(status: 422, description: 'Validierungsfehler (kein Bild, falscher MIME-Typ, zu groß oder zu große Abmessungen).')]
+    #[Response(status: 403, description: 'Only the creator or a super admin may replace the logo.')]
+    #[Response(status: 422, description: 'Validation error (not an image, wrong MIME type, too large or dimensions too large).')]
     public function uploadLogo(UploadMediaRequest $request, Meetup $meetup): MeetupResource
     {
         $meetup->addMedia($request->file('file')->getRealPath())

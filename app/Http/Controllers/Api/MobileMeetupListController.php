@@ -10,24 +10,24 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
- * Schlanke, schnelle Meetup-Liste für die mobile App.
+ * Lean, fast meetup list for the mobile app.
  *
- * Bewusst getrennt von {@see MeetupMapController} (GET /api/meetups), damit die
- * Website-Karte und andere Konsumenten unverändert bleiben. Nur die Felder, die
- * die App-Liste und die App-Karte rendern (Name, Slug, Ort, Land, Geo, Logo,
- * nächster Termin) — kein Intro, keine Socials, keine RSVP-Zähler.
+ * Deliberately separate from {@see MeetupMapController} (GET /api/meetups) so that the
+ * website map and other consumers remain unchanged. Only the fields that
+ * the app list and the app map render (name, slug, city, country, geo, logo,
+ * next meetup event) — no intro, no socials, no RSVP counters.
  *
- * Der Geschwindigkeitsgewinn kommt aus der Query: der nextEvent-Accessor des
- * Models feuert pro Meetup mehrere Abfragen (nächster Termin + zwei Zähler),
- * hier ersetzt durch EINE korrelierte Subquery auf den Start des nächsten
- * Termins. City/Country/Media werden eager geladen — konstante Query-Zahl
- * unabhängig von der Meetup-Anzahl (kein N+1).
+ * The speed gain comes from the query: the model's nextEvent accessor
+ * fires several queries per meetup (next meetup event + two counters),
+ * replaced here by ONE correlated subquery on the start of the next
+ * meetup event. City/country/media are eager loaded — a constant number of queries
+ * regardless of the meetup count (no N+1).
  */
 #[Group(name: 'Meetups', weight: 3)]
 class MobileMeetupListController extends Controller
 {
     /**
-     * Meetup-Liste für die mobile App
+     * Meetup list for the mobile app
      *
      * @return Collection<int, array<string, mixed>>
      */
@@ -49,11 +49,11 @@ class MobileMeetupListController extends Controller
                 'media',
             ])
             ->get()
-            // In PHP sortieren, nicht in SQL: ORDER BY über den Subquery-Alias
-            // scheitert auf PostgreSQL (Alias nur als eigenständiger Schlüssel
-            // erlaubt, nicht im Ausdruck). Wie in der App: nächster Termin zuerst,
-            // terminlose ans Ende, dann nach Name. next_event_start ist als
-            // „Y-m-d H:i:s"-String lexikografisch = chronologisch sortierbar.
+            // Sort in PHP, not in SQL: ORDER BY on the subquery alias
+            // fails on PostgreSQL (an alias is only allowed as a standalone key,
+            // not inside an expression). As in the app: next meetup event first,
+            // those without one last, then by name. As a "Y-m-d H:i:s" string,
+            // next_event_start sorts lexicographically = chronologically.
             ->sortBy(fn (Meetup $meetup): string => sprintf(
                 '%d|%s|%s',
                 $meetup->next_event_start === null ? 1 : 0,
@@ -62,8 +62,8 @@ class MobileMeetupListController extends Controller
             ))
             ->values()
             ->map(fn (Meetup $meetup): array => [
-                // Stabile numerische DB-id als Bindungsschlüssel für Konsumenten
-                // (z. B. Meetup-Räume im Nostr-Client). Additiv, non-breaking.
+                // Stable numeric DB id as binding key for consumers
+                // (e.g. meetup rooms in the Nostr client). Additive, non-breaking.
                 'id' => $meetup->id,
                 'name' => $meetup->name,
                 'slug' => $meetup->slug,
@@ -71,11 +71,11 @@ class MobileMeetupListController extends Controller
                 'country' => str($meetup->city?->country?->code)->upper()->value(),
                 'latitude' => (float) ($meetup->city?->latitude ?? 0),
                 'longitude' => (float) ($meetup->city?->longitude ?? 0),
-                // getFirstMedia (nicht getFirstMediaUrl): die 'logo'-Collection hat
-                // eine Fallback-URL (Länder-Platzhalter). Ohne echtes Logo soll die
-                // App den Initialen-Avatar zeigen, also null statt Platzhalter-URL.
+                // getFirstMedia (not getFirstMediaUrl): the 'logo' collection has
+                // a fallback URL (country placeholder). Without a real logo the
+                // app should show the initials avatar, so null instead of a placeholder URL.
                 'logo' => $meetup->getFirstMedia('logo')?->getUrl(),
-                // Gleiches Format wie GET /api/meetup-events (siehe MeetupEventController).
+                // Same format as GET /api/meetup-events (see MeetupEventController).
                 'next_event_start' => $meetup->next_event_start
                     ? Carbon::parse($meetup->next_event_start)->format('Y-m-d H:i')
                     : null,

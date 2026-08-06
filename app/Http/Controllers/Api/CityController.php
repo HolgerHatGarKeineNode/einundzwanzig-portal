@@ -18,19 +18,19 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\Response;
 
-#[Group(name: 'Stammdaten', weight: 5)]
+#[Group(name: 'Master Data', weight: 5)]
 class CityController extends Controller
 {
     use FiltersNumericIds;
 
     /**
-     * Städte auflisten und durchsuchen
+     * List and search cities
      *
-     * Öffentlicher Endpunkt; liefert id, name und das zugehörige Land, alphabetisch sortiert. Ohne 'selected' wird die Liste auf 10 Einträge begrenzt.
+     * Public endpoint; returns id, name and the associated country, sorted alphabetically. Without 'selected' the list is capped at 10 items.
      */
-    #[QueryParameter(name: 'search', description: 'Teilstring-Suche im Namen der Stadt.', required: false, type: 'string')]
-    #[QueryParameter(name: 'selected', description: 'Lädt gezielt die angegebenen IDs.', required: false, type: 'array')]
-    #[QueryParameter(name: 'withDetails', description: 'Presence-Flag: liefert zusätzlich Country-Code und Flaggen-URL und hebt die Begrenzung auf 10 Einträge auf.', required: false, type: 'string')]
+    #[QueryParameter(name: 'search', description: 'Substring search in the city name.', required: false, type: 'string')]
+    #[QueryParameter(name: 'selected', description: 'Loads exactly the given IDs.', required: false, type: 'array')]
+    #[QueryParameter(name: 'withDetails', description: 'Presence flag: additionally returns country code and flag URL and lifts the 10-item limit.', required: false, type: 'string')]
     public function index(Request $request)
     {
         $withDetails = $request->exists('withDetails');
@@ -60,17 +60,17 @@ class CityController extends Controller
     }
 
     /**
-     * Stadt anlegen
+     * Create a city
      *
-     * Erlaubt einem authentifizierten Nutzer, eine Stadt programmatisch anzulegen.
-     * Der Ersteller (created_by) wird automatisch gesetzt.
+     * Allows an authenticated user to create a city programmatically.
+     * The creator (created_by) is set automatically.
      *
-     * Staedtenamen sind global eindeutig: existiert die Stadt bereits, wird sie
-     * mit Status 200 zurueckgeliefert statt ein Duplikat anzulegen.
+     * City names are globally unique: if the city already exists, it is
+     * returned with status 200 instead of creating a duplicate.
      */
-    #[ResponseAttribute(status: 200, description: 'Die Stadt existierte bereits und wird unveraendert zurueckgeliefert.')]
-    #[ResponseAttribute(status: 401, description: 'Nicht authentifiziert.')]
-    #[ResponseAttribute(status: 422, description: 'Validierungsfehler.')]
+    #[ResponseAttribute(status: 200, description: 'The city already existed and is returned unchanged.')]
+    #[ResponseAttribute(status: 401, description: 'Not authenticated.')]
+    #[ResponseAttribute(status: 422, description: 'Validation error.')]
     public function store(StoreCityRequest $request): JsonResponse
     {
         $city = City::createOrFindByName($request->validated());
@@ -83,12 +83,12 @@ class CityController extends Controller
     }
 
     /**
-     * Stadt aktualisieren
+     * Update a city
      *
-     * Aktualisiert eine Stadt; nur fuer den Ersteller oder einen Super-Admin.
+     * Updates a city; only for the creator or a super admin.
      */
-    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf die Stadt aendern.')]
-    #[ResponseAttribute(status: 422, description: 'Validierungsfehler.')]
+    #[ResponseAttribute(status: 403, description: 'Only the creator or a super admin may change the city.')]
+    #[ResponseAttribute(status: 422, description: 'Validation error.')]
     public function update(UpdateCityRequest $request, City $city): CityResource
     {
         $city->update($request->validated());
@@ -97,9 +97,9 @@ class CityController extends Controller
     }
 
     /**
-     * Eigene Staedte auflisten
+     * List own cities
      *
-     * Liefert alle vom authentifizierten Nutzer erstellten Staedte, alphabetisch sortiert.
+     * Returns all cities created by the authenticated user, sorted alphabetically.
      */
     public function mine(Request $request): AnonymousResourceCollection
     {
@@ -114,11 +114,11 @@ class CityController extends Controller
     }
 
     /**
-     * Eigene Stadt anzeigen
+     * Show own city
      *
-     * Zeigt eine einzelne, vom authentifizierten Nutzer erstellte Stadt.
+     * Shows a single city created by the authenticated user.
      */
-    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf die Stadt sehen.')]
+    #[ResponseAttribute(status: 403, description: 'Only the creator or a super admin may view the city.')]
     public function mineShow(City $city): CityResource
     {
         Gate::authorize('view', $city);

@@ -6,9 +6,9 @@ use App\Rules\ValidNpub;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Setzt einen weiteren Leader für ein Meetup per Nostr-npub ein. Nur ein
- * bestehender Leader (bzw. Ersteller/Super-Admin) darf das (manageLeaders).
- * Der npub muss ein gültiger bech32-kodierter öffentlicher Schlüssel sein.
+ * Appoints another leader for a meetup via Nostr npub. Only an existing leader
+ * (or the creator/super admin) may do this (manageLeaders). The npub must be a
+ * valid bech32-encoded public key.
  */
 class StoreMeetupLeaderRequest extends FormRequest
 {

@@ -27,15 +27,15 @@ use Symfony\Component\HttpFoundation\Response;
 class MeetupEventController extends Controller
 {
     /**
-     * Meetup-Termine auflisten
+     * List meetup events
      *
-     * Liefert kommende/vergangene Meetup-Termine. Mit optionalem Datum wird auf den
-     * jeweiligen Monat dieses Datums gefiltert.
+     * Returns upcoming/past meetup events. With an optional date, the result is filtered
+     * to the month of that date.
      *
      * @return Collection<int, array<string, mixed>>
      */
-    #[PathParameter(name: 'date', description: 'Optionales Datum (Y-m-d); filtert auf den Monat dieses Datums.', required: false, type: 'string')]
-    #[ResponseAttribute(status: 400, description: 'Das übergebene Datum ist nicht parsebar (erwartet wird Y-m-d).')]
+    #[PathParameter(name: 'date', description: 'Optional date (Y-m-d); filters to the month of that date.', required: false, type: 'string')]
+    #[ResponseAttribute(status: 400, description: 'The given date cannot be parsed (Y-m-d is expected).')]
     public function __invoke(?string $date = null): Collection
     {
         if ($date) {
@@ -64,7 +64,7 @@ class MeetupEventController extends Controller
             'location' => $event->location,
             'description' => $event->description,
             'link' => $event->link,
-            // null = Teilnehmerzahl ist für dieses Meetup nicht öffentlich (attendees_public=false).
+            // null = the attendee count is not public for this meetup (attendees_public=false).
             'attendees' => $event->meetup->attendees_public ? $event->attendeesCount() : null,
             'might_attendees' => $event->meetup->attendees_public ? $event->mightAttendeesCount() : null,
             'meetup.name' => $event->meetup->name,
@@ -92,18 +92,18 @@ class MeetupEventController extends Controller
     }
 
     /**
-     * Meetup-Event anlegen
+     * Create meetup event
      *
-     * Erlaubt einem authentifizierten Nutzer, ein Meetup-Event programmatisch anzulegen.
-     * Der Ersteller (created_by) wird automatisch gesetzt.
+     * Allows an authenticated user to create a meetup event programmatically.
+     * The creator (created_by) is set automatically.
      *
-     * Werden sowohl `recurrence_type` als auch `recurrence_end_date` übergeben, wird – wie im
-     * Web-Editor – eine Serie einzelner Termine erzeugt (gemeinsame Expansions-Action, harte
-     * Obergrenze von 100 Terminen) und die Antwort enthält die Liste aller erstellten Events.
-     * Ohne diese Felder entsteht ein einzelner Termin.
+     * If both `recurrence_type` and `recurrence_end_date` are passed, a series of individual
+     * meetup events is created, just like in the web editor (shared expansion action, hard
+     * upper limit of 100 meetup events), and the response contains the list of all created events.
+     * Without these fields, a single meetup event is created.
      */
-    #[ResponseAttribute(status: 401, description: 'Nicht authentifiziert.')]
-    #[ResponseAttribute(status: 422, description: 'Validierungsfehler.')]
+    #[ResponseAttribute(status: 401, description: 'Not authenticated.')]
+    #[ResponseAttribute(status: 422, description: 'Validation error.')]
     public function store(StoreMeetupEventRequest $request, CreateMeetupEventSeries $createSeries): JsonResponse
     {
         $validated = $request->validated();
@@ -124,12 +124,12 @@ class MeetupEventController extends Controller
     }
 
     /**
-     * Meetup-Event aktualisieren
+     * Update meetup event
      *
-     * Aktualisiert ein Meetup-Event; nur fuer den Ersteller oder einen Super-Admin.
+     * Updates a meetup event; only for the creator or a super admin.
      */
-    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf das Meetup-Event aendern.')]
-    #[ResponseAttribute(status: 422, description: 'Validierungsfehler.')]
+    #[ResponseAttribute(status: 403, description: 'Only the creator or a super admin may change the meetup event.')]
+    #[ResponseAttribute(status: 422, description: 'Validation error.')]
     public function update(UpdateMeetupEventRequest $request, MeetupEvent $meetupEvent): MeetupEventResource
     {
         $meetupEvent->update($request->validated());
@@ -138,10 +138,10 @@ class MeetupEventController extends Controller
     }
 
     /**
-     * Bearbeitbare Meetup-Events auflisten
+     * List editable meetup events
      *
-     * Liefert alle Meetup-Events, die der authentifizierte Nutzer bearbeiten darf
-     * (selbst angelegt ODER Leader des zugehörigen Meetups), nach Startzeit absteigend sortiert.
+     * Returns all meetup events the authenticated user may edit
+     * (created by themselves OR leader of the associated meetup), sorted by start time descending.
      */
     public function mine(Request $request): AnonymousResourceCollection
     {
@@ -156,11 +156,11 @@ class MeetupEventController extends Controller
     }
 
     /**
-     * Eigenes Meetup-Event anzeigen
+     * Show own meetup event
      *
-     * Zeigt ein einzelnes, vom authentifizierten Nutzer erstelltes Meetup-Event.
+     * Shows a single meetup event created by the authenticated user.
      */
-    #[ResponseAttribute(status: 403, description: 'Nur der Ersteller oder ein Super-Admin darf das Meetup-Event sehen.')]
+    #[ResponseAttribute(status: 403, description: 'Only the creator or a super admin may view the meetup event.')]
     public function mineShow(MeetupEvent $meetupEvent): MeetupEventResource
     {
         Gate::authorize('view', $meetupEvent);
@@ -169,10 +169,10 @@ class MeetupEventController extends Controller
     }
 
     /**
-     * RSVP-Status eines Termins anzeigen
+     * Show the RSVP status of a meetup event
      *
-     * Liefert den eigenen Teilnahme-Status des authentifizierten Nutzers für
-     * diesen Termin sowie die aktuellen Zähler der Zu- und Vielleicht-Sagen.
+     * Returns the authenticated user's own RSVP status for this meetup event
+     * as well as the current counters of attending and maybe responses.
      */
     public function rsvpStatus(Request $request, MeetupEvent $meetupEvent): JsonResponse
     {
@@ -180,20 +180,20 @@ class MeetupEventController extends Controller
     }
 
     /**
-     * Für einen Termin zu- oder absagen
+     * RSVP to a meetup event
      *
-     * Trägt den authentifizierten Nutzer als Teilnehmer („attending"),
-     * Vielleicht-Teilnehmer („maybe") oder gar nicht („none", = absagen) ein.
-     * Der Anzeigename wird automatisch aus dem Profil übernommen. Idempotent:
-     * derselbe Status mehrfach gesetzt verändert nichts.
+     * Records the authenticated user as attending ("attending"),
+     * maybe attending ("maybe") or not at all ("none", = declining).
+     * The display name is taken from the profile automatically. Idempotent:
+     * setting the same status repeatedly changes nothing.
      *
-     * Ist die Anmeldung für das zugehörige Meetup deaktiviert (`rsvp_enabled`=false),
-     * wird die Anfrage mit 422 abgelehnt. Die zurückgegebenen Zähler sind `null`,
-     * wenn die Teilnehmerliste für den Betrachter nicht sichtbar ist
-     * (`attendees_public`=false und kein Verwalter).
+     * If RSVP is disabled for the associated meetup (`rsvp_enabled`=false),
+     * the request is rejected with 422. The returned counters are `null`
+     * if the attendee list is not visible to the viewer
+     * (`attendees_public`=false and not a manager).
      */
-    #[ResponseAttribute(status: 401, description: 'Nicht authentifiziert.')]
-    #[ResponseAttribute(status: 422, description: 'Validierungsfehler (unbekannter Status) oder Anmeldung für dieses Meetup deaktiviert.')]
+    #[ResponseAttribute(status: 401, description: 'Not authenticated.')]
+    #[ResponseAttribute(status: 422, description: 'Validation error (unknown status) or RSVP disabled for this meetup.')]
     public function rsvp(RsvpMeetupEventRequest $request, MeetupEvent $meetupEvent): JsonResponse
     {
         abort_if(
@@ -211,9 +211,9 @@ class MeetupEventController extends Controller
     }
 
     /**
-     * Einheitliche RSVP-Antwort: eigener Status + aktuelle Zähler. Die Zähler sind
-     * null, wenn die Teilnehmerliste für den Betrachter nicht sichtbar ist
-     * (attendees_public=false und kein Verwalter).
+     * Unified RSVP response: own status + current counters. The counters are
+     * null if the attendee list is not visible to the viewer
+     * (attendees_public=false and not a manager).
      *
      * @return array{status: string, attendees: int|null, might_attendees: int|null, attendee_names: list<string>|null}
      */
@@ -225,8 +225,8 @@ class MeetupEventController extends Controller
             'status' => $meetupEvent->rsvpStatusFor($user)->value,
             'attendees' => $countsVisible ? $meetupEvent->attendeesCount() : null,
             'might_attendees' => $countsVisible ? $meetupEvent->mightAttendeesCount() : null,
-            // Anzeigenamen der Zusagen ohne `id_<userId>|`-Präfix. Gleiche
-            // Sichtbarkeitsregel wie die Zähler (attendees_public bzw. Verwalter).
+            // Display names of the attendees without the `id_<userId>|` prefix. Same
+            // visibility rule as the counters (attendees_public or manager).
             'attendee_names' => $countsVisible
                 ? collect($meetupEvent->attendees ?? [])
                     ->map(fn (string $entry): string => str($entry)->after('|')->toString())

@@ -11,9 +11,9 @@ use Illuminate\Support\Collection;
 class NostrPlebController extends Controller
 {
     /**
-     * Nostr-Pubkeys (npubs) der Community
+     * Nostr pubkeys (npubs) of the community
      *
-     * Liefert die eindeutigen npub-Public-Keys aller Nutzer mit hinterlegtem Nostr-Profil.
+     * Returns the unique npub public keys of all users with a stored Nostr profile.
      *
      * @return Collection<int, string>
      */

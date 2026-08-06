@@ -14,18 +14,18 @@ use Illuminate\Support\Collection;
 class MeetupMapController extends Controller
 {
     /**
-     * Öffentliche Meetups für die Community-Karte
+     * Public meetups for the community map
      *
-     * Liefert alle auf der Karte sichtbaren Meetups mit Geo- und Kontaktdaten.
+     * Returns all meetups visible on the map with geo and contact data.
      *
      * @return Collection<int, array<string, mixed>>
      */
-    #[QueryParameter(name: 'withIntro', description: 'Presence-Flag: Bei Vorhandensein wird der Intro-Text mitgeliefert.', required: false, type: 'string')]
-    #[QueryParameter(name: 'withLogos', description: 'Presence-Flag: Bei Vorhandensein wird die Logo-URL mitgeliefert.', required: false, type: 'string')]
+    #[QueryParameter(name: 'withIntro', description: 'Presence flag: when present, the intro text is included.', required: false, type: 'string')]
+    #[QueryParameter(name: 'withLogos', description: 'Presence flag: when present, the logo URL is included.', required: false, type: 'string')]
     public function __invoke(Request $request, VereinMeetupGate $gate): Collection
     {
-        // Einmal pro Request: die (gecachte) id-Menge der vereinsmitglied-gegateten
-        // Meetups. So kann die App die Raum-Existenz ohne Relay-Zugriff prüfen.
+        // Once per request: the (cached) set of ids of the association-member-gated
+        // meetups. This lets the app check room existence without relay access.
         $gatedIds = $gate->gatedMeetupIds()->all();
 
         return Meetup::query()
@@ -37,9 +37,9 @@ class MeetupMapController extends Controller
             ])
             ->get()
             ->map(fn ($meetup) => [
-                // Stabile numerische DB-id als Bindungsschlüssel (additiv, non-breaking).
+                // Stable numeric DB id as binding key (additive, non-breaking).
                 'id' => $meetup->id,
-                // true, wenn vereinsmitglied-gegatet (= hat einen Nostr-Raum).
+                // true if association-member-gated (= has a Nostr room).
                 'has_room' => in_array($meetup->id, $gatedIds, true),
                 'name' => $meetup->name,
                 'portalLink' => url()->route(
