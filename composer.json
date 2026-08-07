@@ -111,7 +111,7 @@
             "Composer\\Config::disableProcessTimeout",
             "@php artisan config:clear --ansi",
             "@test:lint",
-            "@php artisan test --fresh"
+            "@php -d memory_limit=512M artisan test --fresh"
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
