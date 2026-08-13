@@ -16,7 +16,7 @@
         "ezadr/lnurl-php": "^1.0",
         "laravel/framework": "^13.0",
         "laravel/horizon": "^5.40",
-        "laravel/mcp": "^0.8.0",
+        "laravel/mcp": "^0.9.0",
         "laravel/nightwatch": "^1.18",
         "laravel/passport": "^13.7",
         "laravel/sanctum": "^4.0",

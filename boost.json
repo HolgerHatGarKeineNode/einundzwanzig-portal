@@ -18,6 +18,7 @@
         "spatie/laravel-sluggable"
     ],
     "skills": [
+        "infer-conventions",
         "laravel-best-practices",
         "configuring-horizon",
         "mcp-development",

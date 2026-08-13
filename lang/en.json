@@ -727,5 +727,20 @@
     "Das angegebene Team existiert nicht.": "The specified team does not exist.",
     "Das angegebene Meetup existiert nicht.": "The specified meetup does not exist.",
     "Die angegebene Stadt existiert nicht.": "The specified city does not exist.",
-    "Ungültiges Datum. Erwartet wird das Format Y-m-d.": "Invalid date. The expected format is Y-m-d."
+    "Ungültiges Datum. Erwartet wird das Format Y-m-d.": "Invalid date. The expected format is Y-m-d.",
+    "Konten verbinden - Einstellungen": "",
+    "Verbinde dein Lightning- und Nostr-Konto, ohne deine Meetup-Leaderships zu verlieren.": "",
+    "Die Signatur passt nicht zu dieser Aktion. Bitte erneut mit Nostr signieren.": "",
+    "Städte": "",
+    "Referenten": "",
+    "Bitcoin-Events": "",
+    "Podcasts": "",
+    "Episoden": "",
+    "Bibliotheken": "",
+    "Services": "",
+    "Votes": "",
+    "Dein Nostr-Konto wurde erfolgreich verbunden. Lightning ist für dieses Konto jetzt deaktiviert — melde dich künftig mit Nostr an. Die Companion-App wurde dabei abgemeldet: melde dich dort einmalig neu mit deinem Nostr-Schlüssel an.": "",
+    "Deine App meldet sich einmalig ab": "",
+    "Bist du mit dieser npub in der Companion-App angemeldet, wird die App beim Verbinden abgemeldet. Melde dich dort danach einfach neu mit deinem Nostr-Schlüssel an — deine Meetups und Rechte sind unverändert.": "",
+    "Lightning": ""
 }
