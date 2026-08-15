@@ -28,3 +28,4 @@ yarn-error.log
 /.claude/scheduled_tasks.lock
 plans/
 /.pest-chromium
+.omo/
