@@ -4,7 +4,10 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Features\SupportFileUploads\FileUploadConfiguration;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -109,6 +112,29 @@ it('blocks updateMeetup when the user is neither creator nor pivot member', func
         ->assertStatus(403);
 
     expect($meetup->refresh()->name)->toBe('Original Name');
+});
+
+it('does not crash with FileNotPreviewableException when a psd is uploaded as new logo', function () {
+    Storage::fake(FileUploadConfiguration::disk());
+
+    $creator = actingAsUser();
+    $meetup = Meetup::factory()->create([
+        'city_id' => $this->city->id,
+        'name' => 'Original Name',
+        'created_by' => $creator->id,
+    ]);
+    $meetup->users()->attach($creator);
+
+    Livewire::test('meetups.edit', ['meetup' => $meetup])
+        ->set('logo', UploadedFile::fake()->create('logo.psd', 100, 'image/vnd.adobe.photoshop'))
+        ->set('name', 'Updated Name')
+        ->set('city_id', $this->city->id)
+        ->set('community', 'einundzwanzig')
+        ->call('updateMeetup')
+        ->assertHasErrors(['logo']);
+
+    expect($meetup->refresh()->name)->toBe('Original Name')
+        ->and($meetup->getFirstMedia('logo'))->toBeNull();
 });
 
 it('blocks updateMeetup after exceeding the hourly rate limit', function () {

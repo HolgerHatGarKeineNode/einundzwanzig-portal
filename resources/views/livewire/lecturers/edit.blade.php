@@ -94,6 +94,7 @@ class extends Component {
             'lnurl' => ['nullable', 'string'],
             'node_id' => ['nullable', 'string', 'max:255'],
             'paynym' => ['nullable', 'string'],
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,webp,avif', 'max:5120', 'dimensions:max_width=4000,max_height=4000'],
         ]);
 
         $this->lecturer->update($validated);
@@ -135,8 +136,8 @@ class extends Component {
                         @if (!$avatar && $lecturer->getFirstMedia('avatar'))
                             <img src="{{ $lecturer->getFirstMediaUrl('avatar') }}" alt="Avatar"
                                  class="size-full object-cover rounded-full"/>
-                        @elseif($avatar)
-                            <img src="{{ $avatar?->temporaryUrl() }}" alt="Avatar"
+                        @elseif($avatar?->isPreviewable())
+                            <img src="{{ $avatar->temporaryUrl() }}" alt="Avatar"
                                  class="size-full object-cover rounded-full"/>
                         @else
                             <flux:icon name="user" variant="solid" class="text-zinc-500 dark:text-zinc-400"/>
@@ -146,6 +147,8 @@ class extends Component {
                             <flux:icon name="arrow-up-circle" variant="solid" class="text-zinc-500 dark:text-zinc-400"/>
                         </div>
                     </div>
+
+                    <flux:error name="avatar"/>
                 </flux:file-upload>
 
                 <flux:field>

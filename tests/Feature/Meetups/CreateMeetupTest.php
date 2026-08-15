@@ -3,7 +3,9 @@
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Features\SupportFileUploads\FileUploadConfiguration;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -93,6 +95,33 @@ it('rejects creation when telegram_link is not a valid URL', function () {
         ->set('telegram_link', 'not-a-url')
         ->call('createMeetup')
         ->assertHasErrors(['telegram_link' => 'url']);
+});
+
+it('does not crash with FileNotPreviewableException when a psd is uploaded as logo', function () {
+    Storage::fake(FileUploadConfiguration::disk());
+    actingAsUser();
+
+    // Regression: temporaryUrl() im Blade crashte bei nicht-vorschaubaren
+    // Mimes (psd) mit einem 500, obwohl die Validierung den Fehler bereits
+    // in der Error-Bag hatte. Siehe FileNotPreviewableException vom 2026-08-03.
+    Livewire::test('meetups.create')
+        ->set('logo', UploadedFile::fake()->create('logo.psd', 100, 'image/vnd.adobe.photoshop'))
+        ->assertHasErrors(['logo']);
+});
+
+it('does not create a Meetup with a psd logo on submit', function () {
+    Storage::fake(FileUploadConfiguration::disk());
+    actingAsUser();
+
+    Livewire::test('meetups.create')
+        ->set('logo', UploadedFile::fake()->create('logo.psd', 100, 'image/vnd.adobe.photoshop'))
+        ->set('name', 'PSD Logo Meetup')
+        ->set('city_id', $this->city->id)
+        ->set('community', 'einundzwanzig')
+        ->call('createMeetup')
+        ->assertHasErrors(['logo']);
+
+    expect(Meetup::query()->where('name', 'PSD Logo Meetup')->exists())->toBeFalse();
 });
 
 it('redirects guests to login when accessing meetup-create', function () {

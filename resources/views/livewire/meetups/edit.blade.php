@@ -266,6 +266,7 @@ class extends Component
             'github_data' => ['nullable', 'json'],
             'rsvp_enabled' => ['boolean'],
             'attendees_public' => ['boolean'],
+            'logo' => ['nullable', 'image', 'mimes:jpeg,png,webp,avif', 'max:5120', 'dimensions:max_width=4000,max_height=4000'],
         ]);
 
         RateLimiter::hit($rateLimiterKey, 3600);
@@ -325,8 +326,8 @@ class extends Component
                         @if (!$logo && $meetup->getFirstMedia('logo'))
                             <img src="{{ $meetup->getFirstMediaUrl('logo') }}" alt="Logo"
                                  class="size-full object-cover rounded"/>
-                        @elseif($logo)
-                            <img src="{{ $logo?->temporaryUrl() }}" alt="Logo"
+                        @elseif($logo?->isPreviewable())
+                            <img src="{{ $logo->temporaryUrl() }}" alt="Logo"
                                  class="size-full object-cover rounded-full"/>
                         @else
                             <!-- Show the default icon if no file is uploaded -->
@@ -338,6 +339,8 @@ class extends Component
                             <flux:icon name="arrow-up-circle" variant="solid" class="text-zinc-500 dark:text-zinc-400"/>
                         </div>
                     </div>
+
+                    <flux:error name="logo"/>
                 </flux:file-upload>
 
                 <flux:field>

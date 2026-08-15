@@ -90,6 +90,7 @@ class extends Component {
             'signal' => ['nullable', 'string', 'max:510'],
             'community' => ['required', 'string', 'max:255'],
             'visible_on_map' => ['boolean'],
+            'logo' => ['nullable', 'image', 'mimes:jpeg,png,webp,avif', 'max:5120', 'dimensions:max_width=4000,max_height=4000'],
         ]);
 
         $meetup = Meetup::create($validated + ['created_by' => auth()->id()]);
@@ -143,8 +144,8 @@ class extends Component {
                             border border-zinc-200 dark:border-white/10 hover:border-zinc-300 dark:hover:border-white/10
                             bg-zinc-100 hover:bg-zinc-200 dark:bg-white/10 hover:dark:bg-white/15 in-data-dragging:dark:bg-white/15
                         ">
-                        @if($logo)
-                            <img src="{{ $logo?->temporaryUrl() }}" alt="Logo"
+                        @if($logo?->isPreviewable())
+                            <img src="{{ $logo->temporaryUrl() }}" alt="Logo"
                                  class="size-full object-cover rounded"/>
                         @else
                             <!-- Show the default icon if no file is uploaded -->
@@ -156,6 +157,8 @@ class extends Component {
                             <flux:icon name="arrow-up-circle" variant="solid" class="text-zinc-500 dark:text-zinc-400"/>
                         </div>
                     </div>
+
+                    <flux:error name="logo"/>
                 </flux:file-upload>
 
                 <flux:field>

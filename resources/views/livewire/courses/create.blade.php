@@ -27,6 +27,7 @@ class extends Component {
             'name' => ['required', 'string', 'max:255'],
             'lecturer_id' => ['required', 'exists:lecturers,id'],
             'description' => ['nullable', 'string'],
+            'logo' => ['nullable', 'image', 'mimes:jpeg,png,webp,avif', 'max:5120', 'dimensions:max_width=4000,max_height=4000'],
         ]);
 
         $course = Course::create($validated);
@@ -70,8 +71,8 @@ class extends Component {
                             bg-zinc-100 hover:bg-zinc-200 dark:bg-white/10 hover:dark:bg-white/15 in-data-dragging:dark:bg-white/15
                         ">
                         <!-- Show the uploaded file if it exists -->
-                        @if($logo)
-                            <img src="{{ $logo?->temporaryUrl() }}" alt="Logo"
+                        @if($logo?->isPreviewable())
+                            <img src="{{ $logo->temporaryUrl() }}" alt="Logo"
                                  class="size-full object-cover rounded"/>
                         @else
                             <!-- Show the default icon if no file is uploaded -->
@@ -83,6 +84,8 @@ class extends Component {
                             <flux:icon name="arrow-up-circle" variant="solid" class="text-zinc-500 dark:text-zinc-400"/>
                         </div>
                     </div>
+
+                    <flux:error name="logo"/>
                 </flux:file-upload>
 
                 <flux:field>
