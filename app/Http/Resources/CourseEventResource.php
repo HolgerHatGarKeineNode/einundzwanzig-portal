@@ -26,17 +26,35 @@ class CourseEventResource extends JsonResource
         return [
             'id' => $this->id,
             'course_id' => $this->course_id,
+            /** The town this date takes place in. */
             'city_id' => $this->city_id,
+            /**
+             * The address in plain words, as the organiser wrote it. Always the readable
+             * answer — including "room to be confirmed" — while the `osm_*` fields below
+             * are the machine-readable addition and may be null.
+             */
             'location' => $this->location,
+            /** `node`, `way` or `relation`; null when no map place was picked. */
             'osm_type' => $this->osm_type,
+            /**
+             * OpenStreetMap object id. With `osm_type` it forms the permanent link:
+             * `https://www.openstreetmap.org/{osm_type}/{osm_id}`.
+             */
             'osm_id' => $this->osm_id,
+            /** The place name as OpenStreetMap knows it — a copy, so renames there do not erase it. */
             'osm_name' => $this->osm_name,
+            /** The full address line from OpenStreetMap. */
             'osm_address' => $this->osm_address,
+            /** Latitude in decimal degrees, 7 decimals. Serialised as a string to keep the precision. */
             'osm_lat' => $this->osm_lat,
+            /** Longitude in decimal degrees, 7 decimals. Serialised as a string to keep the precision. */
             'osm_lon' => $this->osm_lon,
+            /** Start of the event, UTC. */
             'from' => $this->from,
+            /** End of the event, UTC. */
             'to' => $this->to,
             'link' => $this->link,
+            /** Topic tags. Only present when the relation was loaded; see the Tag schema for the translated names. */
             'tags' => TagResource::collection($this->whenLoaded('tags')),
             'course' => $this->whenLoaded('course', fn (): array => [
                 'id' => $this->course->id,

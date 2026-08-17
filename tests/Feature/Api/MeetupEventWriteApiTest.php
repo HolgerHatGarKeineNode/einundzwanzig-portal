@@ -164,3 +164,34 @@ it('forbids viewing someone elses in mine show', function () {
 
     $response->assertForbidden();
 });
+
+it('accepts a patch that moves only the series end date', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user);
+    $meetup = Meetup::factory()->create(['created_by' => $user->id]);
+    $event = MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+        'created_by' => $user->id,
+        'start' => now()->addWeek(),
+    ]);
+
+    /*
+     * Same trap as `end`: without `start` in the payload, an unconditional
+     * after_or_equal:start makes Laravel read "start" as a date literal.
+     */
+    $this->patchJson('/api/meetup-events/'.$event->id, [
+        'recurrence_end_date' => now()->addYear()->toIso8601String(),
+    ])->assertSuccessful();
+});
+
+it('still rejects a series end before the start when both are sent', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user);
+    $meetup = Meetup::factory()->create(['created_by' => $user->id]);
+    $event = MeetupEvent::factory()->create(['meetup_id' => $meetup->id, 'created_by' => $user->id]);
+
+    $this->patchJson('/api/meetup-events/'.$event->id, [
+        'start' => now()->addMonth()->toIso8601String(),
+        'recurrence_end_date' => now()->addWeek()->toIso8601String(),
+    ])->assertJsonValidationErrors(['recurrence_end_date']);
+});

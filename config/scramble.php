@@ -35,8 +35,12 @@ return [
     'info' => [
         /*
          * API version.
+         *
+         * 2.0.0 because the venue endpoints were removed outright and the course-event
+         * payload changed shape — under SemVer that is a major bump, not a minor one.
+         * Consumers reading this number are the reason it has to be honest.
          */
-        'version' => env('API_VERSION', '1.0.0'),
+        'version' => env('API_VERSION', '2.0.0'),
 
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
@@ -66,9 +70,57 @@ return [
         Authorization: Bearer <your-token>
         ```
 
+        ## Where an event takes place
+
+        Every event describes its location in up to three layers, and only the first is required:
+
+        | Field | Meaning |
+        |---|---|
+        | `city_id` | The town. Required for course events — listings are filtered by country through it. |
+        | `location` | The address in plain words, as an organiser would write it on a flyer. Always the readable answer, including "room to be confirmed". |
+        | `osm_*` | The exact spot on the map, optional. Six fields that together identify an OpenStreetMap object. |
+
+        `location` and the map place are **not** alternatives: an event with a map place keeps its
+        free text, because "Bürgerhaus, side entrance" says something no coordinate does.
+
+        To fill the `osm_*` fields, look the place up via
+        [Nominatim](https://nominatim.openstreetmap.org/) and copy `osm_type`, `osm_id`, `name`,
+        `display_name`, `lat` and `lon` across. Mind their
+        [usage policy](https://operations.osmfoundation.org/policies/nominatim/): at most one
+        request per second, and a real User-Agent is required.
+
+        `osm_type` and `osm_id` must always travel together — ids are unique per type, not
+        globally. Sending one without the other is rejected.
+
+        ## Multilingual tags
+
+        Events carry topic tags, and a tag is one record with a name in each of the nine portal
+        languages. The `name` you receive depends on the request language, and `name_locale`
+        tells you which language you actually got — with a fallback chain behind it, so `name`
+        is never empty even when your language is missing. `translations` carries all of them at
+        once for clients that switch languages themselves.
+
+        For meetups in some countries at least one tag is mandatory; the portal enforces that
+        when the event is created.
+
         ## Rate Limiting
 
         Public endpoints are limited to **60 requests/minute**.
+
+        ## Breaking changes in 2.0.0
+
+        The `Venue` model was removed. Locations now belong to the event itself, as described
+        above.
+
+        - `GET|POST /venues`, `PATCH /venues/{venue}`, `GET /my-venues`, `GET /my-venues/{venue}`
+          — **gone**, with no replacement endpoint.
+        - Course events: `venue_id` and the nested `venue` object are gone. `venue.name` became
+          `location`, `venue.city` became `city`, and the street is part of `location`.
+        - `GET /courses/{course}` returns `city` and `location` per event instead of `venue`.
+
+        There is no deprecation window, because there is nothing left for the old fields to point
+        at. The data itself was carried over: every existing event kept its full address in
+        `location`.
         MARKDOWN,
     ],
 

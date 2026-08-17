@@ -29,3 +29,7 @@ yarn-error.log
 plans/
 /.pest-chromium
 .omo/
+
+# Generiertes OpenAPI-Dokument (php artisan scramble:export) — die Doku wird
+# live unter /docs/api ausgeliefert, die Datei ist nur ein Export-Artefakt.
+api.json
