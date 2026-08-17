@@ -3,12 +3,15 @@
 namespace App\Http\Requests\Api;
 
 use App\Enums\RecurrenceType;
+use App\Http\Requests\Concerns\ValidatesOsmPlace;
 use App\Models\Meetup;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StoreMeetupEventRequest extends FormRequest
 {
+    use ValidatesOsmPlace;
+
     /**
      * Only someone allowed to edit the associated meetup (creator/leader/super
      * admin) may create meetup events — the same permission as for the master
@@ -34,6 +37,7 @@ class StoreMeetupEventRequest extends FormRequest
             // End of THIS occurrence. recurrence_end_date below ends the series.
             'end' => ['nullable', 'date', 'after:start'],
             'location' => ['nullable', 'string', 'max:255'],
+            ...$this->osmPlaceRules(),
             'description' => ['nullable', 'string'],
             'link' => ['nullable', 'url', 'max:255'],
             'recurrence_type' => ['nullable', Rule::enum(RecurrenceType::class)],

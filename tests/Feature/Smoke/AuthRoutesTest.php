@@ -5,12 +5,10 @@ use App\Models\Country;
 use App\Models\Lecturer;
 use App\Models\Meetup;
 use App\Models\SelfHostedService;
-use App\Models\Venue;
 
 beforeEach(function () {
     $country = Country::factory()->create(['code' => 'de']);
     $city = City::factory()->create(['country_id' => $country->id]);
-    Venue::factory()->create(['city_id' => $city->id]);
     Meetup::factory()->create(['city_id' => $city->id]);
     Lecturer::factory()->create();
     SelfHostedService::factory()->create();
@@ -24,7 +22,6 @@ it('returns successful response for authenticated routes', function (string $pat
     'course create' => '/de/course-create',
     'lecturer create' => '/de/lecturer-create',
     'city create' => '/de/city-create',
-    'venue create' => '/de/venue-create',
     'service create' => '/de/service-create',
     'settings profile' => '/de/settings/profile',
     'settings password' => '/de/settings/password',

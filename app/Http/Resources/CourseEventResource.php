@@ -12,6 +12,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class CourseEventResource extends JsonResource
 {
     /**
+     * BREAKING CHANGE for API consumers: `venue_id` and the nested `venue` object are
+     * gone for good — the Venue model was removed, not renamed, so there is nothing to
+     * keep them pointing at and no deprecation window that would help. What used to be
+     * `venue.name` is now `location` (free text), `venue.city` is now `city`, and the
+     * street address is part of `location`. Clients that need the exact spot on a map
+     * read the `osm_*` fields, which are null whenever the place was never matched.
+     *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -19,7 +26,14 @@ class CourseEventResource extends JsonResource
         return [
             'id' => $this->id,
             'course_id' => $this->course_id,
-            'venue_id' => $this->venue_id,
+            'city_id' => $this->city_id,
+            'location' => $this->location,
+            'osm_type' => $this->osm_type,
+            'osm_id' => $this->osm_id,
+            'osm_name' => $this->osm_name,
+            'osm_address' => $this->osm_address,
+            'osm_lat' => $this->osm_lat,
+            'osm_lon' => $this->osm_lon,
             'from' => $this->from,
             'to' => $this->to,
             'link' => $this->link,
@@ -28,9 +42,9 @@ class CourseEventResource extends JsonResource
                 'id' => $this->course->id,
                 'name' => $this->course->name,
             ]),
-            'venue' => $this->whenLoaded('venue', fn (): array => [
-                'id' => $this->venue->id,
-                'name' => $this->venue->name,
+            'city' => $this->whenLoaded('city', fn (): ?array => $this->city === null ? null : [
+                'id' => $this->city->id,
+                'name' => $this->city->name,
             ]),
             'created_by' => $this->created_by,
             'created_at' => $this->created_at,

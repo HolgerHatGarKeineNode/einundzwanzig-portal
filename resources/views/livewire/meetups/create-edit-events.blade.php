@@ -117,6 +117,31 @@ class extends Component {
     public array $tagIds = [];
 
     /**
+     * OpenStreetMap place, or empty. Keys match the meetup_events columns.
+     *
+     * @var array<string, mixed>
+     */
+    public array $osmPlace = [];
+
+    public function getOsmCountryProperty(): ?string
+    {
+        return $this->meetup->city?->country?->code;
+    }
+
+    /**
+     * Whether to nudge the organiser about a missing map location.
+     *
+     * Only on an existing event: a new one is being filled in right now, and a warning
+     * about something not yet entered is just noise. On an old event it is the honest
+     * message — either the automatic OSM matching never ran, or it was called off
+     * because its confidence was too low to trust.
+     */
+    public function getNeedsOsmHintProperty(): bool
+    {
+        return $this->event !== null && empty($this->osmPlace['osm_id']);
+    }
+
+    /**
      * Whether this event's country demands at least one tag.
      *
      * Read from the meetup's own country rather than the route segment: the route
@@ -160,6 +185,14 @@ class extends Component {
             $this->title = $this->event->title;
             $this->endTime = $this->event->end?->setTimezone($timezone)->format('H:i');
             $this->tagIds = $this->event->tags->pluck('id')->all();
+            $this->osmPlace = $this->event->osm_id ? [
+                'osm_type' => $this->event->osm_type,
+                'osm_id' => $this->event->osm_id,
+                'osm_name' => $this->event->osm_name,
+                'osm_address' => $this->event->osm_address,
+                'osm_lat' => $this->event->osm_lat,
+                'osm_lon' => $this->event->osm_lon,
+            ] : [];
 
             if ($this->event->recurrence_type) {
                 $this->seriesMode = true;
@@ -223,6 +256,23 @@ class extends Component {
     }
 
     /**
+     * The six OSM columns, all null when no place was picked.
+     *
+     * Always returns every key so clearing a place actually clears the columns —
+     * omitting them would silently keep the old location on an update.
+     *
+     * @return array<string, mixed>
+     */
+    private function osmFields(): array
+    {
+        $keys = ['osm_type', 'osm_id', 'osm_name', 'osm_address', 'osm_lat', 'osm_lon'];
+
+        return collect($keys)
+            ->mapWithKeys(fn (string $key): array => [$key => $this->osmPlace[$key] ?? null])
+            ->all();
+    }
+
+    /**
      * Turn the entered end time into a UTC timestamp on the event's own day.
      *
      * A time earlier than or equal to the start means the event runs past midnight —
@@ -277,6 +327,7 @@ class extends Component {
             'location' => $this->location,
             'description' => $this->description,
             'link' => $this->link,
+            ...$this->osmFields(),
         ];
 
         if ($this->event) {
@@ -321,6 +372,7 @@ class extends Component {
                 'created_by' => auth()->id(),
                 'attendees' => [],
                 'might_attendees' => [],
+                ...$this->osmFields(),
             ]);
 
             // Every occurrence of a series carries the same tags.
@@ -464,6 +516,20 @@ class extends Component {
                 <flux:description>{{ __('Optional. Eine Zeit vor dem Beginn bedeutet: das Event endet nach Mitternacht.') }}</flux:description>
                 <flux:error name="endTime"/>
             </flux:field>
+
+            @if ($this->needsOsmHint)
+                <flux:callout icon="map-pin" data-testid="osm-missing-hint">
+                    <flux:callout.heading>{{ __('Dieses Event hat noch keinen Kartenort') }}</flux:callout.heading>
+                    <flux:callout.text>
+                        {{ __('Bitte such den Ort einmal heraus — dann finden Besucher ihn auf der Karte statt nur als Text. Passt nichts, lass das Feld leer und beschreib den Ort unten.') }}
+                    </flux:callout.text>
+                </flux:callout>
+            @endif
+
+            <livewire:osm.place-picker
+                wire:model="osmPlace"
+                :country-code="$this->osmCountry"
+            />
 
             <flux:field>
                 <flux:label>{{ __('Ort') }}</flux:label>

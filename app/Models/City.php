@@ -92,14 +92,14 @@ class City extends Model
         return $this->belongsTo(Country::class);
     }
 
-    public function venues(): HasMany
+    public function courseEvents(): HasMany
     {
-        return $this->hasMany(Venue::class);
+        return $this->hasMany(CourseEvent::class);
     }
 
-    public function courseEvents()
+    public function bitcoinEvents(): HasMany
     {
-        return $this->hasManyThrough(CourseEvent::class, Venue::class);
+        return $this->hasMany(BitcoinEvent::class);
     }
 
     public function meetups()

@@ -4,19 +4,19 @@ use App\Mcp\Servers\EinundzwanzigServer;
 use App\Mcp\Tools\CourseEvent\CreateCourseEventTool;
 use App\Mcp\Tools\CourseEvent\ListMyCourseEventsTool;
 use App\Mcp\Tools\CourseEvent\UpdateCourseEventTool;
+use App\Models\City;
 use App\Models\Course;
 use App\Models\CourseEvent;
 use App\Models\User;
-use App\Models\Venue;
 
 it('forbids a non-lecturer from creating a course event', function () {
     $course = Course::factory()->create();
-    $venue = Venue::factory()->create();
+    $city = City::factory()->create();
 
     EinundzwanzigServer::actingAs(User::factory()->create(['is_lecturer' => false]))
         ->tool(CreateCourseEventTool::class, [
             'course_id' => $course->id,
-            'venue_id' => $venue->id,
+            'city_id' => $city->id,
             'from' => '2026-07-01 18:00:00',
             'to' => '2026-07-01 21:00:00',
             'link' => 'https://clavastack.com/produkt/specter-shield-lite-workshop',
@@ -27,12 +27,12 @@ it('forbids a non-lecturer from creating a course event', function () {
 it('lets a lecturer create a course event and stamps created_by', function () {
     $user = User::factory()->lecturer()->create();
     $course = Course::factory()->create();
-    $venue = Venue::factory()->create();
+    $city = City::factory()->create();
 
     EinundzwanzigServer::actingAs($user)
         ->tool(CreateCourseEventTool::class, [
             'course_id' => $course->id,
-            'venue_id' => $venue->id,
+            'city_id' => $city->id,
             'from' => '2026-07-01 18:00:00',
             'to' => '2026-07-01 21:00:00',
             'link' => 'https://clavastack.com/produkt/specter-shield-lite-workshop',
@@ -41,7 +41,7 @@ it('lets a lecturer create a course event and stamps created_by', function () {
 
     $this->assertDatabaseHas('course_events', [
         'course_id' => $course->id,
-        'venue_id' => $venue->id,
+        'city_id' => $city->id,
         'created_by' => $user->id,
     ]);
 });

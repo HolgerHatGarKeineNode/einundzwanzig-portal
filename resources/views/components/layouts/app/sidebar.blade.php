@@ -84,7 +84,7 @@
             <flux:navlist.item icon="academic-cap" :href="route_with_country('courses.index')"
                                :current="request()->routeIs('courses.index')"
                                wire:navigate
-                               badge="{{ \App\Models\Course::query()->whereHas('courseEvents.venue.city.country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
+                               badge="{{ \App\Models\Course::query()->whereHas('courseEvents.city.country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Kurse') }}</span>
                     <img alt="{{ request()->route('country') }}"
@@ -95,7 +95,7 @@
             <flux:navlist.item icon="user" :href="route_with_country('lecturers.index')"
                                :current="request()->routeIs('lecturers.index')"
                                wire:navigate
-                               badge="{{ \App\Models\Lecturer::query()->whereHas('coursesEvents.venue.city.country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
+                               badge="{{ \App\Models\Lecturer::query()->whereHas('coursesEvents.city.country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Dozenten') }}</span>
                     <img alt="{{ request()->route('country') }}"
@@ -106,21 +106,14 @@
         </flux:navlist.group>
 
         <flux:navlist.group :heading="__('Diverses')" class="grid">
-            <flux:navlist.group :heading="__('Orte/Gebiete')" expandable
-                                :expanded="request()->routeIs('cities.*') || request()->routeIs('venues.*')">
-                <flux:navlist.item icon="building-office-2" :href="route_with_country('cities.index')"
-                                   :current="request()->routeIs('cities.index')"
-                                   wire:navigate
-                                   badge="{{ \App\Models\City::query()->whereHas('country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
-                    {{ __('Städte/Gebiete') }}
-                </flux:navlist.item>
-                <flux:navlist.item icon="map-pin" :href="route_with_country('venues.index')"
-                                   :current="request()->routeIs('venues.index')"
-                                   wire:navigate
-                                   badge="{{ \App\Models\Venue::query()->whereHas('city.country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
-                    {{ __('Veranstaltungsorte') }}
-                </flux:navlist.item>
-            </flux:navlist.group>
+            {{-- Flat since the venue is gone: an expandable group wrapped around a single
+                 link is one click of friction that buys nothing. --}}
+            <flux:navlist.item icon="building-office-2" :href="route_with_country('cities.index')"
+                               :current="request()->routeIs('cities.index')"
+                               wire:navigate
+                               badge="{{ \App\Models\City::query()->whereHas('country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
+                {{ __('Städte/Gebiete') }}
+            </flux:navlist.item>
         </flux:navlist.group>
     </flux:navlist>
 

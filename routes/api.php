@@ -13,7 +13,6 @@ use App\Http\Controllers\Api\MeetupMapController;
 use App\Http\Controllers\Api\MobileMeetupListController;
 use App\Http\Controllers\Api\NostrPlebController;
 use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\VenueController;
 use App\Http\Controllers\Api\VereinGatedMeetupController;
 use App\Http\Controllers\LnurlAuthController;
 use App\Http\Controllers\MobileAuthController;
@@ -31,7 +30,6 @@ Route::middleware([SetApiLocale::class, 'throttle:60,1'])
         Route::resource('courses', CourseController::class)
             ->only(['index', 'show']);
         Route::resource('cities', CityController::class)->only(['index']);
-        Route::resource('venues', VenueController::class)->only(['index']);
         Route::get('nostrplebs', NostrPlebController::class);
         Route::get('meetups', MeetupMapController::class);
         // Schlanke, schnelle Meetup-Liste eigens für die mobile App (getrennt von
@@ -71,11 +69,6 @@ Route::middleware([SetApiLocale::class, 'auth:sanctum'])
         Route::post('lecturers/{lecturer}/avatar', [LecturerController::class, 'uploadAvatar'])->name('lecturers.avatar');
         Route::get('my-lecturers', [LecturerController::class, 'mine'])->name('lecturers.mine');
         Route::get('my-lecturers/{lecturer}', [LecturerController::class, 'mineShow'])->name('lecturers.mine.show');
-
-        Route::post('venues', [VenueController::class, 'store'])->name('venues.store');
-        Route::patch('venues/{venue}', [VenueController::class, 'update'])->name('venues.update');
-        Route::get('my-venues', [VenueController::class, 'mine'])->name('venues.mine');
-        Route::get('my-venues/{venue}', [VenueController::class, 'mineShow'])->name('venues.mine.show');
 
         Route::post('cities', [CityController::class, 'store'])->name('cities.store');
         Route::patch('cities/{city}', [CityController::class, 'update'])->name('cities.update');

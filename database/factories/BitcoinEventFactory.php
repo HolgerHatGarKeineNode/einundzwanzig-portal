@@ -3,8 +3,8 @@
 namespace Database\Factories;
 
 use App\Models\BitcoinEvent;
+use App\Models\City;
 use App\Models\User;
-use App\Models\Venue;
 use Database\Factories\Helpers\NostrHelper;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,7 +21,8 @@ class BitcoinEventFactory extends Factory
         $to = (clone $from)->modify('+1 day');
 
         return [
-            'venue_id' => Venue::factory(),
+            'city_id' => City::factory(),
+            'location' => fake()->company().', '.fake()->streetAddress(),
             'from' => $from,
             'to' => $to,
             'title' => fake()->randomElement([

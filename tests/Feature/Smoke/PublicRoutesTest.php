@@ -7,12 +7,10 @@ use App\Models\Lecturer;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Models\SelfHostedService;
-use App\Models\Venue;
 
 beforeEach(function () {
     $country = Country::factory()->create(['code' => 'de']);
     $city = City::factory()->create(['country_id' => $country->id]);
-    Venue::factory()->create(['city_id' => $city->id]);
     $meetup = Meetup::factory()->create(['city_id' => $city->id]);
     MeetupEvent::factory()->create(['meetup_id' => $meetup->id]);
     Course::factory()->create();
@@ -34,7 +32,6 @@ it('returns a successful response for the listed public route', function (string
     'courses index' => '/de/courses',
     'lecturers index' => '/de/lecturers',
     'cities index' => '/de/cities',
-    'venues index' => '/de/venues',
     'services index' => '/de/services',
 ]);
 

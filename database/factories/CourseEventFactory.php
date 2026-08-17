@@ -2,10 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Models\City;
 use App\Models\Course;
 use App\Models\CourseEvent;
 use App\Models\User;
-use App\Models\Venue;
 use Database\Factories\Helpers\NostrHelper;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -23,7 +23,8 @@ class CourseEventFactory extends Factory
 
         return [
             'course_id' => Course::factory(),
-            'venue_id' => Venue::factory(),
+            'city_id' => City::factory(),
+            'location' => fake()->company().', '.fake()->streetAddress(),
             'from' => $from,
             'to' => $to,
             'link' => 'https://einundzwanzig.space/courses/'.fake()->slug(),

@@ -46,7 +46,7 @@ return [
         [EINUNDZWANZIG](https://portal.einundzwanzig.space) Bitcoin community platform.
 
         This API gives you access to the data of the decentralized German-speaking Bitcoin
-        movement: meetups and their events, courses and course events, lecturers, venues and the
+        movement: meetups and their events, courses and course events, lecturers, cities and the
         geo data behind the community map.
 
         ## Prefer an AI assistant?

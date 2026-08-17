@@ -23,14 +23,14 @@ class CourseEventController extends Controller
      * List own course events
      *
      * Returns all course events created by the authenticated user (including the associated
-     * course and venue), descending by start date. Ideal for idempotent
+     * course and city), descending by start date. Ideal for idempotent
      * synchronization by external clients.
      */
     #[QueryParameter(name: 'course_id', description: 'Filters the course events down to a specific course.', required: false, type: 'integer')]
     public function index(Request $request): AnonymousResourceCollection
     {
         $courseEvents = CourseEvent::query()
-            ->with(['course:id,name', 'venue:id,name'])
+            ->with(['course:id,name', 'city:id,name'])
             ->where('created_by', $request->user()->id)
             ->when(
                 $request->filled('course_id'),

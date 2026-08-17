@@ -40,6 +40,23 @@ return [
      * (GET /api/verein/gated-meetups). Wird gegen den Authorization: Bearer <token>
      * Header geprüft. In Prod-.env als VEREIN_GATE_TOKEN setzen.
      */
+    /*
+    |--------------------------------------------------------------------------
+    | Nominatim (OpenStreetMap geocoding)
+    |--------------------------------------------------------------------------
+    |
+    | The public instance enforces a strict usage policy: max 1 request/second
+    | (4 per MINUTE for bulk scripts), mandatory client-side caching, and a
+    | meaningful User-Agent — a library's stock header is rejected outright.
+    |
+    | Point `url` at a self-hosted instance to lift the rate limits.
+    |
+    */
+    'nominatim' => [
+        'url' => env('NOMINATIM_URL', 'https://nominatim.openstreetmap.org'),
+        'user_agent' => env('NOMINATIM_USER_AGENT'),
+    ],
+
     'verein_gate' => [
         'token' => env('VEREIN_GATE_TOKEN'),
     ],

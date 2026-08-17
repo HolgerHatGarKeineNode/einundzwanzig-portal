@@ -39,7 +39,7 @@ it('returns all courses with details on GET /api/courses?withDetails', function 
         ->and($first['next_event'])->toStartWith($event->from->format('Y-m-d'));
 });
 
-it('shows a course with upcoming events, venue and city on GET /api/courses/{course}', function () {
+it('shows a course with upcoming events, location and city on GET /api/courses/{course}', function () {
     $course = Course::factory()->create();
 
     $future = CourseEvent::factory()->create([
@@ -60,9 +60,10 @@ it('shows a course with upcoming events, venue and city on GET /api/courses/{cou
         ->assertJsonPath('lecturer.id', $course->lecturer_id)
         ->assertJsonCount(1, 'events')
         ->assertJsonPath('events.0.id', $future->id)
-        ->assertJsonPath('events.0.venue.id', $future->venue_id)
-        ->assertJsonPath('events.0.venue.city.name', $future->venue->city->name)
-        ->assertJsonPath('events.0.venue.city.country.code', $future->venue->city->country->code);
+        ->assertJsonPath('events.0.city_id', $future->city_id)
+        ->assertJsonPath('events.0.location', $future->location)
+        ->assertJsonPath('events.0.city.name', $future->city->name)
+        ->assertJsonPath('events.0.city.country.code', $future->city->country->code);
 });
 
 it('returns 404 for an unknown course on GET /api/courses/{course}', function () {

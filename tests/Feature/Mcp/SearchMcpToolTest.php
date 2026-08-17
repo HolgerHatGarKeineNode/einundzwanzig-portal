@@ -5,13 +5,11 @@ use App\Mcp\Tools\Search\ListCountriesTool;
 use App\Mcp\Tools\Search\SearchCitiesTool;
 use App\Mcp\Tools\Search\SearchCoursesTool;
 use App\Mcp\Tools\Search\SearchLecturersTool;
-use App\Mcp\Tools\Search\SearchVenuesTool;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Course;
 use App\Models\Lecturer;
 use App\Models\User;
-use App\Models\Venue;
 
 /**
  * NOTE: The search closures use Postgres `ilike`, which the SQLite test database
@@ -25,15 +23,6 @@ it('returns cities', function () {
         ->tool(SearchCitiesTool::class, [])
         ->assertOk()
         ->assertSee('Ansbach');
-});
-
-it('returns venues', function () {
-    Venue::factory()->create(['name' => 'Plan B Lugano']);
-
-    EinundzwanzigServer::actingAs(User::factory()->create())
-        ->tool(SearchVenuesTool::class, [])
-        ->assertOk()
-        ->assertSee('Plan B Lugano');
 });
 
 it('returns lecturers', function () {

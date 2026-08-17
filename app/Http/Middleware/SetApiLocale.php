@@ -21,7 +21,7 @@ use Symfony\Component\HttpFoundation\Response;
  * the `api` group.
  *
  * Only the TRANSLATOR is switched, deliberately not `App::setLocale()`: the latter
- * also writes `config('app.locale')`, and the slug generation of Meetup, City, Venue
+ * also writes `config('app.locale')`, and the slug generation of Meetup, City
  * and Lecturer reads exactly that value as its fallback
  * (`usingLanguage(Cookie::get('lang', config('app.locale')))`). API clients send no
  * `lang` cookie, so an app-wide switch would transliterate differently on every

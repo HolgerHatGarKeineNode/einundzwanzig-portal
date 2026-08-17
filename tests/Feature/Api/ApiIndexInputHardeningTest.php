@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Course;
-use App\Models\Venue;
 
 it('drops non-numeric selected values on GET /api/courses instead of erroring', function () {
     $course = Course::factory()->create();
@@ -20,10 +19,12 @@ it('casts a non-numeric user_id to an empty filter on GET /api/courses', functio
         ->assertJsonCount(0);
 });
 
-it('tolerates a non-array selected value on GET /api/venues without a 500', function () {
-    Venue::factory()->create();
+it('tolerates a non-array selected value without a 500', function () {
+    // Used to run against /api/venues, which no longer exists. The hardening it covers is
+    // a scalar where the endpoint expects a list — worth keeping wherever `selected` lives.
+    Course::factory()->create();
 
-    $this->getJson('/api/venues?selected=foo')
+    $this->getJson('/api/courses?selected=foo')
         ->assertSuccessful()
         ->assertJsonCount(0);
 });

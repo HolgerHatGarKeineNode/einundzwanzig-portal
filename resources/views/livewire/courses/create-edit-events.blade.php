@@ -4,7 +4,6 @@ use App\Attributes\SeoDataAttribute;
 use App\Models\City;
 use App\Models\Course;
 use App\Models\CourseEvent;
-use App\Models\Venue;
 use App\Traits\SeoTrait;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
@@ -26,36 +25,94 @@ class extends Component {
     public ?string $toDate = null;
     public ?string $toTime = null;
 
-    #[Validate('required|exists:venues,id')]
-    public ?int $venue_id = null;
+    /**
+     * The city the event belongs to.
+     *
+     * Required, even though the column is nullable: an event without a city drops out of
+     * every country-filtered listing (courses.index, lecturers.index and the sidebar
+     * badges all reach through `courseEvents.city.country`), so it would be invisible.
+     */
+    #[Validate('required|exists:cities,id')]
+    public ?int $city_id = null;
+
+    /**
+     * Free text address, the same shape `meetup_events.location` has always had.
+     *
+     * This is the fallback that always works — "Bürgerhaus, Fischergasse 1" or "wird noch
+     * bekannt gegeben". The map place below it is the precise version, when one exists.
+     */
+    #[Validate('required|string|max:255')]
+    public ?string $location = null;
 
     #[Validate('required|url|max:255')]
     public ?string $link = null;
+
+    /**
+     * OpenStreetMap place, or empty. Keys match the course_events columns.
+     *
+     * @var array<string, mixed>
+     */
+    public array $osmPlace = [];
 
     /** @var array<int, int> */
     public array $tagIds = [];
 
     /**
+     * The country of the chosen city, used to narrow the map search.
+     *
+     * Null until a city is picked, which makes the picker search worldwide — the honest
+     * behaviour when nobody has said where to look yet.
+     */
+    public function getOsmCountryProperty(): ?string
+    {
+        return $this->city_id === null
+            ? null
+            : City::with('country')->find($this->city_id)?->country?->code;
+    }
+
+    /**
      * Whether this event's country demands at least one tag.
      *
-     * Reached through the venue, which is where a course event's location lives today.
-     * When P6 removes Venue this moves to the event's own city_id.
+     * Read from the event's own city now that the venue is gone. Bound live, so switching
+     * the city updates the requirement while the form is open rather than at save time.
      */
     public function getTagsRequiredProperty(): bool
     {
-        $code = \App\Models\Venue::find($this->venue_id)?->city?->country?->code;
+        $code = $this->osmCountry;
 
         return $code !== null
             && in_array(mb_strtolower($code), config('einundzwanzig.tags_required_countries', []), true);
     }
 
-    // New Venue Modal
-    public string $newVenueName = '';
-    public ?int $newVenueCityId = null;
-    public string $newVenueStreet = '';
+    /**
+     * Whether to nudge the organiser about a missing map location.
+     *
+     * Only on an existing event: a new one is being filled in right now, and a warning
+     * about something not yet entered is just noise.
+     */
+    public function getNeedsOsmHintProperty(): bool
+    {
+        return $this->event !== null && empty($this->osmPlace['osm_id']);
+    }
+
+    /**
+     * Termine darf nur verwalten, wer den zugehörigen Kurs bearbeiten darf — dieselbe
+     * update-Ability wie die Stammdaten, spiegelt meetups.create-edit-events.
+     *
+     * Fehlte bisher vollständig: die Route lag nur hinter `auth`, und mount/save/delete
+     * prüften nichts. Jeder eingeloggte Nutzer konnte damit Termine fremder Kurse anlegen,
+     * ändern und löschen.
+     */
+    protected function authorizeManage(): void
+    {
+        if (auth()->guest() || auth()->user()->cannot('update', $this->course)) {
+            abort(403);
+        }
+    }
 
     public function mount(): void
     {
+        $this->authorizeManage();
         $this->country = request()->route('country', config('app.domain_country'));
         $timezone = auth()->user()->timezone ?? 'Europe/Berlin';
 
@@ -67,9 +124,18 @@ class extends Component {
             $this->fromTime = $localFrom->format('H:i');
             $this->toDate = $localTo->format('Y-m-d');
             $this->toTime = $localTo->format('H:i');
-            $this->venue_id = $this->event->venue_id;
+            $this->city_id = $this->event->city_id;
+            $this->location = $this->event->location;
             $this->link = $this->event->link;
             $this->tagIds = $this->event->tags->pluck('id')->all();
+            $this->osmPlace = $this->event->osm_id ? [
+                'osm_type' => $this->event->osm_type,
+                'osm_id' => $this->event->osm_id,
+                'osm_name' => $this->event->osm_name,
+                'osm_address' => $this->event->osm_address,
+                'osm_lat' => $this->event->osm_lat,
+                'osm_lon' => $this->event->osm_lon,
+            ] : [];
         } else {
             // Set default start time to next Monday at 09:00 in user's timezone
             $nextMonday = now($timezone)->next('Monday')->setTime(9, 0);
@@ -82,12 +148,15 @@ class extends Component {
 
     public function save(): void
     {
+        $this->authorizeManage();
+
         $this->validate([
             'fromDate' => 'required|date',
             'fromTime' => 'required',
             'toDate' => 'required|date|after_or_equal:fromDate',
             'toTime' => 'required',
-            'venue_id' => 'required|exists:venues,id',
+            'city_id' => 'required|exists:cities,id',
+            'location' => 'required|string|max:255',
             'link' => 'required|url|max:255',
             ...($this->tagsRequired ? ['tagIds' => 'required|array|min:1'] : []),
         ], [
@@ -98,23 +167,26 @@ class extends Component {
         $timezone = auth()->user()->timezone ?? 'Europe/Berlin';
 
         // Combine date and time in user's timezone, then convert to UTC
-        $localFrom = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $this->fromDate . ' ' . $this->fromTime, $timezone);
+        $localFrom = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $this->fromDate.' '.$this->fromTime, $timezone);
         $utcFrom = $localFrom->setTimezone('UTC');
 
-        $localTo = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $this->toDate . ' ' . $this->toTime, $timezone);
+        $localTo = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $this->toDate.' '.$this->toTime, $timezone);
         $utcTo = $localTo->setTimezone('UTC');
 
         // Additional validation: to must be after from
         if ($utcTo->lte($utcFrom)) {
             $this->addError('toTime', __('Die Endzeit muss nach der Startzeit liegen.'));
+
             return;
         }
 
         $data = [
             'from' => $utcFrom,
             'to' => $utcTo,
-            'venue_id' => $this->venue_id,
+            'city_id' => $this->city_id,
+            'location' => $this->location,
             'link' => $this->link,
+            ...$this->osmFields(),
         ];
 
         if ($this->event) {
@@ -137,6 +209,23 @@ class extends Component {
     }
 
     /**
+     * The six OSM columns, all null when no place was picked.
+     *
+     * Always returns every key so clearing a place actually clears the columns —
+     * omitting them would silently keep the old location on an update.
+     *
+     * @return array<string, mixed>
+     */
+    private function osmFields(): array
+    {
+        $keys = ['osm_type', 'osm_id', 'osm_name', 'osm_address', 'osm_lat', 'osm_lon'];
+
+        return collect($keys)
+            ->mapWithKeys(fn (string $key): array => [$key => $this->osmPlace[$key] ?? null])
+            ->all();
+    }
+
+    /**
      * Only ids the user was actually offered are accepted — a crafted request must not
      * be able to attach someone else's unapproved suggestion.
      */
@@ -153,6 +242,8 @@ class extends Component {
 
     public function delete(): void
     {
+        $this->authorizeManage();
+
         if ($this->event) {
             $this->event->delete();
             session()->flash('status', __('Event erfolgreich gelöscht!'));
@@ -161,37 +252,9 @@ class extends Component {
         }
     }
 
-    public function createVenue(): void
-    {
-        $validated = $this->validate([
-            'newVenueName' => ['required', 'string', 'max:255', 'unique:venues,name'],
-            'newVenueCityId' => ['required', 'exists:cities,id'],
-            'newVenueStreet' => ['required', 'string', 'max:255'],
-        ]);
-
-        $venue = Venue::create([
-            'name' => $validated['newVenueName'],
-            'city_id' => $validated['newVenueCityId'],
-            'street' => $validated['newVenueStreet'],
-            'slug' => str($validated['newVenueName'])->slug(),
-            'created_by' => auth()->id(),
-        ]);
-
-        $this->venue_id = $venue->id;
-        $this->reset(['newVenueName', 'newVenueCityId', 'newVenueStreet']);
-
-        \Flux\Flux::modal('add-venue')->close();
-    }
-
     public function with(): array
     {
         return [
-            'venues' => Venue::query()
-                ->with([
-                    'city',
-                ])
-                ->orderBy('name')
-                ->get(),
             'cities' => City::query()
                 ->with([
                     'country',
@@ -245,31 +308,48 @@ class extends Component {
                 </flux:field>
             </div>
 
+            {{-- The city comes before the map search on purpose: it is what narrows that
+                 search to a country, so asking for it second would search the wrong place. --}}
             <flux:field>
-                <div class="flex items-center justify-between mb-2">
-                    <flux:label>{{ __('Veranstaltungsort') }} <span class="text-red-500">*</span></flux:label>
-                    <flux:modal.trigger name="add-venue">
-                        <flux:button class="cursor-pointer" size="xs" variant="ghost" icon="plus">
-                            {{ __('Ort hinzufügen') }}
-                        </flux:button>
-                    </flux:modal.trigger>
-                </div>
-                <flux:select variant="listbox" searchable wire:model="venue_id"
-                             placeholder="{{ __('Veranstaltungsort auswählen') }}" required>
+                <flux:label>{{ __('Stadt') }} <span class="text-red-500">*</span></flux:label>
+                <flux:select variant="listbox" searchable wire:model.live="city_id"
+                             placeholder="{{ __('Stadt auswählen') }}" required>
                     <x-slot name="search">
-                        <flux:select.search class="px-4" placeholder="{{ __('Suche nach Ort...') }}"/>
+                        <flux:select.search class="px-4" placeholder="{{ __('Suche passende Stadt...') }}"/>
                     </x-slot>
-                    @foreach($venues as $venue)
-                        <flux:select.option value="{{ $venue->id }}">
-                            {{ $venue->name }}
-                            @if($venue->city)
-                                - {{ $venue->city->name }}
-                            @endif
+                    @foreach($cities as $city)
+                        <flux:select.option value="{{ $city->id }}">{{ $city->name }}
+                            ({{ $city->country->name }})
                         </flux:select.option>
                     @endforeach
                 </flux:select>
+                <flux:description>{{ __('In welcher Stadt oder Region findet das Event statt?') }}</flux:description>
+                <flux:error name="city_id"/>
+            </flux:field>
+
+            @if ($this->needsOsmHint)
+                <flux:callout icon="map-pin" data-testid="osm-missing-hint">
+                    <flux:callout.heading>{{ __('Dieses Event hat noch keinen Kartenort') }}</flux:callout.heading>
+                    <flux:callout.text>
+                        {{ __('Bitte such den Ort einmal heraus — dann finden Besucher ihn auf der Karte statt nur als Text. Passt nichts, lass das Feld leer und beschreib den Ort unten.') }}
+                    </flux:callout.text>
+                </flux:callout>
+            @endif
+
+            {{-- Keyed on the country, not the city: switching between two German cities keeps
+                 a place already found, switching country throws it back to the search. --}}
+            <livewire:osm.place-picker
+                wire:model="osmPlace"
+                :country-code="$this->osmCountry"
+                wire:key="osm-picker-{{ $this->osmCountry ?? 'any' }}"
+            />
+
+            <flux:field>
+                <flux:label>{{ __('Ort') }} <span class="text-red-500">*</span></flux:label>
+                <flux:input wire:model="location" placeholder="{{ __('z.B. Café Mustermann, Hauptstr. 1') }}"
+                            required/>
                 <flux:description>{{ __('Wo findet das Event statt?') }}</flux:description>
-                <flux:error name="venue_id"/>
+                <flux:error name="location"/>
             </flux:field>
 
             <flux:field>
@@ -315,53 +395,4 @@ class extends Component {
             </div>
         </div>
     </form>
-
-    <!-- Add Venue Modal -->
-    <flux:modal name="add-venue" variant="flyout" wire:key="add-venue-modal">
-        <form wire:submit="createVenue" class="space-y-6">
-            <div>
-                <flux:heading size="lg">{{ __('Veranstaltungsort hinzufügen') }}</flux:heading>
-                <flux:text class="mt-2">{{ __('Füge einen neuen Veranstaltungsort zur Datenbank hinzu.') }}</flux:text>
-            </div>
-
-            <flux:field>
-                <flux:label>{{ __('Name') }} <span class="text-red-500">*</span></flux:label>
-                <flux:input wire:model="newVenueName" placeholder="{{ __('z.B. Bitcoin Zentrum München') }}" required/>
-                <flux:error name="newVenueName"/>
-            </flux:field>
-
-            <flux:field>
-                <flux:label>{{ __('Stadt') }} <span class="text-red-500">*</span></flux:label>
-                <flux:select variant="listbox" searchable wire:model="newVenueCityId"
-                             placeholder="{{ __('Stadt auswählen') }}">
-                    <x-slot name="search">
-                        <flux:select.search class="px-4" placeholder="{{ __('Suche passende Stadt...') }}"/>
-                    </x-slot>
-                    @foreach($cities as $city)
-                        <flux:select.option value="{{ $city->id }}">{{ $city->name }} ({{ $city->country->name }})
-                        </flux:select.option>
-                    @endforeach
-                </flux:select>
-                <flux:error name="newVenueCityId"/>
-            </flux:field>
-
-            <flux:field>
-                <flux:label>{{ __('Straße') }} <span class="text-red-500">*</span></flux:label>
-                <flux:input wire:model="newVenueStreet" placeholder="{{ __('z.B. Hauptstraße 1') }}" required/>
-                <flux:error name="newVenueStreet"/>
-            </flux:field>
-
-            <div class="flex gap-2">
-                <flux:spacer/>
-
-                <flux:modal.close>
-                    <flux:button class="cursor-pointer" type="button"
-                                 variant="ghost">{{ __('Abbrechen') }}</flux:button>
-                </flux:modal.close>
-
-                <flux:button class="cursor-pointer" type="submit"
-                             variant="primary">{{ __('Ort erstellen') }}</flux:button>
-            </div>
-        </form>
-    </flux:modal>
 </div>

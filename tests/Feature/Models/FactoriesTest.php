@@ -21,7 +21,6 @@ use App\Models\SelfHostedService;
 use App\Models\Tag;
 use App\Models\TwitterAccount;
 use App\Models\User;
-use App\Models\Venue;
 use App\Models\Vote;
 use Illuminate\Database\Eloquent\Model;
 
@@ -40,7 +39,6 @@ it('creates a valid persisted record via the factory', function (string $modelCl
     'Country' => Country::class,
     'City' => City::class,
     'Lecturer' => Lecturer::class,
-    'Venue' => Venue::class,
     'Category' => Category::class,
     'Course' => Course::class,
     'CourseEvent' => CourseEvent::class,

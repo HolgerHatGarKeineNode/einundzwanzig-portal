@@ -30,7 +30,10 @@ class CourseEvent extends Model
     protected $casts = [
         'id' => 'integer',
         'course_id' => 'integer',
-        'venue_id' => 'integer',
+        'osm_id' => 'integer',
+        'osm_lat' => 'decimal:7',
+        'osm_lon' => 'decimal:7',
+        'city_id' => 'integer',
         'from' => 'datetime',
         'to' => 'datetime',
     ];
@@ -45,9 +48,13 @@ class CourseEvent extends Model
         return $this->belongsTo(Course::class);
     }
 
-    public function venue(): BelongsTo
+    /**
+     * The city stands on its own since the venue was removed; the exact spot lives in the
+     * `osm_*` columns when it is known, and in `location` as free text when it is not.
+     */
+    public function city(): BelongsTo
     {
-        return $this->belongsTo(Venue::class);
+        return $this->belongsTo(City::class);
     }
 
     public function registrations(): HasMany

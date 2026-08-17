@@ -8,7 +8,6 @@ use App\Models\Lecturer;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Models\User;
-use App\Models\Venue;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
@@ -20,7 +19,6 @@ beforeEach(function () {
 
     $country = Country::factory()->create(['code' => 'de']);
     $city = City::factory()->create(['country_id' => $country->id]);
-    Venue::factory()->create(['city_id' => $city->id]);
     Meetup::factory()->create(['city_id' => $city->id, 'community' => 'einundzwanzig', 'visible_on_map' => true]);
     MeetupEvent::factory()->create();
     Course::factory()->create();
@@ -40,7 +38,6 @@ it('returns a JSON response for the API GET endpoint', function (string $path) {
     'lecturers' => '/api/lecturers',
     'courses' => '/api/courses',
     'cities' => '/api/cities',
-    'venues' => '/api/venues',
 ]);
 
 it('returns 404 for /api/meetup/ical (currently a stub that aborts)', function () {
