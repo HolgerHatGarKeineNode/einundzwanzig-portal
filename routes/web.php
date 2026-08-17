@@ -52,6 +52,7 @@ Route::middleware([])
     ->prefix('/{country:code?}')
     ->group(function () {
         Route::livewire('/dashboard', 'dashboard')->name('dashboard');
+        Route::livewire('/tags/moderation', 'tags.moderation')->name('tags.moderation');
     });
 
 // Country-specific routes group with mandatory country code parameter

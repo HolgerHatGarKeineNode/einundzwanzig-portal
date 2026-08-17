@@ -50,6 +50,96 @@ new class extends Component {
         return $this->options->where('featured', true)->count();
     }
 
+    /** Whether this user creates tags outright rather than only suggesting them. */
+    public function getCanCreateDirectlyProperty(): bool
+    {
+        return auth()->user()?->can('create', Tag::class) ?? false;
+    }
+
+    public function getCanAddProperty(): bool
+    {
+        return auth()->check();
+    }
+
+    /**
+     * Create the tag the user typed, or select the existing one it duplicates.
+     *
+     * An editor's tag is live immediately; anyone else's is stored unapproved but is
+     * still selected here and now — otherwise a mandatory-tag country would be a dead
+     * end for them.
+     *
+     * The name is written to every locale rather than only the current one. A tag that
+     * exists in one language is invisible to the other eight, and an unfindable tag is
+     * the very thing that produced the duplicate sprawl in the existing data. An editor
+     * can refine the translations afterwards.
+     */
+    public function createTag(string $name): void
+    {
+        $name = trim(preg_replace('/\s+/u', ' ', $name) ?? '');
+        $user = auth()->user();
+
+        abort_unless($user !== null, 403);
+
+        if (mb_strlen($name) < 2 || mb_strlen($name) > 60) {
+            return;
+        }
+
+        $mayCreate = $user->can('create', Tag::class);
+
+        abort_unless($mayCreate || $user->can('suggest', Tag::class), 403);
+
+        // Duplicate guard across ALL locales, not just the current one.
+        $existing = $this->findByAnyLocale($name);
+
+        if ($existing !== null) {
+            $this->select($existing->id);
+
+            return;
+        }
+
+        $tag = new Tag(['type' => $this->type]);
+
+        foreach (config('einundzwanzig.tag_locales') as $locale) {
+            $tag->setTranslation('name', $locale, $name);
+        }
+
+        $tag->icon = 'tag';
+        $tag->featured = false;
+        $tag->approved_at = $mayCreate ? now() : null;
+        $tag->save();
+
+        $this->select($tag->id);
+    }
+
+    private function select(int $id): void
+    {
+        if (! in_array($id, $this->tagIds, true)) {
+            $this->tagIds[] = $id;
+        }
+    }
+
+    /**
+     * Case-insensitive match against every locale of every tag of this type.
+     */
+    private function findByAnyLocale(string $name): ?Tag
+    {
+        $needle = mb_strtolower($name);
+        $locales = config('einundzwanzig.tag_locales');
+
+        return Tag::query()
+            ->where('type', $this->type)
+            ->get()
+            ->first(function (Tag $tag) use ($needle, $locales): bool {
+                foreach ($locales as $locale) {
+                    if (mb_strtolower((string) $tag->getTranslation('name', $locale, false)) === $needle) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+    }
+
     /**
      * Aliases fed to Flux's text matcher: every locale's name plus the slugs.
      * Rendered hidden, so they widen the search without cluttering the row.
@@ -95,21 +185,56 @@ new class extends Component {
                         data-featured="{{ $tag->featured ? 'true' : 'false' }}"
                         data-testid="tag-option-{{ $tag->id }}"
                     >
-                        <span class="flex items-center gap-2">
-                            <span aria-hidden="true" class="text-xs opacity-60">{{ $tag->featured ? '●' : '○' }}</span>
-                            <span>{{ $tag->displayName() }}</span>
+                        <span class="flex flex-col">
+                            <span class="flex items-center gap-2">
+                                {{-- Glyph, not colour: the house palette is monochrome. --}}
+                                <span aria-hidden="true" class="text-xs opacity-60">{{ $tag->featured ? '●' : '○' }}</span>
+                                <span>{{ $tag->displayName() }}</span>
+                                @unless ($tag->isApproved())
+                                    <span class="text-xs opacity-60">{{ __('in Prüfung') }}</span>
+                                @endunless
+                            </span>
+
+                            {{--
+                                Provenance line. Without it a row carrying a foreign-language
+                                label reads as noise — and a user who distrusts the row creates
+                                a second tag instead, which is the duplicate sprawl we are
+                                trying to end.
+                            --}}
                             @if ($tag->isDisplayNameSubstituted())
-                                <span class="text-xs opacity-60">[{{ $tag->displayLocale() }}]</span>
+                                <span class="flex items-center gap-1 ps-5 text-xs opacity-60">
+                                    <span aria-hidden="true">└</span>
+                                    <span>{{ __('nur auf :lang vorhanden', ['lang' => mb_strtoupper($tag->displayLocale())]) }}</span>
+                                </span>
                             @endif
-                            @unless ($tag->isApproved())
-                                <span class="text-xs opacity-60">{{ __('in Prüfung') }}</span>
-                            @endunless
                         </span>
 
                         {{-- Searchable in every language; Flux matches on textContent. --}}
                         <span hidden>{{ implode(' ', $this->aliasesFor($tag)) }}</span>
                     </flux:pillbox.option>
                 @endforeach
+
+                @if ($this->canAdd)
+                    {{--
+                        Present for both roles — it just leads somewhere different. Editors
+                        create, everyone else suggests. Hiding it from non-editors would
+                        leave them at a dead end when nothing fits.
+
+                        x-show rather than Flux's own min-length: display:none is what
+                        filterAwareWalker checks, so the row stays keyboard-consistent.
+                    --}}
+                    <flux:pillbox.option.create
+                        x-show="q.trim().length >= 2"
+                        x-on:click="$wire.createTag(q)"
+                        data-testid="tag-create"
+                    >
+                        <span x-text="
+                            @js($this->canCreateDirectly
+                                ? __('als neuen Tag anlegen:')
+                                : __('vorschlagen:')) + ' „' + q.trim() + '“'
+                        "></span>
+                    </flux:pillbox.option.create>
+                @endif
             </flux:pillbox>
         </div>
 

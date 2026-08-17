@@ -153,3 +153,95 @@ it('refuses a tag id the user was never offered', function () {
 
     expect(MeetupEvent::query()->latest('id')->first()->tags)->toHaveCount(0);
 });
+
+function editorUserForPicker(): User
+{
+    return User::factory()->create(['nostr' => config('einundzwanzig.tag_editors')[0]]);
+}
+
+it('lets an editor create a live tag straight from the picker', function () {
+    $this->actingAs(editorUserForPicker());
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->call('createTag', 'Lagerfeuerrunde')
+        ->assertHasNoErrors();
+
+    $tag = Tag::query()->where('type', 'meetup_event')->get()
+        ->first(fn (Tag $t): bool => $t->getTranslation('name', 'de') === 'Lagerfeuerrunde');
+
+    expect($tag)->not->toBeNull()
+        ->and($tag->isApproved())->toBeTrue()
+        ->and($tag->created_by)->toBe(auth()->id());
+});
+
+it('stores a non-editors tag as an unapproved suggestion but selects it anyway', function () {
+    // The point: a mandatory-tag country must not become a dead end for them.
+    $this->actingAs(User::factory()->create(['nostr' => null]));
+
+    $component = Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->call('createTag', 'Lagerfeuerrunde');
+
+    $tag = Tag::query()->where('type', 'meetup_event')->get()
+        ->first(fn (Tag $t): bool => $t->getTranslation('name', 'de') === 'Lagerfeuerrunde');
+
+    expect($tag->isApproved())->toBeFalse();
+    $component->assertSet('tagIds', [$tag->id]);
+});
+
+it('names a new tag in every locale so the other eight can find it', function () {
+    $this->actingAs(editorUserForPicker());
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])->call('createTag', 'Lagerfeuerrunde');
+
+    $tag = Tag::query()->where('type', 'meetup_event')->get()
+        ->first(fn (Tag $t): bool => $t->getTranslation('name', 'de') === 'Lagerfeuerrunde');
+
+    foreach (config('einundzwanzig.tag_locales') as $locale) {
+        expect($tag->getTranslation('name', $locale, false))->toBe('Lagerfeuerrunde');
+    }
+});
+
+it('selects the existing tag instead of creating a duplicate', function () {
+    $this->actingAs(editorUserForPicker());
+
+    $before = Tag::query()->where('type', 'meetup_event')->count();
+    $workshop = eventTag('Workshop');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->call('createTag', '  workshop  ')   // different case and padding
+        ->assertSet('tagIds', [$workshop->id]);
+
+    expect(Tag::query()->where('type', 'meetup_event')->count())->toBe($before);
+});
+
+it('catches a duplicate that exists only in another language', function () {
+    // Typing the Czech name of a tag must not create a second row for it.
+    $this->actingAs(editorUserForPicker());
+
+    $before = Tag::query()->where('type', 'meetup_event')->count();
+    $talk = eventTag('Vortrag');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->call('createTag', 'Přednáška')
+        ->assertSet('tagIds', [$talk->id]);
+
+    expect(Tag::query()->where('type', 'meetup_event')->count())->toBe($before);
+});
+
+it('ignores names that are too short or too long', function () {
+    $this->actingAs(editorUserForPicker());
+    $before = Tag::count();
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->call('createTag', 'x')
+        ->call('createTag', str_repeat('a', 61))
+        ->call('createTag', '   ');
+
+    expect(Tag::count())->toBe($before);
+});
+
+it('refuses tag creation for a guest', function () {
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->call('createTag', 'Lagerfeuerrunde')
+        ->assertStatus(403);
+});

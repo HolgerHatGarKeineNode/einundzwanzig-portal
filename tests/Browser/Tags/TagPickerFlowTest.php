@@ -92,3 +92,75 @@ it('returns to the resting state after a selection', function () {
     expect($searching)->toBe('false')
         ->and($visible)->toBe(7);
 });
+
+it('makes the chip remove button reachable and large enough', function () {
+    // The last unverified assumption: this markup lives in a <template> that Flux
+    // instantiates via cloneNode, so a plain DOM attribute must survive the clone —
+    // Alpine bindings are not dependable there.
+    $page = visit("/de/meetup/{$this->meetup->id}/events/create");
+    $page->wait(1);
+
+    $page->script("document.querySelector('[data-testid=tag-picker] input')?.focus()");
+    $page->wait(0.3);
+    $page->script(
+        "[...document.querySelectorAll('.tag-option')]
+            .filter(o => getComputedStyle(o).display !== 'none')[0]?.click()"
+    );
+    $page->wait(0.8);
+
+    $attrs = $page->script(
+        "(() => {
+            const b = document.querySelector('ui-selected-remove');
+            if (!b) return null;
+            const r = b.getBoundingClientRect();
+            return {
+                tabindex: b.getAttribute('tabindex'),
+                role: b.getAttribute('role'),
+                label: b.getAttribute('aria-label'),
+                onkeydown: typeof b.onkeydown,
+                w: Math.round(r.width),
+                h: Math.round(r.height),
+            };
+        })()"
+    );
+
+    $page->assertNoJavaScriptErrors();
+
+    expect($attrs)->not->toBeNull();
+    expect($attrs['tabindex'])->toBe('0')
+        ->and($attrs['role'])->toBe('button')
+        ->and($attrs['label'])->not->toBeEmpty()
+        ->and($attrs['onkeydown'])->toBe('function');   // survived cloneNode
+
+    // WCAG 2.5.8 asks for 24x24 CSS pixels.
+    expect($attrs['w'])->toBeGreaterThanOrEqual(24)
+        ->and($attrs['h'])->toBeGreaterThanOrEqual(24);
+});
+
+it('removes a chip with the keyboard alone', function () {
+    $page = visit("/de/meetup/{$this->meetup->id}/events/create");
+    $page->wait(1);
+
+    $page->script("document.querySelector('[data-testid=tag-picker] input')?.focus()");
+    $page->wait(0.3);
+    $page->script(
+        "[...document.querySelectorAll('.tag-option')]
+            .filter(o => getComputedStyle(o).display !== 'none')[0]?.click()"
+    );
+    $page->wait(0.8);
+
+    expect($page->script("document.querySelectorAll('ui-selected-remove').length"))->toBe(1);
+
+    // Focus the button and press Enter — no mouse involved.
+    $page->script("document.querySelector('ui-selected-remove').focus()");
+    $page->wait(0.2);
+    $page->script(
+        "document.querySelector('ui-selected-remove')
+            .dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))"
+    );
+    $page->wait(0.6);
+
+    $page->assertNoJavaScriptErrors();
+
+    expect($page->script("document.querySelectorAll('ui-selected-remove').length"))->toBe(0);
+});
