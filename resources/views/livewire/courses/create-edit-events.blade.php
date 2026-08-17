@@ -2,9 +2,12 @@
 
 use App\Attributes\SeoDataAttribute;
 use App\Models\City;
+use App\Models\Country;
 use App\Models\Course;
 use App\Models\CourseEvent;
+use App\Services\Osm\NominatimClient;
 use App\Traits\SeoTrait;
+use Flux\Flux;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -34,6 +37,16 @@ class extends Component {
      */
     #[Validate('required|exists:cities,id')]
     public ?int $city_id = null;
+
+    /** Scratch state for the "city is missing" flyout. */
+    public ?int $newCityCountryId = null;
+
+    public string $newCityQuery = '';
+
+    /** @var array<int, array<string, mixed>> */
+    public array $newCityResults = [];
+
+    public bool $newCitySearched = false;
 
     /**
      * Free text address, the same shape `meetup_events.location` has always had.
@@ -252,6 +265,76 @@ class extends Component {
         }
     }
 
+    /**
+     * Searches OpenStreetMap for a town, so a missing city can be added without leaving
+     * the form.
+     *
+     * The city table requires latitude and longitude — they are NOT NULL, and all 304 rows
+     * have them. Asking a lecturer to type coordinates would be absurd, so they come from
+     * the same geocoder the map field already uses. That is the whole reason this is a
+     * search and not three input boxes.
+     */
+    public function searchCity(): void
+    {
+        $this->validate([
+            'newCityCountryId' => ['required', 'exists:countries,id'],
+            'newCityQuery' => ['required', 'string', 'min:2'],
+        ]);
+
+        $this->newCitySearched = true;
+
+        $code = Country::find($this->newCityCountryId)?->code;
+
+        $this->newCityResults = app(NominatimClient::class)
+            ->search($this->newCityQuery, $code)
+            // Only populated places. Without this a search for "Bern" also offers streets
+            // and buildings named Bern, and one of them would become a "city".
+            ->filter(fn (array $hit): bool => ($hit['category'] ?? null) === 'place')
+            ->take(5)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Takes one search result and makes it the selected city.
+     */
+    public function useCity(int $index): void
+    {
+        $hit = $this->newCityResults[$index] ?? null;
+
+        if ($hit === null || ! auth()->user()->can('create', City::class)) {
+            return;
+        }
+
+        $name = trim((string) ($hit['osm_name'] ?? ''));
+
+        if ($name === '') {
+            return;
+        }
+
+        /*
+         * An existing city is selected rather than duplicated. Two rows for the same town
+         * would split its events across both and neither list would be complete — the same
+         * failure the tag vocabulary already suffered from.
+         */
+        $city = City::query()
+            ->where('country_id', $this->newCityCountryId)
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            ->first();
+
+        $city ??= City::create([
+            'country_id' => $this->newCityCountryId,
+            'name' => $name,
+            'latitude' => $hit['osm_lat'],
+            'longitude' => $hit['osm_lon'],
+        ]);
+
+        $this->city_id = $city->id;
+        $this->reset(['newCityQuery', 'newCityResults', 'newCitySearched']);
+
+        Flux::modal('add-city')->close();
+    }
+
     public function with(): array
     {
         return [
@@ -261,6 +344,7 @@ class extends Component {
                 ])
                 ->orderBy('name')
                 ->get(),
+            'countries' => Country::query()->orderBy('name')->get(),
         ];
     }
 }; ?>
@@ -323,7 +407,15 @@ class extends Component {
                         </flux:select.option>
                     @endforeach
                 </flux:select>
-                <flux:description>{{ __('In welcher Stadt oder Region findet das Event statt?') }}</flux:description>
+                <flux:description>
+                    {{ __('In welcher Stadt oder Region findet das Event statt?') }}
+                    <flux:modal.trigger name="add-city">
+                        <button type="button" class="underline underline-offset-2 hover:no-underline"
+                                data-testid="add-city-trigger">
+                            {{ __('Stadt nicht dabei?') }}
+                        </button>
+                    </flux:modal.trigger>
+                </flux:description>
                 <flux:error name="city_id"/>
             </flux:field>
 
@@ -395,4 +487,61 @@ class extends Component {
             </div>
         </div>
     </form>
+
+    {{-- Sits outside the form: a nested <form> is invalid HTML, and pressing Enter in the
+         search box would otherwise submit the event instead of searching. --}}
+    <flux:modal name="add-city" variant="flyout" wire:key="add-city-modal">
+        <div class="space-y-6">
+            <div>
+                <flux:heading size="lg">{{ __('Stadt hinzufügen') }}</flux:heading>
+                <flux:text class="mt-2">
+                    {{ __('Such die Stadt auf OpenStreetMap — Lage und Schreibweise kommen von dort. Danach ist sie oben auswählbar.') }}
+                </flux:text>
+            </div>
+
+            <flux:field>
+                <flux:label>{{ __('Land') }}</flux:label>
+                <flux:select variant="listbox" searchable wire:model="newCityCountryId"
+                             placeholder="{{ __('Land auswählen') }}" data-testid="add-city-country">
+                    <x-slot name="search">
+                        <flux:select.search class="px-4" placeholder="{{ __('Land suchen...') }}"/>
+                    </x-slot>
+                    @foreach($countries as $country)
+                        <flux:select.option value="{{ $country->id }}">{{ $country->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:error name="newCityCountryId"/>
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Stadt') }}</flux:label>
+                <div class="flex gap-2">
+                    <flux:input wire:model="newCityQuery" wire:keydown.enter.prevent="searchCity"
+                                placeholder="{{ __('z.B. Lippstadt') }}" data-testid="add-city-query"/>
+                    <flux:button wire:click="searchCity" data-testid="add-city-search">
+                        {{ __('Suchen') }}
+                    </flux:button>
+                </div>
+                <flux:error name="newCityQuery"/>
+            </flux:field>
+
+            @if ($newCityResults)
+                <div class="flex flex-col gap-1" data-testid="add-city-results">
+                    @foreach($newCityResults as $index => $hit)
+                        <button type="button" wire:click="useCity({{ $index }})"
+                                wire:key="city-hit-{{ $hit['osm_type'] }}-{{ $hit['osm_id'] }}"
+                                data-testid="add-city-result-{{ $index }}"
+                                class="rounded-md border border-zinc-200 p-2 text-start hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
+                            <div class="text-sm font-medium">{{ $hit['osm_name'] }}</div>
+                            <div class="text-xs opacity-60">{{ $hit['osm_address'] }}</div>
+                        </button>
+                    @endforeach
+                </div>
+            @elseif ($newCitySearched)
+                <flux:callout data-testid="add-city-empty">
+                    {{ __('Keine Stadt gefunden. Prüf die Schreibweise oder das Land.') }}
+                </flux:callout>
+            @endif
+        </div>
+    </flux:modal>
 </div>
