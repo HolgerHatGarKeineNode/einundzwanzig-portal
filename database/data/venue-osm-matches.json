@@ -1,0 +1,178 @@
+[
+    {
+        "venue_id": 1,
+        "venue_name": "Lässerhof",
+        "similarity": 1,
+        "osm_type": "way",
+        "osm_id": 144992750,
+        "osm_name": "Lässerhof",
+        "osm_address": "Lässerhof, 2a, Hofweg, Hub, Katastralgemeinde Stattegg, Stattegg, Bezirk Graz-Umgebung, Steiermark, 8046, Österreich",
+        "osm_lat": 47.141605,
+        "osm_lon": 15.4201994
+    },
+    {
+        "venue_id": 4,
+        "venue_name": "VHS Lippstadt",
+        "similarity": 1,
+        "osm_type": "relation",
+        "osm_id": 2034261,
+        "osm_name": "VHS Lippstadt",
+        "osm_address": "VHS Lippstadt, 2, Barthstraße, Lippstadt, Kreis Soest, Nordrhein-Westfalen, 59557, Deutschland",
+        "osm_lat": 51.6584837,
+        "osm_lon": 8.3495112
+    },
+    {
+        "venue_id": 35,
+        "venue_name": "Wechsel.bar",
+        "similarity": 0.909,
+        "osm_type": "node",
+        "osm_id": 343519450,
+        "osm_name": "Wechsel Bar",
+        "osm_address": "Wechsel Bar, 132, Rodberger Straße, Röbbeck, Velbert-Mitte, Essen, Kreis Mettmann, Nordrhein-Westfalen, 45257, Deutschland",
+        "osm_lat": 51.3667687,
+        "osm_lon": 7.0622891
+    },
+    {
+        "venue_id": 37,
+        "venue_name": "Technische Hochschule Ingolstadt",
+        "similarity": 1,
+        "osm_type": "way",
+        "osm_id": 135548926,
+        "osm_name": "Technische Hochschule Ingolstadt",
+        "osm_address": "Technische Hochschule Ingolstadt, 10, Esplanade, Altstadt Nordost, Mitte, Ingolstadt, Bayern, 85049, Deutschland",
+        "osm_lat": 48.7669069,
+        "osm_lon": 11.4335125
+    },
+    {
+        "venue_id": 39,
+        "venue_name": "Der Schafstall",
+        "similarity": 1,
+        "osm_type": "node",
+        "osm_id": 11067639710,
+        "osm_name": "Der Schafstall",
+        "osm_address": "Der Schafstall, 35, Am Büsenbach, Siedlung am Pferdekopf, Wörme, Handeloh, Samtgemeinde Tostedt, Landkreis Harburg, Niedersachsen, 21256, Deutschland",
+        "osm_lat": 53.2689435,
+        "osm_lon": 9.8538715
+    },
+    {
+        "venue_id": 45,
+        "venue_name": "Deutsches Hygiene-Museum",
+        "similarity": 1,
+        "osm_type": "relation",
+        "osm_id": 5651,
+        "osm_name": "Deutsches Hygiene-Museum",
+        "osm_address": "Deutsches Hygiene-Museum, 1, Lingnerplatz, Seevorstadt-Ost/Großer Garten, Seevorstadt, Altstadt, Dresden, Sachsen, 01069, Deutschland",
+        "osm_lat": 51.0443875,
+        "osm_lon": 13.7468025
+    },
+    {
+        "venue_id": 59,
+        "venue_name": "Station Berlin",
+        "similarity": 1,
+        "osm_type": "way",
+        "osm_id": 26477642,
+        "osm_name": "STATION Berlin",
+        "osm_address": "STATION Berlin, 4-6, Luckenwalder Straße, Möckernkiez, Zeitungsviertel, Kreuzberg, Friedrichshain-Kreuzberg, Berlin, 10963, Deutschland",
+        "osm_lat": 52.4986836,
+        "osm_lon": 13.3748143
+    },
+    {
+        "venue_id": 66,
+        "venue_name": "Weinwerk Burgenland",
+        "similarity": 1,
+        "osm_type": "node",
+        "osm_id": 1880419056,
+        "osm_name": "Weinwerk Burgenland",
+        "osm_address": "Weinwerk Burgenland, 31, Obere Hauptstraße, Katastralgemeinde Neusiedl am See, Neusiedl am See, Bezirk Neusiedl am See, Burgenland, 7100, Österreich",
+        "osm_lat": 47.9510842,
+        "osm_lon": 16.8392455
+    },
+    {
+        "venue_id": 81,
+        "venue_name": "LAB³ e.V. für transdisziplinäre Forschung",
+        "similarity": 1,
+        "osm_type": "node",
+        "osm_id": 11438971798,
+        "osm_name": "LAB³ e.V. für transdisziplinäre Forschung",
+        "osm_address": "LAB³ e.V. für transdisziplinäre Forschung, 31, Hilpertstraße, Am Kavalleriesand, Darmstadt-West, Darmstadt, Hessen, 64295, Deutschland",
+        "osm_lat": 49.8624148,
+        "osm_lon": 8.6216926
+    },
+    {
+        "venue_id": 85,
+        "venue_name": "Zum Wilden Michel",
+        "similarity": 1,
+        "osm_type": "way",
+        "osm_id": 640965116,
+        "osm_name": "Zum Wilden Michel",
+        "osm_address": "Zum Wilden Michel, 6, Linach, Furtwangen im Schwarzwald, VVG der Stadt Furtwangen im Schwarzwald, Schwarzwald-Baar-Kreis, Baden-Württemberg, 78120, Deutschland",
+        "osm_lat": 48.0245781,
+        "osm_lon": 8.2276786
+    },
+    {
+        "venue_id": 96,
+        "venue_name": "Kinoteka",
+        "similarity": 1,
+        "osm_type": "node",
+        "osm_id": 2096125794,
+        "osm_name": "Kinoteka",
+        "osm_address": "Kinoteka, 1, Plac Defilad, Żelazna Brama, Śródmieście Północne, Śródmieście, Warszawa, województwo mazowieckie, 00-110, Polska",
+        "osm_lat": 52.2313226,
+        "osm_lon": 21.0064611
+    },
+    {
+        "venue_id": 109,
+        "venue_name": "Gasthof Pension Strohmaier",
+        "similarity": 1,
+        "osm_type": "node",
+        "osm_id": 11967522304,
+        "osm_name": "Gasthof Pension Strohmaier",
+        "osm_address": "Gasthof Pension Strohmaier, Neuthaler Straße, Theresienreut, Haidmühle, Landkreis Freyung-Grafenau, Bayern, 94145, Deutschland",
+        "osm_lat": 48.8278005,
+        "osm_lon": 13.7753984
+    },
+    {
+        "venue_id": 126,
+        "venue_name": "Gasthof Parzefall",
+        "similarity": 1,
+        "osm_type": "way",
+        "osm_id": 120125272,
+        "osm_name": "Gasthof Parzefall",
+        "osm_address": "Gasthof Parzefall, 54, Obertraublinger Straße, Burgweinting, Regensburg, Bayern, 93055, Deutschland",
+        "osm_lat": 48.9879366,
+        "osm_lon": 12.1408648
+    },
+    {
+        "venue_id": 133,
+        "venue_name": "Luzern",
+        "similarity": 1,
+        "osm_type": "node",
+        "osm_id": 560719464,
+        "osm_name": "Luzern",
+        "osm_address": "Luzern, Bahnhofplatz, Altstadt, Luzern, 6002, Schweiz/Suisse/Svizzera/Svizra",
+        "osm_lat": 47.0511818,
+        "osm_lon": 8.3095
+    },
+    {
+        "venue_id": 144,
+        "venue_name": "Hammerwirt",
+        "similarity": 1,
+        "osm_type": "node",
+        "osm_id": 2361289432,
+        "osm_name": "Hammerwirt",
+        "osm_address": "Hammerwirt, Hammer, Mühldorf a. Inn, Landkreis Mühldorf am Inn, Bayern, 84453, Deutschland",
+        "osm_lat": 48.2236782,
+        "osm_lon": 12.526788
+    },
+    {
+        "venue_id": 155,
+        "venue_name": "Union Jack Pub",
+        "similarity": 1,
+        "osm_type": "node",
+        "osm_id": 10642155292,
+        "osm_name": "Union Jack Pub",
+        "osm_address": "Union Jack Pub, 921, Broad Ripple Avenue, Broad Ripple, Wellington, Indianapolis, Marion County, Indiana, 46220, United States",
+        "osm_lat": 39.8695325,
+        "osm_lon": -86.1421954
+    }
+]

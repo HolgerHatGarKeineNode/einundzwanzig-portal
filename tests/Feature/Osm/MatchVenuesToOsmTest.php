@@ -207,3 +207,51 @@ it('does not let placeholder venues drag the rate down', function () {
 
     expect($event->fresh()->osm_id)->toBe(1);
 });
+
+it('does not treat a lone mediocre hit as proof', function () {
+    // Measured on production: "Volkshochschule Kassel (Landkreis)" returned exactly one
+    // result — "Volkshochschule Hofgeismar", a different town, scoring 0.633. Being the
+    // only answer is not evidence of being the right one.
+    $venue = Venue::factory()->create([
+        'name' => 'Volkshochschule Kassel (Landkreis)',
+        'city_id' => $this->city->id,
+    ]);
+    $course = Course::factory()->create();
+    $event = CourseEvent::factory()->create(['venue_id' => $venue->id, 'course_id' => $course->id]);
+
+    Http::fake(['*' => Http::response([osmHit('Volkshochschule Hofgeismar')])]);
+
+    $this->artisan('venues:match-osm --fast')->assertFailed();
+
+    expect($event->fresh()->osm_id)->toBeNull();
+});
+
+it('still accepts a lone hit when the name matches closely', function () {
+    $venue = Venue::factory()->create(['name' => 'Deutsches Hygiene-Museum', 'city_id' => $this->city->id]);
+    $course = Course::factory()->create();
+    $event = CourseEvent::factory()->create(['venue_id' => $venue->id, 'course_id' => $course->id]);
+
+    Http::fake(['*' => Http::response([osmHit('Deutsches Hygiene-Museum')])]);
+
+    $this->artisan('venues:match-osm --fast')->assertSuccessful();
+
+    expect($event->fresh()->osm_id)->toBe(1);
+});
+
+it('exports the confident matches for a data migration', function () {
+    Venue::factory()->create(['name' => 'Deutsches Hygiene-Museum', 'city_id' => $this->city->id]);
+    Http::fake(['*' => Http::response([osmHit('Deutsches Hygiene-Museum')])]);
+
+    $path = sys_get_temp_dir().'/osm-matches-'.getmypid().'.json';
+
+    $this->artisan("venues:match-osm --dry-run --fast --export-matches={$path}")->assertSuccessful();
+
+    $exported = json_decode((string) file_get_contents($path), true);
+
+    expect($exported)->toHaveCount(1)
+        ->and($exported[0]['osm_id'])->toBe(1)
+        // The venue name travels along so the migration can refuse a row that has changed.
+        ->and($exported[0]['venue_name'])->toBe('Deutsches Hygiene-Museum');
+
+    unlink($path);
+});

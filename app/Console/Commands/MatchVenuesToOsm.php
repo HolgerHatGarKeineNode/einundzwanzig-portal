@@ -36,7 +36,8 @@ class MatchVenuesToOsm extends Command
                             {--once : One-off run at 1 request/second — what the policy allows for a single small task}
                             {--fast : Ignore the rate limit entirely — only legitimate against a self-hosted instance}
                             {--limit= : Only process the first N venues}
-                            {--from-json= : Classify venues from an exported JSON file instead of the database (implies --dry-run)}';
+                            {--from-json= : Classify venues from an exported JSON file instead of the database (implies --dry-run)}
+                            {--export-matches= : Write the confident matches to a JSON file for a data migration}';
 
     protected $description = 'Match venues to OpenStreetMap places and copy the result onto their events';
 
@@ -106,6 +107,10 @@ class MatchVenuesToOsm extends Command
 
         $confident = $results->where('verdict', 'confident');
         $rate = $this->confidenceRate($results);
+
+        if ($path = $this->option('export-matches')) {
+            $this->exportMatches($confident, $path);
+        }
 
         if ($rate === null) {
             $this->info('Keine geocodierbaren Venues — alle beschreiben eine Absprache statt eines Ortes.');
@@ -234,9 +239,15 @@ class MatchVenuesToOsm extends Command
          * that still lands in "uncertain". A word-set comparison would catch it; measuring
          * first, tuning second.
          */
+        /*
+         * Being the only result is NOT evidence. Measured on production data: "Volkshochschule
+         * Kassel (Landkreis)" returned exactly one hit — "Volkshochschule Hofgeismar", a
+         * different town — and scored 0.633. Treating a lone mediocre result as a clear winner
+         * would have written precisely the wrong-address failure this whole gate exists to
+         * prevent. A single hit must therefore clear the same high bar as any other.
+         */
         $clearWinner = $similarity >= 0.85
-            || $similarity - $runnerUpSimilarity >= 0.25
-            || $hits->count() === 1;
+            || ($hits->count() > 1 && $similarity - $runnerUpSimilarity >= 0.25);
 
         if ($similarity >= 0.6 && $clearWinner) {
             return [...$base, 'match' => $best, 'verdict' => 'confident', 'similarity' => $similarity];
@@ -306,6 +317,39 @@ class MatchVenuesToOsm extends Command
         similar_text($a, $b, $percent);
 
         return round($percent / 100, 3);
+    }
+
+    /**
+     * Write the confident matches to disk so a data migration can apply them.
+     *
+     * Deliberately separate from the threshold verdict. The rate answers "does this
+     * approach work on this dataset"; each confident row answers "is THIS one right",
+     * and the two questions can have different answers. Discarding 22 individually
+     * verified matches because the other 74 venues are not places would throw away good
+     * work for a bad reason.
+     *
+     * The venue name travels along so the migration can refuse to act when the row it
+     * finds is no longer the row that was matched.
+     *
+     * @param  Collection<int, array<string, mixed>>  $confident
+     */
+    private function exportMatches(Collection $confident, string $path): void
+    {
+        $payload = $confident->map(fn (array $row): array => [
+            'venue_id' => $row['venue']->id,
+            'venue_name' => $row['venue']->name,
+            'similarity' => $row['similarity'] ?? null,
+            'osm_type' => $row['match']['osm_type'],
+            'osm_id' => $row['match']['osm_id'],
+            'osm_name' => $row['match']['osm_name'],
+            'osm_address' => $row['match']['osm_address'],
+            'osm_lat' => $row['match']['osm_lat'],
+            'osm_lon' => $row['match']['osm_lon'],
+        ])->values();
+
+        file_put_contents($path, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+
+        $this->line("Treffer exportiert nach: {$path} ({$payload->count()})");
     }
 
     /**
