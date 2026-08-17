@@ -101,6 +101,36 @@ class extends Component {
     #[Validate('required|url|max:255')]
     public ?string $link = null;
 
+    public ?string $title = null;
+
+    /**
+     * End time of the single event, as HH:MM.
+     *
+     * Deliberately NOT called endDate — that name is already taken by the end of a
+     * recurring series, and the two mean very different things. Only a time is asked
+     * for: a meetup runs for hours, not days. If it is earlier than the start time the
+     * event is taken to end after midnight.
+     */
+    public ?string $endTime = null;
+
+    /** @var array<int, int> */
+    public array $tagIds = [];
+
+    /**
+     * Whether this event's country demands at least one tag.
+     *
+     * Read from the meetup's own country rather than the route segment: the route
+     * only says which country's pages the visitor is browsing, which is not
+     * necessarily where the meetup is.
+     */
+    public function getTagsRequiredProperty(): bool
+    {
+        $code = $this->meetup->city?->country?->code;
+
+        return $code !== null
+            && in_array(mb_strtolower($code), config('einundzwanzig.tags_required_countries', []), true);
+    }
+
     /**
      * Termine darf nur verwalten, wer das zugehörige Meetup bearbeiten darf
      * (Ersteller/Leader/Super-Admin) — dieselbe update-Ability wie die
@@ -127,6 +157,9 @@ class extends Component {
             $this->location = $this->event->location;
             $this->description = $this->event->description;
             $this->link = $this->event->link;
+            $this->title = $this->event->title;
+            $this->endTime = $this->event->end?->setTimezone($timezone)->format('H:i');
+            $this->tagIds = $this->event->tags->pluck('id')->all();
 
             if ($this->event->recurrence_type) {
                 $this->seriesMode = true;
@@ -155,6 +188,10 @@ class extends Component {
             'location' => 'required|string|max:255',
             'description' => 'required|string',
             'link' => 'required|url|max:255',
+            // Both optional: existing events have neither, and a meetup event without
+            // its own title simply carries the meetup's name.
+            'title' => 'nullable|string|max:255',
+            'endTime' => 'nullable|date_format:H:i',
         ];
 
         if ($this->seriesMode) {
@@ -162,7 +199,14 @@ class extends Component {
             $validationRules['recurrenceType'] = 'required';
         }
 
-        $this->validate($validationRules);
+        if ($this->tagsRequired) {
+            $validationRules['tagIds'] = 'required|array|min:1';
+        }
+
+        $this->validate($validationRules, [
+            'tagIds.required' => __('Bitte wähle mindestens einen Tag.'),
+            'tagIds.min' => __('Bitte wähle mindestens einen Tag.'),
+        ]);
 
         $timezone = $this->userTimezone;
 
@@ -178,14 +222,58 @@ class extends Component {
             navigate: true);
     }
 
+    /**
+     * Turn the entered end time into a UTC timestamp on the event's own day.
+     *
+     * A time earlier than or equal to the start means the event runs past midnight —
+     * a 20:00 meetup ending at 01:00 ends the next day, not five minutes into the past.
+     */
+    private function resolveEnd(\Carbon\Carbon $localStart): ?\Carbon\Carbon
+    {
+        if (blank($this->endTime)) {
+            return null;
+        }
+
+        [$hour, $minute] = array_pad(explode(':', $this->endTime), 2, '0');
+
+        $end = $localStart->copy()->setTime((int) $hour, (int) $minute);
+
+        if ($end->lessThanOrEqualTo($localStart)) {
+            $end->addDay();
+        }
+
+        return $end->setTimezone('UTC');
+    }
+
+    /**
+     * Attach the picked tags, scoped to the event type so nothing else is disturbed.
+     *
+     * Only ids the user was actually offered are accepted — a crafted request must not
+     * be able to attach someone else's unapproved suggestion.
+     */
+    private function syncTags(MeetupEvent $event): void
+    {
+        $allowed = \App\Models\Tag::query()
+            ->where('type', 'meetup_event')
+            ->selectableBy(auth()->user())
+            ->whereIn('id', $this->tagIds)
+            ->get();
+
+        $event->syncTagsWithType($allowed->all(), 'meetup_event');
+    }
+
     private function createOrUpdateSingleEvent(string $timezone): void
     {
         // Combine date and time in user's timezone, then convert to UTC
         $localDateTime = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $this->startDate . ' ' . $this->startTime, $timezone);
-        $utcDateTime = $localDateTime->setTimezone('UTC');
+        // copy() matters: setTimezone() mutates in place, and resolveEnd() below needs
+        // the start still expressed in the user's own timezone to compare against.
+        $utcDateTime = $localDateTime->copy()->setTimezone('UTC');
 
         $data = [
             'start' => $utcDateTime,
+            'end' => $this->resolveEnd($localDateTime),
+            'title' => $this->title,
             'location' => $this->location,
             'description' => $this->description,
             'link' => $this->link,
@@ -194,15 +282,17 @@ class extends Component {
         if ($this->event) {
             // Update existing event
             $this->event->update($data);
+            $this->syncTags($this->event);
             session()->flash('status', __('Event erfolgreich aktualisiert!'));
         } else {
             // Create new event
-            $this->meetup->meetupEvents()->create([
+            $event = $this->meetup->meetupEvents()->create([
                 ...$data,
                 'created_by' => auth()->id(),
                 'attendees' => [],
                 'might_attendees' => [],
             ]);
+            $this->syncTags($event);
             session()->flash('status', __('Event erfolgreich erstellt!'));
         }
     }
@@ -221,8 +311,10 @@ class extends Component {
         foreach ($dates as $date) {
             $utcDateTime = $date->copy()->setTimezone('UTC');
 
-            $this->meetup->meetupEvents()->create([
+            $event = $this->meetup->meetupEvents()->create([
                 'start' => $utcDateTime,
+                'end' => $this->resolveEnd($date),
+                'title' => $this->title,
                 'location' => $this->location,
                 'description' => $this->description,
                 'link' => $this->link,
@@ -230,6 +322,9 @@ class extends Component {
                 'attendees' => [],
                 'might_attendees' => [],
             ]);
+
+            // Every occurrence of a series carries the same tags.
+            $this->syncTags($event);
 
             $eventsCreated++;
         }
@@ -357,11 +452,31 @@ class extends Component {
             @endif
 
             <flux:field>
+                <flux:label>{{ __('Titel') }}</flux:label>
+                <flux:input wire:model="title" placeholder="{{ __('z.B. Einsteigerabend: Wallets einrichten') }}"/>
+                <flux:description>{{ __('Optional — ohne Titel erscheint der Name des Meetups.') }}</flux:description>
+                <flux:error name="title"/>
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Ende') }}</flux:label>
+                <flux:time-picker wire:model="endTime" locale="{{ session('lang_country', 'de-DE') }}"/>
+                <flux:description>{{ __('Optional. Eine Zeit vor dem Beginn bedeutet: das Event endet nach Mitternacht.') }}</flux:description>
+                <flux:error name="endTime"/>
+            </flux:field>
+
+            <flux:field>
                 <flux:label>{{ __('Ort') }}</flux:label>
                 <flux:input wire:model="location" placeholder="{{ __('z.B. Café Mustermann, Hauptstr. 1') }}"/>
                 <flux:description>{{ __('Wo findet das Event statt?') }}</flux:description>
                 <flux:error name="location"/>
             </flux:field>
+
+            <livewire:tags.picker
+                wire:model="tagIds"
+                type="meetup_event"
+                :required="$this->tagsRequired"
+            />
 
             <flux:field>
                 <flux:label>{{ __('Beschreibung') }}</flux:label>

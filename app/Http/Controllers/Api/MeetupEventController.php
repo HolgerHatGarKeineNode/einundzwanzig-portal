@@ -49,6 +49,9 @@ class MeetupEventController extends Controller
             ->with([
                 'meetup.city.country',
                 'meetup.media',
+                // Without this the resource's whenLoaded('tags') stays silent and the
+                // field disappears from the payload rather than showing up empty.
+                'tags',
             ])
             ->when(
                 $date,
@@ -60,10 +63,18 @@ class MeetupEventController extends Controller
 
         return $events->map(fn ($event) => [
             'id' => $event->id,
+            'title' => $event->title,
             'start' => $event->start->format('Y-m-d H:i'),
+            'end' => $event->end?->format('Y-m-d H:i'),
             'location' => $event->location,
             'description' => $event->description,
             'link' => $event->link,
+            // Names resolved through the display chain, so a tag that exists only in
+            // German still reads as something rather than as an empty string.
+            'tags' => $event->tags->map(fn ($tag) => [
+                'name' => $tag->displayName(),
+                'locale' => $tag->displayLocale(),
+            ])->all(),
             // null = the attendee count is not public for this meetup (attendees_public=false).
             'attendees' => $event->meetup->attendees_public ? $event->attendeesCount() : null,
             'might_attendees' => $event->meetup->attendees_public ? $event->mightAttendeesCount() : null,
@@ -118,7 +129,7 @@ class MeetupEventController extends Controller
 
         $meetupEvent = MeetupEvent::create($validated);
 
-        return MeetupEventResource::make($meetupEvent->fresh())
+        return MeetupEventResource::make($meetupEvent->fresh()->load('tags'))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
@@ -134,7 +145,7 @@ class MeetupEventController extends Controller
     {
         $meetupEvent->update($request->validated());
 
-        return MeetupEventResource::make($meetupEvent->fresh());
+        return MeetupEventResource::make($meetupEvent->fresh()->load('tags'));
     }
 
     /**
@@ -149,6 +160,7 @@ class MeetupEventController extends Controller
 
         $meetupEvents = MeetupEvent::query()
             ->editableBy($request->user()->id)
+            ->with('tags')
             ->orderByDesc('start')
             ->get();
 
@@ -165,7 +177,7 @@ class MeetupEventController extends Controller
     {
         Gate::authorize('view', $meetupEvent);
 
-        return MeetupEventResource::make($meetupEvent);
+        return MeetupEventResource::make($meetupEvent->load('tags'));
     }
 
     /**

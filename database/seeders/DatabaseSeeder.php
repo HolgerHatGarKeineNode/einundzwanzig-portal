@@ -20,7 +20,6 @@ use App\Models\Podcast;
 use App\Models\ProjectProposal;
 use App\Models\Registration;
 use App\Models\SelfHostedService;
-use App\Models\Tag;
 use App\Models\TwitterAccount;
 use App\Models\User;
 use App\Models\Venue;
@@ -47,7 +46,7 @@ class DatabaseSeeder extends Seeder
         $countries = Country::factory()->count(8)->create();
         Category::factory()->count(6)->create();
         Participant::factory()->count(30)->create();
-        Tag::factory()->count(15)->create();
+        $this->call(TagSeeder::class);
         TwitterAccount::factory()->count(2)->create();
 
         $users = User::all();

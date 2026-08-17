@@ -12,11 +12,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
+use Spatie\Tags\HasTags;
 
 #[ObservedBy([MeetupEventObserver::class])]
 class MeetupEvent extends Model
 {
     use HasFactory;
+    use HasTags;
     use SetsCreatedBy;
 
     /**
@@ -35,6 +37,9 @@ class MeetupEvent extends Model
         'id' => 'integer',
         'meetup_id' => 'integer',
         'start' => 'datetime',
+        // End of THIS event — not to be confused with recurrence_end_date, which is
+        // when a recurring series stops producing occurrences.
+        'end' => 'datetime',
         'recurrence_end_date' => 'datetime',
         'attendees' => 'array',
         'might_attendees' => 'array',

@@ -30,6 +30,9 @@ class StoreMeetupEventRequest extends FormRequest
         return [
             'meetup_id' => ['required', 'integer', 'exists:meetups,id'],
             'start' => ['required', 'date'],
+            'title' => ['nullable', 'string', 'max:255'],
+            // End of THIS occurrence. recurrence_end_date below ends the series.
+            'end' => ['nullable', 'date', 'after:start'],
             'location' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'link' => ['nullable', 'url', 'max:255'],
