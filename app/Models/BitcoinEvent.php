@@ -31,6 +31,9 @@ class BitcoinEvent extends Model implements HasMedia
      */
     protected $casts = [
         'id' => 'integer',
+        'osm_id' => 'integer',
+        'osm_lat' => 'decimal:7',
+        'osm_lon' => 'decimal:7',
         'venue_id' => 'integer',
         'from' => 'datetime',
         'to' => 'datetime',

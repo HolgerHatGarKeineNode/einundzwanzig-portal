@@ -37,6 +37,9 @@ class MeetupEvent extends Model
         'id' => 'integer',
         'meetup_id' => 'integer',
         'start' => 'datetime',
+        'osm_id' => 'integer',
+        'osm_lat' => 'decimal:7',
+        'osm_lon' => 'decimal:7',
         // End of THIS event — not to be confused with recurrence_end_date, which is
         // when a recurring series stops producing occurrences.
         'end' => 'datetime',
