@@ -72,6 +72,64 @@ class Tag extends \Spatie\Tags\Tag
     }
 
     /**
+     * The locale whose name will actually be shown for a requested locale, or null if
+     * the tag carries no name at all.
+     *
+     * Needed because Spatie's own fallback gives up silently: it only falls back to
+     * config('app.fallback_locale') if that language happens to be translated, and
+     * `fallbackAny` is off by default. Measured on this codebase, a German-only tag
+     * asked for in Czech returns an empty string — and 84 of the 89 production tags
+     * are German-only, so the Czech picker would have been a list of blanks.
+     *
+     * Order: what was asked for, then the app's fallback language, then the configured
+     * tag locales in order, then whatever the tag actually has.
+     */
+    public function displayLocale(?string $locale = null): ?string
+    {
+        $locale ??= app()->getLocale();
+
+        $candidates = array_merge(
+            [$locale, config('app.fallback_locale')],
+            (array) config('einundzwanzig.tag_locales', []),
+            $this->getTranslatedLocales('name'),
+        );
+
+        foreach ($candidates as $candidate) {
+            if (is_string($candidate) && filled($this->getTranslation('name', $candidate, false))) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The name to display, never empty as long as the tag has a name in any language.
+     *
+     * Pair it with displayLocale() to mark where the text came from — the picker shows
+     * that marker so a Czech organiser can tell a German label from a Czech one instead
+     * of wondering why a row reads oddly.
+     */
+    public function displayName(?string $locale = null): string
+    {
+        $resolved = $this->displayLocale($locale);
+
+        return $resolved === null
+            ? ''
+            : (string) $this->getTranslation('name', $resolved, false);
+    }
+
+    /**
+     * Whether the shown name is a substitute rather than the requested language.
+     */
+    public function isDisplayNameSubstituted(?string $locale = null): bool
+    {
+        $locale ??= app()->getLocale();
+
+        return $this->displayLocale($locale) !== $locale;
+    }
+
+    /**
      * Tags this user is allowed to see offered: everything approved, plus their own
      * pending suggestions. Without the second half a suggester could not re-select
      * the tag they just proposed.

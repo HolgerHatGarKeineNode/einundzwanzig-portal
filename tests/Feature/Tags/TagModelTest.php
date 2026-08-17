@@ -2,6 +2,7 @@
 
 use App\Models\Tag;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 
 it('stores translations as a flat locale map, not a nested json string', function () {
     $tag = Tag::factory()->named(['en' => 'Bitcoin Basics', 'de' => 'Bitcoin Grundlagen'])->create();
@@ -109,6 +110,64 @@ it('records who suggested a tag', function () {
 
     expect($tag->creator->id)->toBe($user->id)
         ->and($tag->isApproved())->toBeFalse();
+});
+
+it('never shows an empty name for a tag that has one in some language', function () {
+    // The measured failure this guards: Spatie falls back to app.fallback_locale only
+    // if that language is translated, and fallbackAny is off — so a German-only tag
+    // asked for in Czech returned "". 84 of the 89 production tags are German-only.
+    $tag = Tag::factory()->named(['de' => 'Selbstverwahrung'])->create();
+
+    expect($tag->getTranslation('name', 'cs'))->toBe('')          // the raw behaviour
+        ->and($tag->displayName('cs'))->toBe('Selbstverwahrung')  // what we show instead
+        ->and($tag->displayLocale('cs'))->toBe('de')
+        ->and($tag->isDisplayNameSubstituted('cs'))->toBeTrue();
+});
+
+it('prefers the requested language over any fallback', function () {
+    $tag = Tag::factory()->named([
+        'de' => 'Selbstverwahrung',
+        'en' => 'Self-custody',
+        'cs' => 'Samosprava',
+    ])->create();
+
+    expect($tag->displayName('cs'))->toBe('Samosprava')
+        ->and($tag->displayLocale('cs'))->toBe('cs')
+        ->and($tag->isDisplayNameSubstituted('cs'))->toBeFalse();
+});
+
+it('falls back to english before any other language', function () {
+    $tag = Tag::factory()->named(['de' => 'Selbstverwahrung', 'en' => 'Self-custody'])->create();
+
+    expect($tag->displayName('cs'))->toBe('Self-custody')
+        ->and($tag->displayLocale('cs'))->toBe('en');
+});
+
+it('uses the current app locale when none is given', function () {
+    $tag = Tag::factory()->named(['de' => 'Selbstverwahrung'])->create();
+
+    app()->setLocale('de');
+    expect($tag->displayName())->toBe('Selbstverwahrung')
+        ->and($tag->isDisplayNameSubstituted())->toBeFalse();
+
+    app()->setLocale('pl');
+    expect($tag->displayName())->toBe('Selbstverwahrung')
+        ->and($tag->isDisplayNameSubstituted())->toBeTrue();
+});
+
+it('reports no display locale for a tag without any name', function () {
+    // make(), not create(): a nameless tag cannot be persisted at all, because no name
+    // means no slug and tags.slug is NOT NULL. The guard is for defensive callers, so
+    // it is exercised on an unsaved instance.
+    $tag = Tag::factory()->named([])->make();
+
+    expect($tag->displayLocale('cs'))->toBeNull()
+        ->and($tag->displayName('cs'))->toBe('');
+});
+
+it('refuses to persist a tag without any name', function () {
+    expect(fn () => Tag::factory()->named([])->create())
+        ->toThrow(QueryException::class);
 });
 
 it('approves a pending tag', function () {
