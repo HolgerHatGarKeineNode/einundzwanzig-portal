@@ -73,6 +73,8 @@ class CreateMeetupEventTool extends Tool
             'meetup' => $schema->string()->description('Name deines Meetups, zu dem der Termin gehört (z. B. "Einundzwanzig Ansbach"). Wird automatisch aufgelöst – sonst zuerst list-my-meetups aufrufen und den Nutzer auswählen lassen.'),
             'meetup_id' => $schema->integer()->description('Optional: ID des Meetups, falls bereits bekannt (Alternative zu "meetup").'),
             'start' => $schema->string()->description('Startzeitpunkt als Datum/Uhrzeit (z. B. 2026-08-01 18:00:00).')->required(),
+            'title' => $schema->string()->description('Optionaler Titel des Termins. Ohne Titel erscheint der Name des Meetups.'),
+            'end' => $schema->string()->description('Optionales Ende DIESES Termins als Datum/Uhrzeit. Nicht zu verwechseln mit recurrence_end_date, das die Serie beendet.'),
             'location' => $schema->string()->description('Veranstaltungsort.'),
             'description' => $schema->string()->description('Beschreibung des Termins.'),
             'link' => $schema->string()->description('Link zum Termin (URL).'),

@@ -19,10 +19,14 @@ class MeetupEventResource extends JsonResource
         return [
             'id' => $this->id,
             'meetup_id' => $this->meetup_id,
+            'title' => $this->title,
             'start' => $this->start,
+            // End of this occurrence — recurrence_end_date below is when the series stops.
+            'end' => $this->end,
             'location' => $this->location,
             'description' => $this->description,
             'link' => $this->link,
+            'tags' => TagResource::collection($this->whenLoaded('tags')),
             'recurrence_type' => $this->recurrence_type,
             'recurrence_day_of_week' => $this->recurrence_day_of_week,
             'recurrence_day_position' => $this->recurrence_day_position,

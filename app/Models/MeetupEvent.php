@@ -37,6 +37,9 @@ class MeetupEvent extends Model
         'id' => 'integer',
         'meetup_id' => 'integer',
         'start' => 'datetime',
+        // End of THIS event — not to be confused with recurrence_end_date, which is
+        // when a recurring series stops producing occurrences.
+        'end' => 'datetime',
         'recurrence_end_date' => 'datetime',
         'attendees' => 'array',
         'might_attendees' => 'array',

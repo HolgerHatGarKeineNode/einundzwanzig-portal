@@ -32,6 +32,23 @@ class extends Component {
     #[Validate('required|url|max:255')]
     public ?string $link = null;
 
+    /** @var array<int, int> */
+    public array $tagIds = [];
+
+    /**
+     * Whether this event's country demands at least one tag.
+     *
+     * Reached through the venue, which is where a course event's location lives today.
+     * When P6 removes Venue this moves to the event's own city_id.
+     */
+    public function getTagsRequiredProperty(): bool
+    {
+        $code = \App\Models\Venue::find($this->venue_id)?->city?->country?->code;
+
+        return $code !== null
+            && in_array(mb_strtolower($code), config('einundzwanzig.tags_required_countries', []), true);
+    }
+
     // New Venue Modal
     public string $newVenueName = '';
     public ?int $newVenueCityId = null;
@@ -52,6 +69,7 @@ class extends Component {
             $this->toTime = $localTo->format('H:i');
             $this->venue_id = $this->event->venue_id;
             $this->link = $this->event->link;
+            $this->tagIds = $this->event->tags->pluck('id')->all();
         } else {
             // Set default start time to next Monday at 09:00 in user's timezone
             $nextMonday = now($timezone)->next('Monday')->setTime(9, 0);
@@ -71,6 +89,10 @@ class extends Component {
             'toTime' => 'required',
             'venue_id' => 'required|exists:venues,id',
             'link' => 'required|url|max:255',
+            ...($this->tagsRequired ? ['tagIds' => 'required|array|min:1'] : []),
+        ], [
+            'tagIds.required' => __('Bitte wähle mindestens einen Tag.'),
+            'tagIds.min' => __('Bitte wähle mindestens einen Tag.'),
         ]);
 
         $timezone = auth()->user()->timezone ?? 'Europe/Berlin';
@@ -98,18 +120,35 @@ class extends Component {
         if ($this->event) {
             // Update existing event
             $this->event->update($data);
+            $this->syncTags($this->event);
             session()->flash('status', __('Event erfolgreich aktualisiert!'));
         } else {
             // Create new event
-            $this->course->courseEvents()->create([
+            $event = $this->course->courseEvents()->create([
                 ...$data,
                 'created_by' => auth()->id(),
             ]);
+            $this->syncTags($event);
             session()->flash('status', __('Event erfolgreich erstellt!'));
         }
 
         $this->redirect(route('courses.landingpage', ['course' => $this->course, 'country' => $this->country]),
             navigate: true);
+    }
+
+    /**
+     * Only ids the user was actually offered are accepted — a crafted request must not
+     * be able to attach someone else's unapproved suggestion.
+     */
+    private function syncTags(CourseEvent $event): void
+    {
+        $allowed = \App\Models\Tag::query()
+            ->where('type', 'meetup_event')
+            ->selectableBy(auth()->user())
+            ->whereIn('id', $this->tagIds)
+            ->get();
+
+        $event->syncTagsWithType($allowed->all(), 'meetup_event');
     }
 
     public function delete(): void
@@ -239,6 +278,12 @@ class extends Component {
                 <flux:description>{{ __('Link zu weiteren Informationen oder zur Anmeldung') }}</flux:description>
                 <flux:error name="link"/>
             </flux:field>
+
+            <livewire:tags.picker
+                wire:model="tagIds"
+                type="meetup_event"
+                :required="$this->tagsRequired"
+            />
         </flux:fieldset>
 
         <!-- Form Actions -->

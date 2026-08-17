@@ -101,6 +101,18 @@ class extends Component {
     #[Validate('required|url|max:255')]
     public ?string $link = null;
 
+    public ?string $title = null;
+
+    /**
+     * End time of the single event, as HH:MM.
+     *
+     * Deliberately NOT called endDate — that name is already taken by the end of a
+     * recurring series, and the two mean very different things. Only a time is asked
+     * for: a meetup runs for hours, not days. If it is earlier than the start time the
+     * event is taken to end after midnight.
+     */
+    public ?string $endTime = null;
+
     /** @var array<int, int> */
     public array $tagIds = [];
 
@@ -145,6 +157,8 @@ class extends Component {
             $this->location = $this->event->location;
             $this->description = $this->event->description;
             $this->link = $this->event->link;
+            $this->title = $this->event->title;
+            $this->endTime = $this->event->end?->setTimezone($timezone)->format('H:i');
             $this->tagIds = $this->event->tags->pluck('id')->all();
 
             if ($this->event->recurrence_type) {
@@ -174,6 +188,10 @@ class extends Component {
             'location' => 'required|string|max:255',
             'description' => 'required|string',
             'link' => 'required|url|max:255',
+            // Both optional: existing events have neither, and a meetup event without
+            // its own title simply carries the meetup's name.
+            'title' => 'nullable|string|max:255',
+            'endTime' => 'nullable|date_format:H:i',
         ];
 
         if ($this->seriesMode) {
@@ -205,6 +223,29 @@ class extends Component {
     }
 
     /**
+     * Turn the entered end time into a UTC timestamp on the event's own day.
+     *
+     * A time earlier than or equal to the start means the event runs past midnight —
+     * a 20:00 meetup ending at 01:00 ends the next day, not five minutes into the past.
+     */
+    private function resolveEnd(\Carbon\Carbon $localStart): ?\Carbon\Carbon
+    {
+        if (blank($this->endTime)) {
+            return null;
+        }
+
+        [$hour, $minute] = array_pad(explode(':', $this->endTime), 2, '0');
+
+        $end = $localStart->copy()->setTime((int) $hour, (int) $minute);
+
+        if ($end->lessThanOrEqualTo($localStart)) {
+            $end->addDay();
+        }
+
+        return $end->setTimezone('UTC');
+    }
+
+    /**
      * Attach the picked tags, scoped to the event type so nothing else is disturbed.
      *
      * Only ids the user was actually offered are accepted — a crafted request must not
@@ -225,10 +266,14 @@ class extends Component {
     {
         // Combine date and time in user's timezone, then convert to UTC
         $localDateTime = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $this->startDate . ' ' . $this->startTime, $timezone);
-        $utcDateTime = $localDateTime->setTimezone('UTC');
+        // copy() matters: setTimezone() mutates in place, and resolveEnd() below needs
+        // the start still expressed in the user's own timezone to compare against.
+        $utcDateTime = $localDateTime->copy()->setTimezone('UTC');
 
         $data = [
             'start' => $utcDateTime,
+            'end' => $this->resolveEnd($localDateTime),
+            'title' => $this->title,
             'location' => $this->location,
             'description' => $this->description,
             'link' => $this->link,
@@ -268,6 +313,8 @@ class extends Component {
 
             $event = $this->meetup->meetupEvents()->create([
                 'start' => $utcDateTime,
+                'end' => $this->resolveEnd($date),
+                'title' => $this->title,
                 'location' => $this->location,
                 'description' => $this->description,
                 'link' => $this->link,
@@ -403,6 +450,20 @@ class extends Component {
                     </flux:text>
                 </flux:field>
             @endif
+
+            <flux:field>
+                <flux:label>{{ __('Titel') }}</flux:label>
+                <flux:input wire:model="title" placeholder="{{ __('z.B. Einsteigerabend: Wallets einrichten') }}"/>
+                <flux:description>{{ __('Optional — ohne Titel erscheint der Name des Meetups.') }}</flux:description>
+                <flux:error name="title"/>
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Ende') }}</flux:label>
+                <flux:time-picker wire:model="endTime" locale="{{ session('lang_country', 'de-DE') }}"/>
+                <flux:description>{{ __('Optional. Eine Zeit vor dem Beginn bedeutet: das Event endet nach Mitternacht.') }}</flux:description>
+                <flux:error name="endTime"/>
+            </flux:field>
 
             <flux:field>
                 <flux:label>{{ __('Ort') }}</flux:label>

@@ -23,6 +23,7 @@ class CourseEventResource extends JsonResource
             'from' => $this->from,
             'to' => $this->to,
             'link' => $this->link,
+            'tags' => TagResource::collection($this->whenLoaded('tags')),
             'course' => $this->whenLoaded('course', fn (): array => [
                 'id' => $this->course->id,
                 'name' => $this->course->name,

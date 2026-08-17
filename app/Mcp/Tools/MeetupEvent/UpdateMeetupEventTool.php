@@ -55,6 +55,8 @@ class UpdateMeetupEventTool extends Tool
             'meetup' => $schema->string()->description('Name des zugehörigen Meetups, falls geändert werden soll (wird automatisch aufgelöst).'),
             'meetup_id' => $schema->integer()->description('Optional: ID des Meetups (Alternative zu "meetup").'),
             'start' => $schema->string()->description('Startzeitpunkt als Datum/Uhrzeit (z. B. 2026-08-01 18:00:00).'),
+            'title' => $schema->string()->description('Optionaler Titel des Termins.'),
+            'end' => $schema->string()->description('Optionales Ende DIESES Termins. Nicht recurrence_end_date, das die Serie beendet.'),
             'location' => $schema->string()->description('Veranstaltungsort.'),
             'description' => $schema->string()->description('Beschreibung des Termins.'),
             'link' => $schema->string()->description('Link zum Termin (URL).'),

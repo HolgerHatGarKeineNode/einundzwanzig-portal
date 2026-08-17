@@ -33,6 +33,15 @@ class UpdateMeetupEventRequest extends FormRequest
         return [
             'meetup_id' => ['sometimes', 'required', 'integer', 'exists:meetups,id'],
             'start' => ['sometimes', 'required', 'date'],
+            'title' => ['sometimes', 'nullable', 'string', 'max:255'],
+            /*
+             * End of THIS occurrence — recurrence_end_date below ends the series.
+             *
+             * after:start only applies when start is part of the same request. On a
+             * PATCH that touches end alone there is no start field to compare against,
+             * and the rule would resolve "start" as a literal date string and always fail.
+             */
+            'end' => ['sometimes', 'nullable', 'date', Rule::when($this->has('start'), ['after:start'])],
             'location' => ['sometimes', 'nullable', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
             'link' => ['sometimes', 'nullable', 'url', 'max:255'],
