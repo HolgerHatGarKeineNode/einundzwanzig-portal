@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\BitcoinEvent;
+use App\Models\City;
+use App\Models\Country;
 use App\Models\CourseEvent;
 use App\Models\Venue;
 use App\Services\Osm\NominatimClient;
@@ -31,8 +33,10 @@ class MatchVenuesToOsm extends Command
     protected $signature = 'venues:match-osm
                             {--dry-run : Classify and report without writing anything}
                             {--threshold=70 : Percent of confident matches below which the attempt is called off}
-                            {--fast : Ignore the bulk rate limit — only legitimate against a self-hosted instance}
-                            {--limit= : Only process the first N venues}';
+                            {--once : One-off run at 1 request/second — what the policy allows for a single small task}
+                            {--fast : Ignore the rate limit entirely — only legitimate against a self-hosted instance}
+                            {--limit= : Only process the first N venues}
+                            {--from-json= : Classify venues from an exported JSON file instead of the database (implies --dry-run)}';
 
     protected $description = 'Match venues to OpenStreetMap places and copy the result onto their events';
 
@@ -46,20 +50,34 @@ class MatchVenuesToOsm extends Command
 
     public function handle(): int
     {
-        $dryRun = (bool) $this->option('dry-run');
+        $fromJson = $this->option('from-json');
+        $dryRun = (bool) $this->option('dry-run') || $fromJson !== null;
         $threshold = (int) $this->option('threshold');
 
-        $client = $this->option('fast')
-            ? new NominatimClient(minIntervalMs: 0)
-            : NominatimClient::forBulk();
+        /*
+         * Three speeds, and the policy decides which is honest.
+         *
+         * Default is the conservative one: 4 requests per minute, which the policy
+         * demands of scripts that run regularly or for more than a day.
+         *
+         * --once is for a single small task, where the policy's general limit of
+         * 1 request/second applies instead. Do not use it for a recurring job.
+         *
+         * --fast removes the limit and is only defensible against a self-hosted instance.
+         */
+        $client = match (true) {
+            (bool) $this->option('fast') => new NominatimClient(minIntervalMs: 0),
+            (bool) $this->option('once') => new NominatimClient,
+            default => NominatimClient::forBulk(),
+        };
 
-        $venues = Venue::query()->with('city.country')->orderBy('id');
+        $venues = $fromJson !== null
+            ? $this->venuesFromJson($fromJson)
+            : Venue::query()->with('city.country')->orderBy('id')->get();
 
         if ($limit = $this->option('limit')) {
-            $venues->limit((int) $limit);
+            $venues = $venues->take((int) $limit);
         }
-
-        $venues = $venues->get();
 
         if ($venues->isEmpty()) {
             $this->info('Keine Venues vorhanden — nichts zu tun.');
@@ -67,7 +85,7 @@ class MatchVenuesToOsm extends Command
             return self::SUCCESS;
         }
 
-        if (! $dryRun && ! $this->option('fast')) {
+        if (! $dryRun && ! $this->option('fast') && ! $this->option('once')) {
             $minutes = (int) ceil($venues->count() / 4);
             $this->warn("Rate-Limit: {$venues->count()} Venues brauchen etwa {$minutes} Minuten.");
         }
@@ -118,6 +136,51 @@ class MatchVenuesToOsm extends Command
     }
 
     /**
+     * Read venues from an export instead of the database.
+     *
+     * This exists so the spike can be run against real production data from a developer
+     * machine: export the rows, classify them here, read the rate — without any write
+     * access to production and without shipping the command there first.
+     *
+     * The objects are unsaved Venue instances, so the classification path is byte for
+     * byte the same one a real run takes.
+     *
+     * @return Collection<int, Venue>
+     */
+    private function venuesFromJson(string $path): Collection
+    {
+        if (! is_file($path)) {
+            $this->error("Datei nicht gefunden: {$path}");
+
+            return collect();
+        }
+
+        $rows = json_decode((string) file_get_contents($path), true);
+
+        if (! is_array($rows)) {
+            $this->error('Datei enthält kein gültiges JSON-Array.');
+
+            return collect();
+        }
+
+        return collect($rows)->map(function (array $row): Venue {
+            $venue = new Venue([
+                'name' => $row['name'] ?? '',
+                'street' => $row['street'] ?? null,
+            ]);
+            $venue->id = $row['id'] ?? 0;
+
+            // City and country come along only as the query needs them; nothing is saved.
+            $city = new City(['name' => $row['city'] ?? null]);
+            $country = new Country(['code' => $row['country'] ?? null]);
+            $city->setRelation('country', $country);
+            $venue->setRelation('city', $city);
+
+            return $venue;
+        });
+    }
+
+    /**
      * Look one venue up and judge how much the result can be trusted.
      *
      * @return array<string, mixed>
@@ -130,10 +193,19 @@ class MatchVenuesToOsm extends Command
             return [...$base, 'verdict' => 'skipped', 'reason' => 'kein echter Ort'];
         }
 
-        $hits = $client->search(
-            $this->queryFor($venue),
-            $venue->city?->country?->code,
-        );
+        $country = $venue->city?->country?->code;
+
+        $hits = $client->search($this->queryFor($venue), $country);
+
+        /*
+         * Second attempt without the street. Measured on the real data: "Lässerhof,
+         * Hofweg 2, Graz" finds nothing because the street in our record does not match
+         * what OSM holds, while the venue itself is perfectly well known. Name plus city
+         * is the query a human would type.
+         */
+        if ($hits->isEmpty() && filled($venue->street)) {
+            $hits = $client->search($this->queryFor($venue, withStreet: false), $country);
+        }
 
         if ($hits->isEmpty()) {
             return [...$base, 'verdict' => 'none', 'reason' => 'kein Treffer'];
@@ -153,7 +225,18 @@ class MatchVenuesToOsm extends Command
             ? $this->similarity($venue->name, (string) ($runnerUp['osm_name'] ?? ''))
             : 0.0;
 
-        $clearWinner = $similarity - $runnerUpSimilarity >= 0.25 || $hits->count() === 1;
+        /*
+         * A near-exact name is convincing on its own; below that bar the runner-up must
+         * be clearly worse, or we would be picking one of two plausible addresses at random.
+         *
+         * Note what this does NOT fix: similar_text punishes word order. "Messe Innsbruck"
+         * against OSM's "Innsbruck Messe" scores only 0.600 — an obviously correct match
+         * that still lands in "uncertain". A word-set comparison would catch it; measuring
+         * first, tuning second.
+         */
+        $clearWinner = $similarity >= 0.85
+            || $similarity - $runnerUpSimilarity >= 0.25
+            || $hits->count() === 1;
 
         if ($similarity >= 0.6 && $clearWinner) {
             return [...$base, 'match' => $best, 'verdict' => 'confident', 'similarity' => $similarity];
@@ -190,9 +273,9 @@ class MatchVenuesToOsm extends Command
         return (int) round($matchable->where('verdict', 'confident')->count() / $matchable->count() * 100);
     }
 
-    private function queryFor(Venue $venue): string
+    private function queryFor(Venue $venue, bool $withStreet = true): string
     {
-        return collect([$venue->name, $venue->street, $venue->city?->name])
+        return collect([$venue->name, $withStreet ? $venue->street : null, $venue->city?->name])
             ->filter()
             ->implode(', ');
     }

@@ -73,8 +73,27 @@ it('changes nothing on a dry run', function () {
 });
 
 it('refuses to write when two candidates are almost equally good', function () {
-    // Picking one of two plausible addresses at random is how visitors end up at the
-    // wrong door. Better to leave it empty and say so.
+    // The real doubtful case: NEITHER candidate matches exactly, and they are similar
+    // to each other. Picking one at random is how visitors end up at the wrong door.
+    // Both score 0.690 against the venue name — inside the grey band, and tied.
+    $venue = Venue::factory()->create(['name' => 'Treffpunkt', 'city_id' => $this->city->id]);
+    $course = Course::factory()->create();
+    $event = CourseEvent::factory()->create(['venue_id' => $venue->id, 'course_id' => $course->id]);
+
+    Http::fake(['*' => Http::response([
+        osmHit('Treffpunkt am Markt', 0.5, 1),
+        osmHit('Treffpunkt am Hafen', 0.49, 2),
+    ])]);
+
+    $this->artisan('venues:match-osm --fast')->assertFailed();
+
+    expect($event->fresh()->osm_id)->toBeNull();
+});
+
+it('accepts a near-exact name even when a similar runner-up exists', function () {
+    // Measured against production: "Messe Innsbruck" matches OSM's "Innsbruck Messe"
+    // almost perfectly, and so does the runner-up — the distance rule alone threw away
+    // an obviously correct match.
     $venue = Venue::factory()->create(['name' => 'Cafe Central', 'city_id' => $this->city->id]);
     $course = Course::factory()->create();
     $event = CourseEvent::factory()->create(['venue_id' => $venue->id, 'course_id' => $course->id]);
@@ -84,9 +103,27 @@ it('refuses to write when two candidates are almost equally good', function () {
         osmHit('Cafe Centrale', 0.49, 2),
     ])]);
 
-    $this->artisan('venues:match-osm --fast')->assertFailed();
+    $this->artisan('venues:match-osm --fast')->assertSuccessful();
 
-    expect($event->fresh()->osm_id)->toBeNull();
+    expect($event->fresh()->osm_id)->toBe(1);
+});
+
+it('retries without the street when the full query finds nothing', function () {
+    // Measured: our street often disagrees with what OSM holds, while the venue itself
+    // is well known. Name plus city is the query a human would type.
+    Venue::factory()->create([
+        'name' => 'Lässerhof',
+        'street' => 'Hofweg 2',
+        'city_id' => $this->city->id,
+    ]);
+
+    Http::fake(fn ($request) => str_contains(urldecode($request->url()), 'Hofweg')
+        ? Http::response([])
+        : Http::response([osmHit('Lässerhof')]));
+
+    $this->artisan('venues:match-osm --dry-run --fast')->assertSuccessful();
+
+    Http::assertSentCount(2);
 });
 
 it('calls the attempt off below the threshold and writes nothing', function () {
