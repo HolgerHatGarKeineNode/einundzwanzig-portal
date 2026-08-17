@@ -160,6 +160,11 @@ class Tag extends \Spatie\Tags\Tag
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function meetupEvents()
+    {
+        return $this->morphedByMany(MeetupEvent::class, 'taggable');
+    }
+
     public function courses()
     {
         return $this->morphedByMany(Course::class, 'taggable');

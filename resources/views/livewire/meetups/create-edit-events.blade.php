@@ -101,6 +101,24 @@ class extends Component {
     #[Validate('required|url|max:255')]
     public ?string $link = null;
 
+    /** @var array<int, int> */
+    public array $tagIds = [];
+
+    /**
+     * Whether this event's country demands at least one tag.
+     *
+     * Read from the meetup's own country rather than the route segment: the route
+     * only says which country's pages the visitor is browsing, which is not
+     * necessarily where the meetup is.
+     */
+    public function getTagsRequiredProperty(): bool
+    {
+        $code = $this->meetup->city?->country?->code;
+
+        return $code !== null
+            && in_array(mb_strtolower($code), config('einundzwanzig.tags_required_countries', []), true);
+    }
+
     /**
      * Termine darf nur verwalten, wer das zugehörige Meetup bearbeiten darf
      * (Ersteller/Leader/Super-Admin) — dieselbe update-Ability wie die
@@ -127,6 +145,7 @@ class extends Component {
             $this->location = $this->event->location;
             $this->description = $this->event->description;
             $this->link = $this->event->link;
+            $this->tagIds = $this->event->tags->pluck('id')->all();
 
             if ($this->event->recurrence_type) {
                 $this->seriesMode = true;
@@ -162,7 +181,14 @@ class extends Component {
             $validationRules['recurrenceType'] = 'required';
         }
 
-        $this->validate($validationRules);
+        if ($this->tagsRequired) {
+            $validationRules['tagIds'] = 'required|array|min:1';
+        }
+
+        $this->validate($validationRules, [
+            'tagIds.required' => __('Bitte wähle mindestens einen Tag.'),
+            'tagIds.min' => __('Bitte wähle mindestens einen Tag.'),
+        ]);
 
         $timezone = $this->userTimezone;
 
@@ -176,6 +202,23 @@ class extends Component {
 
         $this->redirect(route('meetups.landingpage', ['meetup' => $this->meetup, 'country' => $this->country]),
             navigate: true);
+    }
+
+    /**
+     * Attach the picked tags, scoped to the event type so nothing else is disturbed.
+     *
+     * Only ids the user was actually offered are accepted — a crafted request must not
+     * be able to attach someone else's unapproved suggestion.
+     */
+    private function syncTags(MeetupEvent $event): void
+    {
+        $allowed = \App\Models\Tag::query()
+            ->where('type', 'meetup_event')
+            ->selectableBy(auth()->user())
+            ->whereIn('id', $this->tagIds)
+            ->get();
+
+        $event->syncTagsWithType($allowed->all(), 'meetup_event');
     }
 
     private function createOrUpdateSingleEvent(string $timezone): void
@@ -194,15 +237,17 @@ class extends Component {
         if ($this->event) {
             // Update existing event
             $this->event->update($data);
+            $this->syncTags($this->event);
             session()->flash('status', __('Event erfolgreich aktualisiert!'));
         } else {
             // Create new event
-            $this->meetup->meetupEvents()->create([
+            $event = $this->meetup->meetupEvents()->create([
                 ...$data,
                 'created_by' => auth()->id(),
                 'attendees' => [],
                 'might_attendees' => [],
             ]);
+            $this->syncTags($event);
             session()->flash('status', __('Event erfolgreich erstellt!'));
         }
     }
@@ -221,7 +266,7 @@ class extends Component {
         foreach ($dates as $date) {
             $utcDateTime = $date->copy()->setTimezone('UTC');
 
-            $this->meetup->meetupEvents()->create([
+            $event = $this->meetup->meetupEvents()->create([
                 'start' => $utcDateTime,
                 'location' => $this->location,
                 'description' => $this->description,
@@ -230,6 +275,9 @@ class extends Component {
                 'attendees' => [],
                 'might_attendees' => [],
             ]);
+
+            // Every occurrence of a series carries the same tags.
+            $this->syncTags($event);
 
             $eventsCreated++;
         }
@@ -362,6 +410,12 @@ class extends Component {
                 <flux:description>{{ __('Wo findet das Event statt?') }}</flux:description>
                 <flux:error name="location"/>
             </flux:field>
+
+            <livewire:tags.picker
+                wire:model="tagIds"
+                type="meetup_event"
+                :required="$this->tagsRequired"
+            />
 
             <flux:field>
                 <flux:label>{{ __('Beschreibung') }}</flux:label>

@@ -12,11 +12,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
+use Spatie\Tags\HasTags;
 
 #[ObservedBy([MeetupEventObserver::class])]
 class MeetupEvent extends Model
 {
     use HasFactory;
+    use HasTags;
     use SetsCreatedBy;
 
     /**
