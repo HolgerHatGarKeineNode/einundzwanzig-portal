@@ -167,7 +167,6 @@ class extends Component {
         $categories = [
             'meetups' => __('Meetups erstellt'),
             'cities' => __('Städte'),
-            'venues' => __('Locations'),
             'lecturers' => __('Referenten'),
             'courses' => __('Kurse'),
             'course_events' => __('Kurs-Termine'),

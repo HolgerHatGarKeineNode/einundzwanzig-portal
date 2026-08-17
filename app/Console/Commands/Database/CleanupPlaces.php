@@ -3,45 +3,57 @@
 namespace App\Console\Commands\Database;
 
 use App\Models\City;
-use App\Models\Venue;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 
+/**
+ * Removes cities nothing points at any more.
+ *
+ * This used to clean up venues first and cities second, because a city could only be
+ * deleted once its last venue was gone. With the venue removed, events carry their city
+ * directly and the two-step dance is over: one query answers whether a city is still in use.
+ */
 #[Signature('places:cleanup {--force : Actually delete instead of doing a dry-run}')]
-#[Description('Delete venues without any course or bitcoin events, then cities without any venues or meetups.')]
+#[Description('Delete cities without any meetups, course events or bitcoin events.')]
 class CleanupPlaces extends Command
 {
     public function handle(): int
     {
         $force = (bool) $this->option('force');
 
-        if ($force && ! $this->confirm('This permanently deletes venues and cities on this database. Continue?', false)) {
+        if ($force && ! $this->confirm('This permanently deletes cities on this database. Continue?', false)) {
             $this->warn('Aborted.');
 
             return Command::FAILURE;
         }
 
-        // Venues first: removing unused venues can make their city deletable in the same run.
-        $venues = Venue::query()
+        $cities = City::query()
+            ->whereDoesntHave('meetups')
             ->whereDoesntHave('courseEvents')
             ->whereDoesntHave('bitcoinEvents')
             ->get();
 
-        $this->deleteAll('venue', $venues, $force);
+        if ($cities->isEmpty()) {
+            $this->info('No unused city entries to clean up.');
 
-        $cities = City::query()
-            ->whereDoesntHave('venues')
-            ->whereDoesntHave('meetups')
-            ->get();
+            return Command::SUCCESS;
+        }
 
-        $this->deleteAll('city', $cities, $force);
+        $this->info(sprintf(
+            '%s %d unused city entry/entries.',
+            $force ? 'Deleting' : '[DRY-RUN] Would delete',
+            $cities->count(),
+        ));
+
+        if ($force) {
+            // One ->delete() per model rather than a mass delete, so model events fire.
+            $this->withProgressBar($cities, fn (City $city) => $city->delete());
+            $this->newLine();
+        }
 
         $this->newLine();
         $this->table(['Type', $force ? 'Deleted' : 'To delete'], [
-            ['Venues', $venues->count()],
             ['Cities', $cities->count()],
         ]);
 
@@ -50,32 +62,5 @@ class CleanupPlaces extends Command
         }
 
         return Command::SUCCESS;
-    }
-
-    /**
-     * @param  Collection<int, Model>  $models
-     */
-    private function deleteAll(string $label, $models, bool $force): void
-    {
-        if ($models->isEmpty()) {
-            $this->info(sprintf('No unused %s entries to clean up.', $label));
-
-            return;
-        }
-
-        $this->info(sprintf(
-            '%s %d unused %s entry/entries.',
-            $force ? 'Deleting' : '[DRY-RUN] Would delete',
-            $models->count(),
-            $label,
-        ));
-
-        if (! $force) {
-            return;
-        }
-
-        // ->delete() per model (not a mass delete) so Venue media is removed via its delete hook.
-        $this->withProgressBar($models, fn ($model) => $model->delete());
-        $this->newLine();
     }
 }

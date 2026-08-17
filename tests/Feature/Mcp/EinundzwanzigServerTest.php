@@ -17,7 +17,9 @@ it('registers every domain tool on the server', function () {
     $property = (new ReflectionClass(EinundzwanzigServer::class))->getProperty('tools');
     $tools = $property->getDefaultValue();
 
-    expect($tools)->toHaveCount(38)
+    // 38 until the venue was removed, which took four venue tools and SearchVenuesTool
+    // with it. The exact count is the point: a tool dropped by accident shows up here.
+    expect($tools)->toHaveCount(33)
         ->and($tools)->toContain(CreateMeetupTool::class)
         ->and($tools)->toContain(UpdateCourseEventTool::class)
         ->and($tools)->toContain(SearchCitiesTool::class);

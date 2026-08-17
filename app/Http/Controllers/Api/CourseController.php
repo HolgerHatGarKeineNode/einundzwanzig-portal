@@ -8,6 +8,7 @@ use App\Http\Requests\Api\StoreCourseRequest;
 use App\Http\Requests\Api\UpdateCourseRequest;
 use App\Http\Requests\Api\UploadMediaRequest;
 use App\Http\Resources\CourseResource;
+use App\Models\City;
 use App\Models\Course;
 use App\Models\CourseEvent;
 use App\Models\Lecturer;
@@ -100,6 +101,32 @@ class CourseController extends Controller
     }
 
     /**
+     * City summary for course event responses.
+     *
+     * Both the city itself and its country are optional: an event may be announced
+     * before its place is known, and cities imported from OSM can lack a country.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function citySummary(?City $city): ?array
+    {
+        if ($city === null) {
+            return null;
+        }
+
+        return [
+            'id' => $city->id,
+            'name' => $city->name,
+            'country_id' => $city->country_id,
+            'country' => $city->country === null ? null : [
+                'id' => $city->country->id,
+                'name' => $city->country->name,
+                'code' => $city->country->code,
+            ],
+        ];
+    }
+
+    /**
      * Create a course
      *
      * Allows an authenticated lecturer to create a course programmatically.
@@ -119,8 +146,13 @@ class CourseController extends Controller
      * Show a course
      *
      * Public endpoint; returns a course with description, logo, lecturer
-     * and all upcoming course events (including venue and city),
+     * and all upcoming course events (including their city and location),
      * sorted ascending by start.
+     *
+     * BREAKING CHANGE for API consumers: the nested `venue` object per event is gone
+     * with the Venue model. Its name lives on in the free-text `location`, its city is
+     * now the event's own `city`, and the exact spot — when known — in the `osm_*`
+     * fields. Every one of them may be null, so consumers must handle a missing place.
      *
      * @return array<string, mixed>
      */
@@ -132,7 +164,7 @@ class CourseController extends Controller
             'courseEvents' => fn ($query) => $query
                 ->where('from', '>=', now())
                 ->orderBy('from')
-                ->with('venue.city.country'),
+                ->with('city.country'),
         ]);
 
         return [
@@ -148,24 +180,18 @@ class CourseController extends Controller
             'events' => $course->courseEvents->map(fn (CourseEvent $event) => [
                 'id' => $event->id,
                 'course_id' => $event->course_id,
-                'venue_id' => $event->venue_id,
+                'city_id' => $event->city_id,
+                'location' => $event->location,
+                'osm_type' => $event->osm_type,
+                'osm_id' => $event->osm_id,
+                'osm_name' => $event->osm_name,
+                'osm_address' => $event->osm_address,
+                'osm_lat' => $event->osm_lat,
+                'osm_lon' => $event->osm_lon,
                 'from' => $event->from,
                 'to' => $event->to,
                 'link' => $event->link,
-                'venue' => [
-                    'id' => $event->venue->id,
-                    'name' => $event->venue->name,
-                    'city' => [
-                        'id' => $event->venue->city->id,
-                        'name' => $event->venue->city->name,
-                        'country_id' => $event->venue->city->country_id,
-                        'country' => [
-                            'id' => $event->venue->city->country->id,
-                            'name' => $event->venue->city->country->name,
-                            'code' => $event->venue->city->country->code,
-                        ],
-                    ],
-                ],
+                'city' => $this->citySummary($event->city),
             ])->all(),
         ];
     }

@@ -27,7 +27,7 @@ new class extends Component {
 
     public string $query = '';
 
-    /** Narrows the search; the country of the meetup or venue. */
+    /** Narrows the search to the country the event belongs to. */
     #[Locked]
     public ?string $countryCode = null;
 

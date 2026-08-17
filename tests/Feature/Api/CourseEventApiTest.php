@@ -1,10 +1,10 @@
 <?php
 
+use App\Models\City;
 use App\Models\Course;
 use App\Models\CourseEvent;
 use App\Models\Lecturer;
 use App\Models\User;
-use App\Models\Venue;
 use Laravel\Sanctum\Sanctum;
 
 it('rejects a guest creating a course with 401', function () {
@@ -78,11 +78,11 @@ it('forbids updating a course owned by someone else', function () {
 it('lets a lecturer create a course event', function () {
     Sanctum::actingAs($user = User::factory()->lecturer()->create());
     $course = Course::factory()->create();
-    $venue = Venue::factory()->create();
+    $city = City::factory()->create();
 
     $this->postJson('/api/course-events', [
         'course_id' => $course->id,
-        'venue_id' => $venue->id,
+        'city_id' => $city->id,
         'from' => '2026-07-01 18:00:00',
         'to' => '2026-07-01 21:00:00',
         'link' => 'https://clavastack.com/produkt/specter-shield-lite-workshop',
@@ -92,7 +92,7 @@ it('lets a lecturer create a course event', function () {
 
     $this->assertDatabaseHas('course_events', [
         'course_id' => $course->id,
-        'venue_id' => $venue->id,
+        'city_id' => $city->id,
         'created_by' => $user->id,
     ]);
 });
@@ -100,11 +100,11 @@ it('lets a lecturer create a course event', function () {
 it('forbids a non-lecturer from creating a course event', function () {
     Sanctum::actingAs(User::factory()->create(['is_lecturer' => false]));
     $course = Course::factory()->create();
-    $venue = Venue::factory()->create();
+    $city = City::factory()->create();
 
     $this->postJson('/api/course-events', [
         'course_id' => $course->id,
-        'venue_id' => $venue->id,
+        'city_id' => $city->id,
         'from' => '2026-07-01 18:00:00',
         'to' => '2026-07-01 21:00:00',
         'link' => 'https://example.com/event',
@@ -116,7 +116,7 @@ it('fails course event validation without required fields', function () {
 
     $this->postJson('/api/course-events', [])
         ->assertUnprocessable()
-        ->assertJsonValidationErrors(['course_id', 'venue_id', 'from', 'to', 'link']);
+        ->assertJsonValidationErrors(['course_id', 'city_id', 'from', 'to', 'link']);
 });
 
 it('returns only the authenticated user\'s own course events', function () {
@@ -168,4 +168,72 @@ it('forbids updating a course event owned by someone else', function () {
     $this->patchJson('/api/course-events/'.$event->id, [
         'link' => 'https://einundzwanzig.space/courses/hijacked',
     ])->assertForbidden();
+});
+
+it('accepts a patch that moves only the end time', function () {
+    Sanctum::actingAs($user = User::factory()->lecturer()->create());
+    $event = CourseEvent::factory()->create([
+        'created_by' => $user->id,
+        'from' => now()->addWeek()->setTime(9, 0),
+        'to' => now()->addWeek()->setTime(12, 0),
+    ]);
+
+    /*
+     * Without `from` in the payload, an unconditional `after_or_equal:from` makes Laravel
+     * read "from" as a date literal rather than a field reference — the request then fails
+     * or compares against nonsense. It has to stay conditional.
+     */
+    $this->patchJson('/api/course-events/'.$event->id, [
+        'to' => now()->addWeek()->setTime(14, 0)->toIso8601String(),
+    ])->assertSuccessful();
+});
+
+it('still rejects an end that precedes the start when both are sent', function () {
+    Sanctum::actingAs($user = User::factory()->lecturer()->create());
+    $event = CourseEvent::factory()->create(['created_by' => $user->id]);
+
+    $this->patchJson('/api/course-events/'.$event->id, [
+        'from' => now()->addWeek()->setTime(12, 0)->toIso8601String(),
+        'to' => now()->addWeek()->setTime(9, 0)->toIso8601String(),
+    ])->assertJsonValidationErrors(['to']);
+});
+
+it('refuses half an osm pair', function () {
+    Sanctum::actingAs($user = User::factory()->lecturer()->create());
+    $event = CourseEvent::factory()->create(['created_by' => $user->id]);
+
+    // An id without a type does not identify anything — ids are only unique per type.
+    $this->patchJson('/api/course-events/'.$event->id, [
+        'osm_id' => 240109189,
+    ])->assertJsonValidationErrors(['osm_type']);
+
+    $this->patchJson('/api/course-events/'.$event->id, [
+        'osm_type' => 'node',
+    ])->assertJsonValidationErrors(['osm_id']);
+});
+
+it('stores a complete osm place', function () {
+    Sanctum::actingAs($user = User::factory()->lecturer()->create());
+    $event = CourseEvent::factory()->create(['created_by' => $user->id]);
+
+    $this->patchJson('/api/course-events/'.$event->id, [
+        'osm_type' => 'way',
+        'osm_id' => 123456,
+        'osm_name' => 'Bürgerhaus',
+        'osm_lat' => 49.2799,
+        'osm_lon' => 11.4622,
+    ])->assertSuccessful()
+        ->assertJsonPath('data.osm_type', 'way')
+        ->assertJsonPath('data.osm_id', 123456);
+});
+
+it('rejects an out-of-range coordinate', function () {
+    Sanctum::actingAs($user = User::factory()->lecturer()->create());
+    $event = CourseEvent::factory()->create(['created_by' => $user->id]);
+
+    $this->patchJson('/api/course-events/'.$event->id, [
+        'osm_type' => 'node',
+        'osm_id' => 1,
+        'osm_lat' => 95.0,
+    ])->assertJsonValidationErrors(['osm_lat']);
 });

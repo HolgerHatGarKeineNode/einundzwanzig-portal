@@ -3,12 +3,15 @@
 namespace App\Http\Requests\Api;
 
 use App\Enums\RecurrenceType;
+use App\Http\Requests\Concerns\ValidatesOsmPlace;
 use App\Models\Meetup;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateMeetupEventRequest extends FormRequest
 {
+    use ValidatesOsmPlace;
+
     /**
      * The creator of the meetup event or a leader of the meetup may edit it
      * (see MeetupEventPolicy::update). Moving it to another meetup (changed
@@ -43,6 +46,7 @@ class UpdateMeetupEventRequest extends FormRequest
              */
             'end' => ['sometimes', 'nullable', 'date', Rule::when($this->has('start'), ['after:start'])],
             'location' => ['sometimes', 'nullable', 'string', 'max:255'],
+            ...$this->osmPlaceRules(partial: true),
             'description' => ['sometimes', 'nullable', 'string'],
             'link' => ['sometimes', 'nullable', 'url', 'max:255'],
             'recurrence_type' => ['sometimes', 'nullable', Rule::enum(RecurrenceType::class)],

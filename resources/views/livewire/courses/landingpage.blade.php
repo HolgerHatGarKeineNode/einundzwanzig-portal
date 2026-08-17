@@ -30,7 +30,7 @@ class extends Component {
             'events' => $this->course
                 ->courseEvents()
                 ->with([
-                    'venue.city',
+                    'city',
                     'registrations',
                 ])
                 ->where('from', '>=', now())
@@ -144,31 +144,72 @@ class extends Component {
                             {{ $event->from->format('d.m.Y') }}
                         </flux:heading>
 
-                        <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                        <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
                             <flux:icon.clock class="inline w-4 h-4"/>
                             {{ $event->from->format('H:i') }} - {{ $event->to->format('H:i') }} Uhr
                         </flux:text>
 
-                        @if($event->venue)
-                            <flux:text class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                                <flux:icon.map-pin class="inline w-4 h-4"/>
-                                {{ $event->venue->name }}
-                            </flux:text>
-                            @if($event->venue->street)
-                                <flux:text class="text-xs text-zinc-500 dark:text-zinc-500 ml-5">
-                                    {{ $event->venue->street }}
-                                    @if($event->venue->city)
-                                        , {{ $event->venue->city->name }}
+                        @php
+                            // The map place is the precise answer; the free text is the one
+                            // that always exists. Never both — they name the same spot.
+                            $placeName = $event->osm_name ?: $event->location;
+
+                            // osm_type is stored as whatever Nominatim returned and goes
+                            // straight into an href, so it is whitelisted rather than
+                            // trusted: anything else renders as plain text, not as a link.
+                            $osmUrl = $event->osm_id && in_array(mb_strtolower((string) $event->osm_type), ['node', 'way', 'relation'], true)
+                                ? 'https://www.openstreetmap.org/'.mb_strtolower((string) $event->osm_type).'/'.(int) $event->osm_id
+                                : null;
+                        @endphp
+
+                        @if($placeName || $event->city)
+                            <div class="mt-2 flex items-start gap-1.5">
+                                <flux:icon.map-pin class="mt-0.5 size-4 shrink-0 text-zinc-600 dark:text-zinc-300"
+                                                   aria-hidden="true"/>
+                                <div class="min-w-0 break-words">
+                                    {{-- Both states share this wrapper so the city line below sits
+                                         at the same height either way. Measured: without it the
+                                         anchor's own padding pushed the city down by 4px, and two
+                                         cards side by side went ragged. --}}
+                                    @if($placeName)
+                                        <div class="text-sm font-medium text-zinc-800 dark:text-zinc-100">
+                                            @if($osmUrl)
+                                                {{-- The place name itself is the link: a known map
+                                                     object is the only difference worth showing, and
+                                                     the trailing arrow marks it without relying on
+                                                     colour alone (WCAG 1.4.1).
+
+                                                     py-1, not py-0.5: the line box measures 19px in
+                                                     the browser, not the 20px the scale suggests, so
+                                                     0.5 left the target at 23px — one under the 24px
+                                                     WCAG 2.5.8 asks for. On an inline element the
+                                                     padding grows the hit area without moving layout. --}}
+                                                <a href="{{ $osmUrl }}"
+                                                   target="_blank"
+                                                   rel="noopener noreferrer"
+                                                   aria-label="{{ __(':place auf OpenStreetMap öffnen', ['place' => $placeName]) }}"
+                                                   class="rounded-xs py-1 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current">
+                                                    {{ $placeName }}<flux:icon.arrow-up-right
+                                                        class="ml-1 inline size-3.5 align-middle" aria-hidden="true"/>
+                                                </a>
+                                            @else
+                                                {{ $placeName }}
+                                            @endif
+                                        </div>
                                     @endif
-                                </flux:text>
-                            @endif
+
+                                    @if($event->city)
+                                        <div class="text-sm text-zinc-600 dark:text-zinc-300">
+                                            {{ $event->city->name }}
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
                         @endif
 
-                        <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                            <div class="text-xs text-zinc-500 flex items-center gap-2">
-                                <span>{{ trans_choice(':count Anmeldung|:count Anmeldungen', $event->registrations->count()) }}</span>
-                            </div>
-                        </flux:text>
+                        <div class="mt-2 flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-300">
+                            <span>{{ trans_choice(':count Anmeldung|:count Anmeldungen', $event->registrations->count()) }}</span>
+                        </div>
 
                         <div class="mt-auto pt-4 flex gap-2">
                             <flux:button

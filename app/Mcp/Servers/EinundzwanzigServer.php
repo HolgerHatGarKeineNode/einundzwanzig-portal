@@ -29,17 +29,12 @@ use App\Mcp\Tools\Search\SearchCitiesTool;
 use App\Mcp\Tools\Search\SearchCoursesTool;
 use App\Mcp\Tools\Search\SearchLecturersTool;
 use App\Mcp\Tools\Search\SearchMeetupsTool;
-use App\Mcp\Tools\Search\SearchVenuesTool;
 use App\Mcp\Tools\SuperAdmin\SuperAdminCreateRecordTool;
 use App\Mcp\Tools\SuperAdmin\SuperAdminDescribeModelTool;
 use App\Mcp\Tools\SuperAdmin\SuperAdminListModelsTool;
 use App\Mcp\Tools\SuperAdmin\SuperAdminListRecordsTool;
 use App\Mcp\Tools\SuperAdmin\SuperAdminShowRecordTool;
 use App\Mcp\Tools\SuperAdmin\SuperAdminUpdateRecordTool;
-use App\Mcp\Tools\Venue\CreateVenueTool;
-use App\Mcp\Tools\Venue\ListMyVenuesTool;
-use App\Mcp\Tools\Venue\ShowMyVenueTool;
-use App\Mcp\Tools\Venue\UpdateVenueTool;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -57,14 +52,16 @@ Super-Admin erlaubt.
 WICHTIG – niemals nach numerischen IDs fragen: Nutzer kennen keine internen IDs. Referenziere
 Entitäten immer über ihren NAMEN:
 - Eigene Datensätze ändern/anzeigen: zuerst das passende list-my-* Tool aufrufen
-  (list-my-meetups, list-my-cities, list-my-venues, list-my-lecturers, list-my-course-events),
+  (list-my-meetups, list-my-cities, list-my-lecturers, list-my-course-events),
   dem Nutzer die Namen als Auswahlliste präsentieren und ihn wählen lassen. Dann das update-/
-  show-my-* Tool mit dem gewählten Namen aufrufen (Parameter z. B. "meetup", "city", "venue",
+  show-my-* Tool mit dem gewählten Namen aufrufen (Parameter z. B. "meetup", "city",
   "lecturer", "course").
-- Fremdschlüssel beim Anlegen (Stadt, Land, Referent, Kurs, Veranstaltungsort): den Namen
-  übergeben (Parameter z. B. "city", "country", "lecturer", "course", "venue"); bei Unsicherheit
-  vorher mit search-cities / search-venues / search-lecturers / search-courses / list-countries
+- Fremdschlüssel beim Anlegen (Stadt, Land, Referent, Kurs): den Namen
+  übergeben (Parameter z. B. "city", "country", "lecturer", "course"); bei Unsicherheit
+  vorher mit search-cities / search-lecturers / search-courses / list-countries
   den genauen Namen ermitteln.
+- Veranstaltungsorte sind KEINE eigene Entität: Termine tragen ihre Stadt ("city") und den
+  Ort als Freitext ("location"); der Kartenpunkt steht, sofern bekannt, in den osm_*-Feldern.
 Bevor ein NEUES Meetup angelegt wird (create-meetup): IMMER zuerst mit search-meetups nach
 einem bestehenden Meetup suchen – sowohl nach dem Namen als auch nach dem Stadtnamen. Existiert
 bereits ein passendes Meetup, KEIN Duplikat anlegen, sondern dem Nutzer das gefundene Meetup
@@ -124,12 +121,6 @@ class EinundzwanzigServer extends Server
         ListMyCitiesTool::class,
         ShowMyCityTool::class,
 
-        // Veranstaltungsorte
-        CreateVenueTool::class,
-        UpdateVenueTool::class,
-        ListMyVenuesTool::class,
-        ShowMyVenueTool::class,
-
         // Referenten
         CreateLecturerTool::class,
         UpdateLecturerTool::class,
@@ -148,7 +139,6 @@ class EinundzwanzigServer extends Server
         // Suche / Stammdaten-Lookups
         SearchMeetupsTool::class,
         SearchCitiesTool::class,
-        SearchVenuesTool::class,
         SearchLecturersTool::class,
         SearchCoursesTool::class,
         ListCountriesTool::class,

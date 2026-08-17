@@ -5,13 +5,12 @@ use App\Models\Country;
 use App\Models\Lecturer;
 use App\Models\Meetup;
 use App\Models\User;
-use App\Models\Venue;
 use Laravel\Sanctum\Sanctum;
 
 /*
  * Regression net for fd48fa7: SetApiLocale used to call App::setLocale('en'),
  * which also writes config('app.locale') — and getSlugOptions() on Meetup,
- * City, Venue and Lecturer reads exactly that value as its slug-language
+ * City and Lecturer read exactly that value as its slug-language
  * fallback (usingLanguage(Cookie::get('lang', config('app.locale')))). Since
  * generateSlugsOnUpdate is on by default, any PATCH through the API — even
  * on a field that has nothing to do with the slug — regenerated it in
@@ -65,27 +64,6 @@ it('keeps a citys german slug stable after an api patch to an unrelated field', 
     ])->assertSuccessful();
 
     expect($city->fresh()->slug)->toBe($slugBefore);
-});
-
-it('keeps a venues german slug stable after an api patch to an unrelated field', function () {
-    Sanctum::actingAs($user = User::factory()->create());
-
-    $city = City::factory()->create(['slug' => '']);
-    $venue = Venue::factory()->create([
-        'name' => 'Café Nürnberg '.random_int(100000, 999999),
-        'city_id' => $city->id,
-        'slug' => '',
-        'created_by' => $user->id,
-    ]);
-
-    $slugBefore = $venue->slug;
-    expect($slugBefore)->toContain('nuernberg')->not->toContain('nurnberg');
-
-    $this->patchJson('/api/venues/'.$venue->id, [
-        'street' => 'Eine ganz andere Straße 1',
-    ])->assertSuccessful();
-
-    expect($venue->fresh()->slug)->toBe($slugBefore);
 });
 
 it('keeps a lecturers german slug stable after an api patch to an unrelated field', function () {

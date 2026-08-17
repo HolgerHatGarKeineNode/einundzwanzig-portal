@@ -8,7 +8,7 @@ use Laravel\Sanctum\Sanctum;
  * Regression net for fd48fa7 (SetApiLocale middleware, app/Http/Middleware/
  * SetApiLocale.php): the API must answer English (default Laravel validation
  * messages AND messages() overrides) without touching config('app.locale'),
- * which the web UI and the slug generation of Meetup/City/Venue/Lecturer
+ * which the web UI and the slug generation of Meetup/City/Lecturer
  * still rely on being 'de'. See SlugLocaleStabilityApiTest for the slug side
  * of this same bug.
  */

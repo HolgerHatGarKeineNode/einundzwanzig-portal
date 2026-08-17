@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Applies the OpenStreetMap places that were verified against production on 2026-08-17.
@@ -31,7 +32,9 @@ return new class extends Migration
     {
         $path = database_path('data/venue-osm-matches.json');
 
-        if (! is_file($path)) {
+        // The venues table is dropped by a later migration. On a fresh database this one
+        // still runs first and finds it; anywhere else there is nothing left to read.
+        if (! is_file($path) || ! Schema::hasTable('venues')) {
             return;
         }
 

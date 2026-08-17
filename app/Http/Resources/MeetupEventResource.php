@@ -24,6 +24,13 @@ class MeetupEventResource extends JsonResource
             // End of this occurrence — recurrence_end_date below is when the series stops.
             'end' => $this->end,
             'location' => $this->location,
+            // The map place, when one was picked; `location` carries the address either way.
+            'osm_type' => $this->osm_type,
+            'osm_id' => $this->osm_id,
+            'osm_name' => $this->osm_name,
+            'osm_address' => $this->osm_address,
+            'osm_lat' => $this->osm_lat,
+            'osm_lon' => $this->osm_lon,
             'description' => $this->description,
             'link' => $this->link,
             'tags' => TagResource::collection($this->whenLoaded('tags')),

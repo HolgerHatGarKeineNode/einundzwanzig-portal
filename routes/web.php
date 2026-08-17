@@ -101,9 +101,18 @@ Route::middleware([])
         /* Lecturer related routes */
         Route::livewire('/lecturers', 'lecturers.index')->name('lecturers.index');
 
-        /* City and venue related routes */
+        /* City related routes */
         Route::livewire('/cities', 'cities.index')->name('cities.index');
-        Route::livewire('/venues', 'venues.index')->name('venues.index');
+
+        /*
+         * /venues was a public, indexed URL for years. The page is gone — a venue is now
+         * just a line on the event that happens there — but a 404 would throw away that
+         * traffic and every inbound link. The course list is where those events live now.
+         *
+         * Deliberately unnamed: nothing in the app should link here any more, new links
+         * belong on courses.index directly.
+         */
+        Route::redirect('/venues', '/{country}/courses', 301);
 
         /* Self Hosted Services public routes */
         Route::livewire('/services', 'services.index')->name('services.index');
@@ -133,10 +142,6 @@ Route::middleware(['auth'])
         // City creation and editing routes
         Route::livewire('/city-create', 'cities.create')->name('cities.create');
         Route::livewire('/city-edit/{city}', 'cities.edit')->name('cities.edit');
-
-        // Venue creation and editing routes
-        Route::livewire('/venue-create', 'venues.create')->name('venues.create');
-        Route::livewire('/venue-edit/{venue}', 'venues.edit')->name('venues.edit');
 
         // Self Hosted Services protected routes (authenticated users only)
         Route::livewire('/service-create', 'services.create')->name('services.create');

@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('Listet alle vom authentifizierten Nutzer erstellten Kurs-Events (inkl. Kurs und Veranstaltungsort), absteigend nach Startdatum. Optional nach Kurs filterbar.')]
+#[Description('Listet alle vom authentifizierten Nutzer erstellten Kurs-Events (inkl. Kurs und Stadt), absteigend nach Startdatum. Optional nach Kurs filterbar.')]
 class ListMyCourseEventsTool extends Tool
 {
     public function handle(Request $request): Response
@@ -24,7 +24,7 @@ class ListMyCourseEventsTool extends Tool
         }
 
         $events = CourseEvent::query()
-            ->with(['course:id,name', 'venue:id,name'])
+            ->with(['course:id,name', 'city:id,name'])
             ->where('created_by', $user->getAuthIdentifier())
             ->when(
                 $request->filled('course_id'),

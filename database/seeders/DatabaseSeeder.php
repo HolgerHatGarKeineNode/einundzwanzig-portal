@@ -22,7 +22,6 @@ use App\Models\Registration;
 use App\Models\SelfHostedService;
 use App\Models\TwitterAccount;
 use App\Models\User;
-use App\Models\Venue;
 use App\Models\Vote;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\App;
@@ -68,10 +67,6 @@ class DatabaseSeeder extends Seeder
             ->create();
 
         $this->command->info('Phase 3: Tier-2-Daten');
-        $venues = Venue::factory()->count(15)
-            ->recycle($cities)
-            ->recycle($users)
-            ->create();
         $courses = Course::factory()->count(20)
             ->recycle($lecturers)
             ->recycle($users)
@@ -90,12 +85,12 @@ class DatabaseSeeder extends Seeder
 
         $this->command->info('Phase 4: Events & Items (Tier-3)');
         BitcoinEvent::factory()->count(15)
-            ->recycle($venues)
+            ->recycle($cities)
             ->recycle($users)
             ->create();
         $courseEvents = CourseEvent::factory()->count(30)
             ->recycle($courses)
-            ->recycle($venues)
+            ->recycle($cities)
             ->recycle($users)
             ->create();
         MeetupEvent::factory()->count(60)

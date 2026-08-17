@@ -4,13 +4,11 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Lecturer;
 use App\Models\SelfHostedService;
-use App\Models\Venue;
 use Livewire\Livewire;
 
 beforeEach(function () {
     $country = Country::factory()->create(['code' => 'de']);
     $this->city = City::factory()->create(['country_id' => $country->id]);
-    $this->venue = Venue::factory()->create(['city_id' => $this->city->id]);
     $this->lecturer = Lecturer::factory()->create();
     $this->service = SelfHostedService::factory()->create();
 });
@@ -41,16 +39,6 @@ it('mounts cities.create when authenticated', function () {
 it('mounts cities.edit when authenticated', function () {
     actingAsUser();
     Livewire::test('cities.edit', ['city' => $this->city])->assertStatus(200);
-});
-
-it('mounts venues.create when authenticated', function () {
-    actingAsUser();
-    Livewire::test('venues.create')->assertStatus(200);
-});
-
-it('mounts venues.edit when authenticated', function () {
-    actingAsUser();
-    Livewire::test('venues.edit', ['venue' => $this->venue])->assertStatus(200);
 });
 
 it('mounts services.create when authenticated', function () {

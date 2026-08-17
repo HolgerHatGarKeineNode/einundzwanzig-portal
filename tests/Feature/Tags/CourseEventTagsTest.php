@@ -5,16 +5,14 @@ use App\Models\Country;
 use App\Models\Course;
 use App\Models\CourseEvent;
 use App\Models\Tag;
-use App\Models\Venue;
 use Database\Seeders\TagSeeder;
 use Livewire\Livewire;
 
-function venueInCountry(string $code): Venue
+function cityInCountry(string $code): City
 {
     $country = Country::factory()->create(['code' => $code]);
-    $city = City::factory()->create(['country_id' => $country->id]);
 
-    return Venue::factory()->create(['city_id' => $city->id]);
+    return City::factory()->create(['country_id' => $country->id]);
 }
 
 function courseEventTag(string $german): Tag
@@ -29,14 +27,15 @@ beforeEach(function () {
     $this->user->update(['timezone' => 'Europe/Berlin', 'is_lecturer' => true]);
 });
 
-function fillCourseEvent($test, Venue $venue): object
+function fillCourseEvent($test, City $city): object
 {
     return $test
         ->set('fromDate', now()->addWeek()->format('Y-m-d'))
         ->set('fromTime', '09:00')
         ->set('toDate', now()->addWeek()->format('Y-m-d'))
         ->set('toTime', '12:00')
-        ->set('venue_id', $venue->id)
+        ->set('city_id', $city->id)
+        ->set('location', 'Teststraße 1')
         ->set('link', 'https://example.com');
 }
 
@@ -50,10 +49,10 @@ it('renders the picker in the course event form', function () {
 
 it('saves tags on a course event', function () {
     $course = Course::factory()->create(['created_by' => $this->user->id]);
-    $venue = venueInCountry('de');
+    $city = cityInCountry('de');
     $workshop = courseEventTag('Workshop');
 
-    fillCourseEvent(Livewire::test('courses.create-edit-events', ['course' => $course]), $venue)
+    fillCourseEvent(Livewire::test('courses.create-edit-events', ['course' => $course]), $city)
         ->set('tagIds', [$workshop->id])
         ->call('save')
         ->assertHasNoErrors();
@@ -64,8 +63,8 @@ it('saves tags on a course event', function () {
 
 it('loads existing tags when editing a course event', function () {
     $course = Course::factory()->create(['created_by' => $this->user->id]);
-    $venue = venueInCountry('de');
-    $event = CourseEvent::factory()->create(['course_id' => $course->id, 'venue_id' => $venue->id]);
+    $city = cityInCountry('de');
+    $event = CourseEvent::factory()->create(['course_id' => $course->id, 'city_id' => $city->id]);
     $tag = courseEventTag('Vortrag');
     $event->attachTag($tag);
 
@@ -73,16 +72,16 @@ it('loads existing tags when editing a course event', function () {
         ->assertSet('tagIds', [$tag->id]);
 });
 
-it('requires a tag for a czech venue but not a german one', function () {
+it('requires a tag for a czech city but not a german one', function () {
     $course = Course::factory()->create(['created_by' => $this->user->id]);
 
     fillCourseEvent(
         Livewire::test('courses.create-edit-events', ['course' => $course]),
-        venueInCountry('cz')
+        cityInCountry('cz')
     )->set('tagIds', [])->call('save')->assertHasErrors('tagIds');
 
     fillCourseEvent(
         Livewire::test('courses.create-edit-events', ['course' => $course]),
-        venueInCountry('de')
+        cityInCountry('de')
     )->set('tagIds', [])->call('save')->assertHasNoErrors();
 });
