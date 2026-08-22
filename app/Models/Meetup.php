@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Spatie\Image\Enums\Fit;
@@ -145,7 +144,19 @@ class Meetup extends Model implements HasMedia
         return SlugOptions::create()
             ->generateSlugsFrom(['name'])
             ->saveSlugsTo('slug')
-            ->usingLanguage(Cookie::get('lang', config('app.locale')));
+            /*
+             * Feste Sprache statt Cookie::get('lang'): die Transliteration haengt sonst
+             * am Nutzer, der gerade speichert — Str::slug macht aus "Koeln" nur im
+             * deutschen Modus "koeln", sonst "koln". Gemessen am 2026-08-22: 37 der 314
+             * Meetups haetten sich allein dadurch verschoben. Ausserdem greift Cookie::get()
+             * in Konsolenbefehlen und Jobs ins Leere.
+             */
+            ->usingLanguage(config('app.locale'))
+            /*
+             * Der Slug ist Route-Key (/{country}/meetup/{meetup:slug}), er darf sich nie mehr aendern.
+             * Ohne diese Zeile erzeugt HasSlug den Slug bei JEDEM Update neu.
+             */
+            ->doNotGenerateSlugsOnUpdate();
     }
 
     public function registerMediaConversions(?Media $media = null): void

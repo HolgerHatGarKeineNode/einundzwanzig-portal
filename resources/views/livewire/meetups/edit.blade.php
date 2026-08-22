@@ -103,7 +103,7 @@ class extends Component
             'country_id' => $validated['newCityCountryId'],
             'latitude' => $validated['newCityLatitude'],
             'longitude' => $validated['newCityLongitude'],
-            'slug' => str($validated['newCityName'])->slug(),
+            // slug uebernimmt HasSlug auf City.
             'created_by' => auth()->id(),
         ]);
 
