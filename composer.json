@@ -54,7 +54,8 @@
         "pestphp/pest": "^5.0",
         "pestphp/pest-plugin-agent": "^5.0",
         "pestphp/pest-plugin-browser": "^5.0",
-        "pestphp/pest-plugin-laravel": "^5.0"
+        "pestphp/pest-plugin-laravel": "^5.0",
+        "squirephp/regions-en": "^3.11"
     },
     "autoload": {
         "files": [

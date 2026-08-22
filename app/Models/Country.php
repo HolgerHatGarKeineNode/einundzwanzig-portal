@@ -31,4 +31,12 @@ class Country extends Model
     {
         return $this->hasMany(City::class);
     }
+
+    /**
+     * Verwaltungsebene 1 (ISO 3166-2) — nur fuer freigeschaltete Laender gepflegt.
+     */
+    public function regions(): HasMany
+    {
+        return $this->hasMany(Region::class);
+    }
 }

@@ -3,7 +3,9 @@
 use App\Attributes\SeoDataAttribute;
 use App\Models\City;
 use App\Models\Country;
+use App\Models\Region;
 use App\Traits\SeoTrait;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 
 new
@@ -14,6 +16,7 @@ class extends Component {
     public City $city;
     public string $name = '';
     public ?int $country_id = null;
+    public ?int $region_id = null;
     public ?float $latitude = null;
     public ?float $longitude = null;
     public ?int $population = null;
@@ -24,10 +27,20 @@ class extends Component {
         $this->city = $city;
         $this->name = $city->name;
         $this->country_id = $city->country_id;
+        $this->region_id = $city->region_id;
         $this->latitude = $city->latitude;
         $this->longitude = $city->longitude;
         $this->population = $city->population;
         $this->population_date = $city->population_date;
+    }
+
+    /**
+     * Ein Landwechsel macht die gewaehlte Region ungueltig — sonst haenge die Stadt an
+     * einem Bundesstaat eines anderen Landes.
+     */
+    public function updatedCountryId(): void
+    {
+        $this->region_id = null;
     }
 
     public function updateCity(): void
@@ -35,6 +48,13 @@ class extends Component {
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255', 'unique:cities,name,'.$this->city->id],
             'country_id' => ['required', 'exists:countries,id'],
+            // Die Region MUSS zum gewaehlten Land gehoeren; ohne diese Einschraenkung
+            // liesse sich jede beliebige Region-ID unterschieben.
+            'region_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('regions', 'id')->where('country_id', $this->country_id),
+            ],
             'latitude' => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
             'population' => ['nullable', 'integer', 'min:0'],
@@ -63,6 +83,9 @@ class extends Component {
     {
         return [
             'countries' => Country::query()->orderBy('name')->get(),
+            'regions' => $this->country_id
+                ? Region::query()->where('country_id', $this->country_id)->orderBy('name')->get()
+                : collect(),
         ];
     }
 }; ?>
@@ -79,12 +102,25 @@ class extends Component {
             <div class="space-y-6">
                 <flux:input label="{{ __('Name') }}" wire:model="name" required/>
 
-                <flux:select label="{{ __('Country') }}" wire:model="country_id" required>
+                <flux:select label="{{ __('Country') }}" wire:model.live="country_id" required>
                     <option value="">{{ __('Select a country') }}</option>
                     @foreach($countries as $country)
                         <option value="{{ $country->id }}">{{ $country->name }}</option>
                     @endforeach
                 </flux:select>
+
+                {{-- Nur Laender mit gepflegten Regionen zeigen das Feld; fuer alle anderen
+                     bleibt das Formular unveraendert. --}}
+                @if($regions->isNotEmpty())
+                    <flux:select variant="listbox" searchable label="{{ __('Region') }}" wire:model="region_id">
+                        <flux:select.option value="">{{ __('No region') }}</flux:select.option>
+                        @foreach($regions as $region)
+                            <flux:select.option :key="$region->id" value="{{ $region->id }}">
+                                {{ $region->name }}
+                            </flux:select.option>
+                        @endforeach
+                    </flux:select>
+                @endif
             </div>
         </flux:fieldset>
 

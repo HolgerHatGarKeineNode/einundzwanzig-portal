@@ -117,6 +117,28 @@ Route::middleware([])
         /* Self Hosted Services public routes */
         Route::livewire('/services', 'services.index')->name('services.index');
         Route::livewire('/service/{service:slug}', 'services.landingpage')->name('services.landingpage');
+
+        /*
+         * Region-gefilterte Listen: /us/in/meetups, /de/by/map, …
+         *
+         * Das Segment ist auf zwei Kleinbuchstaben festgenagelt (ISO-3166-2-Suffix). Damit
+         * kann es keine der Routen darüber verschatten — deren zweites Segment ist immer
+         * ein festes Wort mit mehr als zwei Zeichen (meetup/, course/, service/, tags/).
+         * Die Registrierung am Ende der Gruppe ist nur der zweite Gürtel.
+         *
+         * Eigene Routennamen statt zusätzlicher Parameter an den bestehenden: so ändert
+         * sich kein einziger vorhandener route()-Aufruf, und route_with_country() bleibt
+         * regionsfrei.
+         */
+        Route::livewire('/{region}/meetups', 'meetups.index')
+            ->name('meetups.index-region')
+            ->where('region', '[a-z]{2}');
+        Route::livewire('/{region}/map', 'meetups.map')
+            ->name('meetups.map-region')
+            ->where('region', '[a-z]{2}');
+        Route::livewire('/{region}/cities', 'cities.index')
+            ->name('cities.index-region')
+            ->where('region', '[a-z]{2}');
     });
 
 // Authenticated user routes with country prefix

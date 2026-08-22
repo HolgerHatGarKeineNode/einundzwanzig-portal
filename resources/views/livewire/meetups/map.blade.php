@@ -2,6 +2,7 @@
 
 use App\Attributes\SeoDataAttribute;
 use App\Models\Meetup;
+use App\Models\Region;
 use App\Traits\SeoTrait;
 use Livewire\Component;
 
@@ -15,10 +16,16 @@ class extends Component {
     public float $longitude = 0.0;
     public string $currentRouteName = '';
 
+    /**
+     * Gesetzt nur auf der Regions-Route (/us/in/map); sonst null und damit wirkungslos.
+     */
+    public ?int $regionId = null;
+
     public function mount(): void
     {
         $this->currentRouteName = request()->route()->getName();
         $this->country = request()->route('country', config('app.domain_country'));
+        $this->regionId = Region::fromRouteOrFail($this->country)?->id;
         $geoCountry = \Lwwcas\LaravelCountries\Models\Country::query()
             ->where('iso_alpha_2', str($this->country)->upper())
             ->first()
@@ -26,7 +33,8 @@ class extends Component {
             ->first();
         $this->latitude = $geoCountry->latitude ?? 51.165691;
         $this->longitude = $geoCountry->longitude ?? 10.451526;
-        if ($this->currentRouteName !== 'meetups.map') {
+        // Die Regionskarte zoomt wie die Länderkarte auf das Land; nur /map-world zeigt die Welt.
+        if (! in_array($this->currentRouteName, ['meetups.map', 'meetups.map-region'], true)) {
             $this->latitude = 20;
             $this->longitude = 10;
         }
@@ -54,10 +62,14 @@ class extends Component {
                 ])
                 ->with(['city:id,country_id,longitude,latitude', 'city.country'])
                 ->when(
-                    $this->currentRouteName === 'meetups.map',
+                    in_array($this->currentRouteName, ['meetups.map', 'meetups.map-region'], true),
                     fn($query)
                         => $query
                         ->whereHas('city.country', fn($query) => $query->where('code', $this->country))
+                )
+                ->when(
+                    $this->regionId,
+                    fn($query) => $query->whereHas('city', fn($query) => $query->where('cities.region_id', $this->regionId))
                 )
                 ->get()
                 ->map(function ($meetup) {
