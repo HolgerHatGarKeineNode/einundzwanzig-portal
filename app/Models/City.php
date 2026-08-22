@@ -92,6 +92,17 @@ class City extends Model
         return $this->belongsTo(Country::class);
     }
 
+    /**
+     * Verwaltungsebene 1 (Bundesstaat/Bundesland/Provinz) — optional.
+     *
+     * Staedte in Laendern ohne gepflegte Regionen bleiben ohne Zuordnung; jede Abfrage
+     * ohne Regionsfilter verhaelt sich unveraendert.
+     */
+    public function region(): BelongsTo
+    {
+        return $this->belongsTo(Region::class);
+    }
+
     public function courseEvents(): HasMany
     {
         return $this->hasMany(CourseEvent::class);

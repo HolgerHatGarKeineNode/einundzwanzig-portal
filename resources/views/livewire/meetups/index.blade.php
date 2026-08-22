@@ -2,6 +2,7 @@
 
 use App\Attributes\SeoDataAttribute;
 use App\Models\Meetup;
+use App\Models\Region;
 use App\Traits\SeoTrait;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -16,10 +17,21 @@ class extends Component {
     public $search = '';
     public string $currentRouteName = '';
 
+    /**
+     * Gesetzt nur auf der Regions-Route (/us/in/meetups); sonst null und damit wirkungslos.
+     */
+    public ?int $regionId = null;
+
+    public ?string $regionName = null;
+
     public function mount(): void
     {
         $this->currentRouteName = request()->route()->getName();
         $this->country = request()->route('country', config('app.domain_country'));
+
+        $region = Region::fromRouteOrFail($this->country);
+        $this->regionId = $region?->id;
+        $this->regionName = $region?->name;
     }
 
     public function with(): array
@@ -36,8 +48,11 @@ class extends Component {
                 })
                 ->selectRaw('meetups.*, MIN(meetup_events.start) as next_event_start')
                 ->groupBy('meetups.id')
-                ->when($this->currentRouteName === 'meetups.index', fn($query) =>
+                ->when(in_array($this->currentRouteName, ['meetups.index', 'meetups.index-region'], true), fn($query) =>
                     $query->whereHas('city.country', fn($query) => $query->where('countries.code', $this->country))
+                )
+                ->when($this->regionId, fn($query) =>
+                    $query->whereHas('city', fn($query) => $query->where('cities.region_id', $this->regionId))
                 )
                 ->when($this->search, fn($query)
                     => $query->whereLike('meetups.name', '%'.$this->search.'%'),
@@ -51,7 +66,9 @@ class extends Component {
 
 <div>
     <div class="flex items-center justify-between flex-col md:flex-row mb-6">
-        <flux:heading size="xl">{{ __('Meetups') }}</flux:heading>
+        <flux:heading size="xl">
+            {{ $regionName ? __('Meetups in :region', ['region' => $regionName]) : __('Meetups') }}
+        </flux:heading>
         <div class="flex flex-col md:flex-row items-center gap-4">
             <flux:button class="cursor-pointer" x-copy-to-clipboard="'{{ route('ics') }}'"
                          icon="calendar-date-range">{{ __('Kalender-Stream-URL kopieren') }}</flux:button>
@@ -196,4 +213,17 @@ class extends Component {
             @endforeach
         </flux:table.rows>
     </flux:table>
+
+    {{-- Eine Region ohne Treffer ist der Normalfall, solange erst wenige Städte eine
+         Region tragen — ohne diesen Hinweis sieht die Seite aus wie ein Fehler. --}}
+    @if($regionName && $meetups->isEmpty())
+        <div class="mt-8 text-center">
+            <flux:text>{{ __('No meetups in :region yet.', ['region' => $regionName]) }}</flux:text>
+            <div class="mt-4">
+                <flux:button :href="route('meetups.index', ['country' => $country])" variant="primary">
+                    {{ __('Show all meetups in the country') }}
+                </flux:button>
+            </div>
+        </div>
+    @endif
 </div>

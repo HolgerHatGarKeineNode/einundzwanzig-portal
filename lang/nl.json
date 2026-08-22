@@ -751,5 +751,12 @@
     "Öffnen/RSVP": "Openen/RSVP",
     "Über den Dozenten": "Over de docent",
     "Über den Kurs": "Over de cursus",
-    "Über uns": "Over ons"
+    "Über uns": "Over ons",
+    "nur auf :lang vorhanden": "",
+    "Meetups in :region": "Meetups in :region",
+    "Cities in :region": "Steden in :region",
+    "No meetups in :region yet.": "Nog geen meetups in :region.",
+    "Show all meetups in the country": "Alle meetups in het land tonen",
+    "Region": "Regio",
+    "No region": "Geen regio"
 }

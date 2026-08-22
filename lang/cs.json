@@ -751,5 +751,12 @@
     "Öffnen/RSVP": "Otevřít / RSVP",
     "Über den Dozenten": "O lektorovi",
     "Über den Kurs": "O kurzu",
-    "Über uns": "O nás"
+    "Über uns": "O nás",
+    "nur auf :lang vorhanden": "",
+    "Meetups in :region": "Meetupy v :region",
+    "Cities in :region": "Města v :region",
+    "No meetups in :region yet.": "Zatím žádné meetupy v :region.",
+    "Show all meetups in the country": "Zobrazit všechny meetupy v zemi",
+    "Region": "Region",
+    "No region": "Bez regionu"
 }

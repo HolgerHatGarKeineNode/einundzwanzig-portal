@@ -2,6 +2,7 @@
 
 use App\Attributes\SeoDataAttribute;
 use App\Models\City;
+use App\Models\Region;
 use App\Traits\SeoTrait;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -15,9 +16,20 @@ class extends Component {
     public $country = 'de';
     public $search = '';
 
+    /**
+     * Gesetzt nur auf der Regions-Route (/us/in/cities); sonst null und damit wirkungslos.
+     */
+    public ?int $regionId = null;
+
+    public ?string $regionName = null;
+
     public function mount(): void
     {
         $this->country = request()->route('country', config('app.domain_country'));
+
+        $region = Region::fromRouteOrFail($this->country);
+        $this->regionId = $region?->id;
+        $this->regionName = $region?->name;
     }
 
     public function with(): array
@@ -29,6 +41,7 @@ class extends Component {
                     => $query->whereLike('name', '%'.$this->search.'%'),
                 )
                 ->whereHas('country', fn($query) => $query->where('countries.code', $this->country))
+                ->when($this->regionId, fn($query) => $query->where('cities.region_id', $this->regionId))
                 ->orderBy('name')
                 ->paginate(15),
         ];
@@ -37,7 +50,9 @@ class extends Component {
 
 <div>
     <div class="flex items-center justify-between flex-col md:flex-row mb-6">
-        <flux:heading size="xl">{{ __('Cities') }}</flux:heading>
+        <flux:heading size="xl">
+            {{ $regionName ? __('Cities in :region', ['region' => $regionName]) : __('Cities') }}
+        </flux:heading>
         <div class="flex items-center flex-col md:flex-row gap-4">
             <flux:input
                 wire:model.live="search"

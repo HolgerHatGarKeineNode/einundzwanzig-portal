@@ -751,5 +751,12 @@
     "Öffnen/RSVP": "Atvērt/apstiprināt",
     "Über den Dozenten": "Par pasniedzēju",
     "Über den Kurs": "Par kursu",
-    "Über uns": "Par mums"
+    "Über uns": "Par mums",
+    "nur auf :lang vorhanden": "",
+    "Meetups in :region": "Meetup pasākumi: :region",
+    "Cities in :region": "Pilsētas: :region",
+    "No meetups in :region yet.": "Reģionā :region vēl nav meetup pasākumu.",
+    "Show all meetups in the country": "Rādīt visus meetup pasākumus valstī",
+    "Region": "Reģions",
+    "No region": "Nav reģiona"
 }

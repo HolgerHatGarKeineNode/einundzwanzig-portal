@@ -751,5 +751,12 @@
     "Öffnen/RSVP": "Otwórz/RSVP",
     "Über den Dozenten": "O wykładowcy",
     "Über den Kurs": "O kursie",
-    "Über uns": "O nas"
+    "Über uns": "O nas",
+    "nur auf :lang vorhanden": "",
+    "Meetups in :region": "Meetupy w :region",
+    "Cities in :region": "Miasta w :region",
+    "No meetups in :region yet.": "Brak meetupów w :region.",
+    "Show all meetups in the country": "Pokaż wszystkie meetupy w kraju",
+    "Region": "Region",
+    "No region": "Brak regionu"
 }
