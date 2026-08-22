@@ -1,4 +1,11 @@
 [![Laravel Forge Site Deployment Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fforge.laravel.com%2Fsite-badges%2Ff25a1151-9c87-4f14-9943-17d05fa736c9&style=plastic)](https://forge.laravel.com/prime-software/lsm-server-1/1833504)
+[![Tests](https://github.com/HolgerHatGarKeineNode/einundzwanzig-app/actions/workflows/tests.yml/badge.svg)](https://github.com/HolgerHatGarKeineNode/einundzwanzig-app/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+# Einundzwanzig Portal
+
+The code base behind [portal.einundzwanzig.space](https://portal.einundzwanzig.space) — the
+Bitcoin meetup, course and library portal of the Einundzwanzig community.
 
 ### Hosted:
 
@@ -27,16 +34,21 @@ After setting up your CNAME, please notify the repository owner to refresh SSL c
 
 ## Contributing and Proposals
 
-[https://gitworkshop.dev](https://gitworkshop.dev/holgerhatgarkeinenode@einundzwanzig.space/einundzwanzig-app)
+Issues, feature requests and pull requests are handled on GitHub:
+
+- Issues: [github.com/HolgerHatGarKeineNode/einundzwanzig-app/issues](https://github.com/HolgerHatGarKeineNode/einundzwanzig-app/issues)
+- Pull requests: [github.com/HolgerHatGarKeineNode/einundzwanzig-app/pulls](https://github.com/HolgerHatGarKeineNode/einundzwanzig-app/pulls)
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 
 ## Development
 
 ### Prerequisites
 
-- PHP 8.3+
+- PHP 8.4+
 - PostgreSQL (running locally or as a container)
 - Redis (running locally or as a container)
-- Node.js + Yarn
+- Node.js (npm)
 
 ### Installation
 
@@ -55,7 +67,7 @@ After setting up your CNAME, please notify the repository owner to refresh SSL c
 
 #### Install node dependencies
 
-```yarn```
+```npm install```
 
 #### Start development environment
 
@@ -65,12 +77,14 @@ This starts the PHP dev server, queue worker, Pail log viewer, and Vite concurre
 
 #### Update dependencies
 
-```yarn```
+```npm update```
 
 ## Security Vulnerabilities
 
-If you discover a security vulnerability within this project, please go to [https://gitworkshop.dev](https://gitworkshop.dev/holgerhatgarkeinenode@einundzwanzig.space/einundzwanzig-app). All security vulnerabilities will be promptly addressed.
+Please do **not** open a public issue for security problems. Report them privately via
+[GitHub Security Advisories](https://github.com/HolgerHatGarKeineNode/einundzwanzig-app/security/advisories/new).
+See [SECURITY.md](SECURITY.md) for details. All security vulnerabilities will be promptly addressed.
 
 ## License
 
-Open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Open-sourced software licensed under the [MIT license](LICENSE).

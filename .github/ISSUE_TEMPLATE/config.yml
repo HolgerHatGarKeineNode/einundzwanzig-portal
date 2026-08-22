@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/HolgerHatGarKeineNode/einundzwanzig-app/security/advisories/new
+    about: Report security problems privately — never in a public issue.
+  - name: Add your national domain
+    url: https://github.com/HolgerHatGarKeineNode/einundzwanzig-app#host-your-national-domain
+    about: How to point your own domain at the portal.
+  - name: Einundzwanzig on Nostr
+    url: https://njump.me/npub1pt0kw36ue3w2g4haxq3wgm6a2fhtptmzsjlc2j2vphtcgle72qesgpjyc6
+    about: General questions and contact outside of GitHub.
