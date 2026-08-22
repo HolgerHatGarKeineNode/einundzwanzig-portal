@@ -1,4 +1,3 @@
-[![Laravel Forge Site Deployment Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fforge.laravel.com%2Fsite-badges%2Ff25a1151-9c87-4f14-9943-17d05fa736c9&style=plastic)](https://forge.laravel.com/prime-software/lsm-server-1/1833504)
 [![Tests](https://github.com/HolgerHatGarKeineNode/einundzwanzig-app/actions/workflows/tests.yml/badge.svg)](https://github.com/HolgerHatGarKeineNode/einundzwanzig-app/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 

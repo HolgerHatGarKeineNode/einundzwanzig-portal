@@ -74,3 +74,9 @@ suite for your change. The Pint style check does run on every pull request.
 ## Code of conduct
 
 By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Deployment
+
+Pushing to `master` deploys to production automatically — Laravel Forge is connected to this
+repository through its native GitHub integration (Quick Deploy). There is no deployment
+workflow in `.github/workflows/`, and none is needed.
