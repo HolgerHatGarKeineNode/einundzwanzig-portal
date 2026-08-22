@@ -58,12 +58,10 @@ php artisan test --compact  # the test suite (Pest)
   affected tests pass.
 - Follow the conventions already used in the file you are editing — check sibling files for
   structure, naming and approach before introducing a new pattern.
-- Browser tests (`tests/Browser`) need Playwright and are not run in CI.
+- Browser tests (`tests/Browser`) need Playwright and have to be run locally.
 
-**A note on CI for forks:** installing the dependencies requires a Flux Pro license, and GitHub
-never hands repository secrets to a workflow triggered from a fork. The Pest job is therefore
-skipped on pull requests from forks — it is not silently passed, and a maintainer runs the
-suite for your change. The Pint style check does run on every pull request.
+**There is no CI in this repository.** Nothing runs your tests for you when you open a pull
+request, so run them yourself before you do — a maintainer checks them again before merging.
 
 ## Commit messages and pull requests
 

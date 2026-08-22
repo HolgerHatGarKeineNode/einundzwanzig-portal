@@ -1,4 +1,3 @@
-[![Tests](https://github.com/HolgerHatGarKeineNode/einundzwanzig-app/actions/workflows/tests.yml/badge.svg)](https://github.com/HolgerHatGarKeineNode/einundzwanzig-app/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 # Einundzwanzig Portal
