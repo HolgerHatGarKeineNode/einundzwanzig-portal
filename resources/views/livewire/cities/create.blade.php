@@ -66,7 +66,9 @@ class extends Component {
             return;
         }
 
-        $validated['slug'] = str($validated['name'])->slug();
+        // Kein manuelles slug: HasSlug auf City ist dafuer zustaendig und erzeugt
+        // 'laendercode-name'. Zwei Regeln nebeneinander liessen den Wert bei jedem
+        // Speichern springen.
         $validated['created_by'] = auth()->id();
 
         $city = City::create($validated);

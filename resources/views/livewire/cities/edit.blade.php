@@ -70,8 +70,8 @@ class extends Component {
             return;
         }
 
-        $validated['slug'] = str($validated['name'])->slug();
-
+        // Kein manuelles slug — siehe cities/create. HasSlug erzeugt ihn beim Anlegen
+        // und laesst ihn danach stehen.
         $this->city->update($validated);
 
         session()->flash('status', __('City successfully updated!'));
