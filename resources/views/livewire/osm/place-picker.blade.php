@@ -61,8 +61,14 @@ new class extends Component {
             return;
         }
 
-        // Only the stored columns travel onwards; importance and category are ranking
-        // aids for the search itself and have no place on the event.
+        /*
+         * Only the stored columns travel onwards; importance and category are ranking
+         * aids for the search itself and have no place on the event.
+         *
+         * wikidata, wikipedia und population kommen seit dem extratags-Einbau dazu. Sie
+         * sind fuer Staedte und Laender gedacht; die Event-Formulare filtern in
+         * osmFields() ohnehin auf ihre sechs Spalten und sehen sie nie.
+         */
         $this->place = [
             'osm_type' => $hit['osm_type'],
             'osm_id' => $hit['osm_id'],
@@ -70,6 +76,9 @@ new class extends Component {
             'osm_address' => $hit['osm_address'],
             'osm_lat' => $hit['osm_lat'],
             'osm_lon' => $hit['osm_lon'],
+            'wikidata' => $hit['wikidata'] ?? null,
+            'wikipedia' => $hit['wikipedia'] ?? null,
+            'population' => $hit['population'] ?? null,
         ];
 
         $this->results = [];

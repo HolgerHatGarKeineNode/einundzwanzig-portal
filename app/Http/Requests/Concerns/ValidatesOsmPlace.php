@@ -87,4 +87,36 @@ trait ValidatesOsmPlace
             'osm_lon' => [...$prefix, 'nullable', 'numeric', 'between:-180,180'],
         ];
     }
+
+    /**
+     * Die beiden Querverweise, die Nominatim mit `extratags=1` mitliefert.
+     *
+     * Eigene Methode statt Teil von osmPlaceRules(), weil die Events sie nicht fuehren:
+     * ein Veranstaltungsort hat selten einen Wikipedia-Artikel, eine Stadt oder ein Land
+     * fast immer. Wer sie braucht, holt sie sich dazu.
+     *
+     * @param  array<int, string>  $prefix  ['sometimes'] fuer PATCH, sonst leer
+     * @return array<string, array<int, mixed>>
+     */
+    protected function osmReferenceRules(array $prefix = []): array
+    {
+        return [
+            /**
+             * Die Wikidata-Q-ID des Orts, z. B. `Q64`.
+             *
+             * @example Q64
+             */
+            'wikidata' => [...$prefix, 'nullable', 'string', 'max:32'],
+
+            /**
+             * Der Wikipedia-Verweis in OSM-Schreibweise: Sprachpraefix, Doppelpunkt, Titel.
+             *
+             * Kein fertiger Link — die aufgeloeste URL steht in der Antwort als
+             * `wikipedia_url` daneben.
+             *
+             * @example de:Berlin
+             */
+            'wikipedia' => [...$prefix, 'nullable', 'string', 'max:255'],
+        ];
+    }
 }

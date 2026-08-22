@@ -327,6 +327,21 @@ class extends Component {
             'name' => $name,
             'latitude' => $hit['osm_lat'],
             'longitude' => $hit['osm_lon'],
+            /*
+             * Die Referenz gleich mitschreiben: der Treffer kommt aus derselben Suche,
+             * die sie liefert, und eine Stadt ohne sie muesste spaeter von Hand
+             * nachgezogen werden. Bestehende Staedte werden nicht angefasst — dieser
+             * Zweig laeuft nur, wenn keine gefunden wurde.
+             */
+            'osm_type' => $hit['osm_type'] ?? null,
+            'osm_id' => $hit['osm_id'] ?? null,
+            'osm_name' => $hit['osm_name'] ?? null,
+            'osm_address' => $hit['osm_address'] ?? null,
+            'osm_lat' => $hit['osm_lat'] ?? null,
+            'osm_lon' => $hit['osm_lon'] ?? null,
+            'wikidata' => $hit['wikidata'] ?? null,
+            'wikipedia' => $hit['wikipedia'] ?? null,
+            'population' => $hit['population'] ?? null,
         ]);
 
         $this->city_id = $city->id;

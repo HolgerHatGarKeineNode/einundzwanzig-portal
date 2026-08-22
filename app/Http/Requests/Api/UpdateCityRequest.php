@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Http\Requests\Concerns\ValidatesOsmPlace;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateCityRequest extends FormRequest
 {
+    use ValidatesOsmPlace;
+
     public function authorize(): bool
     {
         return $this->user()->can('update', $this->route('city'));
@@ -22,7 +25,8 @@ class UpdateCityRequest extends FormRequest
             'longitude' => ['sometimes', 'required', 'numeric'],
             'latitude' => ['sometimes', 'required', 'numeric'],
             'population' => ['sometimes', 'nullable', 'integer'],
-        ];
+            ...$this->osmPlaceRules(partial: true),
+        ] + $this->osmReferenceRules(['sometimes']);
     }
 
     /**

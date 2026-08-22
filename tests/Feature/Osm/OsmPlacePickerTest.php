@@ -46,6 +46,15 @@ it('finds and picks a place', function () {
 });
 
 it('keeps only the stored columns, not the ranking aids', function () {
+    /*
+     * Die Absicht des Tests ist unveraendert: `importance` und `category` sind
+     * Ranking-Hilfen der Suche und duerfen nicht am Datensatz landen.
+     *
+     * Die erwartete Liste ist am 2026-08-23 um wikidata, wikipedia und population
+     * gewachsen — das sind seit Issue #11/#12 echte Spalten auf `cities` und
+     * `countries`, die Nominatim mit `extratags=1` mitliefert. Die Event-Formulare
+     * sehen sie nie: deren osmFields() filtert auf ihre eigenen sechs Spalten.
+     */
     Http::fake(['*' => Http::response([[
         ...osmResponse()[0],
         'importance' => 0.9,
@@ -60,7 +69,10 @@ it('keeps only the stored columns, not the ranking aids', function () {
 
     expect(array_keys($place))->toBe([
         'osm_type', 'osm_id', 'osm_name', 'osm_address', 'osm_lat', 'osm_lon',
-    ]);
+        'wikidata', 'wikipedia', 'population',
+    ])
+        ->and($place)->not->toHaveKey('importance')
+        ->and($place)->not->toHaveKey('category');
 });
 
 it('does not call out for a query under three characters', function () {

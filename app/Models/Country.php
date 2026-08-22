@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasOsmReference;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Country extends Model
 {
     use HasFactory;
+    use HasOsmReference;
 
     /**
      * The attributes that aren't mass assignable.
@@ -25,6 +27,9 @@ class Country extends Model
     protected $casts = [
         'id' => 'integer',
         'language_codes' => 'array',
+        'osm_id' => 'integer',
+        'osm_lat' => 'float',
+        'osm_lon' => 'float',
     ];
 
     public function cities(): HasMany
