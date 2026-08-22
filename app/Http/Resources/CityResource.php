@@ -24,6 +24,24 @@ class CityResource extends JsonResource
             'longitude' => $this->longitude,
             'latitude' => $this->latitude,
             'population' => $this->population,
+            /*
+             * Issue #11: die OSM-Referenz. `osm_url` ist berechnet, nicht gespeichert —
+             * `osm_type` und `osm_id` sind die Wahrheit, die URL nur ihre Lesart.
+             * Alle Felder sind null, solange die Stadt keine Referenz traegt; das ist
+             * der Normalfall fuer Bestandsdaten und kein Fehler.
+             */
+            'osm_type' => $this->osm_type,
+            'osm_id' => $this->osm_id,
+            'osm_url' => $this->osm_url,
+            'osm_name' => $this->osm_name,
+            'osm_address' => $this->osm_address,
+            'osm_lat' => $this->osm_lat,
+            'osm_lon' => $this->osm_lon,
+            'wikidata' => $this->wikidata,
+            'wikidata_url' => $this->wikidata_url,
+            // OSM-Slug der Form "de:Berlin"; die aufgeloeste URL steht daneben.
+            'wikipedia' => $this->wikipedia,
+            'wikipedia_url' => $this->wikipedia_url,
             'created_by' => $this->created_by,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

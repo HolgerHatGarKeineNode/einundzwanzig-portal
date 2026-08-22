@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Akuechler\Geoly;
+use App\Models\Concerns\HasOsmReference;
 use App\Models\Concerns\SetsCreatedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,6 +17,7 @@ class City extends Model
 {
     use Geoly;
     use HasFactory;
+    use HasOsmReference;
     use HasSlug;
     use SetsCreatedBy;
 
@@ -36,6 +38,9 @@ class City extends Model
         'country_id' => 'integer',
         'osm_relation' => 'json',
         'simplified_geojson' => 'json',
+        'osm_id' => 'integer',
+        'osm_lat' => 'float',
+        'osm_lon' => 'float',
     ];
 
     /**

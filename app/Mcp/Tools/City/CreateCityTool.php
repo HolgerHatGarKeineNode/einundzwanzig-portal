@@ -32,6 +32,9 @@ class CreateCityTool extends Tool
             return $error;
         }
 
+        // Wie in der API: Koordinaten aus dem OSM-Ort uebernehmen, eigene gewinnen.
+        $request->merge(StoreCityRequest::coordinatesFromOsm($request->all()));
+
         $storeRequest = new StoreCityRequest;
 
         $validated = $request->validate(
@@ -56,9 +59,17 @@ class CreateCityTool extends Tool
             'country' => $schema->string()->description('Name des zugehörigen Landes (z. B. "Deutschland"). Wird automatisch aufgelöst – bei Bedarf per list-countries den genauen Namen ermitteln.'),
             'country_id' => $schema->integer()->description('Optional: ID des Landes, falls bereits bekannt (Alternative zu "country").'),
             'name' => $schema->string()->description('Name der Stadt.')->required(),
-            'longitude' => $schema->number()->description('Längengrad der Stadt.')->required(),
-            'latitude' => $schema->number()->description('Breitengrad der Stadt.')->required(),
+            'longitude' => $schema->number()->description('Längengrad der Stadt. Entfällt, wenn "osm_lon" mitgegeben wird.'),
+            'latitude' => $schema->number()->description('Breitengrad der Stadt. Entfällt, wenn "osm_lat" mitgegeben wird.'),
             'population' => $schema->integer()->description('Einwohnerzahl der Stadt.'),
+            'osm_type' => $schema->string()->description('Art des OpenStreetMap-Objekts: "node", "way" oder "relation". Nur zusammen mit "osm_id" gültig; Städte sind fast immer "relation".'),
+            'osm_id' => $schema->integer()->description('ID des OpenStreetMap-Objekts. Nur zusammen mit "osm_type" gültig – die beiden identifizieren einen Ort erst gemeinsam.'),
+            'osm_name' => $schema->string()->description('Name des Orts laut OpenStreetMap.'),
+            'osm_address' => $schema->string()->description('Vollständige Adresszeile laut OpenStreetMap.'),
+            'osm_lat' => $schema->number()->description('Breitengrad laut OpenStreetMap. Wird nach "latitude" übernommen, wenn dort nichts steht.'),
+            'osm_lon' => $schema->number()->description('Längengrad laut OpenStreetMap. Wird nach "longitude" übernommen, wenn dort nichts steht.'),
+            'wikidata' => $schema->string()->description('Wikidata-Q-ID des Orts, z. B. "Q64".'),
+            'wikipedia' => $schema->string()->description('Wikipedia-Verweis in OpenStreetMap-Schreibweise, z. B. "de:Berlin" – Sprachpräfix, Doppelpunkt, Artikeltitel.'),
         ];
     }
 }

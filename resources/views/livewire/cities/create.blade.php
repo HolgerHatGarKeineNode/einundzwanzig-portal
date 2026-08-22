@@ -17,6 +17,17 @@ class extends Component {
     public string $name = '';
     public ?int $country_id = null;
     public ?int $region_id = null;
+
+    /**
+     * Der aus der OSM-Suche gewaehlte Ort, oder ein leeres Array.
+     *
+     * Der Picker daneben ist derselbe, den die Event-Formulare benutzen — die Suche
+     * laeuft serverseitig, weil Nominatims Policy Drosselung und einen echten
+     * User-Agent verlangt, und beides kann nur der Server garantieren.
+     *
+     * @var array<string, mixed>
+     */
+    public array $osmPlace = [];
     public ?float $latitude = null;
     public ?float $longitude = null;
     public ?int $population = null;
@@ -34,6 +45,17 @@ class extends Component {
      * Ein Landwechsel macht die gewaehlte Region ungueltig — sonst haenge die Stadt an
      * einem Bundesstaat eines anderen Landes.
      */
+
+    /**
+     * Der Laendercode fuer die Suche, damit "Springfield" nicht die halbe Welt trifft.
+     */
+    public function getPickerCountryCodeProperty(): ?string
+    {
+        return $this->country_id
+            ? Country::query()->whereKey($this->country_id)->value('code')
+            : null;
+    }
+
     public function updatedCountryId(): void
     {
         $this->region_id = null;
@@ -70,12 +92,51 @@ class extends Component {
         // 'laendercode-name'. Zwei Regeln nebeneinander liessen den Wert bei jedem
         // Speichern springen.
         $validated['created_by'] = auth()->id();
+        $validated += $this->osmFields();
 
         $city = City::create($validated);
 
         session()->flash('status', __('City successfully created!'));
 
         $this->redirect(route_with_country('cities.index'), navigate: true);
+    }
+
+
+    /**
+     * Die OSM-Spalten aus dem gewaehlten Ort, immer alle acht.
+     *
+     * Auch die leeren: beim Bearbeiten muss ein entfernter Ort die alten Werte
+     * loeschen, und ein weggelassener Schluessel liesse sie stehen.
+     *
+     * @return array<string, mixed>
+     */
+    private function osmFields(): array
+    {
+        $keys = [
+            'osm_type', 'osm_id', 'osm_name', 'osm_address',
+            'osm_lat', 'osm_lon', 'wikidata', 'wikipedia',
+        ];
+
+        return collect($keys)
+            ->mapWithKeys(fn (string $key): array => [$key => $this->osmPlace[$key] ?? null])
+            ->all();
+    }
+
+    /**
+     * Uebernimmt Koordinaten und Einwohnerzahl aus dem OSM-Ort, aber nur in leere Felder.
+     *
+     * Eine von Hand eingetragene Korrektur zu ueberschreiben waere die unangenehmste Art,
+     * hilfsbereit zu sein.
+     */
+    public function updatedOsmPlace(): void
+    {
+        if (($this->osmPlace['osm_id'] ?? null) === null) {
+            return;
+        }
+
+        $this->latitude ??= $this->osmPlace['osm_lat'] ?? null;
+        $this->longitude ??= $this->osmPlace['osm_lon'] ?? null;
+        $this->population ??= $this->osmPlace['population'] ?? null;
     }
 
     public function with(): array
@@ -127,6 +188,19 @@ class extends Component {
                         @endforeach
                     </flux:select>
                 @endif
+
+                {{-- Derselbe Picker wie in den Event-Formularen. Optional: eine Stadt ohne
+                     OSM-Bezug bleibt genauso gueltig wie bisher. --}}
+                <flux:field>
+                    <flux:label>{{ __('OpenStreetMap') }}</flux:label>
+                    <livewire:osm.place-picker
+                        wire:model.live="osmPlace"
+                        :country-code="$this->pickerCountryCode"
+                    />
+                    <flux:description>
+                        {{ __('Optional. Verknüpft die Stadt mit ihrem OpenStreetMap-Eintrag und füllt leere Koordinaten.') }}
+                    </flux:description>
+                </flux:field>
             </div>
         </flux:fieldset>
 

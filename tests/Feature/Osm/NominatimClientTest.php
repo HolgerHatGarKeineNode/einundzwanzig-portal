@@ -135,3 +135,65 @@ it('actually waits between two uncached requests', function () {
 
     expect($elapsed)->toBeGreaterThanOrEqual(280);
 });
+
+it('asks Nominatim for extratags on both endpoints', function (string $method, array $args) {
+    // Ohne den Parameter liefert Nominatim wikidata und wikipedia gar nicht erst.
+    Http::fake(['*' => Http::response([nominatimRow()])]);
+
+    (new NominatimClient(minIntervalMs: 0))->{$method}(...$args);
+
+    Http::assertSent(fn ($request): bool => ($request->data()['extratags'] ?? null) == 1);
+})->with([
+    'search' => ['search', ['Bitcoin Bar Praha']],
+    'lookup' => ['lookup', ['relation', 62422]],
+]);
+
+it('carries wikidata, wikipedia and population out of extratags', function () {
+    Http::fake(['*' => Http::response([nominatimRow([
+        'extratags' => [
+            'wikidata' => 'Q64',
+            'wikipedia' => 'de:Berlin',
+            'population' => '3769962',
+            'capital' => 'yes',
+        ],
+    ])])]);
+
+    $hit = (new NominatimClient(minIntervalMs: 0))->search('Berlin')->first();
+
+    expect($hit['wikidata'])->toBe('Q64')
+        ->and($hit['wikipedia'])->toBe('de:Berlin')
+        ->and($hit['population'])->toBe(3769962)
+        // capital ist ein gueltiger Tag, aber keiner, den wir speichern.
+        ->and($hit)->not->toHaveKey('capital');
+});
+
+it('leaves the new fields null when the place has no extratags', function () {
+    Http::fake(['*' => Http::response([nominatimRow()])]);
+
+    $hit = (new NominatimClient(minIntervalMs: 0))->search('Bitcoin Bar Praha')->first();
+
+    expect($hit['wikidata'])->toBeNull()
+        ->and($hit['wikipedia'])->toBeNull()
+        ->and($hit['population'])->toBeNull();
+});
+
+it('ignores a lookup cached under the pre-extratags key', function () {
+    /*
+     * Der Lookup-Schluessel traegt die Parameter nicht, deshalb ist er versioniert.
+     * Ohne das v2 haette ein Eintrag aus der Zeit vor extratags noch 30 Tage lang
+     * gewonnen — und der neue Code haette ausgesehen, als tue er nichts.
+     */
+    Cache::put('osm:lookup:R62422', ['osm_type' => 'relation', 'osm_id' => 62422, 'osm_name' => 'Veraltet'], now()->addDay());
+
+    Http::fake(['*' => Http::response([nominatimRow([
+        'osm_type' => 'relation',
+        'osm_id' => 62422,
+        'name' => 'Berlin',
+        'extratags' => ['wikidata' => 'Q64'],
+    ])])]);
+
+    $hit = (new NominatimClient(minIntervalMs: 0))->lookup('relation', 62422);
+
+    expect($hit['osm_name'])->toBe('Berlin')
+        ->and($hit['wikidata'])->toBe('Q64');
+});

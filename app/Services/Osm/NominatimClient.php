@@ -62,6 +62,9 @@ class NominatimClient
             'q' => $query,
             'format' => 'jsonv2',
             'addressdetails' => 1,
+            // Bringt wikidata und wikipedia mit ("wikidata": "Q84", "wikipedia": "en:London").
+            // Derselbe Request, ein Parameter mehr — keine zusaetzliche Last.
+            'extratags' => 1,
             'limit' => $limit,
             'countrycodes' => $countryCode ? mb_strtolower($countryCode) : null,
         ], fn ($value): bool => $value !== null);
@@ -100,13 +103,21 @@ class NominatimClient
             return null;
         }
 
-        $cacheKey = "osm:lookup:{$prefix}{$osmId}";
+        /*
+         * Der Schluessel traegt eine Version, weil er — anders als in search() — die
+         * Parameter nicht enthaelt. Ohne das v2 lieferte der 30-Tage-Cache nach dem
+         * Einbau von extratags noch einen Monat lang die alten Eintraege ohne wikidata
+         * und wikipedia, und der neue Code saehe aus, als funktioniere er nicht.
+         * Kommt ein weiterer Parameter dazu, wird die Zahl wieder erhoeht.
+         */
+        $cacheKey = "osm:lookup:v2:{$prefix}{$osmId}";
 
         return Cache::remember($cacheKey, now()->addDays(30), function () use ($prefix, $osmId): ?array {
             $response = $this->get('/lookup', [
                 'osm_ids' => $prefix.$osmId,
                 'format' => 'jsonv2',
                 'addressdetails' => 1,
+                'extratags' => 1,
             ]);
 
             if (! is_array($response) || $response === []) {
@@ -138,6 +149,10 @@ class NominatimClient
             $name = trim(explode(',', $display)[0] ?? '');
         }
 
+        // extratags fehlt, wenn der Aufruf ohne den Parameter lief oder das Objekt keine
+        // Zusatz-Tags traegt — beides ist normal, beides ergibt hier null.
+        $extra = is_array($row['extratags'] ?? null) ? $row['extratags'] : [];
+
         return [
             'osm_type' => (string) $row['osm_type'],
             'osm_id' => (int) $row['osm_id'],
@@ -147,7 +162,27 @@ class NominatimClient
             'osm_lon' => isset($row['lon']) ? (float) $row['lon'] : null,
             'importance' => isset($row['importance']) ? (float) $row['importance'] : null,
             'category' => $row['category'] ?? $row['class'] ?? null,
+            // Wikidata-Q-ID, z. B. "Q84". Nominatim liefert sie nur mit extratags=1.
+            'wikidata' => $this->tag($extra, 'wikidata', 32),
+            // OSM-Slug der Form "de:Koeln" — kein fertiger Link, siehe Region-Accessoren.
+            'wikipedia' => $this->tag($extra, 'wikipedia', 255),
+            // Nur bei Orten mit population-Tag gesetzt; Staedte und Laender tragen ihn oft.
+            'population' => isset($extra['population']) && is_numeric($extra['population'])
+                ? (int) $extra['population']
+                : null,
         ];
+    }
+
+    /**
+     * Einen Zusatz-Tag lesen: getrimmt, laengenbegrenzt, leer wird zu null.
+     *
+     * @param  array<string, mixed>  $extra
+     */
+    private function tag(array $extra, string $key, int $maxLength): ?string
+    {
+        $value = trim((string) ($extra[$key] ?? ''));
+
+        return $value !== '' ? mb_substr($value, 0, $maxLength) : null;
     }
 
     /**
