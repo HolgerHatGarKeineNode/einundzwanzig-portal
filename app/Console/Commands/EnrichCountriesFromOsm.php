@@ -1,0 +1,169 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\Country;
+use App\Services\Osm\NominatimClient;
+use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
+
+/**
+ * Reichert Laender um ihre OpenStreetMap-Referenz an (Issue #12).
+ *
+ * Der Lauf ist langsam, und das ist Absicht: Nominatims Usage-Policy beschraenkt
+ * Skripte, die regelmaessig oder laenger als einen Tag laufen, auf 4 Anfragen pro
+ * Minute. `NominatimClient::forBulk()` haelt diese 15 Sekunden ein. 249 Laender
+ * dauern damit rund eine Stunde.
+ *
+ * Daraus folgt der Rest des Entwurfs: nach jedem Land wird sofort gespeichert, damit
+ * ein Abbruch nichts kostet und ein zweiter Aufruf dort weitermacht, wo der erste
+ * aufhoerte. Es gibt bewusst kein --force: bestehende Werte zu ueberschreiben ist eine
+ * andere Entscheidung als leere zu fuellen, und niemand hat bisher ueber veraltete
+ * OSM-Daten geklagt.
+ */
+class EnrichCountriesFromOsm extends Command
+{
+    protected $signature = 'countries:enrich-from-osm
+        {--limit=0 : Hoechstens so viele Laender bearbeiten (0 = alle)}
+        {--code=* : Nur diese Laendercodes, z. B. --code=de --code=us}
+        {--dry-run : Nur zeigen, was passieren wuerde}
+        {--interval-ms= : Abstand zwischen zwei Nominatim-Anfragen in Millisekunden. NUR fuer Tests herabsetzen — die Policy verlangt 15000 fuer Massenlaeufe.}';
+
+    protected $description = 'Ergaenzt fehlende OpenStreetMap-Referenzen auf Laendern (nur leere Felder)';
+
+    public function handle(): int
+    {
+        /*
+         * Bewusst selbst gebaut statt per Dependency Injection: die Container-Bindung
+         * liefert die normale Instanz mit 1,1 Sekunden Abstand, und die waere fuer einen
+         * Lauf ueber 249 Laender ein Policy-Verstoss. forBulk() haelt die 15 Sekunden ein,
+         * die Nominatim fuer regelmaessige oder lang laufende Skripte verlangt.
+         */
+        $intervalMs = $this->option('interval-ms');
+        $client = $intervalMs === null
+            ? NominatimClient::forBulk()
+            : new NominatimClient(minIntervalMs: (int) $intervalMs);
+
+        $dryRun = (bool) $this->option('dry-run');
+        $codes = array_map(mb_strtolower(...), (array) $this->option('code'));
+        $limit = (int) $this->option('limit');
+
+        $countries = Country::query()
+            ->withoutOsmReference()
+            ->when($codes !== [], fn ($query) => $query->whereIn(Country::raw('LOWER(code)'), $codes))
+            ->orderBy('name')
+            ->when($limit > 0, fn ($query) => $query->limit($limit))
+            ->get();
+
+        if ($countries->isEmpty()) {
+            $this->info('Nichts zu tun — alle betroffenen Laender haben bereits eine OSM-Referenz.');
+
+            return self::SUCCESS;
+        }
+
+        $this->line(sprintf(
+            '%d Laender, rund %d Minuten bei 15 Sekunden Abstand.%s',
+            $countries->count(),
+            (int) ceil($countries->count() * 15 / 60),
+            $dryRun ? ' (Probelauf, es wird nichts geschrieben.)' : '',
+        ));
+
+        $filled = 0;
+        $ambiguous = 0;
+        $missing = 0;
+
+        foreach ($countries as $country) {
+            $hits = $this->boundaryRelations($client, $country);
+
+            if ($hits->isEmpty()) {
+                $missing++;
+                $this->warn("  {$country->code} {$country->name}: kein Treffer");
+
+                continue;
+            }
+
+            if ($hits->count() > 1) {
+                /*
+                 * Lieber nichts als das Falsche: Territorien wie "U.S. Outlying Islands"
+                 * liefern mehrere Grenzrelationen, und die falsche zu waehlen faellt
+                 * niemandem auf, bis jemand der Karte nicht mehr traut.
+                 */
+                $ambiguous++;
+                $this->warn("  {$country->code} {$country->name}: {$hits->count()} Grenzrelationen — uebersprungen");
+
+                continue;
+            }
+
+            $hit = $hits->first();
+            $changes = $this->emptyFieldsFrom($country, $hit);
+
+            if ($changes === []) {
+                continue;
+            }
+
+            $this->line("  {$country->code} {$country->name}: ".implode(', ', array_keys($changes)));
+
+            if (! $dryRun) {
+                // Sofort speichern, nicht am Ende: ein Abbruch nach vierzig Minuten
+                // darf nicht vierzig Minuten Arbeit kosten.
+                $country->forceFill($changes)->save();
+            }
+
+            $filled++;
+        }
+
+        $this->info(sprintf(
+            'Fertig: %d ergaenzt, %d mehrdeutig, %d ohne Treffer (von %d).',
+            $filled, $ambiguous, $missing, $countries->count(),
+        ));
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Die Grenzrelationen, die zu diesem Land gehoeren koennten.
+     *
+     * Ein Land ist in OSM eine Relation mit `boundary`-Kategorie. Alles andere — Staedte,
+     * Strassen, Flughaefen gleichen Namens — faellt hier raus, sonst wuerde aus "Georgia"
+     * schnell der US-Bundesstaat statt des Landes.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function boundaryRelations(NominatimClient $client, Country $country): Collection
+    {
+        return $client
+            ->search($country->english_name ?: $country->name, $country->code, limit: 10)
+            ->filter(fn (array $hit): bool => ($hit['osm_type'] ?? null) === 'relation'
+                && ($hit['category'] ?? null) === 'boundary')
+            ->values();
+    }
+
+    /**
+     * Nur die Felder, die heute leer sind — mit dem Wert, den OSM dafuer kennt.
+     *
+     * @param  array<string, mixed>  $hit
+     * @return array<string, mixed>
+     */
+    private function emptyFieldsFrom(Country $country, array $hit): array
+    {
+        $candidates = [
+            'osm_type' => $hit['osm_type'] ?? null,
+            'osm_id' => $hit['osm_id'] ?? null,
+            'osm_name' => $hit['osm_name'] ?? null,
+            'osm_address' => $hit['osm_address'] ?? null,
+            'osm_lat' => $hit['osm_lat'] ?? null,
+            'osm_lon' => $hit['osm_lon'] ?? null,
+            'wikidata' => $hit['wikidata'] ?? null,
+            'wikipedia' => $hit['wikipedia'] ?? null,
+            // Die Koordinatenspalten des Landes sind aelter als die osm_*-Spalten und bei
+            // 235 von 249 Laendern leer; der Mittelpunkt der Grenzrelation ist ein
+            // brauchbarer Wert dafuer.
+            'latitude' => $hit['osm_lat'] ?? null,
+            'longitude' => $hit['osm_lon'] ?? null,
+        ];
+
+        return collect($candidates)
+            ->filter(fn ($value, string $field): bool => $value !== null && $country->{$field} === null)
+            ->all();
+    }
+}
