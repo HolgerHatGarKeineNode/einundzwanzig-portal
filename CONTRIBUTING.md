@@ -56,9 +56,14 @@ php artisan test --compact  # the test suite (Pest)
 
 - **Every change needs a test.** Add a new test or update an existing one, and make sure the
   affected tests pass.
-- Follow the conventions already used in the file you are editing. Committed project rules
-  live in `.ai/rules/` — read the ones whose globs cover your paths.
+- Follow the conventions already used in the file you are editing — check sibling files for
+  structure, naming and approach before introducing a new pattern.
 - Browser tests (`tests/Browser`) need Playwright and are not run in CI.
+
+**A note on CI for forks:** installing the dependencies requires a Flux Pro license, and GitHub
+never hands repository secrets to a workflow triggered from a fork. The Pest job is therefore
+skipped on pull requests from forks — it is not silently passed, and a maintainer runs the
+suite for your change. The Pint style check does run on every pull request.
 
 ## Commit messages and pull requests
 

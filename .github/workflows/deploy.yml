@@ -7,8 +7,8 @@ on:
     branches: [master]
   workflow_dispatch:
 
-permissions:
-  contents: read
+# The job checks nothing out and only calls curl.
+permissions: {}
 
 concurrency:
   group: deploy-production

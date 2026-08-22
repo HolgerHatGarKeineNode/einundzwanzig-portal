@@ -20,7 +20,7 @@ php artisan test --compact --filter=…
 - [ ] `vendor/bin/pint --dirty` was run on the changed PHP files
 - [ ] Translations were added for any new user-facing strings (`lang/*.json`)
 - [ ] No secrets, credentials or personal data in the diff
-- [ ] Documentation (README / `.ai/rules`) updated if the change affects it
+- [ ] Documentation (README / CONTRIBUTING) updated if the change affects it
 
 ## Screenshots
 

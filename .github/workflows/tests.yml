@@ -16,6 +16,18 @@ concurrency:
 jobs:
   pest:
     name: Pest (PHP ${{ matrix.php }})
+
+    # composer install pulls livewire/flux-pro from a licensed repository, so this job needs
+    # the Flux credentials. GitHub never hands secrets to a workflow triggered by a fork or by
+    # Dependabot — running there would produce a green check that tested nothing, which is
+    # worse than no check at all. Those runs are skipped outright, so a required status check
+    # stays unfulfilled instead of being satisfied by an empty job. A maintainer runs the suite
+    # for such a pull request (see CONTRIBUTING.md).
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.repo.full_name == github.repository
+       && github.actor != 'dependabot[bot]')
+
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -24,61 +36,48 @@ jobs:
       matrix:
         php: ['8.4']
 
-    env:
-      FLUX_USERNAME: ${{ secrets.FLUX_USERNAME }}
-      FLUX_LICENSE_KEY: ${{ secrets.FLUX_LICENSE_KEY }}
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      # composer install pulls livewire/flux-pro from a licensed repository. Pull requests
-      # from forks never receive secrets, so the job reports why it stopped instead of
-      # failing with an unhelpful 403 from composer.fluxui.dev.
-      - name: Check for Flux Pro credentials
-        id: flux
+      # Fails the job rather than skipping it: this run happens in a context that is supposed
+      # to have the credentials, so a missing secret is a broken setup, not a reason to pass.
+      - name: Require Flux Pro credentials
+        env:
+          FLUX_USERNAME: ${{ secrets.FLUX_USERNAME }}
+          FLUX_LICENSE_KEY: ${{ secrets.FLUX_LICENSE_KEY }}
         run: |
-          if [ -n "$FLUX_USERNAME" ] && [ -n "$FLUX_LICENSE_KEY" ]; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Tests skipped::No Flux Pro credentials available (fork pull request, or FLUX_USERNAME / FLUX_LICENSE_KEY not set). A maintainer has to run the suite for this change."
+          if [ -z "$FLUX_USERNAME" ] || [ -z "$FLUX_LICENSE_KEY" ]; then
+            echo "::error title=Missing secrets::FLUX_USERNAME and FLUX_LICENSE_KEY are not set. composer install cannot resolve livewire/flux-pro, so the test suite cannot run."
+            exit 1
           fi
 
       - name: Setup PHP
-        if: steps.flux.outputs.available == 'true'
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: ${{ matrix.php }}
           extensions: bcmath, ctype, curl, dom, fileinfo, gd, intl, mbstring, openssl, pdo, pdo_sqlite, sqlite3, sodium, zip
           coverage: none
           tools: composer:v2
 
-      - name: Cache composer packages
-        if: steps.flux.outputs.available == 'true'
-        uses: actions/cache@v4
-        with:
-          path: vendor
-          key: composer-${{ matrix.php }}-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-${{ matrix.php }}-
-
+      # No vendor cache on purpose. Anyone who can open a pull request can read the caches of
+      # the base branch, and vendor/ holds the licensed Flux Pro packages.
       - name: Authenticate with Flux Pro
-        if: steps.flux.outputs.available == 'true'
+        env:
+          FLUX_USERNAME: ${{ secrets.FLUX_USERNAME }}
+          FLUX_LICENSE_KEY: ${{ secrets.FLUX_LICENSE_KEY }}
         run: composer config http-basic.composer.fluxui.dev "$FLUX_USERNAME" "$FLUX_LICENSE_KEY"
 
       - name: Install PHP dependencies
-        if: steps.flux.outputs.available == 'true'
         run: composer install --prefer-dist --no-interaction --no-progress --no-ansi
 
       - name: Prepare environment
-        if: steps.flux.outputs.available == 'true'
         run: |
           cp .env.example .env
           php artisan key:generate
 
       # Browser tests need a Playwright Chromium build and are excluded on purpose.
       - name: Run Unit and Feature tests
-        if: steps.flux.outputs.available == 'true'
         run: php artisan test --compact --testsuite=Unit,Feature
 
   pint:
@@ -88,16 +87,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.4'
           coverage: none
           tools: composer:v2, pint
 
-      # Pint runs standalone here so the style check also covers pull requests from forks,
-      # which cannot install the licensed Flux Pro packages.
+      # Pint runs from the standalone binary and never calls composer install, so pull requests
+      # from forks get a style check without any repository code being executed.
       - name: Check code style
         run: pint --test
