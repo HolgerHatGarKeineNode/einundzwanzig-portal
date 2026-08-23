@@ -2,6 +2,7 @@
 
 namespace App\Support\Broadcasting;
 
+use App\Events\ResourceChanged;
 use App\Http\Resources\CityResource;
 use App\Http\Resources\CourseEventResource;
 use App\Http\Resources\CourseResource;
@@ -18,7 +19,9 @@ use App\Models\MeetupEvent;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
+use Throwable;
 
 /**
  * Die einzige Stelle, an der ein Aenderungs-Payload entsteht (Issue #29).
@@ -35,8 +38,10 @@ use Illuminate\Support\Facades\Route;
  *    Horizon-Prozessen Payloads in falscher Reihenfolge.
  *  - `sequence` steht fest, bevor irgendetwas dispatcht wird.
  *
- * In P1 wird nur die Zeile geschrieben. Der Dispatch kommt in P4 an die markierte
- * Stelle in {@see self::record()} und liest {@see ApiChange::broadcastPayload()}.
+ * {@see self::record()} schreibt die Zeile und dispatcht danach
+ * {@see ResourceChanged} mit {@see ApiChange::broadcastPayload()} — dem gekuerzten
+ * Versand-Umschlag. Der Recorder kennt dabei keine Kanaele: welcher Kanal welches
+ * Ereignis traegt, entscheidet das Event.
  */
 class ChangeRecorder
 {
@@ -206,14 +211,41 @@ class ChangeRecorder
         $change->forceFill(['payload' => $envelope])->save();
 
         /*
-         * P4 haengt hier den Dispatch an:
+         * Erst jetzt der Broadcast (P4), nach dem Schreiben der Zeile und nicht davor —
+         * ein fehlgeschlagener Broadcast darf das Log nicht mitreissen, und mit
+         * `'tries' => 1` (config/horizon.php:225) ist die Zeile das einzige Netz
+         * darunter. Ueber die Leitung geht die gekuerzte Variante: Reverb weist alles
+         * ueber `max_request_size` mit HTTP 413 ab, die Zeile behaelt das volle Objekt.
          *
-         *     event(new ResourceChanged($change->broadcastPayload()));
-         *
-         * Nach dem Schreiben der Zeile, nicht davor — ein fehlgeschlagener Broadcast
-         * darf das Log nicht mitreissen, und mit `'tries' => 1` (config/horizon.php:225)
-         * ist die Zeile das einzige Netz darunter.
+         * Der Kill-Switch oben deckt das mit ab: wer nicht aufzeichnet, sendet auch
+         * nicht — sonst gaebe es ein Ereignis auf dem Kanal, zu dem kein Resync-Eintrag
+         * existiert, und ein Konsument, der es verpasst, erfuehre nie davon.
          */
+        try {
+            event(new ResourceChanged($change->broadcastPayload()));
+        } catch (Throwable $e) {
+            /*
+             * "Darf das Log nicht mitreissen" ist woertlich gemeint, und es geht nicht
+             * nur um das Log: der Recorder laeuft im Observer, also mitten im
+             * Schreib-Request. Eine Ausnahme von hier schluege durch `save()` bis in
+             * den Controller durch — und liefe der Write in einer Transaktion, risse sie den
+             * fachlichen Datensatz gleich mit zurueck. Ein nicht erreichbarer Reverb
+             * (oder eine volle Queue) wuerde damit jedes Speichern im Portal
+             * verhindern. Das waere ein schlechterer Zustand als vor P4.
+             *
+             * Verloren ist dabei nichts, was nicht wiederholbar waere: die
+             * `api_changes`-Zeile steht bereits, `/api/changes` liefert sie aus, und
+             * genau dafuer ist sie da. Still ist es trotzdem nicht — der Log-Eintrag
+             * nennt die Sequenz, ueber die sich der Ausfall nachvollziehen laesst.
+             */
+            Log::warning('Broadcast der Aenderung fehlgeschlagen', [
+                'sequence' => $change->id,
+                'resource' => $change->resource,
+                'action' => $change->action,
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+            ]);
+        }
 
         return $change;
     }

@@ -36,6 +36,13 @@
              aus — bei ueber 250 Datensaetzen allein aus dem DatabaseSeeder. Die Tests,
              die das Log pruefen, schalten es selbst per config()->set() an. -->
         <env name="CHANGE_LOG_ENABLED" value="false"/>
+        <!-- Ohne diese Zeile faellt der Broadcast-Treiber auf das .env des Entwicklers
+             zurueck. Steht dort seit P4 BROADCAST_CONNECTION=reverb, versucht jeder
+             Test, der eine Ressource anlegt, einen echten HTTP-Call an
+             localhost:8080 — und die halbe Suite wird rot, sobald der Daemon nicht
+             laeuft. Ein Test darf nie von einem Dienst abhaengen, den er nicht
+             gestartet hat. Die Broadcast-Tests setzen sich ihren eigenen Treiber. -->
+        <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>

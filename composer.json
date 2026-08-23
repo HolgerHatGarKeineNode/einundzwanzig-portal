@@ -19,6 +19,7 @@
         "laravel/mcp": "^0.9.0",
         "laravel/nightwatch": "^1.18",
         "laravel/passport": "^13.7",
+        "laravel/reverb": "^1.11",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
         "league/glide": "^4.0",
