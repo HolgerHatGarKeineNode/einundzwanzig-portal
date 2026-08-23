@@ -99,4 +99,38 @@ return [
         'prune_days' => (int) env('CHANGE_LOG_PRUNE_DAYS', 30),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Realtime — wohin ein KONSUMENT verbindet
+    |--------------------------------------------------------------------------
+    |
+    | `public_host` ist der oeffentliche Hostname des WebSocket-Servers, so wie
+    | ihn /docs/websockets ausweist. Er hat einen eigenen Schluessel, weil ihn
+    | sonst nichts kennt:
+    |
+    |  - `REVERB_HOST` (config/broadcasting.php) sagt, wohin die ANWENDUNG
+    |    publiziert. In Produktion steht dort 127.0.0.1:8080 — der lokale
+    |    Daemon, damit ein Broadcast nicht als TLS-Roundtrip nach draussen und
+    |    wieder herein laeuft. Als Verbindungsangabe fuer einen Konsumenten
+    |    waere das die Anweisung, sich mit sich selbst zu verbinden.
+    |  - `app.url` ist die Portal-Domain. Sie stimmte, solange Reverb als
+    |    Pfad-Proxy unter derselben Domain hing. Seit P5 laeuft der Server ueber
+    |    Forges Reverb-Integration auf einer EIGENEN Subdomain
+    |    (ws.portal.einundzwanzig.space) mit eigenem Zertifikat — dieselbe
+    |    Domain anzunehmen, waere schlicht falsch.
+    |
+    | Genau diese Verwechslung — Publish-Ziel gegen Verbindungsziel — ist der
+    | Grund fuer den eigenen Schluessel. Leer heisst: Host aus `app.url`, was
+    | lokal (`composer run dev`) das Richtige ist.
+    |
+    | Nur Host, ohne Schema. Ein abweichender Port darf angehaengt werden
+    | (`ws.example.test:8443`); ohne Angabe gilt der Standardport des Schemas.
+    | Das Schema selbst folgt `app.url`: http lokal, https in Produktion.
+    |
+    */
+
+    'realtime' => [
+        'public_host' => env('REVERB_PUBLIC_HOST'),
+    ],
+
 ];

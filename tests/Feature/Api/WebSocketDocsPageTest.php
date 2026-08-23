@@ -90,8 +90,14 @@ it('shows a placeholder instead of an invented value while reverb is unpublished
     $this->get(route('docs.websockets'))
         ->assertSuccessful()
         ->assertSee('{REVERB_APP_KEY}')
-        ->assertSee('{REVERB_SERVER_PATH}')
-        ->assertSee('The socket is not published in this environment yet.');
+        ->assertSee('The socket is not published in this environment yet.')
+        /*
+         * Fuer den PFAD gibt es bewusst keinen Platzhalter mehr: leer ist seit P5 der
+         * Normalfall (eigene Subdomain, Handshake unter dem Standardpfad /app), und
+         * ein Platzhalter an dieser Stelle stuende in der URL und liesse eine
+         * vollstaendige Adresse wie eine unfertige aussehen.
+         */
+        ->assertDontSee('{REVERB_SERVER_PATH}');
 });
 
 it('reads the connection details from the configuration, not from the page', function () {
@@ -101,7 +107,8 @@ it('reads the connection details from the configuration, not from the page', fun
      * niemand nachfaehrt, sobald P5 die Produktionswerte setzt.
      */
     config([
-        'app.url' => 'https://ws.example.test',
+        'app.url' => 'https://portal.example.test',
+        'einundzwanzig.realtime.public_host' => 'ws.portal.example.test',
         'broadcasting.connections.reverb.key' => 'schluessel-aus-der-config',
         'reverb.servers.reverb.path' => 'reverb-pfad-aus-der-config',
     ]);
@@ -110,9 +117,77 @@ it('reads the connection details from the configuration, not from the page', fun
         ->assertSuccessful()
         ->assertSee('schluessel-aus-der-config')
         ->assertSee('/reverb-pfad-aus-der-config')
-        ->assertSee('wss://ws.example.test/reverb-pfad-aus-der-config/app/schluessel-aus-der-config')
+        ->assertSee('wss://ws.portal.example.test/reverb-pfad-aus-der-config/app/schluessel-aus-der-config')
         ->assertDontSee('{REVERB_APP_KEY}')
         ->assertDontSee('{REVERB_SERVER_PATH}');
+});
+
+it('sends consumers to the configured public host, not to the portal domain', function () {
+    /*
+     * Der Befund aus P5: Reverb haengt NICHT als Pfad-Proxy unter der Portal-Domain,
+     * sondern auf einer eigenen Subdomain mit eigenem Zertifikat. Wer hier `app.url`
+     * annimmt, schickt jeden Konsumenten an einen Host, auf dem kein Socket steht —
+     * und der Fehler faellt erst beim Verbinden auf, nicht beim Lesen.
+     */
+    config([
+        'app.url' => 'https://portal.example.test',
+        'einundzwanzig.realtime.public_host' => 'ws.portal.example.test',
+        'reverb.servers.reverb.path' => '',
+        'broadcasting.connections.reverb.options.path' => '',
+        'broadcasting.connections.reverb.key' => 'ein-key',
+    ]);
+
+    $this->get(route('docs.websockets'))
+        ->assertSuccessful()
+        ->assertSee('wss://ws.portal.example.test/app/ein-key')
+        // Die Portal-Domain bleibt der REST-Host — aber nicht der Socket-Host.
+        ->assertDontSee('wss://portal.example.test');
+});
+
+it('falls back to the app url host when no public host is configured', function () {
+    /*
+     * Lokal (`composer run dev`) faellt beides zusammen, und der Rueckfall ist das,
+     * was diese Seite auf einer Entwicklermaschine ueberhaupt brauchbar haelt.
+     */
+    config([
+        'app.url' => 'http://localhost:8000',
+        'einundzwanzig.realtime.public_host' => null,
+        'reverb.servers.reverb.path' => '',
+        'broadcasting.connections.reverb.options.path' => '',
+        'broadcasting.connections.reverb.key' => 'lokaler-key',
+    ]);
+
+    $this->get(route('docs.websockets'))
+        ->assertSuccessful()
+        // http → ws, und der Port aus app.url bleibt stehen, weil auch der Host von
+        // dort kommt.
+        ->assertSee('ws://localhost:8000/app/lokaler-key');
+});
+
+it('builds a url without an empty path segment when there is no prefix', function () {
+    /*
+     * Der Fehler, den diese Zusicherung ausschliesst, ist ein doppelter Schraegstrich
+     * oder ein stehengebliebener Platzhalter mitten in einer Adresse, die man kopieren
+     * soll. Beides verbindet nicht, und beides sieht auf den ersten Blick richtig aus.
+     */
+    config([
+        'app.url' => 'https://portal.example.test',
+        'einundzwanzig.realtime.public_host' => 'ws.portal.example.test',
+        'reverb.servers.reverb.path' => '',
+        'broadcasting.connections.reverb.options.path' => '',
+        'broadcasting.connections.reverb.key' => 'ein-key',
+    ]);
+
+    $response = $this->get(route('docs.websockets'))->assertSuccessful();
+
+    $response->assertSee('wss://ws.portal.example.test/app/ein-key');
+    $response->assertDontSee('ws.portal.example.test//app');
+    $response->assertDontSee('{REVERB_SERVER_PATH}');
+    // Ohne Praefix gehoert auch keine wsPath-Zeile ins TypeScript-Beispiel: der
+    // pusher-js-Default ist der leere String, die Zeile waere eine Einladung, sie
+    // spaeter falsch zu fuellen.
+    $response->assertDontSee('wsPath: WS_PATH', false);
+    $response->assertSee('— none —');
 });
 
 it('falls back to the broadcasting path when the reverb server path is unset', function () {
