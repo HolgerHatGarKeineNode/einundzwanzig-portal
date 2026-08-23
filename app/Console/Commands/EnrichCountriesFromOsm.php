@@ -27,7 +27,8 @@ class EnrichCountriesFromOsm extends Command
         {--limit=0 : Hoechstens so viele Laender bearbeiten (0 = alle)}
         {--code=* : Nur diese Laendercodes, z. B. --code=de --code=us}
         {--dry-run : Nur zeigen, was passieren wuerde}
-        {--interval-ms= : Abstand zwischen zwei Nominatim-Anfragen in Millisekunden. NUR fuer Tests herabsetzen — die Policy verlangt 15000 fuer Massenlaeufe.}';
+        {--interval-ms= : Abstand zwischen zwei Nominatim-Anfragen in Millisekunden. NUR fuer Tests herabsetzen — die Policy verlangt 15000 fuer Massenlaeufe.}
+        {--from-csv : Die OSM-Relation aus database/data/country-enrichment.csv nehmen statt sie zu suchen}';
 
     protected $description = 'Ergaenzt fehlende OpenStreetMap-Referenzen auf Laendern (nur leere Felder)';
 
@@ -37,6 +38,25 @@ class EnrichCountriesFromOsm extends Command
      * Gleichstaenden (exakt 1,0), ohne knappe Faelle durchzuwinken.
      */
     private const CLEAR_WINNER_FACTOR = 1.05;
+
+    /**
+     * Die ISO-Code-zu-OSM-Relation-Liste aus Issue #12.
+     *
+     * Beigesteuert von `RelativelyIrrelevant`, erzeugt aus der ISO-3166-Liste plus einer
+     * Overpass-Abfrage nach `admin_level=2`-Relationen mit `ISO3166-1:alpha2`-Tag. Sie
+     * loest das, was die Namenssuche prinzipiell nicht kann: abhaengige Gebiete ohne
+     * eigene Land-Relation unter ihrem Namen — Puerto Rico, Hongkong, Réunion, Guam.
+     *
+     * Uebernommen wird daraus ausschliesslich die IDENTITAET (`osm_id`). Name, Adresse,
+     * Koordinaten, wikidata und wikipedia holt danach `lookup()` bei Nominatim. Damit
+     * pruefen sich die fremden Daten selbst: findet Nominatim zu der Relation nichts,
+     * wird nichts geschrieben.
+     *
+     * Stichprobe vor der Uebernahme (2026-08-23, neun Laender quer durch die Gruppen):
+     * osm_id, wikidata und wikipedia stimmten in allen neun Faellen exakt mit dem
+     * ueberein, was Nominatim zu derselben Relation sagt.
+     */
+    private const CSV_SOURCE = 'database/data/country-enrichment.csv';
 
     public function handle(): int
     {
@@ -79,8 +99,18 @@ class EnrichCountriesFromOsm extends Command
         $ambiguous = 0;
         $missing = 0;
 
+        $csv = $this->option('from-csv') ? $this->csvByCode() : null;
+
+        if ($csv !== null && $csv === []) {
+            $this->error(self::CSV_SOURCE.' fehlt oder ist leer.');
+
+            return self::FAILURE;
+        }
+
         foreach ($countries as $country) {
-            $hits = $this->boundaryRelations($client, $country);
+            $hits = $csv !== null
+                ? $this->relationFromCsv($client, $country, $csv)
+                : $this->boundaryRelations($client, $country);
 
             if ($hits->isEmpty()) {
                 $missing++;
@@ -124,6 +154,60 @@ class EnrichCountriesFromOsm extends Command
         ));
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Die OSM-Relation eines Landes laut CSV, angereichert ueber Nominatim.
+     *
+     * Rueckgabe als Collection mit hoechstens einem Element, damit der Aufrufer
+     * denselben Pfad geht wie bei der Suche.
+     *
+     * @param  array<string, array<string, string>>  $csv
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function relationFromCsv(NominatimClient $client, Country $country, array $csv): Collection
+    {
+        $osmId = (int) ($csv[mb_strtolower($country->code)]['osm_id'] ?? 0);
+
+        if ($osmId <= 0) {
+            return collect();
+        }
+
+        $hit = $client->lookup('relation', $osmId);
+
+        return $hit === null ? collect() : collect([$hit]);
+    }
+
+    /**
+     * Die CSV als Zuordnung Laendercode (klein) zu Zeile.
+     *
+     * @return array<string, array<string, string>>
+     */
+    private function csvByCode(): array
+    {
+        $path = base_path(self::CSV_SOURCE);
+
+        if (! is_readable($path)) {
+            return [];
+        }
+
+        $handle = fopen($path, 'rb');
+        $header = fgetcsv($handle, escape: '');
+        $rows = [];
+
+        try {
+            while ($row = fgetcsv($handle, escape: '')) {
+                $line = array_combine($header, $row);
+
+                if (($line['code'] ?? '') !== '') {
+                    $rows[mb_strtolower($line['code'])] = $line;
+                }
+            }
+        } finally {
+            fclose($handle);
+        }
+
+        return $rows;
     }
 
     /**

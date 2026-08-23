@@ -236,3 +236,58 @@ it('expands Saint as well as the ampersand', function () {
 
     Http::assertSent(fn ($request): bool => ($request->data()['q'] ?? '') === 'Saint Kitts and Nevis');
 });
+
+it('takes the relation id from the csv and fills the rest from Nominatim', function () {
+    // Puerto Rico steht so in der beigesteuerten Liste; die Namenssuche findet es nicht,
+    // weil es in OSM keine Land-Relation unter diesem Namen gibt.
+    Http::fake(['*' => Http::response([osmCountryRow([
+        'osm_id' => 4422604,
+        'name' => 'Puerto Rico',
+        'extratags' => ['wikidata' => 'Q1183', 'wikipedia' => 'en:Puerto Rico'],
+    ])])]);
+
+    $country = Country::factory()->create([
+        'code' => 'pr', 'name' => 'Puerto Rico',
+        'latitude' => null, 'longitude' => null,
+    ]);
+
+    $this->artisan('countries:enrich-from-osm', ['--code' => ['pr'], '--from-csv' => true, '--interval-ms' => 0])
+        ->assertSuccessful();
+
+    $country->refresh();
+
+    expect($country->osm_id)->toBe(4422604)
+        ->and($country->wikidata)->toBe('Q1183')
+        ->and($country->osm_url)->toBe('https://www.openstreetmap.org/relation/4422604');
+
+    // Die Identitaet kommt aus der Datei, alles andere von Nominatim: genau eine
+    // Anfrage, und zwar ein lookup, keine Suche.
+    Http::assertSentCount(1);
+    Http::assertSent(fn ($request): bool => str_contains($request->url(), '/lookup')
+        && ($request->data()['osm_ids'] ?? '') === 'R4422604');
+});
+
+it('writes nothing when Nominatim does not know the relation from the csv', function () {
+    // So pruefen sich die fremden Daten selbst.
+    Http::fake(['*' => Http::response([])]);
+
+    $country = Country::factory()->create(['code' => 'pr', 'name' => 'Puerto Rico']);
+
+    $this->artisan('countries:enrich-from-osm', ['--code' => ['pr'], '--from-csv' => true, '--interval-ms' => 0])
+        ->expectsOutputToContain('kein Treffer')
+        ->assertSuccessful();
+
+    expect($country->fresh()->osm_id)->toBeNull();
+});
+
+it('skips a country the csv does not list', function () {
+    Http::fake(['*' => Http::response([osmCountryRow()])]);
+
+    $country = Country::factory()->create(['code' => 'zz', 'name' => 'Nirgendwo']);
+
+    $this->artisan('countries:enrich-from-osm', ['--code' => ['zz'], '--from-csv' => true, '--interval-ms' => 0])
+        ->assertSuccessful();
+
+    expect($country->fresh()->osm_id)->toBeNull();
+    Http::assertNothingSent();
+});
