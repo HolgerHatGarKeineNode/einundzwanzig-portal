@@ -188,3 +188,51 @@ it('asks Nominatim for countries first and only then without the filter', functi
     Http::assertSent(fn ($request): bool => ($request->data()['featureType'] ?? null) === 'country');
     Http::assertSent(fn ($request): bool => ! isset($request->data()['featureType']));
 });
+
+it('retries with the spelled-out name when ours abbreviates', function () {
+    // Gemessen: "Antigua & Barbuda" findet nichts, "Antigua and Barbuda" findet R536900.
+    Http::fakeSequence()
+        ->push([])                                          // "Antigua & Barbuda" + featureType
+        ->push([])                                          // "Antigua & Barbuda" ohne Filter
+        ->push([osmCountryRow(['osm_id' => 536900])]);      // "Antigua and Barbuda" + featureType
+
+    $country = Country::factory()->create(['code' => 'ag', 'name' => 'Antigua & Barbuda', 'english_name' => 'Antigua & Barbuda']);
+
+    $this->artisan('countries:enrich-from-osm', ['--code' => ['ag'], '--interval-ms' => 0])
+        ->assertSuccessful();
+
+    expect($country->fresh()->osm_id)->toBe(536900);
+
+    Http::assertSent(fn ($request): bool => ($request->data()['q'] ?? '') === 'Antigua and Barbuda');
+});
+
+it('does not waste a request when the name has nothing to expand', function () {
+    // Bei 15 Sekunden Abstand kostet eine ueberfluessige Anfrage pro Land eine halbe
+    // Stunde — die Variante laeuft nur, wenn sie sich vom Original unterscheidet.
+    Http::fake(['*' => Http::response([])]);
+
+    Country::factory()->create(['code' => 'de', 'name' => 'Germany', 'english_name' => 'Germany']);
+
+    $this->artisan('countries:enrich-from-osm', ['--code' => ['de'], '--interval-ms' => 0])
+        ->assertSuccessful();
+
+    // Genau zwei: mit und ohne featureType. Keine dritte fuer eine Variante,
+    // die identisch waere.
+    Http::assertSentCount(2);
+});
+
+it('expands Saint as well as the ampersand', function () {
+    Http::fakeSequence()
+        ->push([])
+        ->push([])
+        ->push([osmCountryRow(['osm_id' => 536899])]);
+
+    $country = Country::factory()->create(['code' => 'kn', 'name' => 'St. Kitts & Nevis', 'english_name' => 'St. Kitts & Nevis']);
+
+    $this->artisan('countries:enrich-from-osm', ['--code' => ['kn'], '--interval-ms' => 0])
+        ->assertSuccessful();
+
+    expect($country->fresh()->osm_id)->toBe(536899);
+
+    Http::assertSent(fn ($request): bool => ($request->data()['q'] ?? '') === 'Saint Kitts and Nevis');
+});

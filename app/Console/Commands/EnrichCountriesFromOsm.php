@@ -133,13 +133,17 @@ class EnrichCountriesFromOsm extends Command
      * Strassen, Flughaefen gleichen Namens — faellt hier raus, sonst wuerde aus "Georgia"
      * schnell der US-Bundesstaat statt des Landes.
      *
-     * Zwei Anlaeufe, weil die beiden Fehlerarten gegenlaeufig sind:
+     * Mehrere Anlaeufe, weil die Fehlerarten gegenlaeufig sind:
      *
      * 1. Mit Nominatims `featureType=country`. Gemessen am 2026-08-23: Mexico faellt
      *    damit von vier Treffern auf einen, Netherlands und Algeria von zwei auf einen.
      * 2. Findet der Filter nichts, noch einmal ohne ihn. Gebiete ohne eigene
-     *    Land-Relation — Antarktis, abhaengige Territorien — verschwinden sonst ganz,
-     *    und der erste Lauf hatte davon schon genug.
+     *    Land-Relation — Antarktis, abhaengige Territorien — verschwinden sonst ganz.
+     * 3. Beides noch einmal mit ausgeschriebenem Namen, falls unsere Schreibweise
+     *    kuerzt (siehe searchTerms()).
+     *
+     * Der erste Anlauf mit Treffern gewinnt; die Reihenfolge ist von praezise nach
+     * grosszuegig sortiert.
      *
      * @return Collection<int, array<string, mixed>>
      */
@@ -147,11 +151,43 @@ class EnrichCountriesFromOsm extends Command
     {
         $name = $country->english_name ?: $country->name;
 
-        $hits = $this->relationsFor($client, $name, $country->code, 'country');
+        foreach ($this->searchTerms($name) as $term) {
+            foreach (['country', null] as $featureType) {
+                $hits = $this->relationsFor($client, $term, $country->code, $featureType);
 
-        return $hits->isNotEmpty()
-            ? $hits
-            : $this->relationsFor($client, $name, $country->code, null);
+                if ($hits->isNotEmpty()) {
+                    return $hits;
+                }
+            }
+        }
+
+        return collect();
+    }
+
+    /**
+     * Die Schreibweisen, unter denen ein Land in OpenStreetMap zu finden sein kann.
+     *
+     * Unsere Laenderliste kuerzt, OpenStreetMap schreibt aus. Gemessen am 2026-08-23:
+     *
+     *   "Antigua & Barbuda"   0 Treffer   "Antigua and Barbuda"   1 (R536900)
+     *   "Trinidad & Tobago"   0 Treffer   "Trinidad and Tobago"   1 (R555717)
+     *   "St. Kitts & Nevis"   0 Treffer   "Saint Kitts and Nevis" 1 (R536899)
+     *
+     * Die Variante wird nur versucht, wenn sie sich vom Original unterscheidet — sonst
+     * kostet jeder Lauf eine zweite Anfrage pro Land fuer nichts, und bei 15 Sekunden
+     * Abstand ist das eine halbe Stunde.
+     *
+     * @return array<int, string>
+     */
+    private function searchTerms(string $name): array
+    {
+        $expanded = str_replace(
+            [' & ', 'St. ', 'Ste. '],
+            [' and ', 'Saint ', 'Sainte '],
+            $name,
+        );
+
+        return $expanded === $name ? [$name] : [$name, $expanded];
     }
 
     /**
