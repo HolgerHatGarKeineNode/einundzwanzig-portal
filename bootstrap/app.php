@@ -8,6 +8,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
+use Illuminate\Support\Facades\Log;
 use Livewire\Exceptions\MethodNotFoundException;
 use Livewire\Exceptions\PublicPropertyNotFoundException;
 use Livewire\Features\SupportFileUploads\MissingFileUploadsTraitException;
@@ -98,7 +100,47 @@ return Application::configure(basePath: dirname(__DIR__))
             return $e instanceof PublicPropertyNotFoundException && ! app()->isLocal();
         };
 
-        $exceptions->report(function (Throwable $e) use ($isStaleLivewireAsset, $isStaleCompiledView, $isMissingFileUploadsTrait, $isLivewireExploitProbe, $isMalformedLivewirePropertyUpdate) {
+        /*
+         * TokenMismatchException steht in Laravels `internalDontReport`, und dieser
+         * Filter greift VOR den hier registrierten Callbacks — ohne stopIgnoring()
+         * wuerde der report()-Callback unten fuer sie nie laufen. Die Entscheidung,
+         * ob etwas protokolliert wird, faellt dann dort: angemeldet ja, anonym nein.
+         */
+        $exceptions->stopIgnoring(TokenMismatchException::class);
+
+        /*
+         * Die Ausnahmen, die als 419 enden und von Haus aus keine Spur hinterlassen.
+         * TokenMismatchException steht in Laravels internalDontReport,
+         * CorruptComponentPayloadException schalten wir selbst stumm.
+         */
+        $isSilencedFourNineteen = function (Throwable $e): bool {
+            return $e instanceof CorruptComponentPayloadException
+                || $e instanceof TokenMismatchException;
+        };
+
+        /*
+         * Die Namen der Livewire-Komponenten aus dem Request-Rumpf.
+         *
+         * Fail-soft: ein kaputter oder fehlender Snapshot ist genau der Fall, den wir
+         * protokollieren wollen — daran darf das Protokollieren nicht scheitern.
+         *
+         * @return array<int, string>
+         */
+        $livewireComponentNames = function (Request $request): array {
+            try {
+                return collect($request->input('components', []))
+                    ->pluck('snapshot')
+                    ->map(fn ($snapshot) => is_string($snapshot) ? json_decode($snapshot, true) : null)
+                    ->pluck('memo.name')
+                    ->filter()
+                    ->values()
+                    ->all();
+            } catch (Throwable) {
+                return [];
+            }
+        };
+
+        $exceptions->report(function (Throwable $e) use ($isStaleLivewireAsset, $isStaleCompiledView, $isMissingFileUploadsTrait, $isLivewireExploitProbe, $isMalformedLivewirePropertyUpdate, $isSilencedFourNineteen, $livewireComponentNames) {
             if ($isStaleLivewireAsset($e, request())) {
                 return false;
             }
@@ -119,12 +161,40 @@ return Application::configure(basePath: dirname(__DIR__))
                 return false;
             }
 
-            // Bots replay `/livewire/update` with a mutated snapshot whose HMAC
-            // checksum no longer matches its [name, id, data]. Checksum::verify()
-            // rejects these, so the rejection is the tamper signature, not an app
-            // fault — we silence the report noise. Rendering is left untouched:
-            // the exception already returns a native 419 on its own.
-            if ($e instanceof CorruptComponentPayloadException) {
+            /*
+             * Ein 419 ist unsichtbar, und das war das eigentliche Problem.
+             *
+             * Sowohl `TokenMismatchException` (CSRF) als auch
+             * `CorruptComponentPayloadException` enden als 419 — die erste steht in
+             * Laravels `internalDontReport`, die zweite haben wir hier selbst
+             * stummgeschaltet. Als am 2026-08-22 ein Nutzer ein Event nicht speichern
+             * konnte (Issue #18, mehrere 419 auf /livewire/update), stand im
+             * Produktionslog zu diesem Zeitpunkt keine einzige Zeile. Ohne Spur laesst
+             * sich nicht einmal entscheiden, WELCHE der beiden Ursachen es war.
+             *
+             * Deshalb: fuer angemeldete Nutzer wird beides protokolliert. Wer
+             * eingeloggt ist, ist kein Scanner — und genau dessen Faelle wollen wir
+             * sehen. Fuer anonyme Requests bleibt es still, sonst kehrt die Bot-Flut
+             * zurueck, wegen der die Unterdrueckung ueberhaupt eingebaut wurde.
+             */
+            if ($isSilencedFourNineteen($e)) {
+                $request = request();
+
+                if (! auth()->hasUser() || ! auth()->check()) {
+                    return false;
+                }
+
+                Log::warning('419 fuer angemeldeten Nutzer', [
+                    'exception' => $e::class,
+                    'user_id' => auth()->id(),
+                    'path' => $request->path(),
+                    // Bei Livewire steht die eigentliche Komponente im Snapshot, nicht
+                    // im Pfad — ohne sie weiss man nur "irgendwo im Portal".
+                    'livewire_components' => $livewireComponentNames($request),
+                    'referer' => $request->headers->get('referer'),
+                    'user_agent' => $request->userAgent(),
+                ]);
+
                 return false;
             }
 
