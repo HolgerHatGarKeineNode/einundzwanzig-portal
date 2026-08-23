@@ -38,8 +38,30 @@ new class extends Component {
         return $options;
     }
 
-    public function updateLanguage() {
-        return redirect()->route('lang_country.switch', ['lang_country' => $this->langCountry]);
+    /**
+     * Lifecycle-Hook statt wire:change.
+     *
+     * Vorher hingen `wire:model.live` und `wire:change="updateLanguage"` am selben
+     * Element. Livewire 4 faehrt Property-Updates parallel, also gingen zwei Requests
+     * raus: einer, der `langCountry` setzt, und einer, der `updateLanguage()` ruft —
+     * letzterer mit dem Snapshot VOR der Aenderung. Traf er zuerst ein, leitete er auf
+     * die zuvor gewaehlte Sprache um, und die Auswahl sah aus, als spraenge sie zurueck.
+     * Zwei gleichzeitige Updates derselben Komponente sind ausserdem der Weg, auf dem
+     * ein Snapshot veraltet und Livewire mit 419 abbricht.
+     *
+     * Der Hook laeuft im selben Request, in dem die Property gesetzt wird — eine
+     * Anfrage, kein Rennen, und der Wert ist garantiert der neue.
+     */
+    public function updatedLangCountry(): void
+    {
+        /*
+         * Die bewusste Wahl getrennt festhalten: `lang_country` allein sagt nicht, ob
+         * sie jemand getroffen oder eine Middleware aus Accept-Language geraten hat.
+         * ApplyChosenLanguageAfterLogin braucht diesen Unterschied.
+         */
+        session(['lang_country_chosen' => $this->langCountry]);
+
+        $this->redirectRoute('lang_country.switch', ['lang_country' => $this->langCountry]);
     }
 };
 
@@ -49,7 +71,6 @@ new class extends Component {
     <flux:select
         variant="listbox" searchable
         wire:model.live="langCountry"
-        wire:change="updateLanguage"
         :placeholder="__('Sprache wählen')"
     >
         @foreach($this->languages as $option)
