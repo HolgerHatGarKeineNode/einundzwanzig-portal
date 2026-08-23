@@ -47,8 +47,15 @@ Route::middleware([SetApiLocale::class, 'throttle:60,1'])
  * Authenticated write endpoints (Sanctum token auth).
  * Lets a lecturer create/update their own courses and course events
  * programmatically, e.g. to sync events from an external system.
+ *
+ * `throttle` ist hier kein Schmuck, sondern die einzige Volumenbremse dieser Gruppe:
+ * `bootstrap/app.php` ruft `throttleApi()` nicht auf, also erbt sie von aussen nichts.
+ * Bis Issue #30 war der offene Lesepfad gedrosselt und der authentifizierte
+ * Schreibpfad ungedrosselt — genau andersherum als gedacht. 60/min laesst einen
+ * ehrlichen Massenimport (mehrere hundert Staedte) in Minuten durchlaufen und
+ * begrenzt trotzdem, was ein einzelnes Token in einer Stunde anrichten kann.
  */
-Route::middleware([SetApiLocale::class, 'auth:sanctum'])
+Route::middleware([SetApiLocale::class, 'auth:sanctum', 'throttle:60,1'])
     ->as('api.')
     ->group(function () {
         Route::get('user', UserController::class)->name('user');

@@ -193,6 +193,17 @@ class ChangeRecorder
             'resource' => $definition['name'],
             'resource_id' => (int) $model->getKey(),
             'action' => $action,
+            /*
+             * Der Akteur — und zwar NUR in der Spalte, nicht im Envelope daneben
+             * (Issue #30). Das Envelope ist der Vertrag zum externen Konsumenten; die
+             * Zurechnung ist eine Betreiberfrage. Waere sie Teil des Payloads, lieferte
+             * `/api/changes` einen oeffentlichen Autorenindex aus.
+             *
+             * `null` ist der Normalfall ausserhalb eines Requests: Seeder, Importe und
+             * Konsolenbefehle haben keinen angemeldeten Nutzer. Das darf einen
+             * Schreibvorgang nie aufhalten, deshalb wird hier nichts erzwungen.
+             */
+            'user_id' => auth()->id(),
             'country_code' => self::countryCode($model),
             'city_id' => self::cityId($model, $definition),
             'payload' => $envelope,
