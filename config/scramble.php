@@ -59,6 +59,18 @@ return [
         connector and manage meetups, events and courses straight from a chat. The illustrated
         step-by-step guide (in German) is at [/ki-assistent](/ki-assistent).
 
+        ## Realtime updates
+
+        You do not have to poll a full export and diff it against your cache. `GET /api/changes`
+        is a cursor-paginated change log of every create, update and delete — deletions included,
+        which are invisible anywhere else because nothing here is soft-deleted. Two public
+        WebSocket channels (`portal` and `meetup-events`) carry the same envelope within
+        milliseconds, without authentication.
+
+        The channels are not HTTP routes and therefore cannot appear in this reference. Their
+        names, the payload contract, a working TypeScript client and the gaps you have to plan
+        around are documented at [/docs/websockets](/docs/websockets).
+
         ## Authentication
 
         Most **read endpoints** are public and require no token.

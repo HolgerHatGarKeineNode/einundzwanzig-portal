@@ -41,16 +41,26 @@ class ResourceChanged implements ShouldBroadcast
     public function __construct(public readonly array $payload) {}
 
     /**
-     * Der Event-Name auf dem Kanal, etwa `.meetup-event.created`.
+     * Der Event-Name auf dem Draht, etwa `meetup-event.created`.
      *
-     * Der fuehrende Punkt ist Pflicht und kein Schoenheitsfehler: ohne ihn stellt Echo
-     * den Anwendungs-Namespace voran und der Konsument muesste auf
-     * `App\Events\ResourceChanged` hoeren — ein interner Klassenname als Aussenvertrag.
-     * Mit Punkt hoert er auf den Namen, der auch in der Doku steht.
+     * OHNE FUEHRENDEN PUNKT, und das ist der Punkt. Was diese Methode zurueckgibt,
+     * geht WOERTLICH ueber die Leitung: {@see BroadcastEvent::handle()}
+     * nimmt `enum_value($this->event->broadcastAs())` als Event-Namen, ohne irgendetwas
+     * daran zu aendern. Der fuehrende Punkt, den man aus Laravel-Beispielen kennt, ist
+     * CLIENT-Syntax: `Echo.channel(…).listen('.meetup-event.created')` sagt Echo „stell
+     * mir keinen App-Namespace voran"; Echo entfernt ihn und abonniert
+     * `meetup-event.created`. Er reist nie mit.
+     *
+     * Stuende der Punkt hier, hiesse das Ereignis auf dem Draht buchstaeblich
+     * `.meetup-event.created` — und ein Echo-Konsument mit der naheliegenden
+     * Schreibweise abonnierte `meetup-event.created` und hoerte fuer immer nichts.
+     * Ein oeffentlicher Pusher-Kanal hat keinen Rueckkanal: ein Abo auf einen Namen,
+     * den niemand sendet, ist erfolgreich und still. Genau die Fehlerklasse, vor der
+     * /docs/websockets warnt — sie darf nicht aus diesem Repo kommen.
      */
     public function broadcastAs(): string
     {
-        return sprintf('.%s.%s', $this->payload['resource'], $this->payload['action']);
+        return sprintf('%s.%s', $this->payload['resource'], $this->payload['action']);
     }
 
     /**

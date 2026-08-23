@@ -211,7 +211,7 @@ it('delivers a delete through a real queue run although the model is gone', func
 
     $sent = $broadcasts[0];
 
-    expect($sent['event'])->toBe('.meetup-event.deleted')
+    expect($sent['event'])->toBe('meetup-event.deleted')
         ->and($sent['channels'])->toBe(['portal', 'meetup-events'])
         ->and($sent['payload']['action'])->toBe('deleted')
         ->and($sent['payload']['id'])->toBe($id)
@@ -255,16 +255,50 @@ it('broadcasts every other resource on portal alone', function (string $resource
     expect(array_map(strval(...), $channels))->toBe(['portal']);
 })->with(['meetup', 'city', 'course', 'course-event', 'lecturer']);
 
-it('names the event with a leading dot for every action', function (string $action): void {
+it('names the event without a leading dot for every action', function (string $action): void {
     expect((new ResourceChanged(changeEnvelope('meetup-event', $action)))->broadcastAs())
-        ->toBe(".meetup-event.{$action}");
+        ->toBe("meetup-event.{$action}");
 })->with(['created', 'updated', 'deleted']);
 
 it('names the event after the resource in the payload', function (): void {
     expect((new ResourceChanged(changeEnvelope('course-event', 'created')))->broadcastAs())
-        ->toBe('.course-event.created')
+        ->toBe('course-event.created')
         ->and((new ResourceChanged(changeEnvelope('lecturer', 'deleted')))->broadcastAs())
-        ->toBe('.lecturer.deleted');
+        ->toBe('lecturer.deleted');
+});
+
+it('never lets a leading dot back into the event name', function (string $resource): void {
+    /*
+     * Der Punkt ist CLIENT-Syntax und gehoert nicht in den Namen: was broadcastAs()
+     * liefert, geht woertlich ueber den Draht (BroadcastEvent::handle()). Stuende er
+     * hier, entfernte laravel-echo bei `.listen('.meetup-event.created')` genau einen
+     * Punkt und abonnierte einen Namen, den niemand sendet — erfolgreich und fuer
+     * immer still.
+     *
+     * Diese Zusicherung ist bewusst eine eigene und nicht bloss ein `toBe(...)`: ein
+     * Gleichheitstest faellt mit dem Namen zusammen, wenn jemand beide zugleich
+     * anfasst. Diese hier bleibt rot, egal wie der Name lautet.
+     */
+    foreach (['created', 'updated', 'deleted'] as $action) {
+        $name = (new ResourceChanged(changeEnvelope($resource, $action)))->broadcastAs();
+
+        expect($name)->not->toStartWith('.')
+            ->and($name)->toBe("{$resource}.{$action}");
+    }
+})->with(['meetup', 'meetup-event', 'city', 'course', 'course-event', 'lecturer']);
+
+it('puts the dotless name on the wire, not just in broadcastAs', function (): void {
+    /*
+     * Der Beleg am anderen Ende der Kette: nicht die Methode wird geprueft, sondern
+     * das, was der Broadcaster wirklich zu sehen bekommt.
+     */
+    City::factory()->create();
+
+    $sent = broadcastsFor('city');
+
+    expect($sent)->toHaveCount(1)
+        ->and($sent[0]['event'])->toBe('city.created')
+        ->and($sent[0]['event'])->not->toStartWith('.');
 });
 
 /*
@@ -417,7 +451,7 @@ it('broadcasts create, update and delete for every api resource', function (): v
         $sent = broadcastsFor($resource);
 
         expect($sent)->toHaveCount(1)
-            ->and($sent[0]['event'])->toBe(".{$resource}.updated")
+            ->and($sent[0]['event'])->toBe("{$resource}.updated")
             ->and($sent[0]['channels'])->toBe(['portal']);
     }
 });
