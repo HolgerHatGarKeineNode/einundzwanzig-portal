@@ -31,6 +31,13 @@ class EnrichCountriesFromOsm extends Command
 
     protected $description = 'Ergaenzt fehlende OpenStreetMap-Referenzen auf Laendern (nur leere Felder)';
 
+    /**
+     * Wie deutlich der beste Treffer den zweitbesten schlagen muss, damit die Wahl
+     * ohne Menschen faellt. 1,05 trennt echte Sieger (gemessen: 1,14 bis 1,26) von
+     * Gleichstaenden (exakt 1,0), ohne knappe Faelle durchzuwinken.
+     */
+    private const CLEAR_WINNER_FACTOR = 1.05;
+
     public function handle(): int
     {
         /*
@@ -82,19 +89,18 @@ class EnrichCountriesFromOsm extends Command
                 continue;
             }
 
-            if ($hits->count() > 1) {
+            $hit = $hits->count() === 1 ? $hits->first() : $this->clearWinner($hits);
+
+            if ($hit === null) {
                 /*
-                 * Lieber nichts als das Falsche: Territorien wie "U.S. Outlying Islands"
-                 * liefern mehrere Grenzrelationen, und die falsche zu waehlen faellt
+                 * Lieber nichts als das Falsche: die falsche Relation zu waehlen faellt
                  * niemandem auf, bis jemand der Karte nicht mehr traut.
                  */
                 $ambiguous++;
-                $this->warn("  {$country->code} {$country->name}: {$hits->count()} Grenzrelationen — uebersprungen");
+                $this->warn("  {$country->code} {$country->name}: {$hits->count()} Grenzrelationen, kein klarer Vorsprung — uebersprungen");
 
                 continue;
             }
-
-            $hit = $hits->first();
             $changes = $this->emptyFieldsFrom($country, $hit);
 
             if ($changes === []) {
@@ -127,15 +133,64 @@ class EnrichCountriesFromOsm extends Command
      * Strassen, Flughaefen gleichen Namens — faellt hier raus, sonst wuerde aus "Georgia"
      * schnell der US-Bundesstaat statt des Landes.
      *
+     * Zwei Anlaeufe, weil die beiden Fehlerarten gegenlaeufig sind:
+     *
+     * 1. Mit Nominatims `featureType=country`. Gemessen am 2026-08-23: Mexico faellt
+     *    damit von vier Treffern auf einen, Netherlands und Algeria von zwei auf einen.
+     * 2. Findet der Filter nichts, noch einmal ohne ihn. Gebiete ohne eigene
+     *    Land-Relation — Antarktis, abhaengige Territorien — verschwinden sonst ganz,
+     *    und der erste Lauf hatte davon schon genug.
+     *
      * @return Collection<int, array<string, mixed>>
      */
     private function boundaryRelations(NominatimClient $client, Country $country): Collection
     {
+        $name = $country->english_name ?: $country->name;
+
+        $hits = $this->relationsFor($client, $name, $country->code, 'country');
+
+        return $hits->isNotEmpty()
+            ? $hits
+            : $this->relationsFor($client, $name, $country->code, null);
+    }
+
+    /**
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function relationsFor(NominatimClient $client, string $name, string $code, ?string $featureType): Collection
+    {
         return $client
-            ->search($country->english_name ?: $country->name, $country->code, limit: 10)
+            ->search($name, $code, limit: 10, featureType: $featureType)
             ->filter(fn (array $hit): bool => ($hit['osm_type'] ?? null) === 'relation'
                 && ($hit['category'] ?? null) === 'boundary')
             ->values();
+    }
+
+    /**
+     * Der eindeutig wichtigste Treffer, oder null bei zu knappem Vorsprung.
+     *
+     * Nominatims `importance` rangiert das Land ueber alles, was zufaellig so heisst.
+     * Wo der Vorsprung deutlich ist, ist die Wahl sicher: Zypern kommt auf 0,7777
+     * gegen 0,6152 fuer die britische Militaerbasis Akrotiri and Dhekelia.
+     *
+     * Wo er es nicht ist, wird nicht geraten. Die Niederlande lieferten zwei Relationen
+     * mit exakt 0,8864 — das europaeische Nederland und das Koenigreich —, und welche
+     * davon gemeint ist, kann ein Zahlenvergleich nicht entscheiden.
+     *
+     * @param  Collection<int, array<string, mixed>>  $hits
+     * @return array<string, mixed>|null
+     */
+    private function clearWinner(Collection $hits): ?array
+    {
+        $ranked = $hits->sortByDesc(fn (array $hit): float => (float) ($hit['importance'] ?? 0))->values();
+        $best = (float) ($ranked[0]['importance'] ?? 0);
+        $second = (float) ($ranked[1]['importance'] ?? 0);
+
+        if ($best <= 0.0 || $second <= 0.0) {
+            return null;
+        }
+
+        return $best >= $second * self::CLEAR_WINNER_FACTOR ? $ranked[0] : null;
     }
 
     /**

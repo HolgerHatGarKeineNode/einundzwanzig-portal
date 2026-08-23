@@ -48,9 +48,10 @@ class NominatimClient
     /**
      * Search for a place. Returns an empty collection on any failure.
      *
+     * @param  string|null  $featureType  Nominatims featureType: country, state, city, settlement
      * @return Collection<int, array<string, mixed>>
      */
-    public function search(string $query, ?string $countryCode = null, int $limit = 5): Collection
+    public function search(string $query, ?string $countryCode = null, int $limit = 5, ?string $featureType = null): Collection
     {
         $query = trim($query);
 
@@ -67,6 +68,17 @@ class NominatimClient
             'extratags' => 1,
             'limit' => $limit,
             'countrycodes' => $countryCode ? mb_strtolower($countryCode) : null,
+            /*
+             * Nominatims eigener Grobfilter (country, state, city, settlement). Er
+             * raeumt Mehrdeutigkeiten weg, die ein Nachfiltern auf category=boundary
+             * stehen laesst: "Mexico" liefert ohne ihn vier Grenzrelationen — das Land,
+             * zweimal Mexiko-Stadt und den Bundesstaat.
+             *
+             * Nicht bedingungslos einsetzen: Gebiete ohne eigene Land-Relation
+             * (Antarktis, abhaengige Territorien) verschwinden damit ganz. Der Aufrufer
+             * entscheidet, ob er den Filter will und ob er ohne ihn nachfasst.
+             */
+            'featureType' => $featureType,
         ], fn ($value): bool => $value !== null);
 
         $cacheKey = 'osm:search:'.md5(json_encode($params));

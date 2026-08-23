@@ -136,3 +136,55 @@ it('honours the limit so a first run can stay small', function () {
 
     expect(Country::whereNotNull('osm_id')->count())->toBe(1);
 });
+
+it('picks the clear winner when importance leaves no doubt', function () {
+    // Gemessen an Zypern: das Land 0,7777 gegen 0,6152 fuer die Militaerbasis
+    // Akrotiri and Dhekelia. Faktor 1,26 — kein Zweifel.
+    Http::fake(['*' => Http::response([
+        osmCountryRow(['osm_id' => 3263728, 'name' => 'Akrotiri and Dhekelia', 'importance' => 0.6152]),
+        osmCountryRow(['osm_id' => 307787, 'name' => 'Kypros', 'importance' => 0.7777]),
+    ])]);
+
+    $country = Country::factory()->create(['code' => 'cy', 'name' => 'Cyprus']);
+
+    $this->artisan('countries:enrich-from-osm', ['--code' => ['cy'], '--interval-ms' => 0])
+        ->assertSuccessful();
+
+    // Der wichtigere Treffer gewinnt, nicht der erste in der Liste.
+    expect($country->fresh()->osm_id)->toBe(307787);
+});
+
+it('still writes nothing when two relations are equally important', function () {
+    // Die Niederlande liefern zwei Relationen mit exakt 0,8864 — das europaeische
+    // Nederland und das Koenigreich. Welche gemeint ist, entscheidet keine Zahl.
+    Http::fake(['*' => Http::response([
+        osmCountryRow(['osm_id' => 47796, 'importance' => 0.8864]),
+        osmCountryRow(['osm_id' => 2323309, 'importance' => 0.8864]),
+    ])]);
+
+    $country = Country::factory()->create(['code' => 'nl', 'name' => 'Netherlands']);
+
+    $this->artisan('countries:enrich-from-osm', ['--code' => ['nl'], '--interval-ms' => 0])
+        ->expectsOutputToContain('kein klarer Vorsprung')
+        ->assertSuccessful();
+
+    expect($country->fresh()->osm_id)->toBeNull();
+});
+
+it('asks Nominatim for countries first and only then without the filter', function () {
+    // Der Filter raeumt Mehrdeutigkeiten weg; ohne den Nachschlag verschwaenden
+    // Gebiete ohne eigene Land-Relation aber ganz.
+    Http::fakeSequence()
+        ->push([])                            // featureType=country: nichts
+        ->push([osmCountryRow()]);            // ohne Filter: Treffer
+
+    $country = Country::factory()->create(['code' => 'de', 'name' => 'Germany']);
+
+    $this->artisan('countries:enrich-from-osm', ['--code' => ['de'], '--interval-ms' => 0])
+        ->assertSuccessful();
+
+    expect($country->fresh()->osm_id)->toBe(51477);
+
+    Http::assertSent(fn ($request): bool => ($request->data()['featureType'] ?? null) === 'country');
+    Http::assertSent(fn ($request): bool => ! isset($request->data()['featureType']));
+});
