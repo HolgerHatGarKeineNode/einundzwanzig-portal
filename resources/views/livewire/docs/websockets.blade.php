@@ -37,8 +37,6 @@ class extends Component {
      * bei sich. Die Platzhalter tragen den Namen der Env-Variablen, aus der der Wert
      * kommt, damit erkennbar ist, worauf gewartet wird.
      */
-    private const PATH_PLACEHOLDER = '{REVERB_SERVER_PATH}';
-
     private const KEY_PLACEHOLDER = '{REVERB_APP_KEY}';
 
     /**
@@ -61,31 +59,52 @@ class extends Component {
     /**
      * Die Verbindungsangaben, vollstaendig aus der Konfiguration gelesen.
      *
-     * Nichts davon ist hier fest verdrahtet — sobald P5 die Produktionswerte setzt,
-     * zeigt die Seite sie, ohne dass jemand sie nachtraegt.
+     * Nichts davon ist hier fest verdrahtet: aendert sich der Betrieb, aendert sich
+     * die Seite mit — genau das war der Punkt, und P5 hat ihn eingeloest.
      *
-     * EINE ABWEICHUNG, MIT ABSICHT: Host, Schema und Port kommen aus `app.url` und
-     * NICHT aus `broadcasting.connections.reverb.options.*`. Die dortigen Werte sagen,
-     * wohin die ANWENDUNG publiziert; auf Produktion steht da laut Plan
-     * `127.0.0.1:8080/http`, damit ein Broadcast nicht als TLS-Roundtrip durch nginx
-     * auf denselben Server zurueckläuft. Ein Konsument, der sich zu 127.0.0.1
-     * verbindet, verbindet sich zu seiner eigenen Maschine. Der Weg nach aussen ist der
-     * Pfad-Proxy auf demselben Hostnamen wie das Portal — also `app.url`.
+     * DREI QUELLEN, WEIL ES DREI VERSCHIEDENE DINGE SIND:
      *
-     * Der Pfad kommt aus `reverb.servers.reverb.path` (das ist das `--path` des
-     * Daemons und damit genau das Praefix, das nginx nach aussen reicht), mit
-     * `broadcasting.connections.reverb.options.path` als zweiter Quelle, weil beide
-     * dieselbe Env-Variable lesen.
+     *  1. HOST — `einundzwanzig.realtime.public_host` (`REVERB_PUBLIC_HOST`), mit
+     *     `app.url` als Rueckfall. NICHT
+     *     `broadcasting.connections.reverb.options.host`: dort steht das
+     *     PUBLISH-Ziel, in Produktion `127.0.0.1:8080`, damit ein Broadcast nicht als
+     *     TLS-Roundtrip nach draussen und wieder herein laeuft. Und seit P5 auch
+     *     nicht mehr `app.url` allein: Reverb haengt nicht als Pfad-Proxy unter der
+     *     Portal-Domain, sondern laeuft ueber Forges Reverb-Integration auf einer
+     *     eigenen Subdomain mit eigenem Zertifikat. Lokal, wo beides zusammenfaellt,
+     *     bleibt der Rueckfall auf `app.url` richtig.
+     *  2. SCHEMA und PORT — aus `app.url`. Das Schema, weil `wss` genau dann gilt,
+     *     wenn das Portal selbst per TLS laeuft. Der Port nur dann, wenn auch der
+     *     Host von dort kommt: einen abweichenden Port an einen ANDEREN Hostnamen zu
+     *     kleben, ergaebe lokal `wss://ws.example.test:8000` — eine Adresse, die es
+     *     nirgends gibt. Steht der Port am konfigurierten Host (`host:8443`), wird er
+     *     von dort gelesen.
+     *  3. PFAD und KEY — aus den Reverb-Configs. Der Pfad kommt aus
+     *     `reverb.servers.reverb.path` (dem `--path` des Daemons), mit
+     *     `broadcasting.connections.reverb.options.path` als zweiter Quelle, weil
+     *     beide dieselbe Env-Variable lesen. LEER IST DER NORMALFALL: auf einer
+     *     eigenen Subdomain steht der Handshake unter dem Standardpfad `/app`, und
+     *     dann darf in der URL kein leeres Segment und erst recht kein Platzhalter
+     *     stehen. Nur der Key hat einen Platzhalter — er ist der einzige Wert, den
+     *     man nicht raten und nicht weglassen kann.
      *
-     * @return array{scheme:string, host:string, port:int, ws_path:string, key:string, url:string, published:bool}
+     * @return array{scheme:string, host:string, port:int, has_path:bool, ws_path:string, key:string, url:string, published:bool}
      */
     #[Computed]
     public function connection(): array
     {
         $appUrl = (string) config('app.url');
-        $host = parse_url($appUrl, PHP_URL_HOST) ?: request()->getHost();
-        $port = parse_url($appUrl, PHP_URL_PORT);
         $scheme = parse_url($appUrl, PHP_URL_SCHEME) === 'http' ? 'ws' : 'wss';
+
+        $publicHost = trim((string) config('einundzwanzig.realtime.public_host'), " \t\n\r\0\x0B/");
+
+        if ($publicHost !== '') {
+            // Ein optionaler Port darf am konfigurierten Host haengen.
+            [$host, $port] = array_pad(explode(':', $publicHost, 2), 2, null);
+        } else {
+            $host = parse_url($appUrl, PHP_URL_HOST) ?: request()->getHost();
+            $port = parse_url($appUrl, PHP_URL_PORT);
+        }
 
         $path = trim((string) (
             config('reverb.servers.reverb.path')
@@ -94,22 +113,22 @@ class extends Component {
 
         $key = trim((string) config('broadcasting.connections.reverb.key'));
 
-        $authority = $host.($port ? ':'.$port : '');
-
         return [
             'scheme' => $scheme,
             'host' => $host,
             'port' => (int) ($port ?: ($scheme === 'wss' ? 443 : 80)),
-            'ws_path' => $path === '' ? self::PATH_PLACEHOLDER : '/'.$path,
+            'has_path' => $path !== '',
+            'ws_path' => $path === '' ? '' : '/'.$path,
             'key' => $key === '' ? self::KEY_PLACEHOLDER : $key,
             'url' => sprintf(
-                '%s://%s/%s/app/%s',
+                '%s://%s%s%s/app/%s',
                 $scheme,
-                $authority,
-                $path === '' ? self::PATH_PLACEHOLDER : $path,
+                $host,
+                $port ? ':'.$port : '',
+                $path === '' ? '' : '/'.$path,
                 $key === '' ? self::KEY_PLACEHOLDER : $key,
             ),
-            'published' => $path !== '' && $key !== '',
+            'published' => $key !== '',
         ];
     }
 
@@ -348,6 +367,20 @@ class extends Component {
         $connection = $this->connection();
         $changesUrl = $this->changesUrl();
         $forceTls = $connection['scheme'] === 'wss' ? 'true' : 'false';
+
+        /*
+         * `wsPath` steht nur da, wenn es einen Pfad gibt. Der Default in pusher-js ist
+         * der leere String (`wsPath: opts.wsPath || Defaults.wsPath`, `wsPath: ''` in
+         * src/core/defaults.ts) — weglassen und `''` sind also dasselbe. Eine Zeile
+         * `wsPath: ''` in ein Copy-paste-Beispiel zu schreiben, laedt trotzdem dazu
+         * ein, sie fuer noetig zu halten und irgendwann falsch zu fuellen.
+         */
+        $wsPathConst = $connection['has_path']
+            ? "\nconst WS_PATH = '{$connection['ws_path']}';   // the proxy only forwards this prefix"
+            : '';
+        $wsPathOption = $connection['has_path']
+            ? "\n  wsPath: WS_PATH,"
+            : '';
         $maxBytes = ChangeRecorder::MAX_BROADCAST_BYTES;
         $pruneDays = $this->pruneDays();
 
@@ -361,8 +394,7 @@ class extends Component {
         import Pusher from 'pusher-js';
 
         const WS_HOST = '{$connection['host']}';
-        const WS_PATH = '{$connection['ws_path']}';        // nginx proxies only this prefix
-        const APP_KEY = '{$connection['key']}';
+        const APP_KEY = '{$connection['key']}';{$wsPathConst}
         const CHANGES = '{$changesUrl}';
 
         type Change = {
@@ -445,8 +477,7 @@ class extends Component {
         }
 
         const pusher = new Pusher(APP_KEY, {
-          wsHost: WS_HOST,
-          wsPath: WS_PATH,
+          wsHost: WS_HOST,{$wsPathOption}
           wsPort: {$connection['port']},
           wssPort: {$connection['port']},
           forceTLS: {$forceTls},
@@ -669,10 +700,10 @@ class extends Component {
                 <flux:icon name="wrench-screwdriver" class="mt-0.5 size-5 shrink-0 text-amber-500"/>
                 <p class="text-pretty leading-relaxed text-zinc-700 dark:text-zinc-200">
                     <strong>The socket is not published in this environment yet.</strong>
-                    Everything in curly braces below is a placeholder named after the environment
-                    variable it will come from. The values on this page are read from the running
-                    configuration, so the moment the server is deployed they appear here by themselves
-                    — there is nothing on this page to keep up to date by hand.
+                    The app key in curly braces below is a placeholder named after the environment
+                    variable it will come from. Every value on this page is read from the running
+                    configuration, so the moment the server is deployed they appear here by
+                    themselves — there is nothing on this page to keep up to date by hand.
                 </p>
             </div>
         @endunless
@@ -686,7 +717,14 @@ class extends Component {
                     </tr>
                     <tr class="bg-white/60 dark:bg-white/[0.03]">
                         <th scope="row" class="px-5 py-4 align-top font-semibold">Host</th>
-                        <td class="px-5 py-4 font-mono break-all">{{ $this->connection['host'] }}</td>
+                        <td class="px-5 py-4">
+                            <span class="font-mono break-all">{{ $this->connection['host'] }}</span>
+                            <span class="mt-1 block text-zinc-500 dark:text-zinc-400">
+                                The socket has its own hostname with its own certificate — it is not the
+                                portal domain. The REST endpoints, <code>/api/changes</code> included, stay
+                                where they are.
+                            </span>
+                        </td>
                     </tr>
                     <tr class="bg-white/60 dark:bg-white/[0.03]">
                         <th scope="row" class="px-5 py-4 align-top font-semibold">Scheme / port</th>
@@ -695,11 +733,21 @@ class extends Component {
                     <tr class="bg-white/60 dark:bg-white/[0.03]">
                         <th scope="row" class="px-5 py-4 align-top font-semibold"><code>wsPath</code></th>
                         <td class="px-5 py-4">
-                            <span class="font-mono">{{ $this->connection['ws_path'] }}</span>
-                            <span class="mt-1 block text-zinc-500 dark:text-zinc-400">
-                                Not the Pusher default <code>/app</code>: that prefix is already taken by the
-                                portal's mobile login handoff, so only this path is proxied through to Reverb.
-                            </span>
+                            @if ($this->connection['has_path'])
+                                <span class="font-mono">{{ $this->connection['ws_path'] }}</span>
+                                <span class="mt-1 block text-zinc-500 dark:text-zinc-400">
+                                    A path prefix is in play here: only this prefix is proxied through to
+                                    Reverb, so <code>wsPath</code> has to be set on the client.
+                                </span>
+                            @else
+                                <span class="font-mono">— none —</span>
+                                <span class="mt-1 block text-zinc-500 dark:text-zinc-400">
+                                    No prefix. The handshake sits at the default <code>/app</code> of its own
+                                    hostname, so leave <code>wsPath</code> out entirely — in
+                                    <code>pusher-js</code> it defaults to the empty string, and omitting it
+                                    and passing <code>''</code> are the same thing.
+                                </span>
+                            @endif
                         </td>
                     </tr>
                     <tr class="bg-white/60 dark:bg-white/[0.03]">
