@@ -118,6 +118,25 @@ return [
             'replace_placeholders' => true,
         ],
 
+        /*
+         * Der Aufruf-Zaehler von GET /api/changes (Issue #29).
+         *
+         * Ein eigener Kanal, weil die nginx-Konfig der Produktions-Site `access_log
+         * off` hat: diese Datei IST die Messung, mit der entschieden wird, ob der
+         * Reverb-Server ueberhaupt gebaut wird. `level` steht deshalb fest auf `info`
+         * und liest NICHT `LOG_LEVEL` — stuende das auf Produktion auf `error`, fiele
+         * die Messung still aus und ihr Fehlen waere von "niemand ruft ab" nicht zu
+         * unterscheiden. Getrennt vom Stack, damit `wc -l` die Antwort gibt, ohne
+         * durch den uebrigen Anwendungs-Log zu greppen.
+         */
+        'api-changes' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/api-changes.log'),
+            'level' => 'info',
+            'days' => (int) env('LOG_API_CHANGES_DAYS', 90),
+            'replace_placeholders' => true,
+        ],
+
         'null' => [
             'driver' => 'monolog',
             'handler' => NullHandler::class,

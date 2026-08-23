@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use App\Models\Concerns\SetsCreatedBy;
+use App\Observers\ApiChangeObserver;
+use App\Support\Broadcasting\ChangeRecorder;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,6 +22,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
+#[ObservedBy([ApiChangeObserver::class])]
 class Meetup extends Model implements HasMedia
 {
     use HasFactory;
@@ -437,6 +441,28 @@ class Meetup extends Model implements HasMedia
         $this->forceFill([
             'is_active' => $isActive,
             'last_event_at' => $lastEventAt,
-        ])->saveQuietly();
+        ]);
+
+        /*
+         * Der Aktivitaetswechsel muss von Hand gemeldet werden (Issue #29).
+         *
+         * `saveQuietly()` unterdrueckt jedes Model-Event, also auch das `updated`, an
+         * dem der ApiChangeObserver haengt. `is_active` und `last_event_at` stehen aber
+         * beide im MeetupResource und aendern sich naechtlich fuer viele Meetups —
+         * ohne diesen Aufruf veraltet jeder Listen-Cache still an genau diesen zwei
+         * Feldern, ohne Fehler und ohne dass es jemandem auffiele.
+         *
+         * `isDirty()` wird VOR dem Speichern gefragt: danach sind die neuen Werte die
+         * originalen und der Vergleich waere immer falsch. Damit erzeugt ein Lauf, der
+         * nichts aendert — der Normalfall des naechtlichen Commands ueber alle Meetups —
+         * auch keine Zeile.
+         */
+        $activityChanged = $this->isDirty(['is_active', 'last_event_at']);
+
+        $this->saveQuietly();
+
+        if ($activityChanged) {
+            ChangeRecorder::record($this, 'updated');
+        }
     }
 }

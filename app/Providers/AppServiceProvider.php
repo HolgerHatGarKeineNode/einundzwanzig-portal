@@ -3,6 +3,10 @@
 namespace App\Providers;
 
 use App\Support\Carbon;
+use Dedoc\Scramble\DocumentTransformers\AddDocumentTags;
+use Dedoc\Scramble\Scramble;
+use Dedoc\Scramble\Support\Generator\OpenApi;
+use Dedoc\Scramble\Support\Generator\Tag;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
@@ -41,6 +45,8 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('viewApiDocs', fn (?Authenticatable $user = null): bool => true);
 
+        $this->documentWebSocketChannels();
+
         // OAuth-2.1-Flow des MCP-Servers (Claude.ai Web-Connector).
         Passport::authorizationView(fn ($parameters) => view('mcp.authorize', $parameters));
 
@@ -68,6 +74,42 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Model::preventLazyLoading(app()->environment('local'));
+    }
+
+    /**
+     * Traegt die WebSocket-Kanaele als eigenen Tag in die OpenAPI-Beschreibung ein.
+     *
+     * Die Kanaele sind keine Laravel-Routen, Scramble kann sie also nicht generieren —
+     * und ein `webhooks`-Objekt gibt der Generator nicht her ({@see OpenApi::toArray()}
+     * schreibt sechs feste Schluessel). Der Tag ist deshalb der einzige Weg, in der
+     * Referenz selbst auf /docs/websockets zu zeigen, statt nur in der Einleitung.
+     *
+     * BEWUSST ueber `afterOpenApiGenerated()` und NICHT ueber `Scramble::configure()`
+     * mit `->expose(...)`: ein String-Argument an `expose()` ueberschreibt die
+     * Routen-Registrierung und loescht dabei die Routennamen `scramble.docs.ui` und
+     * `scramble.docs.document`, auf die `tests/Feature/Api/ApiDocsAccessTest.php`
+     * baut. `afterOpenApiGenerated()` haengt lediglich einen Document-Transformer
+     * hinten an die Liste — hinten, damit er nach {@see AddDocumentTags}
+     * laeuft, das `$document->tags` komplett neu setzt und ein frueher angehaengtes
+     * Element wieder verwerfen wuerde.
+     */
+    protected function documentWebSocketChannels(): void
+    {
+        Scramble::afterOpenApiGenerated(function (OpenApi $document): void {
+            $document->tags[] = new Tag(
+                'WebSockets',
+                <<<'MARKDOWN'
+                Two public WebSocket channels — `portal` (every change of every resource) and
+                `meetup-events` (meetup dates only) — carry the same envelope as
+                `GET /api/changes`, within milliseconds and without authentication.
+
+                They are not HTTP routes, so they have no operations in this document.
+                Channel names, event names, the payload contract, a working TypeScript client
+                and the accepted gaps are documented at
+                [/docs/websockets](/docs/websockets).
+                MARKDOWN
+            );
+        });
     }
 
     /**

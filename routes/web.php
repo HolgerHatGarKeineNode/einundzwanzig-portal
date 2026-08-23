@@ -36,6 +36,13 @@ Route::livewire('/welcome', 'welcome')->name('welcome');
 // Public guide explaining the MCP/AI connector and the claude.ai setup
 Route::livewire('/ki-assistent', 'ki-assistent')->name('ki-assistent');
 
+/*
+ * Consumer documentation for the realtime change feed (WebSocket channels plus
+ * /api/changes). Sits next to Scramble's /docs/api, which links here from its
+ * description — the channels are not Laravel routes, so Scramble cannot generate them.
+ */
+Route::livewire('/docs/websockets', 'docs.websockets')->name('docs.websockets');
+
 // Stream calendar route to download meetup calendar as ICS file
 Route::get('stream-calendar', DownloadMeetupCalendar::class)
     ->name('ics')

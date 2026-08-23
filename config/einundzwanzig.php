@@ -65,4 +65,38 @@ return [
 
     'tags_required_countries' => ['cz'],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Change log for API consumers
+    |--------------------------------------------------------------------------
+    |
+    | Issue #29: every create, update and delete on one of the six public API
+    | resources is written to `api_changes`, so a consumer can resync from a
+    | cursor instead of diffing a fresh export against an old cache.
+    |
+    | `enabled` is the kill switch. Off means the recorder returns before it
+    | builds anything — no resource is resolved, no row is written, and nothing
+    | queues up for later. Turning it back on does NOT backfill; the gap stays a
+    | gap, which is exactly why the switch is here and not a runtime guess.
+    |
+    | Off by default in the test environment (see phpunit.xml). Not for speed
+    | alone: DatabaseSeeder creates over 250 records, and every one of them would
+    | otherwise resolve a JsonResource and write a row that no test asked for.
+    | Tests that DO test the log turn it on themselves.
+    |
+    | For a single block — a seeder, an import command — there is
+    | ChangeRecorder::muted(fn () => ...), which restores the previous state even
+    | when the block throws.
+    |
+    | `prune_days` is how long a row survives. It bounds the table and, with it,
+    | how far back /api/changes can resync. Shortening it silently shortens that
+    | window for every consumer, so it belongs in the docs, not just here.
+    |
+    */
+
+    'change_log' => [
+        'enabled' => env('CHANGE_LOG_ENABLED', true),
+        'prune_days' => (int) env('CHANGE_LOG_PRUNE_DAYS', 30),
+    ],
+
 ];

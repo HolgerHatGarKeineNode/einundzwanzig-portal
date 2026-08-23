@@ -288,6 +288,20 @@ class SeoDataAttribute
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
+            /*
+             * Bewusst NICHT durch __() gefuehrt: die Seite selbst ist englisch, weil
+             * sie neben /docs/api steht und denselben Vertrag mit denselben Feldnamen
+             * beschreibt. Ein deutscher Titel ueber einer englischen Seite waere ein
+             * Versprechen, das der Inhalt nicht haelt.
+             */
+            'docs_websockets' => new SEOData(
+                title: 'Realtime change feed - EINUNDZWANZIG API',
+                description: 'WebSocket channels and the /api/changes cursor feed: learn about created, updated and deleted meetups, dates, cities, courses and lecturers as they happen.',
+                author: $domainAuthor,
+                image: $domainImage,
+                twitter_username: $domainTwitter,
+                site_name: $domainSiteName,
+            ),
             // Add more as needed
             'default' => new SEOData(
                 title: __('Willkommen'),

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\BtcMapCommunityController;
+use App\Http\Controllers\Api\ChangeController;
 use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\CountryController;
 use App\Http\Controllers\Api\CourseController;
@@ -37,6 +38,9 @@ Route::middleware([SetApiLocale::class, 'throttle:60,1'])
         Route::get('mobile/meetups', MobileMeetupListController::class);
         Route::get('meetup-events/{date?}', MeetupEventController::class);
         Route::get('btc-map-communities', BtcMapCommunityController::class);
+        // Der Resync-Weg fuer Konsumenten (Issue #29): alle Aenderungen ab einem
+        // Cursor, inklusive der Loeschungen, die sonst nirgends sichtbar sind.
+        Route::get('changes', [ChangeController::class, 'index'])->name('changes.index');
     });
 
 /*
