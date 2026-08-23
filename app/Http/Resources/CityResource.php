@@ -19,11 +19,27 @@ class CityResource extends JsonResource
         return [
             'id' => $this->id,
             'country_id' => $this->country_id,
+            /*
+             * Issue #30: `region_id` und `population_date` sind seit jeher Spalten und im
+             * Portal editierbar, standen aber in keiner Antwort. Zwei Folgen, beide
+             * unsichtbar: ein API-Konsument konnte nicht sehen, was er gerade gesetzt
+             * hatte, und das Aenderungs-Log (`api_changes`) traegt dieses Resource als
+             * Payload — die beiden Felder waren daraus nicht rekonstruierbar. Additiv,
+             * also bricht kein bestehender Konsument.
+             */
+            'region_id' => $this->region_id,
             'name' => $this->name,
             'slug' => $this->slug,
             'longitude' => $this->longitude,
             'latitude' => $this->latitude,
             'population' => $this->population,
+            /*
+             * Kein Datum, sondern die Jahresangabe der Quelle ("2024", "2011-05-09").
+             * `BtcMapCommunityController` entscheidet mit ihr ueber die Sichtbarkeit
+             * eines Meetups im BTC-Map-Export — ein Feld, dessen Leeren woanders
+             * Eintraege verschwinden laesst, gehoert in die Historie.
+             */
+            'population_date' => $this->population_date,
             /*
              * Issue #11: die OSM-Referenz. `osm_url` ist berechnet, nicht gespeichert —
              * `osm_type` und `osm_id` sind die Wahrheit, die URL nur ihre Lesart.

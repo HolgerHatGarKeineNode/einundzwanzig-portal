@@ -2,12 +2,14 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Http\Requests\Concerns\ValidatesCityIdentity;
 use App\Http\Requests\Concerns\ValidatesOsmPlace;
 use App\Models\City;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreCityRequest extends FormRequest
 {
+    use ValidatesCityIdentity;
     use ValidatesOsmPlace;
 
     public function authorize(): bool
@@ -37,7 +39,14 @@ class StoreCityRequest extends FormRequest
              */
             'longitude' => ['required_without:osm_lon', 'numeric'],
             'latitude' => ['required_without:osm_lat', 'numeric'],
-            'population' => ['nullable', 'integer'],
+            /*
+             * Kein `unique` auf `name`: `City::createOrFindByName()` gibt eine bereits
+             * bestehende Stadt mit 200 zurueck, statt sie als Fehler abzuweisen. Das ist
+             * der dokumentierte Vertrag dieses Endpunkts und bleibt so.
+             */
+            'region_id' => $this->regionRules(countryId: $this->input('country_id')),
+            'population' => ['nullable', 'integer', 'min:0'],
+            'population_date' => ['nullable', 'string', 'max:255'],
             ...$this->osmPlaceRules(),
         ] + $this->osmReferenceRules($prefix);
     }
@@ -80,6 +89,7 @@ class StoreCityRequest extends FormRequest
     {
         return [
             'country_id.exists' => __('Das angegebene Land existiert nicht.'),
+            'region_id.exists' => __('Die angegebene Region gehoert nicht zu diesem Land.'),
         ];
     }
 }

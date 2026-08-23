@@ -14,6 +14,7 @@ use App\Models\CourseEvent;
 use App\Models\Lecturer;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
+use App\Models\User;
 use App\Support\Broadcasting\ChangeRecorder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -334,4 +335,32 @@ it('ignores models that are not public API resources', function (): void {
     Country::factory()->create();
 
     expect(ApiChange::query()->count())->toBe(0);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Issue #30 — der Akteur (`user_id`) und seine Grenze zum Envelope
+|--------------------------------------------------------------------------
+*/
+
+it('stamps user_id with the acting user but keeps it out of the payload', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    City::factory()->create();
+
+    $row = ApiChange::query()->where('resource', 'city')->sole();
+
+    expect($row->user_id)->toBe($user->id)
+        ->and($row->payload)->not->toHaveKey('user_id')
+        ->and($row->payload['data'])->not->toHaveKey('user_id');
+});
+
+it('leaves user_id null for a write without an authenticated user and still records it', function (): void {
+    City::factory()->create();
+
+    $row = ApiChange::query()->where('resource', 'city')->sole();
+
+    expect($row->user_id)->toBeNull();
 });

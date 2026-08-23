@@ -21,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property string $resource
  * @property int $resource_id
  * @property string $action
+ * @property int|null $user_id
  * @property string|null $country_code
  * @property int|null $city_id
  * @property array<string, mixed> $payload
@@ -44,6 +45,7 @@ class ApiChange extends Model
         'resource',
         'resource_id',
         'action',
+        'user_id',
         'country_code',
         'city_id',
         'payload',

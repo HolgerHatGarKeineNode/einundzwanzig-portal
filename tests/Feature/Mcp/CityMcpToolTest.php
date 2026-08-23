@@ -7,6 +7,7 @@ use App\Mcp\Tools\City\ShowMyCityTool;
 use App\Mcp\Tools\City\UpdateCityTool;
 use App\Models\City;
 use App\Models\Country;
+use App\Models\Region;
 use App\Models\User;
 
 it('lets an authenticated user create a city and stamps created_by', function () {
@@ -88,4 +89,42 @@ it('forbids viewing someone elses city in mine show', function () {
     EinundzwanzigServer::actingAs(User::factory()->create())
         ->tool(ShowMyCityTool::class, ['id' => $city->id])
         ->assertHasErrors();
+});
+
+it('resolves a region by name within the citys country and updates population_date', function () {
+    $user = User::factory()->create();
+    $country = Country::factory()->create();
+    $region = Region::factory()->create(['country_id' => $country->id, 'name' => 'Bayern']);
+    $city = City::factory()->create(['created_by' => $user->id, 'country_id' => $country->id]);
+
+    EinundzwanzigServer::actingAs($user)
+        ->tool(UpdateCityTool::class, [
+            'id' => $city->id,
+            'region' => 'Bayern',
+            'population_date' => '2024',
+        ])
+        ->assertOk()
+        ->assertSee('2024');
+
+    $fresh = $city->fresh();
+
+    expect((int) $fresh->region_id)->toBe($region->id)
+        ->and($fresh->population_date)->toBe('2024');
+});
+
+it('refuses a region name that only exists in another country', function () {
+    $user = User::factory()->create();
+    $country = Country::factory()->create();
+    $otherCountry = Country::factory()->create();
+    Region::factory()->create(['country_id' => $otherCountry->id, 'name' => 'Georgia']);
+    $city = City::factory()->create(['created_by' => $user->id, 'country_id' => $country->id]);
+
+    EinundzwanzigServer::actingAs($user)
+        ->tool(UpdateCityTool::class, [
+            'id' => $city->id,
+            'region' => 'Georgia',
+        ])
+        ->assertHasErrors();
+
+    expect($city->fresh()->region_id)->toBeNull();
 });
