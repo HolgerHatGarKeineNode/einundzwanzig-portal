@@ -378,6 +378,12 @@ class Meetup extends Model implements HasMedia
                 'portalLink' => url()->route('meetups.landingpage-event',
                     ['country' => $this->city->country, 'meetup' => $this, 'event' => $nextEvent]),
                 'location' => $nextEvent->location,
+                // Der praezise Kartenort, wenn einer gewaehlt wurde — das Popup zeigt
+                // ihn ueber dem Freitext, statt ihn zu ersetzen.
+                'osm_name' => $nextEvent->osm_name,
+                'osm_type' => $nextEvent->osm_type,
+                'osm_id' => $nextEvent->osm_id,
+                'osm_address' => $nextEvent->osm_address,
                 'description' => $nextEvent->description,
                 'link' => $nextEvent->link,
                 // null = Teilnehmerzahl öffentlich verborgen (attendees_public=false).

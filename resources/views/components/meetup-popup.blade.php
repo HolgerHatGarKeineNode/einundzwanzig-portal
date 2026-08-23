@@ -11,7 +11,7 @@
     </div>
 
     @if($meetup->last_event_at)
-        <flux:text class="text-xs text-zinc-500 mb-2">
+        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
             {{ __('Letztes Event') }}: {{ $meetup->last_event_at->asDate() }}
         </flux:text>
     @endif
@@ -38,17 +38,24 @@
                 {{ $meetup->nextEvent['start']->asTime() }} Uhr
             </flux:text>
 
-            @if($meetup->nextEvent['location'])
-                <flux:text class="text-sm flex items-center gap-2">
-                    <flux:icon.map-pin class="w-4 h-4"/>
-                    {{ $meetup->nextEvent['location'] }}
-                </flux:text>
+            {{-- x-osm-place erwartet ein Objekt; nextEvent ist ein Array — der Cast
+                 reicht, weil alle vier gelesenen Schluessel immer gesetzt sind.
+                 showAddress: der Freitext bleibt sichtbar, wenn er etwas anderes
+                 sagt als der Kartenort (Raumnummer, Zusatz), und faellt weg, wenn
+                 er ihn nur wiederholt. --}}
+            @if($meetup->nextEvent['osm_name'] || $meetup->nextEvent['location'])
+                <div class="flex items-start gap-2 text-sm">
+                    <flux:icon.map-pin class="mt-0.5 size-4 shrink-0" aria-hidden="true"/>
+                    <div class="min-w-0 break-words">
+                        <x-osm-place :place="(object) $meetup->nextEvent" show-address/>
+                    </div>
+                </div>
             @endif
 
             <flux:text class="flex items-center gap-2 mt-2">
-                <span class="text-xs text-zinc-200">{{ trans_choice(':count Zusage|:count Zusagen', $meetup->nextEvent['attendees']) }}</span>
+                <span class="text-xs text-zinc-600 dark:text-zinc-300">{{ trans_choice(':count Zusage|:count Zusagen', $meetup->nextEvent['attendees']) }}</span>
                 <flux:separator vertical/>
-                <span class="text-xs text-zinc-200">{{ trans_choice(':count Vielleicht|:count Vielleicht', $meetup->nextEvent['might_attendees']) }}</span>
+                <span class="text-xs text-zinc-600 dark:text-zinc-300">{{ trans_choice(':count Vielleicht|:count Vielleicht', $meetup->nextEvent['might_attendees']) }}</span>
             </flux:text>
         </div>
     @endif
@@ -56,7 +63,7 @@
     @if($meetup->telegram_link || $meetup->webpage || $meetup->twitter_username || $meetup->matrix_group || $meetup->nostr || $meetup->simplex || $meetup->signal)
         <flux:separator variant="subtle" class="my-3"/>
 
-        <div class="flex gap-2 flex-wrap text-white">
+        <div class="flex gap-2 flex-wrap text-zinc-600 dark:text-zinc-300">
             @if($meetup->telegram_link)
                 <flux:link :href="$meetup->telegram_link" external variant="subtle" title="{{ __('Telegram') }}">
                     <flux:icon.paper-airplane variant="mini"/>

@@ -36,7 +36,7 @@ class extends Component {
     {
         return [
             'cities' => City::query()
-                ->with(['country', 'createdBy'])
+                ->with(['country', 'createdBy', 'region'])
                 ->when($this->search, fn($query)
                     => $query->whereLike('name', '%'.$this->search.'%'),
                 )
@@ -54,6 +54,7 @@ class extends Component {
             {{ $regionName ? __('Cities in :region', ['region' => $regionName]) : __('Cities') }}
         </flux:heading>
         <div class="flex items-center flex-col md:flex-row gap-4">
+            <livewire:region.chooser/>
             <flux:input
                 wire:model.live="search"
                 :placeholder="__('Search cities...')"
@@ -86,6 +87,15 @@ class extends Component {
                     <flux:table.cell>
                         @if($city->country)
                             {{ $city->country->name }}
+                            {{-- Inline statt eigener Spalte: eine Kolumne waere bei den
+                                 heutigen Daten fast nur Bindestriche, und das Auge liest
+                                 sie als Ausfall statt als Optionalitaet. Der Mittelpunkt
+                                 statt eines Kommas, weil "Deutschland, Bayern" wie eine
+                                 Adresszeile klingt und "Deutschland · Bayern" wie zwei
+                                 Facetten. --}}
+                            @if($city->region)
+                                <span class="text-zinc-600 dark:text-zinc-300"> · {{ $city->region->name }}</span>
+                            @endif
                         @endif
                     </flux:table.cell>
                     <flux:table.cell>

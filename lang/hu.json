@@ -758,5 +758,7 @@
     "No meetups in :region yet.": "Még nincs meetup itt: :region.",
     "Show all meetups in the country": "Az ország összes meetupja",
     "Region": "Régió",
-    "No region": "Nincs régió"
+    "No region": "Nincs régió",
+    "Alle Regionen": "Minden régió",
+    "Region suchen...": "Régió keresése..."
 }

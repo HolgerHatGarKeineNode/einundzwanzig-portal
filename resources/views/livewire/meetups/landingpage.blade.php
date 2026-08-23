@@ -256,11 +256,15 @@ class extends Component {
                             {{ $event->start->asTime() }} Uhr
                         </flux:text>
 
-                        @if($event->location)
-                            <flux:text class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                                <flux:icon.map-pin class="inline w-4 h-4"/>
-                                {{ $event->location }}
-                            </flux:text>
+                        {{-- Einzeilig: die Kachel beantwortet "welcher Termin", der Ortsname
+                             schaerft das. Die Adresse gehoert auf die Detailseite, nicht in
+                             fuenf Kacheln nebeneinander. --}}
+                        @if($event->osm_name || $event->location)
+                            <div class="mt-1 flex items-start gap-1.5">
+                                <flux:icon.map-pin class="mt-0.5 size-4 shrink-0 text-zinc-600 dark:text-zinc-300"
+                                                   aria-hidden="true"/>
+                                <x-osm-place :place="$event"/>
+                            </div>
                         @endif
 
                         @if($event->description)

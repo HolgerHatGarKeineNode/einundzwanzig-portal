@@ -173,10 +173,21 @@ class extends Component {
             <div class="space-y-6">
                 <flux:input label="{{ __('Name') }}" wire:model="name" required/>
 
-                <flux:select label="{{ __('Country') }}" wire:model.live="country_id" required>
-                    <option value="">{{ __('Select a country') }}</option>
+                {{-- Identisch zu cities/create: rohe <option>-Tags koennen keine Flagge
+                     tragen und liefern in einer Liste von ueber 240 Laendern keine Suche.
+                     Wer eine Stadt anlegt und dieselbe danach bearbeitet, bekam bisher
+                     zwei verschiedene Bedienungen fuer dasselbe Feld. --}}
+                <flux:select variant="listbox" searchable label="{{ __('Country') }}" wire:model.live="country_id" required>
+                    <flux:select.option value="">{{ __('Select a country') }}</flux:select.option>
                     @foreach($countries as $country)
-                        <option value="{{ $country->id }}">{{ $country->name }}</option>
+                        <flux:select.option value="{{ $country->id }}">
+                            <div class="flex items-center space-x-2">
+                                <img alt="{{ str($country->code)->lower() }}"
+                                     src="{{ asset('vendor/blade-flags/country-'.str($country->code)->lower().'.svg') }}"
+                                     width="24" height="12"/>
+                                <span>{{ $country->name }}</span>
+                            </div>
+                        </flux:select.option>
                     @endforeach
                 </flux:select>
 
