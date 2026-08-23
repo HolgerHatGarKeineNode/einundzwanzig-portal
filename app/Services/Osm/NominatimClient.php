@@ -78,8 +78,15 @@ class NominatimClient
                 return collect();
             }
 
+            /*
+             * Rueckgabetyp `?array`, nicht `array`: normalise() liefert null fuer eine
+             * Zeile ohne osm_type/osm_id, und Nominatim schickt solche Zeilen. Mit dem
+             * strengeren Typ starb der Aufruf an einem TypeError, bevor das filter()
+             * dahinter die Nullen wegwerfen konnte — aufgefallen am 2026-08-23, als der
+             * Laenderlauf nach 136 von 249 Laendern abbrach.
+             */
             return collect($response)
-                ->map(fn (array $row): array => $this->normalise($row))
+                ->map(fn (array $row): ?array => $this->normalise($row))
                 ->filter()
                 ->values();
         });

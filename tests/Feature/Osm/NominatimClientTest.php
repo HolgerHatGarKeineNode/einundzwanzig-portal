@@ -197,3 +197,27 @@ it('ignores a lookup cached under the pre-extratags key', function () {
     expect($hit['osm_name'])->toBe('Berlin')
         ->and($hit['wikidata'])->toBe('Q64');
 });
+
+it('survives a result row without osm_type or osm_id', function () {
+    /*
+     * Nominatim liefert gelegentlich Zeilen ohne die beiden Felder. normalise() gibt
+     * dafuer null zurueck; mit dem zu strengen Closure-Rueckgabetyp starb der ganze
+     * Aufruf an einem TypeError, statt die Zeile einfach zu verwerfen. Das brach am
+     * 2026-08-23 den Laenderlauf nach 136 von 249 Laendern ab.
+     */
+    Http::fake(['*' => Http::response([
+        ['display_name' => 'Etwas ohne Referenz', 'lat' => '1.0', 'lon' => '2.0'],
+        nominatimRow(),
+    ])]);
+
+    $hits = (new NominatimClient(minIntervalMs: 0))->search('Irgendwas');
+
+    expect($hits)->toHaveCount(1)
+        ->and($hits->first()['osm_id'])->toBe(12345);
+});
+
+it('returns an empty collection when every row is unusable', function () {
+    Http::fake(['*' => Http::response([['display_name' => 'Nur Text']])]);
+
+    expect((new NominatimClient(minIntervalMs: 0))->search('Irgendwas'))->toBeEmpty();
+});
