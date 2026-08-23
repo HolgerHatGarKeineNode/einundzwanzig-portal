@@ -24,6 +24,12 @@
         </include>
     </source>
     <php>
+        <!-- Der PHP-Default von 128M reicht fuer den vollen Lauf nicht mehr: am
+             2026-08-23 brach er im letzten Browser-Test mit
+             "Allowed memory size of 134217728 bytes exhausted" ab, obwohl derselbe
+             Test isoliert gruen war. Der Speicher wird ueber ~960 Tests hinweg
+             nicht vollstaendig freigegeben; 1G ist die Grenze, nicht der Bedarf. -->
+        <ini name="memory_limit" value="1G"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>

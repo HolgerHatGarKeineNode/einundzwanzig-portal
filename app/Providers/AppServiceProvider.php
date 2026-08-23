@@ -2,9 +2,7 @@
 
 namespace App\Providers;
 
-use App\Listeners\ApplyChosenLanguageAfterLogin;
 use App\Support\Carbon;
-use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
@@ -40,13 +38,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureRateLimiting();
-
-        /*
-         * Muss nach dem Listener von stefro/laravel-lang-country haengen, der dieselbe
-         * Session auf users.lang_country zurueckstellt — Paket-Provider booten vor dem
-         * App-Provider, die Reihenfolge stimmt also. Begruendung in der Listener-Klasse.
-         */
-        Event::listen(Login::class, ApplyChosenLanguageAfterLogin::class);
 
         Gate::define('viewApiDocs', fn (?Authenticatable $user = null): bool => true);
 

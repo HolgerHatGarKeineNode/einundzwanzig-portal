@@ -15,8 +15,9 @@ use LangCountry;
  * am Konto gespeichert wurde — meist die, die `LangCountrySession` beim allerersten
  * Besuch aus `HTTP_ACCEPT_LANGUAGE` geraten und ungefragt persistiert hatte.
  *
- * Dieser Listener laeuft danach (der App-Provider bootet nach den Paket-Providern) und
- * dreht die Reihenfolge um: eine ausdrueckliche Wahl schlaegt den gespeicherten Wert
+ * Dieser Listener laeuft danach — Laravels Event-Discovery findet ihn in app/Listeners
+ * und haengt ihn hinter den des Pakets (der Test haelt diese Reihenfolge fest, weil der
+ * Fix an ihr haengt). Er dreht die Reihenfolge der Wirkung um: eine ausdrueckliche Wahl schlaegt den gespeicherten Wert
  * und wird zugleich am Konto festgeschrieben, damit sie den naechsten Login ueberlebt.
  *
  * Nur eine ausdrueckliche Wahl zaehlt — `lang_country_chosen` setzt allein der
