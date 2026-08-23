@@ -9,6 +9,19 @@ use Symfony\Component\HttpFoundation\Response;
 
 class DomainMiddleware
 {
+    /**
+     * Der Rueckfall fuer jede Domain, die unten nicht steht.
+     *
+     * Ohne ihn lief fuer localhost, eine Partner-Domain per CNAME oder einen
+     * Vorschau-Host nichts von alledem — und die naechste Middleware,
+     * LangCountrySession, fand eine leere Session vor und riet die Sprache aus
+     * HTTP_ACCEPT_LANGUAGE. Schlimmer: beim ersten Login schreibt sie den geratenen
+     * Wert ungefragt in users.lang_country, und ab da stellt der Login-Listener des
+     * Pakets die Sprache jedes Mal wieder darauf zurueck. So entsteht ein Konto, das
+     * hartnaeckig auf en-US zurueckspringt, obwohl das nie jemand gewaehlt hat.
+     */
+    private const FALLBACK_DOMAIN = 'portal.einundzwanzig.space';
+
     public function handle(Request $request, Closure $next): Response
     {
         $domain = $request->getHost(); // Detects the current domain (via CNAME)
@@ -48,30 +61,36 @@ class DomainMiddleware
             ],
         ];
 
-        if (isset($domainArray[$domain])) {
-            $domainConfig = $domainArray[$domain];
+        /*
+         * Faellt die Domain durch (localhost, eine Partner-Domain per CNAME, ein
+         * Vorschau-Host), lief bisher nichts von alledem — und die naechste Middleware,
+         * LangCountrySession, fand eine leere Session vor und riet die Sprache aus
+         * HTTP_ACCEPT_LANGUAGE. Schlimmer: beim ersten Login schreibt sie den geratenen
+         * Wert ungefragt in users.lang_country, und ab da stellt der Login-Listener des
+         * Pakets die Sprache jedes Mal wieder darauf zurueck. Genau so entsteht ein
+         * Konto, das hartnaeckig auf en-US zurueckspringt, obwohl niemand das je
+         * gewaehlt hat.
+         *
+         * Der Default des Portals ist deshalb der Rueckfall, nicht der Browser-Header.
+         */
+        $domainConfig = $domainArray[$domain] ?? $domainArray[self::FALLBACK_DOMAIN];
 
-            // Only set session values if they are not already set (first visit)
-            // This allows user language preferences to persist
-            if (! session()->has('lang_country')) {
-                session(['lang_country' => $domainConfig['lang_country']]);
-            }
-
-            if (! session()->has('locale')) {
-                session(['locale' => $domainConfig['locale']]);
-            }
-
-            // Always set config values for the domain
-            config([
-                'app.name' => $domainConfig['app_name'],
-                'app.domain_country' => $domainConfig['locale'],
-            ]);
-
-            // Set app locale based on user's current lang_country preference
-            $currentLangCountry = session('lang_country', $domainConfig['lang_country']);
-            $currentLocale = explode('-', $currentLangCountry)[0];
-            App::setLocale($currentLocale);
+        // Nur beim ersten Besuch setzen, damit eine getroffene Wahl bestehen bleibt.
+        if (! session()->has('lang_country')) {
+            session(['lang_country' => $domainConfig['lang_country']]);
         }
+
+        if (! session()->has('locale')) {
+            session(['locale' => $domainConfig['locale']]);
+        }
+
+        config([
+            'app.name' => $domainConfig['app_name'],
+            'app.domain_country' => $domainConfig['locale'],
+        ]);
+
+        $currentLangCountry = session('lang_country', $domainConfig['lang_country']);
+        App::setLocale(explode('-', $currentLangCountry)[0]);
 
         return $next($request);
     }

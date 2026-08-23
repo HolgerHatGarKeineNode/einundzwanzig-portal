@@ -18,9 +18,28 @@ use Livewire\Component;
  * nine translations into the chip.
  */
 new class extends Component {
-    /** Selected tag ids, bound to the parent form via wire:model. */
+    /**
+     * Selected tag ids, bound to the parent form via wire:model.
+     *
+     * Deliberately untyped. Flux's combobox writes the *typed text* into the model
+     * when the user hits ENTER instead of clicking the create row, and a typed
+     * `array` turns that into a 500 before any hook can run:
+     * "Cannot assign string to property ... of type array". The normalisation lives
+     * in updatedTagIds(), which needs the value to arrive at all.
+     *
+     * @var array<int, int>|string
+     */
     #[Modelable]
-    public array $tagIds = [];
+    public $tagIds = [];
+
+    /**
+     * Der getippte Suchtext.
+     *
+     * Flux' Combobox erwartet dafuer eine eigene Property (x-slot "input" mit
+     * flux:pillbox.input). Ohne sie schrieb Flux den Text bei ENTER in `tagIds` —
+     * das war der 500er "Cannot assign string to property ... of type array".
+     */
+    public string $search = '';
 
     #[Locked]
     public string $type = 'meetup_event';
@@ -30,6 +49,23 @@ new class extends Component {
     public bool $required = false;
 
     public ?string $label = null;
+
+    /**
+     * Nur Ids behalten.
+     *
+     * Mit dem Input-Slot kann Flux hier nichts anderes mehr hineinschreiben; die
+     * Pruefung bleibt trotzdem, weil das Elternformular den Wert ungeprueft in
+     * whereIn() gibt und ein manipulierter Snapshot sonst dort landet.
+     */
+    public function updatedTagIds(): void
+    {
+        $this->tagIds = collect(is_array($this->tagIds) ? $this->tagIds : [])
+            ->filter(fn ($id): bool => is_numeric($id))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
 
     /**
      * Everything selectable: approved tags plus the current user's own pending
@@ -73,9 +109,11 @@ new class extends Component {
      * the very thing that produced the duplicate sprawl in the existing data. An editor
      * can refine the translations afterwards.
      */
-    public function createTag(string $name): void
+    public function createTag(?string $name = null): void
     {
-        $name = trim(preg_replace('/\s+/u', ' ', $name) ?? '');
+        // Flux ruft die Aktion ohne Argument auf und liefert den Suchtext ueber die
+        // gebundene Property; der Parameter bleibt fuer direkte Aufrufe erhalten.
+        $name = trim(preg_replace('/\s+/u', ' ', $name ?? $this->search) ?? '');
         $user = auth()->user();
 
         abort_unless($user !== null, 403);
@@ -93,6 +131,7 @@ new class extends Component {
 
         if ($existing !== null) {
             $this->select($existing->id);
+            $this->search = '';
 
             return;
         }
@@ -109,6 +148,8 @@ new class extends Component {
         $tag->save();
 
         $this->select($tag->id);
+
+        $this->search = '';
     }
 
     private function select(int $id): void
@@ -168,15 +209,32 @@ new class extends Component {
             {{ $label ?? __('Tags') }}
         </flux:label>
 
+        {{-- `multiple` ist der Unterschied zwischen Mehrfach- und Einfachauswahl.
+             Ohne das Attribut tauschte die Pillbox die Wahl bei jedem Klick aus, statt
+             sie zu ergaenzen — gemeldet am 2026-08-23 mit Bildschirmfoto. Jedes
+             Beispiel der Flux-Dokumentation fuehrt es, hier fehlte es. --}}
         <div x-data="{ q: '' }" x-bind:data-searching="q.length > 0 ? 'true' : 'false'">
             <flux:pillbox
                 variant="combobox"
+                multiple
                 wire:model="tagIds"
                 :placeholder="__('Tags wählen')"
-                x-on:input="q = $event.target.value ?? ''"
-                x-on:change="$nextTick(() => q = '')"
                 data-testid="tag-picker"
             >
+                {{-- Der Suchtext gehoert in eine eigene Property. Vorher hing er nur an
+                     einer Alpine-Variablen, und Flux schrieb ihn bei ENTER in `tagIds` —
+                     ein 500er, weil dort ein Array erwartet wird. Das Spiegeln nach
+                     Alpine bleibt: das CSS unten blendet nicht hervorgehobene Marken
+                     aus, solange nichts getippt ist. --}}
+                <x-slot name="input">
+                    <flux:pillbox.input
+                        wire:model="search"
+                        :placeholder="__('Tags wählen')"
+                        x-on:input="q = $event.target.value ?? ''"
+                        x-on:change="$nextTick(() => q = '')"
+                    />
+                </x-slot>
+
                 @foreach ($this->options as $tag)
                     <flux:pillbox.option
                         :value="$tag->id"
@@ -223,16 +281,19 @@ new class extends Component {
                         x-show rather than Flux's own min-length: display:none is what
                         filterAwareWalker checks, so the row stays keyboard-consistent.
                     --}}
+                    {{-- min-length und wire:click sind die vorgesehenen Anschluesse:
+                         Flux blendet die Zeile selbst aus, solange zu wenig getippt ist,
+                         versteckt sie bei einem Treffer in der Liste und sperrt sie
+                         waehrend des Requests gegen Doppelanlagen. Das taten vorher
+                         x-show und ein Alpine-Aufruf, der den Text am Server vorbei
+                         uebergab. --}}
                     <flux:pillbox.option.create
-                        x-show="q.trim().length >= 2"
-                        x-on:click="$wire.createTag(q)"
+                        wire:click="createTag"
+                        min-length="2"
                         data-testid="tag-create"
                     >
-                        <span x-text="
-                            @js($this->canCreateDirectly
-                                ? __('als neuen Tag anlegen:')
-                                : __('vorschlagen:')) + ' „' + q.trim() + '“'
-                        "></span>
+                        {{ $this->canCreateDirectly ? __('als neuen Tag anlegen:') : __('vorschlagen:') }}
+                        „<span wire:text="search"></span>“
                     </flux:pillbox.option.create>
                 @endif
             </flux:pillbox>

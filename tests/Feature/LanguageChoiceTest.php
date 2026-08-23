@@ -115,3 +115,31 @@ it('survives the session id migration that Auth::login performs', function () {
         ->and(session('locale'))->toBe('de')
         ->and($user->fresh()->lang_country)->toBe('de-DE');
 });
+
+it('never lets the browser header decide the language on an unknown domain', function () {
+    /*
+     * Lokal, hinter einem CNAME oder auf einem Vorschau-Host griff DomainMiddleware
+     * nicht — und LangCountrySession riet die Sprache aus HTTP_ACCEPT_LANGUAGE. Beim
+     * ersten Login schrieb sie den geratenen Wert ungefragt ins Konto, und ab da holte
+     * der Login-Listener des Pakets ihn jedes Mal zurueck. Das ist die Herkunft eines
+     * en-US-Kontos, das nie jemand gewaehlt hat.
+     */
+    $user = User::factory()->create(['lang_country' => null]);
+
+    $this->withServerVariables(['HTTP_ACCEPT_LANGUAGE' => 'en-US,en;q=0.9'])
+        ->actingAs($user)
+        // '/' leitet auf die laenderpraefixierte Startseite um; die Middleware ist
+        // auf beiden Requests dieselbe, gepruefte Wirkung ist die Session danach.
+        ->get('/')
+        ->assertRedirect();
+
+    expect(session('lang_country'))->toBe('de-DE')
+        ->and(session('locale'))->toBe('de')
+        /*
+         * Und das Konto bleibt leer: LangCountrySession schreibt nur, wenn sie selbst
+         * raten musste. Weil die Session jetzt schon gefuellt ist, laeuft sie gar nicht
+         * erst in diesen Zweig — nichts Geratenes bleibt haengen. Ein Wert steht dort
+         * erst, wenn jemand bewusst waehlt.
+         */
+        ->and($user->fresh()->lang_country)->toBeNull();
+});

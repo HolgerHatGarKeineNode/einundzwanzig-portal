@@ -3,12 +3,26 @@
 if (! function_exists('route_with_country')) {
     function route_with_country(string $name, array $parameters = [], bool $absolute = true): string
     {
-        if (! isset($parameters['country'])) {
-            $country = request()->route('country') ?? 'de';
-        } else {
-            $country = str(session('lang_country', 'de'))->after('-')->lower();
-        }
-        $parameters = ['country' => $country] + $parameters;
+        /*
+         * Reihenfolge: ausdruecklich uebergeben, dann die laufende Route, dann die
+         * Sprachwahl der Sitzung.
+         *
+         * Die beiden ersten Zweige waren vertauscht — ein uebergebenes 'country' wurde
+         * verworfen und statt dessen aus der Sitzung gebaut, waehrend ein fehlendes
+         * still auf 'de' fiel. Bei einem Livewire-Update heisst die Route
+         * `livewire.update` und traegt gar kein 'country': jeder Redirect nach dem
+         * Speichern landete deshalb in Deutschland, egal welches Land der Nutzer
+         * gerade pflegte (Issue #28). Der harte Rueckfall ist damit weg — die
+         * Sitzung weiss es besser als eine Konstante.
+         */
+        $country = $parameters['country']
+            ?? request()->route('country')
+            ?? str(session('lang_country', config('app.domain_country', 'de')))
+                ->after('-')
+                ->lower()
+                ->value();
+
+        $parameters['country'] = $country;
 
         return route($name, $parameters, $absolute);
     }

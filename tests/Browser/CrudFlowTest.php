@@ -28,7 +28,7 @@ it('lets an authenticated user open the lecturer-create page', function () {
 
     $page = visit('/de/lecturer-create');
 
-    $page->assertSee('Lecturer')
+    $page->assertSee(__('Dozent'))
         ->assertNoJavaScriptErrors();
 });
 

@@ -245,3 +245,100 @@ it('refuses tag creation for a guest', function () {
         ->call('createTag', 'Lagerfeuerrunde')
         ->assertStatus(403);
 });
+
+it('creates the typed tag through the create action, not through the model', function () {
+    /*
+     * Flux' Vorgabe: der Suchtext haengt an einer eigenen Property, und die
+     * Anlege-Zeile ruft die Aktion per wire:click. Vorher schrieb Flux den Text bei
+     * ENTER nach `tagIds`, wo ein Array erwartet wird — der 500er
+     * "Cannot assign string to property ... of type array" vom 2026-08-23.
+     */
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('tags.picker', ['type' => 'meetup_event'])
+        ->set('search', 'Einsteigerabend')
+        ->call('createTag')
+        ->assertSet('search', '')
+        ->assertSet('tagIds', fn ($tagIds): bool => is_array($tagIds) && count($tagIds) === 1);
+
+    $created = Tag::query()->where('type', 'meetup_event')->get()
+        ->first(fn (Tag $t): bool => $t->getTranslation('name', 'de') === 'Einsteigerabend');
+
+    expect($created)->not->toBeNull();
+});
+
+it('selects the existing tag when the typed name already exists', function () {
+    // Kein Duplikat: die Anlege-Zeile waehlt einen vorhandenen Namen nur aus.
+    $user = User::factory()->create();
+    $existing = Tag::query()->where('type', 'meetup_event')->first();
+    $countBefore = Tag::query()->where('type', 'meetup_event')->count();
+
+    Livewire::actingAs($user)
+        ->test('tags.picker', ['type' => 'meetup_event'])
+        ->set('search', $existing->getTranslation('name', 'de'))
+        ->call('createTag')
+        ->assertSet('tagIds', [$existing->id])
+        ->assertSet('search', '');
+
+    expect(Tag::query()->where('type', 'meetup_event')->count())->toBe($countBefore);
+});
+
+it('adds to the picks instead of replacing them', function () {
+    /*
+     * Die Pillbox trug kein `multiple` und war damit eine Einfachauswahl: jeder Klick
+     * tauschte den einen Pill aus (gemeldet am 2026-08-23 mit Bildschirmfoto). Der
+     * Browser-Test in tests/Browser/TagPickerMultiSelectTest.php prueft das Attribut
+     * dort, wo es wirkt; hier steht die Seite des Servers.
+     */
+    $user = User::factory()->create();
+    [$first, $second] = Tag::query()->where('type', 'meetup_event')->take(2)->get()->all();
+
+    Livewire::actingAs($user)
+        ->test('tags.picker', ['type' => 'meetup_event'])
+        ->set('tagIds', [$first->id])
+        ->set('tagIds', [$first->id, $second->id])
+        ->assertSet('tagIds', [$first->id, $second->id]);
+});
+
+it('drops values that are not ids', function () {
+    /*
+     * Das Elternformular validiert gegen `array` und fuettert whereIn() damit —
+     * was hier durchgeht, landet in einer Abfrage.
+     */
+    $user = User::factory()->create();
+    $tag = Tag::query()->where('type', 'meetup_event')->first();
+
+    Livewire::actingAs($user)
+        ->test('tags.picker', ['type' => 'meetup_event'])
+        ->set('tagIds', [$tag->id, 'kein-id', null, $tag->id])
+        ->assertSet('tagIds', [$tag->id]);
+});
+
+it('keeps only numeric ids in the model', function () {
+    /*
+     * Das Elternformular gibt den Wert ungeprueft in whereIn() — was hier durchgeht,
+     * landet in einer Abfrage.
+     */
+    $user = User::factory()->create();
+    $tag = Tag::query()->where('type', 'meetup_event')->first();
+
+    Livewire::actingAs($user)
+        ->test('tags.picker', ['type' => 'meetup_event'])
+        ->set('tagIds', [$tag->id, 'kein-id', null, $tag->id])
+        ->assertSet('tagIds', [$tag->id]);
+});
+
+it('survives a typed name arriving at the parent form too', function () {
+    /*
+     * Ueber #[Modelable] landet derselbe Wert im Formular. Trug dessen Property den
+     * Typ `array`, war das ein 500, bevor der Waehler ueberhaupt zum Zug kam.
+     */
+    $user = User::factory()->create();
+    $meetup = meetupInCountry('de', $user);
+
+    Livewire::actingAs($user)
+        ->test('meetups.create-edit-events', ['meetup' => $meetup])
+        ->set('tagIds', 'Einsteigerabend')
+        ->assertSet('tagIds', fn ($tagIds): bool => is_array($tagIds));
+});

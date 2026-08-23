@@ -98,7 +98,12 @@ class extends Component {
 
         session()->flash('status', __('City successfully created!'));
 
-        $this->redirect(route_with_country('cities.index'), navigate: true);
+        // Siehe cities/edit: der Redirect entsteht im Livewire-Update, das kein
+        // 'country' in der Route hat (Issue #28).
+        $this->redirect(
+            route_with_country('cities.index', ['country' => $this->pickerCountryCode ?? $this->country]),
+            navigate: true,
+        );
     }
 
 

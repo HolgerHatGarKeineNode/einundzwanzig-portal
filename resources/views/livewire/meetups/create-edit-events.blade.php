@@ -114,7 +114,36 @@ class extends Component {
     public ?string $endTime = null;
 
     /** @var array<int, int> */
-    public array $tagIds = [];
+    /**
+     * Die gewaehlten Marken.
+     *
+     * Bewusst untypisiert, wie im Waehler selbst: Flux' Combobox schreibt bei ENTER den
+     * getippten Text ins Model, und ueber #[Modelable] landet derselbe Wert hier. Ein
+     * `array`-Typ macht daraus einen TypeError in HandleComponents::updateProperty() —
+     * also bevor irgendein Hook laufen koennte, und je nach Reihenfolge im Payload
+     * trifft es dieses Formular vor dem Waehler. Gemeldet am 2026-08-23 aus dem
+     * Termin-Formular: "Cannot assign string to property ... of type array".
+     *
+     * @var array<int, int>|string
+     */
+    public $tagIds = [];
+
+    /**
+     * Nur Ids behalten.
+     *
+     * Der Waehler fuehrt seine eigene Normalisierung (dort wird ein getippter Name zu
+     * einer Marke); hier geht es allein darum, dass nichts anderes als Ids in die
+     * Validierung gegen `array` und in whereIn() geraet.
+     */
+    public function updatedTagIds(): void
+    {
+        $this->tagIds = collect(is_array($this->tagIds) ? $this->tagIds : [])
+            ->filter(fn ($id): bool => is_numeric($id))
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
 
     /**
      * OpenStreetMap place, or empty. Keys match the meetup_events columns.

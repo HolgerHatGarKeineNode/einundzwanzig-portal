@@ -33,8 +33,12 @@ class extends Component {
     public ?int $population = null;
     public ?string $population_date = null;
 
+    /** Der Laenderkontext, mit dem der Nutzer hergekommen ist. */
+    public string $country = 'de';
+
     public function mount(City $city): void
     {
+        $this->country = request()->route('country', config('app.domain_country'));
         $this->city = $city;
         $this->name = $city->name;
         $this->country_id = $city->country_id;
@@ -109,7 +113,16 @@ class extends Component {
 
         session()->flash('status', __('City successfully updated!'));
 
-        $this->redirect(route_with_country('cities.index'), navigate: true);
+        /*
+         * Das Land ausdruecklich mitgeben: dieser Redirect entsteht in einem
+         * Livewire-Update, dessen Route `livewire.update` heisst und kein 'country'
+         * traegt. Ohne den Parameter landete der Nutzer nach jedem Speichern in der
+         * deutschen Liste zurueck (Issue #28).
+         */
+        $this->redirect(
+            route_with_country('cities.index', ['country' => $this->pickerCountryCode ?? $this->country]),
+            navigate: true,
+        );
     }
 
 
