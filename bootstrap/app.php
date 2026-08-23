@@ -172,21 +172,35 @@ return Application::configure(basePath: dirname(__DIR__))
              * Produktionslog zu diesem Zeitpunkt keine einzige Zeile. Ohne Spur laesst
              * sich nicht einmal entscheiden, WELCHE der beiden Ursachen es war.
              *
-             * Deshalb: fuer angemeldete Nutzer wird beides protokolliert. Wer
-             * eingeloggt ist, ist kein Scanner — und genau dessen Faelle wollen wir
-             * sehen. Fuer anonyme Requests bleibt es still, sonst kehrt die Bot-Flut
-             * zurueck, wegen der die Unterdrueckung ueberhaupt eingebaut wurde.
+             * Die Bedingung war zuerst `auth()->check()` — und die schloss genau den
+             * Fall aus, den sie finden sollte. Ist die Ursache eine verlorene Session,
+             * ist der Request per Definition NICHT angemeldet: kein Session-Cookie,
+             * das der Server aufloesen kann, also auch kein Nutzer. Am 2026-08-23
+             * meldete iBobik um 12:20 UTC einen Fehlversuch; das Logging war seit
+             * 12:03 live und schrieb trotzdem keine Zeile.
+             *
+             * Das Kriterium ist deshalb jetzt: **hat der Browser ein Session-Cookie
+             * mitgeschickt?** Wer eins mitbringt, war irgendwann auf der Seite — das
+             * ist ein echter Besucher, ob seine Session serverseitig noch gilt oder
+             * nicht. Bots, die `/livewire/update` mit mutierten Snapshots beharken,
+             * schicken keins; die Flut, wegen der die Unterdrueckung eingebaut wurde,
+             * bleibt draussen.
              */
             if ($isSilencedFourNineteen($e)) {
                 $request = request();
 
-                if (! auth()->hasUser() || ! auth()->check()) {
+                $hasSessionCookie = $request->cookies->has(config('session.cookie'));
+
+                if (! $hasSessionCookie && ! auth()->hasUser()) {
                     return false;
                 }
 
-                Log::warning('419 fuer angemeldeten Nutzer', [
+                Log::warning('419 mit Session-Cookie', [
                     'exception' => $e::class,
-                    'user_id' => auth()->id(),
+                    // null heisst: Cookie da, Session serverseitig weg — genau der
+                    // Verdachtsfall aus Issue #18.
+                    'user_id' => auth()->hasUser() ? auth()->id() : null,
+                    'session_started' => $request->hasSession() && $request->session()->isStarted(),
                     'path' => $request->path(),
                     // Bei Livewire steht die eigentliche Komponente im Snapshot, nicht
                     // im Pfad — ohne sie weiss man nur "irgendwo im Portal".
