@@ -2,7 +2,9 @@
 
 use App\Models\City;
 use App\Models\Country;
+use App\Models\Region;
 use App\Models\User;
+use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\Sanctum;
 
 it('rejects a guest', function () {
@@ -127,4 +129,134 @@ it('forbids viewing someone elses in mine show', function () {
     $response = $this->getJson("/api/my-cities/{$model->id}");
 
     $response->assertForbidden();
+});
+
+/*
+|--------------------------------------------------------------------------
+| Issue #30 — Drosselung, Namens-Unique und Region/Land-Konsistenz
+|--------------------------------------------------------------------------
+*/
+
+it('applies throttle:60,1 to every route in the sanctum write group', function () {
+    foreach (['api.cities.store', 'api.cities.update', 'api.courses.store', 'api.lecturers.store', 'api.meetup.store'] as $name) {
+        $route = Route::getRoutes()->getByName($name);
+
+        expect($route)->not->toBeNull()
+            ->and($route->gatherMiddleware())->toContain('throttle:60,1');
+    }
+});
+
+it('throttles an authenticated user after 60 requests to the write group', function () {
+    Sanctum::actingAs(User::factory()->create());
+
+    // Leere Payload: schlaegt zuverlaessig und billig mit 422 fehl, bevor irgendein
+    // Datensatz angelegt wird — die Middleware zaehlt trotzdem mit, weil `throttle`
+    // vor der FormRequest-Validierung im Pipeline steht.
+    for ($i = 0; $i < 60; $i++) {
+        $this->postJson('/api/cities', [])->assertStatus(422);
+    }
+
+    $this->postJson('/api/cities', [])->assertStatus(429);
+});
+
+it('rejects renaming to a name already used by another city with 422, not 500', function () {
+    Sanctum::actingAs($user = User::factory()->create());
+
+    City::factory()->create(['name' => 'Regensburg']);
+    $mine = City::factory()->create(['created_by' => $user->id, 'name' => 'Ansbach']);
+
+    $response = $this->patchJson("/api/cities/{$mine->id}", [
+        'name' => 'Regensburg',
+    ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['name']);
+
+    expect($mine->fresh()->name)->toBe('Ansbach');
+});
+
+it('lets a city keep its own name unchanged on update', function () {
+    Sanctum::actingAs($user = User::factory()->create());
+
+    $mine = City::factory()->create(['created_by' => $user->id, 'name' => 'Ansbach']);
+
+    $response = $this->patchJson("/api/cities/{$mine->id}", [
+        'name' => 'Ansbach',
+        'population' => 55000,
+    ]);
+
+    $response->assertSuccessful()
+        ->assertJsonPath('data.name', 'Ansbach')
+        ->assertJsonPath('data.population', 55000);
+});
+
+it('creates and updates a city with region_id and population_date, both readable back', function () {
+    Sanctum::actingAs($user = User::factory()->create());
+
+    $country = Country::factory()->create();
+    $region = Region::factory()->create(['country_id' => $country->id]);
+
+    $response = $this->postJson('/api/cities', [
+        'name' => 'Regensburg',
+        'country_id' => $country->id,
+        'region_id' => $region->id,
+        'longitude' => 12.0989,
+        'latitude' => 49.0134,
+        'population_date' => '2024',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('data.region_id', $region->id)
+        ->assertJsonPath('data.population_date', '2024');
+
+    $city = City::query()->where('name', 'Regensburg')->sole();
+
+    expect($city->created_by)->toBe($user->id);
+
+    $update = $this->patchJson("/api/cities/{$city->id}", [
+        'population_date' => '2011-05-09',
+    ]);
+
+    $update->assertSuccessful()
+        ->assertJsonPath('data.population_date', '2011-05-09')
+        ->assertJsonPath('data.region_id', $region->id);
+});
+
+it('rejects a region that belongs to a different country', function () {
+    Sanctum::actingAs($user = User::factory()->create());
+
+    $country = Country::factory()->create();
+    $otherCountry = Country::factory()->create();
+    $city = City::factory()->create(['created_by' => $user->id, 'country_id' => $country->id]);
+    $foreignRegion = Region::factory()->create(['country_id' => $otherCountry->id]);
+
+    $response = $this->patchJson("/api/cities/{$city->id}", [
+        'region_id' => $foreignRegion->id,
+    ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['region_id']);
+
+    expect($city->fresh()->region_id)->toBeNull();
+});
+
+it('rejects a region from the old country when country_id changes in the same request', function () {
+    Sanctum::actingAs($user = User::factory()->create());
+
+    $oldCountry = Country::factory()->create();
+    $newCountry = Country::factory()->create();
+    $oldRegion = Region::factory()->create(['country_id' => $oldCountry->id]);
+    $city = City::factory()->create(['created_by' => $user->id, 'country_id' => $oldCountry->id]);
+
+    $response = $this->patchJson("/api/cities/{$city->id}", [
+        'country_id' => $newCountry->id,
+        'region_id' => $oldRegion->id,
+    ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['region_id']);
+
+    expect($city->fresh())
+        ->country_id->toBe($oldCountry->id)
+        ->region_id->toBeNull();
 });
