@@ -100,12 +100,24 @@ select:focus[data-flux-control] {
 /* ----------------------------------------
    Leaflet overrides
 ----------------------------------------- */
-.leaflet-popup-content-wrapper {
+/*
+ * Nur im dunklen Theme einfaerben.
+ *
+ * Vorher galt der dunkle Grund IMMER, waehrend der Popup-Inhalt mit dark:-Varianten
+ * arbeitet — im hellen Theme stand also dunkler Text auf dunklem Grund. Gemessen am
+ * 2026-08-23: Meetup-Name 1,46:1, Intro 1,33:1, Ort und Datum 2,19:1, das
+ * "Aktiv"-Badge 1,45:1. WCAG 1.4.3 verlangt 4,5:1.
+ *
+ * Im hellen Theme bleibt Leaflets weisser Standardgrund, auf dem die
+ * Nicht-dark:-Farben der Komponente wie ueberall sonst funktionieren.
+ */
+.dark .leaflet-popup-content-wrapper,
+.dark .leaflet-popup-tip {
     background-color: #404040 !important;
 }
 
-.leaflet-control-zoom-in,
-.leaflet-control-zoom-out {
+.dark .leaflet-control-zoom-in,
+.dark .leaflet-control-zoom-out {
     background-color: #404040 !important;
 }
 

@@ -381,6 +381,17 @@ class extends Component {
                                  icon="calendar-date-range">{{ __('Kalender-Stream-URL kopieren') }}</flux:button>
                 </div>
             </div>
+
+            {{-- hidden md:block: auf schmalen Geraeten steht die rechte Spalte unter dem
+                 kompletten Termin samt Teilnehmerlisten — dort waere die Karte weit weg
+                 von der Ortszeile, auf die sie sich bezieht, und laedt trotzdem ihre
+                 Kacheln. Die Ortsangabe selbst steht oben, auf jeder Breite. --}}
+            @if($event->osm_lat && $event->osm_lon)
+                <div class="hidden md:block">
+                    <flux:heading size="lg" class="mb-2">{{ __('Anfahrt') }}</flux:heading>
+                    <x-venue-map :place="$event"/>
+                </div>
+            @endif
         </div>
     </div>
 </div>

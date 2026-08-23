@@ -5,6 +5,7 @@ use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Models\Region;
+use App\Models\User;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -112,4 +113,71 @@ it('keeps the city list working for cities without a region', function () {
         ->assertSee('Ohne Region Test')
         // Kein Bindestrich, kein "keine Region" — die Zeile ist schlicht kuerzer.
         ->assertDontSee('keine Region');
+});
+
+it('draws the venue map only when the event carries coordinates', function () {
+    $withCoords = MeetupEvent::factory()->create([
+        'meetup_id' => $this->meetup->id,
+        'osm_type' => 'way', 'osm_id' => 12345, 'osm_name' => 'Bürgerhaus Regensburg',
+        'osm_lat' => 49.0134, 'osm_lon' => 12.1016,
+        'start' => now()->addWeek(),
+    ]);
+
+    $this->get("/de/meetup/{$this->meetup->slug}/event/{$withCoords->id}")
+        ->assertSuccessful()
+        ->assertSee('initVenueMap', false)
+        ->assertSee('Anfahrt');
+
+    // Ohne Koordinaten faellt die Karte samt Ueberschrift weg — die Seite sieht aus
+    // wie vor dieser Aenderung.
+    $withoutCoords = MeetupEvent::factory()->create([
+        'meetup_id' => $this->meetup->id,
+        'location' => 'Nur Freitext',
+        'osm_lat' => null, 'osm_lon' => null,
+        'start' => now()->addWeek(),
+    ]);
+
+    $this->get("/de/meetup/{$this->meetup->slug}/event/{$withoutCoords->id}")
+        ->assertSuccessful()
+        ->assertDontSee('initVenueMap', false)
+        ->assertDontSee('Anfahrt');
+});
+
+it('shows the chosen map place in the map popup', function () {
+    MeetupEvent::factory()->create([
+        'meetup_id' => $this->meetup->id,
+        'location' => 'Im Hinterhof',
+        'osm_type' => 'way', 'osm_id' => 12345, 'osm_name' => 'Bürgerhaus Regensburg',
+        'start' => now()->addWeek(),
+    ]);
+
+    $html = view('components.meetup-popup', [
+        'meetup' => $this->meetup->fresh(),
+        'url' => '/de/meetup/'.$this->meetup->slug,
+        'eventUrl' => null,
+    ])->render();
+
+    expect($html)
+        ->toContain('Bürgerhaus Regensburg')
+        ->toContain('https://www.openstreetmap.org/way/12345')
+        // Der Freitext sagt etwas anderes und bleibt daneben stehen.
+        ->toContain('Im Hinterhof')
+        /*
+         * text-zinc-200 stand vor dem festen dunklen Popup-Grund; seit der nur noch im
+         * dunklen Theme gilt, waere es auf Leaflets weisser Standardflaeche unlesbar.
+         */
+        ->not->toContain('text-zinc-200');
+});
+
+it('offers the same country picker when editing a city as when creating one', function () {
+    $this->actingAs(User::factory()->create());
+
+    // Die Flagge ist der sichtbare Beleg dafuer, dass beide Formulare dieselbe
+    // Flux-Listbox verwenden — rohe <option>-Tags koennen kein Bild tragen.
+    $flag = 'vendor/blade-flags/country-de.svg';
+
+    $this->get(route('cities.create', ['country' => 'de']))->assertSuccessful()->assertSee($flag, false);
+    $this->get(route('cities.edit', ['country' => 'de', 'city' => $this->city]))
+        ->assertSuccessful()
+        ->assertSee($flag, false);
 });
