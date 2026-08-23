@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Models\Concerns\SetsCreatedBy;
+use App\Observers\ApiChangeObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +17,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
+#[ObservedBy([ApiChangeObserver::class])]
 class Lecturer extends Model implements HasMedia
 {
     use HasFactory;

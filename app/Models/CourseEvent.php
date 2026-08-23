@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use App\Models\Concerns\SetsCreatedBy;
+use App\Observers\ApiChangeObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Tags\HasTags;
 
+#[ObservedBy([ApiChangeObserver::class])]
 class CourseEvent extends Model
 {
     use HasFactory;

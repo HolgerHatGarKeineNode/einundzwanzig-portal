@@ -5,6 +5,8 @@ namespace App\Models;
 use Akuechler\Geoly;
 use App\Models\Concerns\HasOsmReference;
 use App\Models\Concerns\SetsCreatedBy;
+use App\Observers\ApiChangeObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +15,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
+#[ObservedBy([ApiChangeObserver::class])]
 class City extends Model
 {
     use Geoly;

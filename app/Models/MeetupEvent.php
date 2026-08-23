@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\RecurrenceType;
 use App\Enums\RsvpStatus;
 use App\Models\Concerns\SetsCreatedBy;
+use App\Observers\ApiChangeObserver;
 use App\Observers\MeetupEventObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
 use Spatie\Tags\HasTags;
 
-#[ObservedBy([MeetupEventObserver::class])]
+#[ObservedBy([MeetupEventObserver::class, ApiChangeObserver::class])]
 class MeetupEvent extends Model
 {
     use HasFactory;
