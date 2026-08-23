@@ -209,12 +209,16 @@ class extends Component {
                     </div>
 
                     <!-- Location -->
-                    @if($event->location)
-                        <div class="flex items-center text-zinc-700 dark:text-zinc-300">
-                            <flux:icon.map-pin class="w-5 h-5 mr-3"/>
-                            <div>
+                    {{-- Die Bedingung waechst von `location` auf `osm_name || location`:
+                         ein Termin mit Kartenort, aber ohne getippten Freitext zeigt jetzt
+                         etwas statt nichts. Die alte Bedingung ist eine echte Teilmenge
+                         der neuen — kein bestehender Termin verliert seine Ortszeile. --}}
+                    @if($event->osm_name || $event->location)
+                        <div class="flex items-start text-zinc-700 dark:text-zinc-300">
+                            <flux:icon.map-pin class="mt-0.5 w-5 h-5 mr-3 shrink-0" aria-hidden="true"/>
+                            <div class="min-w-0">
                                 <div class="font-semibold">{{ __('Ort') }}</div>
-                                <div class="text-sm">{{ $event->location }}</div>
+                                <x-osm-place :place="$event" show-address/>
                             </div>
                         </div>
                     @endif

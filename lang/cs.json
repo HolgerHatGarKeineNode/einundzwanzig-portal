@@ -758,5 +758,7 @@
     "No meetups in :region yet.": "Zatím žádné meetupy v :region.",
     "Show all meetups in the country": "Zobrazit všechny meetupy v zemi",
     "Region": "Region",
-    "No region": "Bez regionu"
+    "No region": "Bez regionu",
+    "Alle Regionen": "Všechny regiony",
+    "Region suchen...": "Hledat region..."
 }

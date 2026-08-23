@@ -149,55 +149,23 @@ class extends Component {
                             {{ $event->from->format('H:i') }} - {{ $event->to->format('H:i') }} Uhr
                         </flux:text>
 
-                        @php
-                            // The map place is the precise answer; the free text is the one
-                            // that always exists. Never both — they name the same spot.
-                            $placeName = $event->osm_name ?: $event->location;
+                        {{-- Die Whitelist fuer osm_type, das 24px-Ziel und der Pfeil stehen
+                             jetzt in x-osm-place, damit die naechste Korrektur nicht vier
+                             Kopien verfehlt.
 
-                            // osm_type is stored as whatever Nominatim returned and goes
-                            // straight into an href, so it is whitelisted rather than
-                            // trusted: anything else renders as plain text, not as a link.
-                            $osmUrl = $event->osm_id && in_array(mb_strtolower((string) $event->osm_type), ['node', 'way', 'relation'], true)
-                                ? 'https://www.openstreetmap.org/'.mb_strtolower((string) $event->osm_type).'/'.(int) $event->osm_id
-                                : null;
-                        @endphp
-
-                        @if($placeName || $event->city)
+                             Die Stadt steht bewusst NEBEN der Komponente, nicht in ihrem Slot:
+                             ein Termin ohne Kartenort und ohne Freitext hat trotzdem eine
+                             Stadt, und die soll er weiter zeigen. --}}
+                        @if($event->osm_name || $event->location || $event->city)
                             <div class="mt-2 flex items-start gap-1.5">
                                 <flux:icon.map-pin class="mt-0.5 size-4 shrink-0 text-zinc-600 dark:text-zinc-300"
                                                    aria-hidden="true"/>
+                                {{-- Der gemeinsame Wrapper haelt beide Zustaende auf derselben
+                                     Hoehe. Gemessen: ohne ihn schob das eigene Padding des
+                                     Ankers die Stadt um 4px nach unten, und zwei Karten
+                                     nebeneinander liefen ausgefranst. --}}
                                 <div class="min-w-0 break-words">
-                                    {{-- Both states share this wrapper so the city line below sits
-                                         at the same height either way. Measured: without it the
-                                         anchor's own padding pushed the city down by 4px, and two
-                                         cards side by side went ragged. --}}
-                                    @if($placeName)
-                                        <div class="text-sm font-medium text-zinc-800 dark:text-zinc-100">
-                                            @if($osmUrl)
-                                                {{-- The place name itself is the link: a known map
-                                                     object is the only difference worth showing, and
-                                                     the trailing arrow marks it without relying on
-                                                     colour alone (WCAG 1.4.1).
-
-                                                     py-1, not py-0.5: the line box measures 19px in
-                                                     the browser, not the 20px the scale suggests, so
-                                                     0.5 left the target at 23px — one under the 24px
-                                                     WCAG 2.5.8 asks for. On an inline element the
-                                                     padding grows the hit area without moving layout. --}}
-                                                <a href="{{ $osmUrl }}"
-                                                   target="_blank"
-                                                   rel="noopener noreferrer"
-                                                   aria-label="{{ __(':place auf OpenStreetMap öffnen', ['place' => $placeName]) }}"
-                                                   class="rounded-xs py-1 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current">
-                                                    {{ $placeName }}<flux:icon.arrow-up-right
-                                                        class="ml-1 inline size-3.5 align-middle" aria-hidden="true"/>
-                                                </a>
-                                            @else
-                                                {{ $placeName }}
-                                            @endif
-                                        </div>
-                                    @endif
-
+                                    <x-osm-place :place="$event"/>
                                     @if($event->city)
                                         <div class="text-sm text-zinc-600 dark:text-zinc-300">
                                             {{ $event->city->name }}

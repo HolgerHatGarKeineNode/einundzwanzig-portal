@@ -758,5 +758,7 @@
     "No meetups in :region yet.": "Reģionā :region vēl nav meetup pasākumu.",
     "Show all meetups in the country": "Rādīt visus meetup pasākumus valstī",
     "Region": "Reģions",
-    "No region": "Nav reģiona"
+    "No region": "Nav reģiona",
+    "Alle Regionen": "Visi reģioni",
+    "Region suchen...": "Meklēt reģionu..."
 }

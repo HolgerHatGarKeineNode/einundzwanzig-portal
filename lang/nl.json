@@ -758,5 +758,7 @@
     "No meetups in :region yet.": "Nog geen meetups in :region.",
     "Show all meetups in the country": "Alle meetups in het land tonen",
     "Region": "Regio",
-    "No region": "Geen regio"
+    "No region": "Geen regio",
+    "Alle Regionen": "Alle regio’s",
+    "Region suchen...": "Regio zoeken..."
 }

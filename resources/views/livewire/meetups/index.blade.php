@@ -37,7 +37,7 @@ class extends Component {
     public function with(): array
     {
         return [
-            'meetups' => Meetup::with(['city.country', 'createdBy'])
+            'meetups' => Meetup::with(['city.country', 'city.region', 'createdBy'])
                 ->withExists([
                     'meetupEvents as has_future_events' => fn($query) => $query->where('start', '>=', now()),
                 ])
@@ -70,6 +70,9 @@ class extends Component {
             {{ $regionName ? __('Meetups in :region', ['region' => $regionName]) : __('Meetups') }}
         </flux:heading>
         <div class="flex flex-col md:flex-row items-center gap-4">
+            {{-- Der Einstieg in die Regions-Ansicht. Zeigt sich nur, wenn das Land
+                 Regionen hat — sonst bleibt die Leiste wie bisher. --}}
+            <livewire:region.chooser/>
             <flux:button class="cursor-pointer" x-copy-to-clipboard="'{{ route('ics') }}'"
                          icon="calendar-date-range">{{ __('Kalender-Stream-URL kopieren') }}</flux:button>
             <flux:input
@@ -108,11 +111,19 @@ class extends Component {
                             @if($meetup->city)
                                 <a href="{{ route('meetups.landingpage', ['meetup' => $meetup, 'country' => $country]) }}">
                                     <span>{{ $meetup->name }}</span>
-                                    <div class="text-xs text-zinc-500 flex items-center space-x-2">
+                                    {{-- zinc-600/300 statt zinc-500: letzteres misst auf dem
+                                         dunklen Body 3,19:1 und reisst damit WCAG 1.4.3.
+                                         Der Fehler ist Bestand, sitzt aber genau da, wo
+                                         jetzt Text dazukommt. --}}
+                                    <div class="text-xs text-zinc-600 dark:text-zinc-300 flex items-center space-x-2">
                                         <div>{{ $meetup->city->name }}</div>
                                         @if($meetup->city->country)
                                             <flux:separator vertical/>
                                             <div>{{ $meetup->city->country->name }}</div>
+                                        @endif
+                                        @if($meetup->city->region)
+                                            <flux:separator vertical/>
+                                            <div>{{ $meetup->city->region->name }}</div>
                                         @endif
                                     </div>
                                 </a>
