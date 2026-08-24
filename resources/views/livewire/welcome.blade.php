@@ -11,14 +11,20 @@ new
 class extends Component {
     use SeoTrait;
 
+    /*
+     * Beide Ziele ueber country_or_region_route(): traegt die Domain eine Region,
+     * landet der Besucher direkt dort — `portal.bitcoindiana.org` fuehrt so nach
+     * `/us/in/meetups` statt in die Liste aller US-Meetups (Issue #6). Domains ohne
+     * Region bekommen unveraendert die Landesroute.
+     */
     public function goToMeetups(): void
     {
-        $this->redirect(route('meetups.index', ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()]), navigate: true);
+        $this->redirect(country_or_region_route('meetups.index'), navigate: true);
     }
 
     public function goToMap(): void
     {
-        $this->redirect(route('meetups.map', ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()]), navigate: true);
+        $this->redirect(country_or_region_route('meetups.map'), navigate: true);
     }
 }; ?>
 

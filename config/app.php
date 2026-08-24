@@ -18,6 +18,14 @@ return [
     'domain_country' => 'de',
 
     /*
+     * Die Verwaltungsebene 1, auf die eine Domain ihre Besucher standardmaessig
+     * fuehrt (ISO 3166-2, klein geschrieben) — oder null fuer „das ganze Land".
+     * Gesetzt wird der Wert zur Laufzeit von DomainMiddleware; hier steht nur der
+     * Default, damit config('app.domain_region') nie undefiniert ist.
+     */
+    'domain_region' => null,
+
+    /*
     |--------------------------------------------------------------------------
     | Local Tunnel (Expose) Base URL
     |--------------------------------------------------------------------------

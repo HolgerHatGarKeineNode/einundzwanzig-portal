@@ -1,5 +1,65 @@
 <?php
 
+if (! function_exists('domain_region_for')) {
+    /**
+     * Die Region dieser Domain — aber nur, solange das Land noch dazu passt.
+     *
+     * `portal.bitcoindiana.org` liefert `in` (Indiana), damit ein Besucher auf
+     * `/us/in/meetups` landet statt im ganzen Land (Issue #6). Die Region haengt an
+     * der DOMAIN, das Land dagegen an der Sprachwahl der Sitzung — und die kann der
+     * Besucher jederzeit umstellen.
+     *
+     * Genau da sitzt der Riegel: wer auf Bitcoin Diana auf Deutsch umschaltet, hat
+     * `de` als Land, und `/de/in/meetups` waere ein 404 (Indiana ist kein deutsches
+     * Bundesland; ein unbekannter Regionscode antwortet ausdruecklich mit 404 statt
+     * mit einer leeren Liste). Passt das Land nicht mehr zum Domain-Land, gibt es
+     * hier deshalb null — der Aufrufer faellt dann auf die Landesroute zurueck.
+     */
+    function domain_region_for(string $country): ?string
+    {
+        $region = config('app.domain_region');
+
+        if (! is_string($region) || $region === '') {
+            return null;
+        }
+
+        return $country === config('app.domain_country') ? $region : null;
+    }
+}
+
+if (! function_exists('country_or_region_route')) {
+    /**
+     * Baut das Standard-Ziel einer Listen-Route und nimmt die Region mit, wenn die
+     * Domain eine hat.
+     *
+     * Regionsvarianten gibt es nur fuer Meetups, Karte und Staedte
+     * (`meetups.index-region`, `meetups.map-region`, `cities.index-region`); alles
+     * andere hat keine, und dort bleibt es bei der Landesroute. Uebergeben wird
+     * darum der Name der LANDES-Route, und `-region` wird nur angehaengt, wenn es
+     * die Variante wirklich gibt — sonst baut ein Tippfehler eine Route, die es
+     * nicht gibt, und die Seite stirbt an einem Detail, das niemand vermutet.
+     *
+     * @param  array<string, mixed>  $parameters
+     */
+    function country_or_region_route(string $name, array $parameters = [], bool $absolute = true): string
+    {
+        $country = $parameters['country']
+            ?? request()->route('country')
+            ?? str(session('lang_country', config('app.domain_country', 'de')))
+                ->after('-')
+                ->lower()
+                ->value();
+
+        $region = domain_region_for($country);
+
+        if ($region !== null && app('router')->has($name.'-region')) {
+            return route($name.'-region', [...$parameters, 'country' => $country, 'region' => $region], $absolute);
+        }
+
+        return route($name, [...$parameters, 'country' => $country], $absolute);
+    }
+}
+
 if (! function_exists('route_with_country')) {
     function route_with_country(string $name, array $parameters = [], bool $absolute = true): string
     {

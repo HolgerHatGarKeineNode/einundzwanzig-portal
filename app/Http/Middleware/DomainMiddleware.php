@@ -48,6 +48,23 @@ class DomainMiddleware
                 'lang_country' => 'pl-PL',
                 'app_name' => 'DWADZIEŚCIA JEDEN Portal',
             ],
+            /*
+             * Die erste Domain, bei der Sprache und Land AUSEINANDERFALLEN — und die
+             * erste mit einer Region (Issue #6, bitcoindiana.org).
+             *
+             * Bei allen Domains darueber ist der Sprachcode zufaellig auch der
+             * Laendercode (de/de, pl/pl, hu/hu, nl/nl), weshalb `locale` unten
+             * jahrelang als Land durchging, ohne aufzufallen. Hier waere das Ergebnis
+             * `/en/meetups` — eine Route, die es nicht gibt. Deshalb `country`
+             * ausdruecklich.
+             */
+            'portal.bitcoindiana.org' => [
+                'locale' => 'en',
+                'lang_country' => 'en-US',
+                'country' => 'us',
+                'region' => 'in',
+                'app_name' => 'Bitcoin Diana',
+            ],
 
             'pl.localhost' => [
                 'locale' => 'pl',
@@ -84,9 +101,16 @@ class DomainMiddleware
             session(['locale' => $domainConfig['locale']]);
         }
 
+        /*
+         * `country` faellt auf `locale` zurueck — fuer die vier Domains, bei denen
+         * beides denselben Wert traegt, aendert sich damit nichts. `region` ist null,
+         * solange eine Domain keine nennt; erst dann bauen die Standard-Ziele einen
+         * Pfad der Form `/{country}/{region}/…`.
+         */
         config([
             'app.name' => $domainConfig['app_name'],
-            'app.domain_country' => $domainConfig['locale'],
+            'app.domain_country' => $domainConfig['country'] ?? $domainConfig['locale'],
+            'app.domain_region' => $domainConfig['region'] ?? null,
         ]);
 
         $currentLangCountry = session('lang_country', $domainConfig['lang_country']);
