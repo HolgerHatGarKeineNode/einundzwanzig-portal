@@ -161,6 +161,23 @@ pest()->extend(TestCase::class)
 | Test wird beim naechsten unveraenderten Lauf als "replayed" gemeldet und
 | faerbt den Lauf gruen (Pests eigene Replay-Logik, in P1 belegt).
 |
+| OFFENER BEFUND — der naechste rote Lauf gehoert vollstaendig protokolliert.
+| Am 2026-08-24 meldete auf Commit 478525c EIN "composer test"-Lauf
+| "1 failed, 1144 passed". Der Name des roten Tests ist verloren: die Ausgabe
+| lief durch "tail -6" — genau die Zeilen, die ihn genannt haetten. Fuenf
+| weitere volle Laeufe auf demselben und spaeteren Staenden waren gruen, drei
+| davon vom test-engineer; das widerlegt einen seltenen Flake nicht.
+|
+| Zwei ungepruefte Verdachtsrichtungen, beide mangels Reproduktion offen: der
+| Unterschied "--fresh" plus volle Reihenfolge gegenueber einem gefilterten
+| Lauf, und die Browser-/Playwright-Tests als klassische Flake-Kandidaten.
+|
+| WER HIER LANDET, WEIL SEIN LAUF ROT IST: leite die Ausgabe NICHT durch
+| tail/head/grep, sondern vollstaendig in eine Datei, halte den Testnamen fest
+| und fahre danach den gezielten Bisect (wiederholte Laeufe nur der
+| Browser-Suite oder mit fixierter Reihenfolge). Erst dieser Name macht den
+| Befund untersuchbar — ohne ihn ist die Jagd wieder ohne Ziel.
+|
 */
 
 pest()->tia()->locally();
