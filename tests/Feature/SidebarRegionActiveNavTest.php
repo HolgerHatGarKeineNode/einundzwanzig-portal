@@ -52,14 +52,37 @@ it('leaves plain country routes and a region-less domain at exactly one active i
     'einundzwanzig, no region at all: meetups' => ['portal.einundzwanzig.space', '/de/meetups'],
 ]);
 
+/*
+ * P4 (docs/plans/2026-08-24T1738-region-persistenz-navigation.md) stellt die drei
+ * regionsfaehigen Links auf country_or_region_route() um: der href zeigt seitdem auf
+ * /us/in/... statt wie zuvor auf die Landesroute /us/.... Die urspruengliche Erwartung
+ * dieses Tests (expectedHref = Landesroute) ist damit ueberholt, nicht falsch entdeckt —
+ * sie hielt exakt den Vertrag fest, der bis P4 galt (siehe P1-Bericht oben:
+ * "Der href taugt nicht als Anker ... weil er bis P4 weiter auf die Landesroute zeigt").
+ *
+ * Mit dem P4-Umbau faellt expectedHref auf denselben Wert wie der besuchte Pfad — die
+ * Faelle unten sehen dadurch wie ein Tautologie-Datensatz aus (erwarteter Wert = Eingabe).
+ * Das ist real, aber ungefaehrlich: href (country_or_region_route()) und :current
+ * (request()->routeIs(...)) sind zwei UNABHAENGIG berechnete Blade-Ausdruecke, keiner
+ * leitet sich vom anderen ab. Ein P1-Regressionsfall (routeIs() verliert den
+ * -region-Namen) bleibt weiterhin roetbar: dann faellt der Zaehler auf 0 aktive Punkte,
+ * toBe() gegen ein Einzelelement schlaegt fehl. Ein P4-Regressionsfall (href faellt
+ * zurueck auf die Landesroute, waehrend :current weiter auf die Regionsroute zielt)
+ * bleibt ebenfalls roetbar: dann liefert der href /us/meetups statt /us/in/meetups.
+ *
+ * Was dieser Test NICHT mehr zeigt: dass der aktive href von der besuchten URL abweicht.
+ * Diese Eigenschaft hat SidebarRegionRoutePrecedenceTest.php N2 uebernommen — dort bleibt
+ * der Unterschied zwischen href und Pfad real (Domain-Rueckfall auf einer Landesroute),
+ * und genau das schliesst die hier entstandene Luecke.
+ */
 it('activates the matching navlist item, not merely any item (N3)', function (string $path, string $expectedHref) {
     $html = test()->get('http://portal.bitcoindiana.org'.$path)->assertOk()->getContent();
 
     expect(activeNavHrefs($html))->toBe(['http://portal.bitcoindiana.org'.$expectedHref]);
 })->with([
-    'meetups region page activates the Meetups item' => ['/us/in/meetups', '/us/meetups'],
-    'map region page activates the Karte item' => ['/us/in/map', '/us/map'],
-    'cities region page activates the Staedte item' => ['/us/in/cities', '/us/cities'],
+    'meetups region page activates the Meetups item' => ['/us/in/meetups', '/us/in/meetups'],
+    'map region page activates the Karte item' => ['/us/in/map', '/us/in/map'],
+    'cities region page activates the Staedte item' => ['/us/in/cities', '/us/in/cities'],
 ]);
 
 it('does not also activate meetups.index-all or meetups.map-world on a region page (N4)', function () {
