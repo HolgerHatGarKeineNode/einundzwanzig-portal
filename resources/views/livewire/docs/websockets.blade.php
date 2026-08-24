@@ -29,13 +29,21 @@ class extends Component {
     use SeoTrait;
 
     /**
-     * Platzhalter fuer Verbindungsangaben, die es noch nicht gibt.
+     * Platzhalter fuer eine Verbindungsangabe, die es in dieser Umgebung nicht gibt.
      *
-     * Reverb ist zum Zeitpunkt dieser Phase nicht deployt (das ist P5). Eine Seite, die
-     * dann einen erfundenen App-Key zeigt, ist schlimmer als eine, die zugibt, dass der
-     * Wert fehlt: ein falscher Key verbindet nicht, und der Konsument sucht den Fehler
-     * bei sich. Die Platzhalter tragen den Namen der Env-Variablen, aus der der Wert
-     * kommt, damit erkennbar ist, worauf gewartet wird.
+     * In Produktion greift er nicht mehr — P5 ist gefahren, der Key steht (gemessen am
+     * 2026-08-24: `/docs/websockets` zeigt dort eine vollstaendige `wss://`-URL auf
+     * `ws.portal.einundzwanzig.space`). Lokal, in Tests und auf jeder Umgebung ohne
+     * gesetztes `REVERB_APP_KEY` greift er weiterhin, und genau dafuer ist er da.
+     *
+     * Warum ueberhaupt ein Platzhalter statt eines erfundenen Werts: ein falscher Key
+     * verbindet nicht, und der Konsument sucht den Fehler dann bei sich. Der Platzhalter
+     * traegt den Namen der Env-Variablen, aus der der Wert kommt — damit erkennbar ist,
+     * was fehlt, statt dass es nach einem Defekt aussieht.
+     *
+     * Der Key ist der einzige Wert, der einen Platzhalter braucht. Host, Schema und Port
+     * lassen sich aus der Konfiguration ableiten, und ein leerer Pfad ist seit P5 der
+     * Normalfall statt eines Fehlens — siehe connection() weiter unten.
      */
     private const KEY_PLACEHOLDER = '{REVERB_APP_KEY}';
 

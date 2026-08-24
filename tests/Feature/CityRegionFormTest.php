@@ -7,7 +7,8 @@ use App\Models\User;
 use Livewire\Livewire;
 
 beforeEach(function () {
-    $this->actingAs(User::factory()->create());
+    $this->user = User::factory()->create();
+    $this->actingAs($this->user);
 
     $this->us = Country::factory()->create(['code' => 'us']);
     $this->indiana = Region::factory()->indiana()->create(['country_id' => $this->us->id]);
@@ -71,10 +72,14 @@ it('offers regions only for countries that have them', function () {
 });
 
 it('keeps and updates the region when editing a city', function () {
+    // Issue #30: region_id ist ein Identitaetsfeld. Diese Person legt die Stadt hier
+    // selbst an, weil der Test den Region-Schreibpfad prueft, nicht die
+    // Berechtigungsgrenze — die deckt CityIdentityGuardTest ab.
     $city = City::factory()->create([
         'country_id' => $this->us->id,
         'region_id' => null,
         'name' => 'Evansville',
+        'created_by' => $this->user->id,
     ]);
 
     Livewire::test('cities.edit', ['city' => $city])

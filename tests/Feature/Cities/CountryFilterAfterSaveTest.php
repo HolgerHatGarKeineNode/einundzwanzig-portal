@@ -19,7 +19,10 @@ beforeEach(function () {
 });
 
 it('returns to the country that was being edited, not to Germany', function () {
-    $city = City::factory()->create(['country_id' => $this->us->id, 'name' => 'Springfield']);
+    // Issue #30: name ist ein Identitaetsfeld. Dieser Test misst den Redirect nach dem
+    // Speichern, nicht die Berechtigungsgrenze — darum ist der handelnde Nutzer hier
+    // bewusst der Ersteller der Stadt.
+    $city = City::factory()->create(['country_id' => $this->us->id, 'name' => 'Springfield', 'created_by' => $this->user->id]);
 
     Livewire::actingAs($this->user)
         ->withQueryParams([])
