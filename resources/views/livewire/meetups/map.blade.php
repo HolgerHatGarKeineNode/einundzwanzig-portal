@@ -136,8 +136,13 @@ class extends Component {
     @php
         $attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
     @endphp
-    <div>
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <flux:heading>{{ __('Zoom = STRG+Scroll') }}</flux:heading>
+        {{-- Der Einstieg in die Regions-Ansicht, wie auf den beiden Listenseiten. Die
+             Karte war die einzige der drei Regionsseiten ohne ihn: wer ueber einen
+             Sidebar-Link auf /us/in/map kam, hatte dort keine Moeglichkeit, die Region zu
+             wechseln oder zu verlassen. Zeigt sich nur, wenn das Land Regionen hat. --}}
+        <livewire:region.chooser/>
     </div>
     <div x-data="{
             markers: @js($meetups),
