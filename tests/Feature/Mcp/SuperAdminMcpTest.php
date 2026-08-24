@@ -7,6 +7,7 @@ use App\Mcp\Tools\SuperAdmin\SuperAdminListModelsTool;
 use App\Mcp\Tools\SuperAdmin\SuperAdminListRecordsTool;
 use App\Mcp\Tools\SuperAdmin\SuperAdminShowRecordTool;
 use App\Mcp\Tools\SuperAdmin\SuperAdminUpdateRecordTool;
+use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\User;
@@ -142,6 +143,26 @@ it('refuses to write further protected fields like nostr or email verification',
         ->assertHasErrors();
 
     expect($target->fresh()->nostr)->toBe('npub-original');
+});
+
+it('refuses to write created_by via the generic super-admin update tool', function () {
+    // Issue #30: created_by ist seit CityPolicy::updateIdentity() die Achse der
+    // Stadt-Hoheit. Ueber die generischen Super-Admin-Tools umgeschrieben liesse sich
+    // jemandem lautlos die Hoheit ueber eine Stadt geben — an cities:grant-steward
+    // vorbei. Der dafuer vorgesehene Weg ist MergeUserAccounts, nicht dieses Tool.
+    $originalOwner = User::factory()->create();
+    $attacker = User::factory()->create();
+    $city = City::factory()->create(['created_by' => $originalOwner->id, 'name' => 'Belagerte Stadt']);
+
+    EinundzwanzigServer::actingAs(superAdmin())
+        ->tool(SuperAdminUpdateRecordTool::class, [
+            'model' => 'city',
+            'id' => $city->id,
+            'attributes' => ['created_by' => $attacker->id],
+        ])
+        ->assertHasErrors();
+
+    expect($city->fresh()->created_by)->toBe($originalOwner->id);
 });
 
 it('denies a non super-admin from using the super-admin tools', function () {

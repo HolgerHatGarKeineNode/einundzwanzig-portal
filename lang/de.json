@@ -760,5 +760,17 @@
     "Region": "Region",
     "No region": "Keine Region",
     "Alle Regionen": "Alle Regionen",
-    "Region suchen...": "Region suchen..."
+    "Region suchen...": "Region suchen...",
+    "Die angegebene Region gehoert nicht zu diesem Land.": "Die angegebene Region gehört nicht zu diesem Land.",
+    "Eine Stadt mit diesem Namen existiert bereits.": "Eine Stadt mit diesem Namen existiert bereits.",
+    "Auf OpenStreetMap öffnen": "Auf OpenStreetMap öffnen",
+    "OpenStreetMap": "OpenStreetMap",
+    "Optional. Verknüpft die Stadt mit ihrem OpenStreetMap-Eintrag und füllt leere Koordinaten.": "Optional. Verknüpft die Stadt mit ihrem OpenStreetMap-Eintrag und füllt leere Koordinaten.",
+    "Only the person who added this city, a city steward or an admin can change these fields.": "Diese Felder kann nur ändern, wer die Stadt eingetragen hat, ein City-Steward oder ein Administrator.",
+    "You can add map data and coordinates to this city": "Du kannst dieser Stadt Kartendaten und Koordinaten hinzufügen",
+    "Pick the OpenStreetMap place or correct the coordinates — both are open to everyone. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.": "Wähle den OpenStreetMap-Ort oder korrigiere die Koordinaten — beides steht allen offen. Name, Land, Region und Einwohnerzahl bleiben bei der Person, die diese Stadt eingetragen hat, und bei den Stewards: Meetup-Listen und der BTC-Map-Export bauen darauf auf.",
+    "Found a mistake in one of those?": "Ein Fehler in einem dieser Felder?",
+    "Open an issue": "Issue eröffnen",
+    "The BTC Map export uses the population figure together with the year and the city boundary. An empty year hides this city’s meetups from the export.": "Der BTC-Map-Export nutzt die Einwohnerzahl zusammen mit dem Stichjahr und der Stadtgrenze. Ohne Stichjahr verschwinden die Meetups dieser Stadt aus dem Export.",
+    "Anfahrt": "Anfahrt"
 }

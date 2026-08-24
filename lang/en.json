@@ -760,5 +760,17 @@
     "Region": "Region",
     "No region": "No region",
     "Alle Regionen": "All regions",
-    "Region suchen...": "Search region..."
+    "Region suchen...": "Search region...",
+    "Die angegebene Region gehoert nicht zu diesem Land.": "The given region does not belong to this country.",
+    "Eine Stadt mit diesem Namen existiert bereits.": "A city with this name already exists.",
+    "Auf OpenStreetMap öffnen": "Open on OpenStreetMap",
+    "OpenStreetMap": "OpenStreetMap",
+    "Optional. Verknüpft die Stadt mit ihrem OpenStreetMap-Eintrag und füllt leere Koordinaten.": "Optional. Links the city to its OpenStreetMap entry and fills empty coordinates.",
+    "Only the person who added this city, a city steward or an admin can change these fields.": "Only the person who added this city, a city steward or an admin can change these fields.",
+    "You can add map data and coordinates to this city": "You can add map data and coordinates to this city",
+    "Pick the OpenStreetMap place or correct the coordinates — both are open to everyone. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.": "Pick the OpenStreetMap place or correct the coordinates — both are open to everyone. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.",
+    "Found a mistake in one of those?": "Found a mistake in one of those?",
+    "Open an issue": "Open an issue",
+    "The BTC Map export uses the population figure together with the year and the city boundary. An empty year hides this city’s meetups from the export.": "The BTC Map export uses the population figure together with the year and the city boundary. An empty year hides this city’s meetups from the export.",
+    "Anfahrt": "Getting there"
 }

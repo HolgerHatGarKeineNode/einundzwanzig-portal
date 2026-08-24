@@ -121,8 +121,11 @@ it('rejects city update when latitude and longitude are both zero', function () 
 });
 
 it('updates an existing city', function () {
-    $city = City::factory()->create(['name' => 'Old Name', 'country_id' => $this->country->id]);
-    actingAsUser();
+    // Issue #30: name ist ein Identitaetsfeld — nur der Ersteller (oder ein
+    // City-Steward/Super-Admin) darf es aendern. Dieser Test prueft den Schreibpfad
+    // selbst, nicht die Berechtigungsgrenze, darum handelt hier bewusst der Ersteller.
+    $user = actingAsUser();
+    $city = City::factory()->create(['name' => 'Old Name', 'country_id' => $this->country->id, 'created_by' => $user->id]);
 
     Livewire::test('cities.edit', ['city' => $city])
         ->set('name', 'New Name')

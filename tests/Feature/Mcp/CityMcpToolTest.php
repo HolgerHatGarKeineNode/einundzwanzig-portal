@@ -112,6 +112,44 @@ it('resolves a region by name within the citys country and updates population_da
         ->and($fresh->population_date)->toBe('2024');
 });
 
+/*
+|--------------------------------------------------------------------------
+| Issue #30 — UpdateCityTool loest global auf, nicht nur ueber die eigenen
+| Staedte (resolveGlobalByName statt resolveOwnedByName).
+|--------------------------------------------------------------------------
+*/
+
+it('finds a foreign city by name and lets a non-creator enrich it', function () {
+    $owner = User::factory()->create();
+    $city = City::factory()->create(['created_by' => $owner->id, 'name' => 'Findable Foreign City']);
+
+    EinundzwanzigServer::actingAs(User::factory()->create())
+        ->tool(UpdateCityTool::class, [
+            'city' => 'Findable Foreign City',
+            'osm_type' => 'node',
+            'osm_id' => 240109189,
+        ])
+        ->assertOk()
+        ->assertSee('Findable Foreign City');
+
+    expect($city->fresh()->osm_id)->toBe(240109189);
+});
+
+it('forbids the same foreign city rename by name, not with a not-found error', function () {
+    $owner = User::factory()->create();
+    City::factory()->create(['created_by' => $owner->id, 'name' => 'Guarded Foreign City']);
+
+    // Die Ablehnung ist eine Berechtigungsgrenze, kein Suchergebnis — die Stadt WURDE
+    // gefunden, das Aendern von 'name' scheitert an updateIdentity().
+    EinundzwanzigServer::actingAs(User::factory()->create())
+        ->tool(UpdateCityTool::class, [
+            'city' => 'Guarded Foreign City',
+            'name' => 'Renamed',
+        ])
+        ->assertHasErrors()
+        ->assertDontSee('nicht gefunden');
+});
+
 it('refuses a region name that only exists in another country', function () {
     $user = User::factory()->create();
     $country = Country::factory()->create();

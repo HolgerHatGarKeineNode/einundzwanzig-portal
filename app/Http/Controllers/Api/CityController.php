@@ -85,9 +85,21 @@ class CityController extends Controller
     /**
      * Update a city
      *
-     * Updates a city; only for the creator or a super admin.
+     * Any authenticated user may enrich a city: the OpenStreetMap reference, Wikidata,
+     * Wikipedia and the coordinates. A city is reference data, not property — `created_by`
+     * records who typed it in first, not who owns it.
+     *
+     * Five fields are the exception, because other records depend on them: `name`
+     * (globally unique and carrying the frozen slug), `country_id`, `region_id`,
+     * `population` and `population_date`. The last two decide, together with the boundary
+     * data, whether this city's meetups appear in the BTC Map export — clearing one of them
+     * removes entries from a third-party system. Changing any of the five requires being the
+     * creator, a city steward or a super admin; a request that changes one without that
+     * permission is rejected rather than silently ignored.
+     *
+     * Sending a field unchanged is never a change and never rejected.
      */
-    #[ResponseAttribute(status: 403, description: 'Only the creator or a super admin may change the city.')]
+    #[ResponseAttribute(status: 403, description: 'Not authenticated, or an identity field (name, country_id, region_id, population, population_date) was changed without being the creator, a city steward or a super admin.')]
     #[ResponseAttribute(status: 422, description: 'Validation error.')]
     public function update(UpdateCityRequest $request, City $city): CityResource
     {

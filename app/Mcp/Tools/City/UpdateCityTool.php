@@ -16,23 +16,38 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Aktualisiert eine deiner Städte (per Name angegeben). Nur der Ersteller oder ein Super-Admin darf sie ändern. Neben Name, Land und Koordinaten lassen sich Region, Einwohnerzahl samt Stichjahr sowie die OpenStreetMap-Referenz (osm_type/osm_id und die abgeleiteten Felder) und die Wikidata-/Wikipedia-Verweise pflegen.')]
+#[Description('Aktualisiert eine BELIEBIGE Stadt (per Name angegeben) — nicht nur die eigenen. Anreichern darf jeder angemeldete Nutzer: OpenStreetMap-Referenz (osm_type/osm_id und die abgeleiteten Felder), Wikidata, Wikipedia und Koordinaten. Die Identitätsfelder Name, Land, Region, Einwohnerzahl und Stichjahr darf nur der Ersteller, ein City-Steward oder ein Super-Admin ändern; ein Versuch ohne diese Berechtigung wird abgelehnt, statt still zu verpuffen. Den genauen Namen vorher mit search-cities ermitteln.')]
 class UpdateCityTool extends Tool
 {
     use ResolvesEntities;
 
     public function handle(Request $request): Response
     {
-        $city = $this->resolveOwnedByName($request, City::class, 'Städte', 'city');
+        /*
+         * GLOBAL aufgeloest, nicht auf die eigenen Staedte eingeschraenkt (Issue #30).
+         * `resolveOwnedByName()` filtert hart auf `created_by` und haette hier eine
+         * zweite Grenze gezogen, die die Policy gar nicht mehr zieht: eine fremde
+         * Stadt waere mit „nicht gefunden" beantwortet worden, obwohl der Nutzer sie
+         * anreichern darf. Eine Berechtigungsgrenze, die als Suchergebnis auftritt,
+         * ist nicht nachvollziehbar — und sie war der eigentliche Grund, warum die
+         * Kante ueberhaupt uebersehen wurde.
+         */
+        $city = $this->present($request->get('id'))
+            ? City::find($request->get('id'))
+            : $this->resolveGlobalByName(City::query(), $request->get('city'), 'Städte');
 
         if ($city instanceof Response) {
             return $city;
         }
 
+        if ($city === null) {
+            return Response::error('Stadt nicht gefunden.');
+        }
+
         $user = $request->user();
 
         if ($user === null || Gate::forUser($user)->denies('update', $city)) {
-            return Response::error('Nur der Ersteller oder ein Super-Admin darf diese Stadt ändern.');
+            return Response::error('Nur angemeldete Nutzer dürfen Städte bearbeiten.');
         }
 
         if ($error = $this->mergeForeignKey($request, 'country', 'country_id', Country::query(), 'Land', false)) {
@@ -62,6 +77,22 @@ class UpdateCityTool extends Tool
             UpdateCityRequest::forCity($city, $request->all())->rules()
         );
 
+        /*
+         * Die zweite Ability, und zwar NACH der Validierung: `identityChanges()`
+         * vergleicht gegen den Bestand, und erst die validierten Werte sind die, die
+         * geschrieben wuerden. Gegen die Rohdaten geprueft, koennte ein ungueltiges
+         * Feld einen 403 ausloesen, wo ein Validierungsfehler die ehrlichere Antwort
+         * ist.
+         */
+        $identityChanges = $city->identityChanges($validated);
+
+        if ($identityChanges !== [] && Gate::forUser($user)->denies('updateIdentity', $city)) {
+            return Response::error(sprintf(
+                'Diese Felder darf nur der Ersteller, ein City-Steward oder ein Super-Admin ändern: %s. Die OSM-Referenz, Wikidata, Wikipedia und die Koordinaten kannst du dagegen frei pflegen.',
+                implode(', ', $identityChanges),
+            ));
+        }
+
         $city->update($validated);
 
         return Response::json(CityResource::make($city->fresh())->resolve());
@@ -73,7 +104,7 @@ class UpdateCityTool extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'city' => $schema->string()->description('Name der zu ändernden Stadt (aus deinen Städten, siehe list-my-cities).'),
+            'city' => $schema->string()->description('Name der zu ändernden Stadt — jede Stadt, nicht nur die eigenen. Vorher mit search-cities den genauen Namen ermitteln.'),
             'id' => $schema->integer()->description('Optional: ID der Stadt, falls bereits bekannt (Alternative zu "city").'),
             'country' => $schema->string()->description('Name des zugehörigen Landes (wird automatisch aufgelöst).'),
             'country_id' => $schema->integer()->description('Optional: ID des Landes (Alternative zu "country").'),
