@@ -760,5 +760,17 @@
     "Region": "Reģions",
     "No region": "Nav reģiona",
     "Alle Regionen": "Visi reģioni",
-    "Region suchen...": "Meklēt reģionu..."
+    "Region suchen...": "Meklēt reģionu...",
+    "Die angegebene Region gehoert nicht zu diesem Land.": "",
+    "Eine Stadt mit diesem Namen existiert bereits.": "",
+    "Auf OpenStreetMap öffnen": "",
+    "OpenStreetMap": "",
+    "Optional. Verknüpft die Stadt mit ihrem OpenStreetMap-Eintrag und füllt leere Koordinaten.": "",
+    "Only the person who added this city, a city steward or an admin can change these fields.": "",
+    "You can add map data and coordinates to this city": "",
+    "Pick the OpenStreetMap place or correct the coordinates — both are open to everyone. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.": "",
+    "Found a mistake in one of those?": "",
+    "Open an issue": "",
+    "The BTC Map export uses the population figure together with the year and the city boundary. An empty year hides this city’s meetups from the export.": "",
+    "Anfahrt": ""
 }

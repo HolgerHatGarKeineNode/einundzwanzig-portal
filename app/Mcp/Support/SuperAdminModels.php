@@ -17,8 +17,17 @@ class SuperAdminModels
      * Attribute, die niemals über die generischen Super-Admin-Tools geschrieben werden
      * dürfen: Passwörter & Rollen, Auth-Credentials/-Tokens (remember_token, two_factor_*,
      * OAuth token/refresh_token/secret, lnurl-auth k1), die E-Mail-Verifizierung
-     * (email_verified_at) sowie der Nostr-Pubkey (Identitäts-Spoofing). lnurl und
-     * reputation bleiben bewusst editierbar.
+     * (email_verified_at), der Nostr-Pubkey (Identitäts-Spoofing) sowie `created_by`.
+     * lnurl und reputation bleiben bewusst editierbar.
+     *
+     * `created_by` ist seit Issue #30 nicht mehr nur ein Herkunftsvermerk, sondern die
+     * Achse zweier Mechanismen: `CityPolicy::updateIdentity()` (und die Ownership-Prüfung
+     * jeder anderen Entität) hängt daran, und die Spalte trägt in mehreren Tabellen eine
+     * Löschkaskade — `cities.created_by` nimmt bei einer Kontolöschung die Stadt mit, und
+     * `meetups.city_id` die fremden Meetups darin. Umgeschrieben liesse sich damit
+     * jemandem lautlos die Hoheit über einen Datensatz geben, an `cities:grant-steward`
+     * vorbei und ohne Spur. Für den legitimen Fall gibt es bereits einen eigenen Weg:
+     * `MergeUserAccounts` schreibt die Zeiger bewusst und nachvollziehbar um.
      *
      * @var list<string>
      */
@@ -36,6 +45,7 @@ class SuperAdminModels
         'k1',
         'email_verified_at',
         'nostr',
+        'created_by',
     ];
 
     /**

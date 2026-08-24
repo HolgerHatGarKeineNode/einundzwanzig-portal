@@ -85,12 +85,28 @@ class City extends Model
                 $new = $input[$field];
                 $old = $this->getAttribute($field);
 
-                // Lose verglichen, weil dieselbe Zahl je nach Eingang als String
-                // ankommt: "42" aus einem Formular und 42 aus JSON sind derselbe Wert.
                 if ($new === null || $old === null) {
                     return $new !== $old;
                 }
 
+                /*
+                 * Ein Nicht-Skalar ist immer eine Aenderung — und zwar ohne ihn anzufassen.
+                 * Diese Methode laeuft im REST-Pfad VOR der Validierung, gegen die rohe
+                 * Eingabe: ein `name[]=x` im Request kaeme hier als Array an, und die
+                 * Umwandlung darunter warf dafuer eine "Array to string conversion". Aus
+                 * einer 422 wurde so eine 500 — kein Bypass, aber der falsche Fehler.
+                 *
+                 * Fail-closed statt uebersprungen: wer Unsinn in ein geschuetztes Feld
+                 * schickt, faellt in die Berechtigungspruefung und danach in die
+                 * Validierung. Waere es umgekehrt, koennte ein Typ, den dieser Vergleich
+                 * nicht kennt, an der Pruefung vorbeilaufen.
+                 */
+                if (! is_scalar($new)) {
+                    return true;
+                }
+
+                // Lose verglichen, weil dieselbe Zahl je nach Eingang als String
+                // ankommt: "42" aus einem Formular und 42 aus JSON sind derselbe Wert.
                 return (string) $new !== (string) $old;
             }
         ));

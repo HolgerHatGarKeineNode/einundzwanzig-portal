@@ -123,7 +123,7 @@ class extends Component {
         abort_if(
             $identityChanges !== [] && ! (auth()->user()?->can('updateIdentity', $this->city) ?? false),
             403,
-            __('Diese Felder darf nur der Ersteller oder ein City-Steward ändern.'),
+            __('Only the person who added this city, a city steward or an admin can change these fields.'),
         );
 
         $validated = $this->validate([
@@ -204,7 +204,19 @@ class extends Component {
 
         $this->latitude ??= $this->osmPlace['osm_lat'] ?? null;
         $this->longitude ??= $this->osmPlace['osm_lon'] ?? null;
-        $this->population ??= $this->osmPlace['population'] ?? null;
+        /*
+         * Die Einwohnerzahl NUR fuer den, der sie auch speichern duerfte (Issue #30).
+         *
+         * Sie ist eines der fuenf Identitaetsfelder. Wer sie nicht aendern darf, bekam
+         * sie hier trotzdem ungefragt ins Formular geschoben, sobald der OSM-Treffer
+         * eine mitbrachte — und lief beim Speichern in einen 403 auf ein Feld, das ihm
+         * gesperrt angezeigt wird und das er nie angefasst hat. Das traf genau den
+         * Fall, fuer den diese Seite geoeffnet wurde: eine Stadt ohne Einwohnerzahl
+         * anreichern.
+         */
+        if ($this->canEditIdentity) {
+            $this->population ??= $this->osmPlace['population'] ?? null;
+        }
     }
 
     public function with(): array
@@ -223,6 +235,11 @@ class extends Component {
         <flux:heading size="xl">{{ __('Edit City') }}: {{ $city->name }}</flux:heading>
     </div>
 
+    {{-- Ein Schloss am Feldende traegt die Sperre sichtbar, ohne Kontrast zu kosten.
+         Farbe ist nie der alleinige Traeger (WCAG 1.4.1) — deshalb Icon plus der Text
+         im Callout, nicht Ausgrauen. --}}
+    @php $identityLockIcon = $canEditIdentity ? null : 'lock-closed'; @endphp
+
     <form wire:submit="updateCity" class="space-y-8">
         <flux:fieldset>
             <flux:legend>{{ __('Basic Information') }}</flux:legend>
@@ -233,21 +250,59 @@ class extends Component {
                      fuer die Arbeit daneben — kann sie aber nicht anfassen. Der Riegel
                      sitzt in updateCity(); das hier ist die Anzeige dazu. --}}
                 @unless($canEditIdentity)
-                    <flux:callout icon="lock-closed" variant="secondary">
-                        <flux:callout.heading>{{ __('Name, country, region and population are locked') }}</flux:callout.heading>
+                    {{-- Fuehrt mit dem, was geht, nicht mit dem Verbot: der Nutzer hat nichts
+                         falsch gemacht, er ist zum Anreichern eingeladen. `max-w-prose` haelt
+                         die Zeile bei rund 75 Zeichen — ohne sie lief der Text auf einem
+                         breiten Bildschirm ueber 190. Wikidata und Wikipedia sind bewusst NICHT
+                         genannt: sie haben kein eigenes Feld, sondern kommen als Teil des
+                         OSM-Treffers mit, und wer sie sucht, findet sie nicht. --}}
+                    <flux:callout icon="lock-closed" variant="secondary" id="identity-lock"
+                                  class="max-w-prose" class:icon="text-zinc-500 dark:text-zinc-400">
+                        <flux:callout.heading>{{ __('You can add map data and coordinates to this city') }}</flux:callout.heading>
                         <flux:callout.text>
-                            {{ __('You can enrich this city — OpenStreetMap reference, Wikidata, Wikipedia and coordinates. The fields that identify the city are reserved for its creator and the city stewards, because other records depend on them.') }}
+                            {{ __('Pick the OpenStreetMap place or correct the coordinates — both are open to everyone. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.') }}
+                        </flux:callout.text>
+                        <flux:callout.text>
+                            {{ __('Found a mistake in one of those?') }}
+                            <flux:callout.link href="https://github.com/HolgerHatGarKeineNode/einundzwanzig-app/issues" external>{{ __('Open an issue') }}</flux:callout.link>
                         </flux:callout.text>
                     </flux:callout>
                 @endunless
 
-                <flux:input label="{{ __('Name') }}" wire:model="name" required :disabled="! $canEditIdentity"/>
+                {{-- `readonly`, nicht `disabled`: Flux dimmt ein deaktiviertes Feld per
+                     opacity-50, wodurch das Label im Hellmodus von 15,13:1 auf 3,09:1 faellt —
+                     Verblassen genau dort, wo es schadet. Schwerer wiegt die Tastatur: fuenf
+                     deaktivierte Felder haben zusammen null Tab-Stopps, ein Screenreader-Nutzer
+                     erfaehrt nie, dass sie existieren. `readonly` erzeugt in Flux dieselbe
+                     Klassenliste wie ein offenes Feld, behaelt also die vollen Werte — deshalb
+                     traegt das Schloss-Icon hier das Signal, nicht das Ausgrauen. --}}
+                <flux:input label="{{ __('Name') }}" wire:model="name" required
+                            :readonly="! $canEditIdentity" :icon:trailing="$identityLockIcon"
+                            :aria-describedby="$canEditIdentity ? null : 'identity-lock'"/>
 
                 {{-- Identisch zu cities/create: rohe <option>-Tags koennen keine Flagge
                      tragen und liefern in einer Liste von ueber 240 Laendern keine Suche.
                      Wer eine Stadt anlegt und dieselbe danach bearbeitet, bekam bisher
                      zwei verschiedene Bedienungen fuer dasselbe Feld. --}}
-                <flux:select variant="listbox" searchable label="{{ __('Country') }}" wire:model.live="country_id" required :disabled="! $canEditIdentity">
+                {{-- Ein `readonly`-Weg existiert fuer ein Select nicht — weder im HTML noch in
+                     Flux. Statt eines Bedienelements, das aussieht wie eines und keines ist,
+                     steht der Wert hier als Text: gleiche Information, voller Kontrast,
+                     nichts, was zum Klicken einlaedt und dann nicht reagiert. Die
+                     Livewire-Properties bleiben aus mount() gesetzt, und updateCity()
+                     vergleicht ohnehin gegen den Bestand. --}}
+                @unless($canEditIdentity)
+                    <flux:field>
+                        <flux:label>{{ __('Country') }}</flux:label>
+                        <div class="flex h-10 items-center gap-2" aria-describedby="identity-lock">
+                            <img alt="{{ str($city->country->code)->lower() }}"
+                                 src="{{ asset('vendor/blade-flags/country-'.str($city->country->code)->lower().'.svg') }}"
+                                 width="24" height="12"/>
+                            <span class="text-zinc-800 dark:text-white">{{ $city->country->name }}</span>
+                            <flux:icon.lock-closed variant="micro" class="text-zinc-500 dark:text-zinc-400"/>
+                        </div>
+                    </flux:field>
+                @else
+                <flux:select variant="listbox" searchable label="{{ __('Country') }}" wire:model.live="country_id" required>
                     <flux:select.option value="">{{ __('Select a country') }}</flux:select.option>
                     @foreach($countries as $country)
                         <flux:select.option value="{{ $country->id }}">
@@ -260,11 +315,24 @@ class extends Component {
                         </flux:select.option>
                     @endforeach
                 </flux:select>
+                @endunless
 
                 {{-- Nur Laender mit gepflegten Regionen zeigen das Feld; fuer alle anderen
-                     bleibt das Formular unveraendert. --}}
-                @if($regions->isNotEmpty())
-                    <flux:select variant="listbox" searchable label="{{ __('Region') }}" wire:model="region_id" :disabled="! $canEditIdentity">
+                     bleibt das Formular unveraendert. Gesperrt zeigt es die Region nur, wenn
+                     die Stadt eine traegt — ein leeres, unbedienbares Feld waere kein
+                     Kontext, sondern eine Frage ohne Antwort. --}}
+                @if(! $canEditIdentity)
+                    @if($city->region)
+                        <flux:field>
+                            <flux:label>{{ __('Region') }}</flux:label>
+                            <div class="flex h-10 items-center gap-2" aria-describedby="identity-lock">
+                                <span class="text-zinc-800 dark:text-white">{{ $city->region->name }}</span>
+                                <flux:icon.lock-closed variant="micro" class="text-zinc-500 dark:text-zinc-400"/>
+                            </div>
+                        </flux:field>
+                    @endif
+                @elseif($regions->isNotEmpty())
+                    <flux:select variant="listbox" searchable label="{{ __('Region') }}" wire:model="region_id">
                         <flux:select.option value="">{{ __('No region') }}</flux:select.option>
                         @foreach($regions as $region)
                             <flux:select.option :key="$region->id" value="{{ $region->id }}">
@@ -292,7 +360,7 @@ class extends Component {
         <flux:fieldset>
             <flux:legend>{{ __('Coordinates') }}</flux:legend>
 
-            <div class="grid grid-cols-2 gap-x-4 gap-y-6">
+            <div class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
                 <flux:input label="{{ __('Latitude') }}" type="number" step="any" wire:model="latitude" required/>
                 <flux:input label="{{ __('Longitude') }}" type="number" step="any" wire:model="longitude" required/>
             </div>
@@ -304,11 +372,19 @@ class extends Component {
 
         <flux:fieldset>
             <flux:legend>{{ __('Demographics') }}</flux:legend>
+            {{-- Steht hier und nicht oben im Callout: der war 713 px entfernt, und wer
+                 unten auf ein gesperrtes Feld stoesst, hat die Erklaerung nicht mehr im
+                 Bild. Als Slot statt als Attribut, damit der Apostroph nicht doppelt
+                 escapt wird — und er ist U+2019, nicht der gerade. --}}
+            <flux:description>{{ __('The BTC Map export uses the population figure together with the year and the city boundary. An empty year hides this city’s meetups from the export.') }}</flux:description>
 
-            <div class="grid grid-cols-2 gap-x-4 gap-y-6">
-                <flux:input label="{{ __('Population') }}" type="number" wire:model="population" :disabled="! $canEditIdentity"/>
-                <flux:input label="{{ __('Population Date') }}" wire:model="population_date" placeholder="e.g. 2024" :disabled="! $canEditIdentity"
-                            description:trailing="{{ __('Together with the population figure and the boundary data, this decides whether this city\'s meetups appear in the BTC Map export.') }}"/>
+            <div class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                <flux:input label="{{ __('Population') }}" type="number" wire:model="population"
+                            :readonly="! $canEditIdentity" :icon:trailing="$identityLockIcon"
+                            :aria-describedby="$canEditIdentity ? null : 'identity-lock'"/>
+                <flux:input label="{{ __('Population Date') }}" wire:model="population_date" placeholder="e.g. 2024"
+                            :readonly="! $canEditIdentity" :icon:trailing="$identityLockIcon"
+                            :aria-describedby="$canEditIdentity ? null : 'identity-lock'"/>
             </div>
         </flux:fieldset>
 
