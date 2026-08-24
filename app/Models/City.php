@@ -9,11 +9,14 @@ use App\Models\Concerns\SetsCreatedBy;
 use App\Observers\ApiChangeObserver;
 use App\Policies\CityPolicy;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -53,6 +56,15 @@ class City extends Model
      *
      * @var array<int, string>
      */
+    /**
+     * Steuerfeld, keine Spalte: die ausdrueckliche Bestaetigung, dass hier bewusst ein
+     * weiterer Ort gleichen Namens entsteht.
+     *
+     * Es reist mit den validierten Attributen bis hierher und muss vor dem create()
+     * heraus — sonst versucht Eloquent, es zu speichern, und die Tabelle kennt es nicht.
+     */
+    public const CONFIRM_DUPLICATE = 'confirm_duplicate';
+
     public const IDENTITY_FIELDS = [
         'name',
         'country_id',
@@ -135,35 +147,217 @@ class City extends Model
     ];
 
     /**
-     * Findet eine Stadt anhand ihres Namens; Städtenamen sind global eindeutig.
+     * Alle Staedte, deren Name (normalisiert) und Land zu den Angaben passen.
+     *
+     * Normalisiert heisst: klein und ohne aeussere Leerzeichen. Beides ist noetig, weil
+     * der Bestand beides enthaelt — 12 der 305 Namen in Produktion tragen ein
+     * nachgestelltes Leerzeichen, und ein exakter Vergleich haelt `'Offenburg '` fuer
+     * eine andere Stadt als `'Offenburg'`.
+     *
+     * Gibt eine Collection zurueck, nicht ein Modell: ein Ortsname ist nicht eindeutig,
+     * und wer hier ein einzelnes Ergebnis erwartet, hat schon den Fehler gemacht, den
+     * diese Methode verhindern soll.
+     *
+     * @return EloquentCollection<int, self>
      */
-    public static function findByName(string $name): ?self
+    public static function matchingName(string $name, int|string|null $countryId = null): EloquentCollection
     {
         return static::query()
-            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            /*
+             * TRIM(), nicht BTRIM(): beide tun dasselbe, aber BTRIM kennt nur Postgres.
+             * Die Tests laufen auf SQLite (phpunit.xml), Produktion auf PG 18.4 — eine
+             * Funktion, die nur eine der beiden kennt, macht aus jedem Testlauf einen
+             * Fehlalarm oder, schlimmer, aus einem gruenen Lauf eine falsche Zusage.
+             * TRIM(x) ist SQL-Standard und in beiden vorhanden.
+             */
+            ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower(trim($name))])
+            ->when($countryId !== null, fn ($query) => $query->where('country_id', $countryId))
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * Loest eine Stadt eindeutig auf oder legt sie an — und scheitert sichtbar, wenn
+     * beides nicht geht.
+     *
+     * ## Warum das keine "createOrFind"-Methode mehr ist
+     *
+     * Bis 2026-08-25 hiess sie `createOrFindByName()` und suchte allein auf dem Namen,
+     * obwohl der Aufrufer `country_id` mitgeschickt hatte. Sie warf es weg und
+     * antwortete mit 200. Wer "Springfield" fuer Missouri anlegte, waehrend Springfield
+     * (Illinois) existierte, bekam den Illinois-Datensatz — und das Meetup hing still an
+     * der falschen Stadt (Issue #33).
+     *
+     * Der Fehler war nicht der fehlende Index, sondern die Haltung: eine Methode, die
+     * bei Mehrdeutigkeit den ersten Treffer nimmt, ist auch mit perfektem Schema falsch.
+     * Ein Ortsname ist auf keiner Verwaltungsebene eindeutig — acht Neuenkirchen in
+     * Niedersachsen, zwei davon im selben Landkreis.
+     *
+     * ## Die Reihenfolge
+     *
+     * 1. **OSM-Referenz** (`osm_type` + `osm_id`) mitgeschickt? Dann ist die Sache
+     *    exakt entschieden — Treffer oder Neuanlage, keine Rueckfrage.
+     * 2. Sonst: Name + Land. Genau ein Treffer gewinnt, kein Treffer fuehrt zur
+     *    Neuanlage.
+     * 3. **Mehrere Treffer** → ValidationException mit den Kandidaten. Nie "nimm den
+     *    ersten".
+     * 4. **Neuanlage neben einem gleichnamigen Ort ohne Identifier** → ebenfalls
+     *    ValidationException. Ein zweites "Georgetown" im selben Land ist erlaubt, aber
+     *    es ist eine Entscheidung und kein Nebeneffekt.
+     *
+     * `region_id` spielt bewusst KEINE Rolle: sie ist ein Merkmal fuer die Laender, in
+     * denen wir Regionen wollen (heute DE und US, 5 von 305 Zeilen). Wuerde sie hier
+     * mitentscheiden, verhielte sich das Portal in Laendern mit Regionen anders als in
+     * Laendern ohne — und der Unterschied fiele erst dem auf, den er trifft.
+     *
+     * @param  array<string, mixed>  $attributes
+     *
+     * @throws ValidationException wenn der Name mehrdeutig ist oder eine Neuanlage
+     *                             neben einem gleichnamigen Ort nicht bestaetigt wurde
+     */
+    public static function resolveOrCreate(array $attributes): self
+    {
+        $name = trim((string) ($attributes['name'] ?? ''));
+        $countryId = $attributes['country_id'] ?? null;
+
+        /*
+         * Eine mitgeschickte OSM-Referenz beendet die Frage in BEIDE Richtungen: traegt
+         * sie schon eine Stadt, ist es diese; traegt sie noch keine, ist es eine neue.
+         * Der Name spielt dann keine Rolle mehr — auch nicht, wenn er mehrdeutig ist.
+         * Genau dafuer ist ein Identifier da.
+         *
+         * Ohne den zweiten Zweig waere die Referenz nur halb wirksam: wer das neunte
+         * Neuenkirchen mit seiner OSM-Relation anlegt, bekaeme trotzdem die
+         * Mehrdeutigkeitsmeldung ueber die acht anderen — und haette keinen Weg mehr,
+         * eindeutig zu sein, obwohl er das Eindeutigste mitgeschickt hat, was es gibt.
+         */
+        if (static::hasOsmReference($attributes)) {
+            return static::matchingOsmReference($attributes)
+                ?? static::create(Arr::except($attributes, [self::CONFIRM_DUPLICATE]));
+        }
+
+        /*
+         * Die Bestaetigung ueberspringt die Bestandssuche — und zwar bewusst vor jeder
+         * Namenspruefung. Ohne diese Reihenfolge waere sie wirkungslos: wer ein ZWEITES
+         * Georgetown im selben Land anlegen will, findet mit der Namenssuche immer das
+         * erste und bekaeme es zurueck, statt ein neues zu bekommen. Genau der Fall, den
+         * die Bestaetigung ausdruecken soll, waere dann der einzige, den sie nicht kann.
+         *
+         * Die OSM-Referenz steht davor: dieselbe OSM-ID ist derselbe Ort, und daran
+         * aendert auch eine Bestaetigung nichts.
+         */
+        if (static::isConfirmed($attributes)) {
+            return static::create(Arr::except($attributes, [self::CONFIRM_DUPLICATE]));
+        }
+
+        $candidates = static::matchingName($name, $countryId);
+
+        if ($candidates->count() === 1) {
+            return $candidates->first();
+        }
+
+        if ($candidates->count() > 1) {
+            throw ValidationException::withMessages([
+                'name' => __(':name ist in diesem Land mehrdeutig — :count Orte tragen den Namen. Waehle einen davon ueber seine id, oder schicke osm_type und osm_id mit, um eindeutig zu sein. Kandidaten: :list', [
+                    'name' => $name,
+                    'count' => $candidates->count(),
+                    'list' => static::describeCandidates($candidates),
+                ]),
+            ]);
+        }
+
+        if (static::matchingName($name)->isNotEmpty() && ! static::hasIdentifier($attributes)) {
+            throw ValidationException::withMessages([
+                'name' => __('Es gibt bereits mindestens einen Ort namens :name. Das ist kein Widerspruch — gleichnamige Orte existieren wirklich. Schicke osm_type und osm_id mit, um diesen Ort eindeutig zu machen, oder setze confirm_duplicate, wenn es bewusst ein weiterer Ort gleichen Namens sein soll. Vorhanden: :list', [
+                    'name' => $name,
+                    'list' => static::describeCandidates(static::matchingName($name)),
+                ]),
+            ]);
+        }
+
+        return static::create(Arr::except($attributes, [self::CONFIRM_DUPLICATE]));
+    }
+
+    /**
+     * Der exakte Treffer ueber die OSM-Referenz, wenn eine mitgeschickt wurde.
+     *
+     * Gibt null zurueck, wenn keine Referenz dabei ist ODER wenn sie noch zu keiner
+     * Stadt gehoert. Der Aufrufer unterscheidet die beiden Faelle selbst — er weiss
+     * schon, ob eine Referenz dabei war, und die zwei Zustaende fuehren dort zu
+     * verschiedenen Schritten (Namenssuche gegen Neuanlage).
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    private static function matchingOsmReference(array $attributes): ?self
+    {
+        if (! static::hasOsmReference($attributes)) {
+            return null;
+        }
+
+        return static::query()
+            ->where('osm_type', $attributes['osm_type'])
+            ->where('osm_id', $attributes['osm_id'])
             ->first();
     }
 
     /**
-     * Legt die Stadt an oder liefert die bereits vorhandene gleichnamige Stadt zurueck.
+     * Traegt dieser Anlageversuch etwas, das ihn von einem gleichnamigen Ort abhebt?
      *
-     * Staedte sind Stammdaten mit einem globalen Unique-Constraint auf dem Namen:
-     * ein zweiter Anlageversuch ist kein Fehler, sondern liefert den Bestand.
-     * `wasRecentlyCreated` unterscheidet Neuanlage von Treffer.
+     * Entweder eine OSM-Referenz (macht ihn exakt) oder eine ausdrueckliche Bestaetigung
+     * (macht ihn bewusst). Beides ist gueltig; nichts davon ist es nicht.
      *
      * @param  array<string, mixed>  $attributes
      */
-    public static function createOrFindByName(array $attributes): self
+    private static function hasIdentifier(array $attributes): bool
     {
-        if ($existing = static::findByName((string) $attributes['name'])) {
-            return $existing;
-        }
+        return static::hasOsmReference($attributes) || static::isConfirmed($attributes);
+    }
 
-        try {
-            return static::create($attributes);
-        } catch (UniqueConstraintViolationException $exception) {
-            return static::findByName((string) $attributes['name']) ?? throw $exception;
-        }
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private static function isConfirmed(array $attributes): bool
+    {
+        return filter_var($attributes[self::CONFIRM_DUPLICATE] ?? false, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private static function hasOsmReference(array $attributes): bool
+    {
+        return ! blank($attributes['osm_type'] ?? null) && ! blank($attributes['osm_id'] ?? null);
+    }
+
+    /**
+     * Kandidaten so beschreiben, dass man sie auseinanderhalten kann.
+     *
+     * Der Name allein hilft hier nicht — bei acht Neuenkirchen stuende er achtmal da.
+     * Also id und Koordinaten, und die Region nur, wenn es eine gibt: sie ist Beiwerk,
+     * kein Kriterium, und in Laendern ohne Regionen waere ein leeres Feld nur Rauschen.
+     *
+     * @param  Collection<int, self>  $candidates
+     */
+    private static function describeCandidates(Collection $candidates): string
+    {
+        return $candidates
+            ->take(10)
+            ->map(function (self $city): string {
+                $teile = ['#'.$city->getKey()];
+
+                if ($city->region_id !== null && $city->relationLoaded('region') === false) {
+                    $city->loadMissing('region');
+                }
+
+                if ($city->region?->code) {
+                    $teile[] = mb_strtoupper($city->region->code);
+                }
+
+                $teile[] = number_format((float) $city->latitude, 4).'/'.number_format((float) $city->longitude, 4);
+
+                return implode(' ', $teile);
+            })
+            ->join('; ');
     }
 
     /**

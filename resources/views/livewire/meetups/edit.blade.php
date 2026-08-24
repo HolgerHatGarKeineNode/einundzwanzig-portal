@@ -92,14 +92,21 @@ class extends Component
     public function createCity(): void
     {
         $validated = $this->validate([
-            'newCityName' => ['required', 'string', 'max:255', 'unique:cities,name'],
+            // Landesbezogen, nicht global (Issue #33): Paris in Frankreich und Paris in
+            // Texas sind kein Konflikt. Innerhalb eines Landes bleibt die Bremse.
+            'newCityName' => [
+                'required', 'string', 'max:255',
+                Rule::unique('cities', 'name')->where('country_id', $this->newCityCountryId),
+            ],
             'newCityCountryId' => ['required', 'exists:countries,id'],
             'newCityLatitude' => ['required', 'numeric'],
             'newCityLongitude' => ['required', 'numeric'],
         ]);
 
         $city = City::create([
-            'name' => $validated['newCityName'],
+            // Trim, siehe meetups/create: ein nachgestelltes Leerzeichen macht aus
+            // derselben Stadt zwei Datensaetze.
+            'name' => trim($validated['newCityName']),
             'country_id' => $validated['newCityCountryId'],
             'latitude' => $validated['newCityLatitude'],
             'longitude' => $validated['newCityLongitude'],

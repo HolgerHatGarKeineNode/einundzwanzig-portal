@@ -4,7 +4,6 @@ namespace App\Http\Requests\Concerns;
 
 use App\Models\City;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Unique;
 
 /**
  * Die beiden Regeln, an denen die Identitaet einer Stadt haengt: ihr Name und ihre Region.
@@ -37,18 +36,41 @@ trait ValidatesCityIdentity
     }
 
     /**
-     * `cities.name` ist auf DB-Ebene unique. Ohne diese Regel endet ein Rename auf
-     * einen belegten Namen in einer UniqueConstraintViolationException — also 500
-     * statt 422. Beim Anlegen faengt `City::createOrFindByName()` den Fall ab und
-     * gibt die bestehende Stadt zurueck; beim Aendern gab es bisher nichts.
+     * Der Name darf im selben Land nicht versehentlich doppelt vergeben werden.
+     *
+     * Bis 2026-08-25 war `cities.name` auf DB-Ebene global unique, und diese Regel war
+     * der Unterschied zwischen 422 und 500. Der Index ist gefallen (Issue #33: acht
+     * Gemeinden namens Neuenkirchen in Niedersachsen), die Regel bleibt — aber in
+     * anderer Rolle und mit anderem Zuschnitt:
+     *
+     * - **Landesbezogen statt global.** Paris in Frankreich und Paris in Texas sind kein
+     *   Konflikt, und die Regel darf keinen daraus machen.
+     * - **`confirm_duplicate` hebt sie auf.** Ein zweites Georgetown im selben Land ist
+     *   erlaubt; es muss nur eine Entscheidung sein. Genau dieselbe Bedingung gilt beim
+     *   Anlegen in `City::resolveOrCreate()` — waere sie hier strenger, koennte man eine
+     *   Stadt anlegen, aber nicht umbenennen, und niemand fuende den Grund.
+     *
+     * Ohne Land in der Anfrage faellt die Regel auf das Land der bearbeiteten Stadt
+     * zurueck. Gibt es auch das nicht, greift sie gar nicht — eine Regel, die ihren
+     * eigenen Bezug nicht kennt, soll nichts abweisen.
      */
-    protected function uniqueCityName(?City $city = null): Unique
+    protected function uniqueCityName(?City $city = null): array
     {
-        $rule = Rule::unique('cities', 'name');
-
         $city ??= $this->cityUnderEdit();
 
-        return $city === null ? $rule : $rule->ignore($city->getKey());
+        if (filter_var($this->input('confirm_duplicate', false), FILTER_VALIDATE_BOOLEAN)) {
+            return [];
+        }
+
+        $countryId = $this->input('country_id', $city?->country_id);
+
+        if ($countryId === null) {
+            return [];
+        }
+
+        $rule = Rule::unique('cities', 'name')->where('country_id', $countryId);
+
+        return [$city === null ? $rule : $rule->ignore($city->getKey())];
     }
 
     /**

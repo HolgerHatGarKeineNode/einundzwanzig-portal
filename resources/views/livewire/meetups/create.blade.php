@@ -5,6 +5,7 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
 use App\Traits\SeoTrait;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -45,7 +46,12 @@ class extends Component {
     public function createCity(): void
     {
         $validated = $this->validate([
-            'newCityName' => ['required', 'string', 'max:255', 'unique:cities,name'],
+            // Landesbezogen, nicht global (Issue #33): Paris in Frankreich und Paris in
+            // Texas sind kein Konflikt. Innerhalb eines Landes bleibt die Bremse.
+            'newCityName' => [
+                'required', 'string', 'max:255',
+                Rule::unique('cities', 'name')->where('country_id', $this->newCityCountryId),
+            ],
             'newCityCountryId' => ['required', 'exists:countries,id'],
             'newCityLatitude' => ['required', 'numeric', 'between:-90,90'],
             'newCityLongitude' => ['required', 'numeric', 'between:-180,180'],
@@ -61,7 +67,10 @@ class extends Component {
         }
 
         $city = City::create([
-            'name' => $validated['newCityName'],
+            // Trim, damit kein unsichtbares Zeichen eine Dublette erzeugt: 12 der 305
+            // Staedte in Produktion tragen ein nachgestelltes Leerzeichen, und 'Offenburg '
+            // steht dort seit 2023 neben 'Offenburg'.
+            'name' => trim($validated['newCityName']),
             'country_id' => $validated['newCityCountryId'],
             'latitude' => $validated['newCityLatitude'],
             'longitude' => $validated['newCityLongitude'],

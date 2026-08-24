@@ -127,7 +127,14 @@ class extends Component {
         );
 
         $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:cities,name,'.$this->city->id],
+            // Landesbezogen statt global (Issue #33) — dieselbe Bedingung wie beim
+            // Anlegen, sonst liesse sich eine Stadt anlegen, aber nicht umbenennen.
+            'name' => [
+                'required', 'string', 'max:255',
+                Rule::unique('cities', 'name')
+                    ->where('country_id', $this->country_id)
+                    ->ignore($this->city->id),
+            ],
             'country_id' => ['required', 'exists:countries,id'],
             // Die Region MUSS zum gewaehlten Land gehoeren; ohne diese Einschraenkung
             // liesse sich jede beliebige Region-ID unterschieben.
@@ -149,6 +156,12 @@ class extends Component {
             $this->addError('latitude', __('Breiten- und Längengrad dürfen nicht beide 0 sein.'));
 
             return;
+        }
+
+        // Trim, siehe cities/create: ein nachgestelltes Leerzeichen macht aus derselben
+        // Stadt zwei Datensaetze, und die Namenssuche vergleicht exakt.
+        if (isset($validated['name'])) {
+            $validated['name'] = trim($validated['name']);
         }
 
         // Kein manuelles slug — siehe cities/create. HasSlug erzeugt ihn beim Anlegen

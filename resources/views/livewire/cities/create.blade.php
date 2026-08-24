@@ -64,7 +64,14 @@ class extends Component {
     public function createCity(): void
     {
         $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:cities,name'],
+            // Landesbezogen, nicht global: seit Issue #33 duerfen gleichnamige Orte in
+            // verschiedenen Laendern nebeneinander stehen. Innerhalb EINES Landes bleibt
+            // die Bremse, damit ein zweites Georgetown eine Entscheidung ist und kein
+            // Tippfehler — der Ausweg steht im Fehlertext.
+            'name' => [
+                'required', 'string', 'max:255',
+                Rule::unique('cities', 'name')->where('country_id', $this->country_id),
+            ],
             'country_id' => ['required', 'exists:countries,id'],
             // Die Region MUSS zum gewaehlten Land gehoeren; ohne diese Einschraenkung
             // liesse sich jede beliebige Region-ID unterschieben.
@@ -92,6 +99,10 @@ class extends Component {
         // 'laendercode-name'. Zwei Regeln nebeneinander liessen den Wert bei jedem
         // Speichern springen.
         $validated['created_by'] = auth()->id();
+        // Trim, damit kein unsichtbares Zeichen eine Dublette erzeugt: 12 der 305 Staedte
+        // in Produktion tragen ein nachgestelltes Leerzeichen, und 'Offenburg ' steht
+        // dort seit 2023 neben 'Offenburg' — zwei Datensaetze fuer denselben Ort.
+        $validated['name'] = trim($validated['name']);
         $validated += $this->osmFields();
 
         $city = City::create($validated);

@@ -40,13 +40,25 @@ class StoreCityRequest extends FormRequest
             'longitude' => ['required_without:osm_lon', 'numeric'],
             'latitude' => ['required_without:osm_lat', 'numeric'],
             /*
-             * Kein `unique` auf `name`: `City::createOrFindByName()` gibt eine bereits
-             * bestehende Stadt mit 200 zurueck, statt sie als Fehler abzuweisen. Das ist
-             * der dokumentierte Vertrag dieses Endpunkts und bleibt so.
+             * Kein `unique` auf `name` — aber aus einem anderen Grund als frueher.
+             *
+             * Bis 2026-08-25 stand hier: `createOrFindByName()` gebe die bestehende
+             * Stadt mit 200 zurueck. Genau das war der Fehler aus Issue #33 — sie gab
+             * eine gleichnamige Stadt aus einem ANDEREN Land zurueck. Die Entscheidung
+             * trifft jetzt `City::resolveOrCreate()`, und sie braucht dafuer mehr, als
+             * eine Validierungsregel sehen kann: Land, OSM-Referenz und die Frage, ob
+             * eine Neuanlage bestaetigt wurde. Eine `unique`-Regel haette hier nur eine
+             * Haelfte davon geprueft und die andere verdeckt.
              */
             'region_id' => $this->regionRules(countryId: $this->input('country_id')),
             'population' => ['nullable', 'integer', 'min:0'],
             'population_date' => ['nullable', 'string', 'max:255'],
+            /*
+             * Die ausdrueckliche Bestaetigung, dass hier bewusst ein weiterer Ort
+             * gleichen Namens entsteht. Ohne sie — und ohne OSM-Referenz — weist
+             * `resolveOrCreate()` die Neuanlage neben einem gleichnamigen Ort mit 422 ab.
+             */
+            'confirm_duplicate' => ['sometimes', 'boolean'],
             ...$this->osmPlaceRules(),
         ] + $this->osmReferenceRules($prefix);
     }
@@ -60,7 +72,27 @@ class StoreCityRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        $this->merge(self::coordinatesFromOsm($this->all()));
+        $this->merge(self::normalise($this->all()));
+    }
+
+    /**
+     * Name trimmen und Koordinaten aus dem OSM-Ort uebernehmen.
+     *
+     * Der Trim ist keine Kosmetik: 12 der 305 Staedte in Produktion tragen ein
+     * nachgestelltes Leerzeichen, und `'Offenburg '` steht dort seit 2023 neben
+     * `'Offenburg'` — zwei Datensaetze fuer denselben Ort, weil ein unsichtbares Zeichen
+     * sie fuer die Suche unterscheidbar machte. Wer das nicht beim Schreiben abfaengt,
+     * sammelt es fuer immer.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public static function normalise(array $data): array
+    {
+        return [
+            ...self::coordinatesFromOsm($data),
+            ...(isset($data['name']) && is_string($data['name']) ? ['name' => trim($data['name'])] : []),
+        ];
     }
 
     /**
