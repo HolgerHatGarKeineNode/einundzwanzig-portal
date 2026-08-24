@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\RegionRoutes;
 use Livewire\Component;
 
 new class extends Component {
@@ -19,10 +20,32 @@ new class extends Component {
         abort_if(! is_string($value), 422);
     }
 
+    /**
+     * Beim Landwechsel wird die Region verlassen — sie gehoert zu genau einem Land.
+     *
+     * Vorher gingen ALLE gemerkten Routenparameter unveraendert mit, `region`
+     * eingeschlossen: auf `/us/in/meetups` fuehrte ein Wechsel nach Deutschland damit auf
+     * `/de/in/meetups`, und das ist ein 404 — Indiana ist kein deutsches Bundesland, und
+     * ein unbekannter Regionscode antwortet ausdruecklich mit 404 statt mit einer leeren
+     * Liste. Der Laenderwaehler war damit auf jeder Regionsseite eine Sackgasse.
+     *
+     * Umgebogen wird nur, was {@see RegionRoutes} kennt. Liefert `plain()` null, hat die
+     * Route kein Regionspaar und bleibt unangetastet — dann ist auch kein `region`-
+     * Parameter da, den man entfernen muesste.
+     */
     public function updatedCurrentCountry()
     {
-        $this->currentRouteParams['country'] = $this->currentCountry;
-        $this->redirectRoute($this->currentRouteName, $this->currentRouteParams);
+        $params = $this->currentRouteParams;
+        $params['country'] = $this->currentCountry;
+
+        $route = $this->currentRouteName;
+
+        if (($plain = RegionRoutes::plain((string) $route)) !== null) {
+            $route = $plain;
+            unset($params['region']);
+        }
+
+        $this->redirectRoute($route, $params);
     }
 }; ?>
 

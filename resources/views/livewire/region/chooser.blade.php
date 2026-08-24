@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Region;
+use App\Support\RegionRoutes;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
@@ -34,21 +35,6 @@ new class extends Component {
     public string $pageRoute = '';
 
     /**
-     * Welche Route ohne und welche mit Regionssegment gilt — je nachdem, auf welcher
-     * Seite der Waehler steht.
-     *
-     * @var array<string, array{0: string, 1: string}>
-     */
-    private const ROUTES = [
-        'meetups.index' => ['meetups.index', 'meetups.index-region'],
-        'meetups.index-region' => ['meetups.index', 'meetups.index-region'],
-        'meetups.map' => ['meetups.map', 'meetups.map-region'],
-        'meetups.map-region' => ['meetups.map', 'meetups.map-region'],
-        'cities.index' => ['cities.index', 'cities.index-region'],
-        'cities.index-region' => ['cities.index', 'cities.index-region'],
-    ];
-
-    /**
      * Land und Seitenroute kommen normalerweise aus der Route; beide sind trotzdem
      * uebergebbar, damit die Komponente pruefbar bleibt, ohne dass ein Test eine
      * gesperrte Property beschreiben muesste (was sie zu Recht nicht darf).
@@ -62,7 +48,7 @@ new class extends Component {
 
     public function updatedRegion(string $value): void
     {
-        [$plain, $withRegion] = self::ROUTES[$this->pageRoute] ?? [null, null];
+        [$plain, $withRegion] = RegionRoutes::pair($this->pageRoute) ?? [null, null];
 
         if ($plain === null) {
             return;
@@ -84,7 +70,7 @@ new class extends Component {
                 ->whereHas('country', fn ($query) => $query->whereRaw('LOWER(code) = ?', [mb_strtolower($this->country)]))
                 ->orderBy('name')
                 ->get(['id', 'code', 'name']),
-            'supported' => isset(self::ROUTES[$this->pageRoute]),
+            'supported' => RegionRoutes::supports($this->pageRoute),
         ];
     }
 }; ?>
