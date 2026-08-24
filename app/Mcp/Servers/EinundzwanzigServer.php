@@ -46,8 +46,17 @@ use Laravel\Mcp\Server\Tool;
 #[Instructions(<<<'TXT'
 Dieser Server spiegelt die authentifizierte EINUNDZWANZIG-API. Jeder Aufruf läuft im Kontext
 des angemeldeten Nutzers; beim Anlegen wird der Ersteller (created_by) automatisch gesetzt.
-Schreib- und Eigentums-Operationen (update, show-my-*) sind nur für den Ersteller oder einen
-Super-Admin erlaubt.
+Schreib- und Eigentums-Operationen (update, show-my-*) sind grundsätzlich nur für den Ersteller
+oder einen Super-Admin erlaubt.
+
+AUSNAHME STÄDTE: update-city darf jeder angemeldete Nutzer auf JEDER Stadt aufrufen, nicht nur
+auf den eigenen — eine Stadt ist Referenzdatum, kein Besitz. Frei pflegbar sind die
+OpenStreetMap-Referenz, Wikidata, Wikipedia und die Koordinaten. Die fünf Identitätsfelder
+(name, country_id, region_id, population, population_date) bleiben dem Ersteller, einem
+City-Steward oder einem Super-Admin vorbehalten; ein Versuch ohne diese Berechtigung wird mit
+einer Fehlermeldung abgelehnt, statt still zu verpuffen. Um eine fremde Stadt anzureichern,
+zuerst mit search-cities den genauen Namen ermitteln — list-my-cities zeigt nur die eigenen und
+ist für diesen Fall der falsche Einstieg.
 
 WICHTIG – niemals nach numerischen IDs fragen: Nutzer kennen keine internen IDs. Referenziere
 Entitäten immer über ihren NAMEN:

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Http\Controllers\Api\BtcMapCommunityController;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Http\UploadedFile;
@@ -93,12 +94,42 @@ class User extends Authenticatable implements CipherSweetEncrypted
     public const ROLE_MEETUP_STEWARD = 'meetup-steward';
 
     /**
+     * Rolle, die einen Nutzer zum Verwalter der IDENTITAET jeder Stadt macht, ohne ihr
+     * Ersteller zu sein. Sie schaltet CityPolicy::updateIdentity() frei und damit die
+     * fuenf Felder, die eine Stadt zu dieser Stadt machen: Name, Land, Region,
+     * Einwohnerzahl und deren Stichjahr.
+     *
+     * Was sie NICHT tut: das Anreichern freischalten. Das darf seit Issue #30 jeder
+     * angemeldete Nutzer ohnehin (CityPolicy::update()), und dafuer braucht es keine
+     * Rolle. Sie schreibt auch kein `created_by` um — der Entzug der Rolle entzieht
+     * die Rechte damit wirklich, und „Meine Staedte" bleibt klein.
+     *
+     * Warum ausgerechnet diese fuenf Felder geschuetzt sind: `name` ist global
+     * eindeutig und traegt den (eingefrorenen) Slug, `country_id` und `region_id`
+     * verorten die Stadt, und `population` plus `population_date` entscheiden zusammen
+     * mit `simplified_geojson` darueber, ob die Meetups dieser Stadt im BTC-Map-Export
+     * erscheinen ({@see BtcMapCommunityController}). Ein
+     * geleertes Stichjahr laesst fremde Meetups aus einem Drittsystem verschwinden —
+     * das ist keine Anreicherung mehr.
+     */
+    public const ROLE_CITY_STEWARD = 'city-steward';
+
+    /**
      * Darf dieser Nutzer jedes Meetup verwalten, ohne dessen Ersteller oder
      * Leader zu sein? Maßgeblich für MeetupPolicy::update()/manageLeaders().
      */
     public function managesAllMeetups(): bool
     {
         return $this->hasAnyRole([self::ROLE_MEETUP_STEWARD, self::ROLE_SUPER_ADMIN]);
+    }
+
+    /**
+     * Darf dieser Nutzer die Identitaetsfelder jeder Stadt aendern, ohne ihr Ersteller
+     * zu sein? Massgeblich fuer CityPolicy::updateIdentity().
+     */
+    public function managesAllCities(): bool
+    {
+        return $this->hasAnyRole([self::ROLE_CITY_STEWARD, self::ROLE_SUPER_ADMIN]);
     }
 
     /**

@@ -12,9 +12,28 @@ class UpdateCityRequest extends FormRequest
     use ValidatesCityIdentity;
     use ValidatesOsmPlace;
 
+    /**
+     * Zwei Abilities, zwei Fragen (Issue #30).
+     *
+     * `update` darf jeder angemeldete Nutzer — Anreichern ist ausdruecklich offen.
+     * Sobald die Eingabe aber ein Identitaetsfeld WIRKLICH aendert (Name, Land,
+     * Region, Einwohnerzahl, Stichjahr), gilt zusaetzlich `updateIdentity`.
+     *
+     * Der Fehlschlag ist ein 403 und kein stilles Verwerfen: eine Aenderung, die
+     * scheinbar durchlaeuft und nichts tut, kostet den Aufrufer mehr als eine
+     * abgelehnte — er merkt sie erst, wenn ihm jemand sagt, dass der Wert noch der
+     * alte ist.
+     */
     public function authorize(): bool
     {
-        return $this->user()->can('update', $this->route('city'));
+        $city = $this->cityUnderEdit();
+
+        if ($city === null || ! $this->user()->can('update', $city)) {
+            return false;
+        }
+
+        return $city->identityChanges($this->all()) === []
+            || $this->user()->can('updateIdentity', $city);
     }
 
     /**

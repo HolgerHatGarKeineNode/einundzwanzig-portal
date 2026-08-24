@@ -36,8 +36,28 @@ class extends Component {
     /** Der Laenderkontext, mit dem der Nutzer hergekommen ist. */
     public string $country = 'de';
 
+    /**
+     * Darf dieser Nutzer die Identitaetsfelder aendern (Name, Land, Region,
+     * Einwohnerzahl, Stichjahr)? Steuert die Sperre im Formular — die Durchsetzung
+     * steht in updateCity(), nicht hier.
+     */
+    public bool $canEditIdentity = false;
+
     public function mount(City $city): void
     {
+        /*
+         * Issue #30: Anreichern darf jeder angemeldete Nutzer, und das war im Portal
+         * immer schon so. Neu ist nur, dass es jetzt auch geprueft wird statt bloss
+         * zu gelten — und dass die fuenf Identitaetsfelder daneben eine eigene
+         * Ability haben.
+         */
+        $this->authorize('update', $city);
+
+        // Fail-closed: ohne angemeldeten Nutzer bleibt die Identitaet gesperrt. Der
+        // authorize()-Aufruf darueber wirft fuer einen Gast ohnehin, aber diese
+        // Property darf sich nicht darauf verlassen, dass die Zeile davor stehen bleibt.
+        $this->canEditIdentity = auth()->user()?->can('updateIdentity', $city) ?? false;
+
         $this->country = request()->route('country', config('app.domain_country'));
         $this->city = $city;
         $this->name = $city->name;
@@ -82,6 +102,30 @@ class extends Component {
 
     public function updateCity(): void
     {
+        /*
+         * Der Riegel, nicht die Anzeige. Das Formular sperrt die Felder bereits, aber
+         * eine gesperrte Eingabe ist nur eine Bitte: `wire:model`-Properties lassen
+         * sich aus dem Browser heraus setzen, ohne dass das Formular mitspielt.
+         *
+         * Geprueft wird gegen den BESTAND, nicht gegen die Anwesenheit eines Feldes —
+         * das Formular schickt immer alle Werte mit, auch unveraenderte. Erst ein
+         * abweichender Wert ist eine Identitaetsaenderung, und nur die braucht die
+         * zweite Ability.
+         */
+        $identityChanges = $this->city->identityChanges([
+            'name' => $this->name,
+            'country_id' => $this->country_id,
+            'region_id' => $this->region_id,
+            'population' => $this->population,
+            'population_date' => $this->population_date,
+        ]);
+
+        abort_if(
+            $identityChanges !== [] && ! (auth()->user()?->can('updateIdentity', $this->city) ?? false),
+            403,
+            __('Diese Felder darf nur der Ersteller oder ein City-Steward ändern.'),
+        );
+
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255', 'unique:cities,name,'.$this->city->id],
             'country_id' => ['required', 'exists:countries,id'],
@@ -184,13 +228,26 @@ class extends Component {
             <flux:legend>{{ __('Basic Information') }}</flux:legend>
 
             <div class="space-y-6">
-                <flux:input label="{{ __('Name') }}" wire:model="name" required/>
+                {{-- Issue #30: Anreichern steht jedem offen, die Identitaet nicht. Wer
+                     sie nicht aendern darf, sieht die Werte weiterhin — sie sind Kontext
+                     fuer die Arbeit daneben — kann sie aber nicht anfassen. Der Riegel
+                     sitzt in updateCity(); das hier ist die Anzeige dazu. --}}
+                @unless($canEditIdentity)
+                    <flux:callout icon="lock-closed" variant="secondary">
+                        <flux:callout.heading>{{ __('Name, country, region and population are locked') }}</flux:callout.heading>
+                        <flux:callout.text>
+                            {{ __('You can enrich this city — OpenStreetMap reference, Wikidata, Wikipedia and coordinates. The fields that identify the city are reserved for its creator and the city stewards, because other records depend on them.') }}
+                        </flux:callout.text>
+                    </flux:callout>
+                @endunless
+
+                <flux:input label="{{ __('Name') }}" wire:model="name" required :disabled="! $canEditIdentity"/>
 
                 {{-- Identisch zu cities/create: rohe <option>-Tags koennen keine Flagge
                      tragen und liefern in einer Liste von ueber 240 Laendern keine Suche.
                      Wer eine Stadt anlegt und dieselbe danach bearbeitet, bekam bisher
                      zwei verschiedene Bedienungen fuer dasselbe Feld. --}}
-                <flux:select variant="listbox" searchable label="{{ __('Country') }}" wire:model.live="country_id" required>
+                <flux:select variant="listbox" searchable label="{{ __('Country') }}" wire:model.live="country_id" required :disabled="! $canEditIdentity">
                     <flux:select.option value="">{{ __('Select a country') }}</flux:select.option>
                     @foreach($countries as $country)
                         <flux:select.option value="{{ $country->id }}">
@@ -207,7 +264,7 @@ class extends Component {
                 {{-- Nur Laender mit gepflegten Regionen zeigen das Feld; fuer alle anderen
                      bleibt das Formular unveraendert. --}}
                 @if($regions->isNotEmpty())
-                    <flux:select variant="listbox" searchable label="{{ __('Region') }}" wire:model="region_id">
+                    <flux:select variant="listbox" searchable label="{{ __('Region') }}" wire:model="region_id" :disabled="! $canEditIdentity">
                         <flux:select.option value="">{{ __('No region') }}</flux:select.option>
                         @foreach($regions as $region)
                             <flux:select.option :key="$region->id" value="{{ $region->id }}">
@@ -249,8 +306,9 @@ class extends Component {
             <flux:legend>{{ __('Demographics') }}</flux:legend>
 
             <div class="grid grid-cols-2 gap-x-4 gap-y-6">
-                <flux:input label="{{ __('Population') }}" type="number" wire:model="population"/>
-                <flux:input label="{{ __('Population Date') }}" wire:model="population_date" placeholder="e.g. 2024"/>
+                <flux:input label="{{ __('Population') }}" type="number" wire:model="population" :disabled="! $canEditIdentity"/>
+                <flux:input label="{{ __('Population Date') }}" wire:model="population_date" placeholder="e.g. 2024" :disabled="! $canEditIdentity"
+                            description:trailing="{{ __('Together with the population figure and the boundary data, this decides whether this city\'s meetups appear in the BTC Map export.') }}"/>
             </div>
         </flux:fieldset>
 
