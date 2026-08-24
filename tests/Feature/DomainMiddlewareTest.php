@@ -23,12 +23,12 @@ function invokeDomainMiddleware(string $host): void
     (new DomainMiddleware)->handle($request, fn (Request $req) => new Response('ok'));
 }
 
-it('wires Bitcoin Diana to the US/Indiana region in English (D1)', function () {
+it('wires Bitcoin Indiana to the US/Indiana region in English (D1)', function () {
     invokeDomainMiddleware('portal.bitcoindiana.org');
 
     expect(config('app.domain_country'))->toBe('us')
         ->and(config('app.domain_region'))->toBe('in')
-        ->and(config('app.name'))->toBe('Bitcoin Diana')
+        ->and(config('app.name'))->toBe('Bitcoin Indiana')
         ->and(session('lang_country'))->toBe('en-US')
         ->and(App::getLocale())->toBe('en');
 });

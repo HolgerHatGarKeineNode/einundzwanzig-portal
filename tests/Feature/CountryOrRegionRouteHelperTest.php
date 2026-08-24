@@ -25,7 +25,7 @@ it('builds the region variant for meetups, map, and cities (D3)', function () {
 });
 
 it('falls back to the plain country route once the session language no longer matches the domain (D4, helper level)', function () {
-    // Besucher auf Bitcoin Diana schaltet die Oberflaeche auf Deutsch um. Indiana ist
+    // Besucher auf Bitcoin Indiana schaltet die Oberflaeche auf Deutsch um. Indiana ist
     // kein deutsches Bundesland — die Region darf NICHT mitwandern.
     session(['lang_country' => 'de-DE']);
 

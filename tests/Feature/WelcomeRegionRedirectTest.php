@@ -3,7 +3,7 @@
 use Livewire\Livewire;
 
 /*
- * Bonus-Zusage: welcome navigiert unter Bitcoin Diana wirklich nach /us/in/meetups
+ * Bonus-Zusage: welcome navigiert unter Bitcoin Indiana wirklich nach /us/in/meetups
  * bzw. /us/in/map, nicht nur der Helper isoliert (siehe country_or_region_route()-
  * Tests in CountryOrRegionRouteHelperTest.php).
  */

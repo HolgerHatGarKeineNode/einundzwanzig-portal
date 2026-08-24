@@ -9,7 +9,7 @@ if (! function_exists('domain_region_for')) {
      * der DOMAIN, das Land dagegen an der Sprachwahl der Sitzung — und die kann der
      * Besucher jederzeit umstellen.
      *
-     * Genau da sitzt der Riegel: wer auf Bitcoin Diana auf Deutsch umschaltet, hat
+     * Genau da sitzt der Riegel: wer auf Bitcoin Indiana auf Deutsch umschaltet, hat
      * `de` als Land, und `/de/in/meetups` waere ein 404 (Indiana ist kein deutsches
      * Bundesland; ein unbekannter Regionscode antwortet ausdruecklich mit 404 statt
      * mit einer leeren Liste). Passt das Land nicht mehr zum Domain-Land, gibt es

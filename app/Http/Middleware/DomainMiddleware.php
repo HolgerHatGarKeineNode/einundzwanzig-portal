@@ -63,7 +63,7 @@ class DomainMiddleware
                 'lang_country' => 'en-US',
                 'country' => 'us',
                 'region' => 'in',
-                'app_name' => 'Bitcoin Diana',
+                'app_name' => 'Bitcoin Indiana',
             ],
 
             'pl.localhost' => [
