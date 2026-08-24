@@ -26,3 +26,22 @@ it('redirects back to the country route when the region is cleared (N4)', functi
         ->set('region', '')
         ->assertRedirectToRoute('meetups.index', ['country' => 'us']);
 });
+
+/*
+ * P3 (docs/plans/2026-08-24T1738-region-persistenz-navigation.md), N3: der Waehler auf der
+ * Karte muss auf die KARTEN-Regionsroute fuehren (meetups.map-region), nicht auf die
+ * erstbeste Route mit Regionsvariante (meetups.index-region). Ohne diesen Fall wuerde ein
+ * Test, der nur meetups.index prueft, eine vertauschte pageRoute in map.blade.php nicht
+ * bemerken — beide Zielrouten existieren, nur eine ist die richtige fuer die Karte.
+ */
+it('redirects to the MAP region route when a region is chosen on the map (N3)', function () {
+    Livewire::test('region.chooser', ['country' => 'us', 'pageRoute' => 'meetups.map'])
+        ->set('region', 'in')
+        ->assertRedirectToRoute('meetups.map-region', ['country' => 'us', 'region' => 'in']);
+});
+
+it('redirects back to the plain map route when the region is cleared on the map (N3)', function () {
+    Livewire::test('region.chooser', ['country' => 'us', 'pageRoute' => 'meetups.map', 'region' => 'in'])
+        ->set('region', '')
+        ->assertRedirectToRoute('meetups.map', ['country' => 'us']);
+});
