@@ -30,7 +30,7 @@
         </flux:navlist.group>
         <flux:navlist.group :heading="__('Meetups')" class="grid">
             <flux:navlist.item icon="user-group" :href="route_with_country('meetups.index')"
-                               :current="request()->routeIs('meetups.index')"
+                               :current="request()->routeIs('meetups.index', 'meetups.index-region')"
                                wire:navigate
                                badge="{{ \App\Models\Meetup::query()->whereHas('city.country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
                 <div class="flex items-center space-x-2">
@@ -50,7 +50,7 @@
                 </div>
             </flux:navlist.item>
             <flux:navlist.item icon="map" :href="route_with_country('meetups.map')"
-                               :current="request()->routeIs('meetups.map')"
+                               :current="request()->routeIs('meetups.map', 'meetups.map-region')"
                                wire:navigate>
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Karte') }}</span>
@@ -109,7 +109,7 @@
             {{-- Flat since the venue is gone: an expandable group wrapped around a single
                  link is one click of friction that buys nothing. --}}
             <flux:navlist.item icon="building-office-2" :href="route_with_country('cities.index')"
-                               :current="request()->routeIs('cities.index')"
+                               :current="request()->routeIs('cities.index', 'cities.index-region')"
                                wire:navigate
                                badge="{{ \App\Models\City::query()->whereHas('country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
                 {{ __('Städte/Gebiete') }}
