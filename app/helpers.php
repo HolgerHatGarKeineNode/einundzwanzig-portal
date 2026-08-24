@@ -27,6 +27,47 @@ if (! function_exists('domain_region_for')) {
     }
 }
 
+if (! function_exists('active_region_for')) {
+    /**
+     * Die Region, die fuer einen Link in dieses Land gilt.
+     *
+     * Zwei Quellen, in dieser Reihenfolge:
+     *
+     *  1. **Die laufende Route.** Wer ueber einen geteilten Link auf `/us/nc/cities`
+     *     kommt, bleibt in North Carolina — auch auf einer Domain, die Indiana
+     *     bevorzugt. Ohne diesen Vorrang wuerde die Navigation ihn beim naechsten Klick
+     *     nach `/us/in/…` werfen, und das ist kein hypothetischer Fall: von sechs
+     *     US-Staedten liegen vier ausserhalb Indianas (NC, AL, SC, Stand 2026-08-24).
+     *  2. **Die Domain.** `portal.bitcoindiana.org` fuehrt seine Besucher nach Indiana,
+     *     solange die Route selbst keine Region nennt.
+     *
+     * DER WAECHTER, ohne den das ein 404-Generator waere: Die Region der Route gilt nur,
+     * wenn das Ziel-Land dasselbe ist wie das Land dieser Route. Sonst entstuende auf
+     * `/us/nc/cities` beim Sprung nach Deutschland ein `/de/nc/…` — und ein Regionscode,
+     * den das Land nicht kennt, antwortet mit 404 statt mit einer leeren Liste. Genau
+     * diese Kombination hat P2 gerade im Laenderwaehler geschlossen; sie darf hier nicht
+     * durch die Hintertuer zurueckkommen.
+     *
+     * Verglichen wird klein geschrieben: ein Laendercode kann als `US` hereinkommen, und
+     * ein strikter Vergleich haette die Region dann still fallen lassen — eine
+     * Zufallsrettung, kein Schutz.
+     */
+    function active_region_for(string $country): ?string
+    {
+        $route = request()->route();
+        $ausRoute = $route?->parameter('region');
+        $landDerRoute = $route?->parameter('country');
+
+        if (is_string($ausRoute) && $ausRoute !== ''
+            && is_string($landDerRoute)
+            && mb_strtolower($landDerRoute) === mb_strtolower($country)) {
+            return $ausRoute;
+        }
+
+        return domain_region_for($country);
+    }
+}
+
 if (! function_exists('country_or_region_route')) {
     /**
      * Baut das Standard-Ziel einer Listen-Route und nimmt die Region mit, wenn die
@@ -50,7 +91,7 @@ if (! function_exists('country_or_region_route')) {
                 ->lower()
                 ->value();
 
-        $region = domain_region_for($country);
+        $region = active_region_for($country);
 
         if ($region !== null && app('router')->has($name.'-region')) {
             return route($name.'-region', [...$parameters, 'country' => $country, 'region' => $region], $absolute);
