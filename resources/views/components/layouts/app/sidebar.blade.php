@@ -22,6 +22,27 @@
         <x-app-logo/>
     </a>
 
+    @php
+        /*
+         * Land und Region der laufenden Ansicht — einmal bestimmt, von den Links UND den
+         * Badges darunter benutzt.
+         *
+         * Die Zahl neben einem Link muss beschreiben, was hinter dem Link steht: eine
+         * Badge, die 6 zeigt und auf eine Liste mit 2 Eintraegen fuehrt, ist eine falsche
+         * Zusage. Deshalb wird dieselbe Region, die `country_or_region_route()` in den
+         * Link schreibt, auch in die Zaehlung gereicht.
+         *
+         * `$navRegionId` bleibt null, wenn keine Region gilt oder ihr Code zu keiner
+         * Region dieses Landes gehoert — dann zaehlen die Badges wie bisher das ganze Land.
+         */
+        $navCountry = request()->route('country', config('app.domain_country'));
+        $navRegionCode = active_region_for((string) $navCountry);
+        $navRegionId = $navRegionCode === null ? null : \App\Models\Region::query()
+            ->whereHas('country', fn ($query) => $query->whereRaw('LOWER(code) = ?', [mb_strtolower((string) $navCountry)]))
+            ->whereRaw('LOWER(code) = ?', [mb_strtolower($navRegionCode)])
+            ->value('id');
+    @endphp
+
     <flux:navlist variant="outline">
         <flux:navlist.group :heading="__('App')" class="grid">
             <flux:navlist.item icon="home" :href="route('dashboard', request()->route('country', 'de'))"
@@ -29,10 +50,13 @@
                                wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
         </flux:navlist.group>
         <flux:navlist.group :heading="__('Meetups')" class="grid">
-            <flux:navlist.item icon="user-group" :href="route_with_country('meetups.index')"
+            <flux:navlist.item icon="user-group" :href="country_or_region_route('meetups.index')"
                                :current="request()->routeIs('meetups.index', 'meetups.index-region')"
                                wire:navigate
-                               badge="{{ \App\Models\Meetup::query()->whereHas('city.country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
+                               badge="{{ \App\Models\Meetup::query()
+                                   ->whereHas('city.country', fn($query) => $query->where('countries.code', $navCountry))
+                                   ->when($navRegionId, fn($query) => $query->whereHas('city', fn($q) => $q->where('cities.region_id', $navRegionId)))
+                                   ->count() }}">
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Meetups') }}</span>
                     <img alt="{{ request()->route('country') }}"
@@ -49,7 +73,7 @@
                     <flux:icon name="globe-europe-africa"/>
                 </div>
             </flux:navlist.item>
-            <flux:navlist.item icon="map" :href="route_with_country('meetups.map')"
+            <flux:navlist.item icon="map" :href="country_or_region_route('meetups.map')"
                                :current="request()->routeIs('meetups.map', 'meetups.map-region')"
                                wire:navigate>
                 <div class="flex items-center space-x-2">
@@ -108,10 +132,13 @@
         <flux:navlist.group :heading="__('Diverses')" class="grid">
             {{-- Flat since the venue is gone: an expandable group wrapped around a single
                  link is one click of friction that buys nothing. --}}
-            <flux:navlist.item icon="building-office-2" :href="route_with_country('cities.index')"
+            <flux:navlist.item icon="building-office-2" :href="country_or_region_route('cities.index')"
                                :current="request()->routeIs('cities.index', 'cities.index-region')"
                                wire:navigate
-                               badge="{{ \App\Models\City::query()->whereHas('country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
+                               badge="{{ \App\Models\City::query()
+                                   ->whereHas('country', fn($query) => $query->where('countries.code', $navCountry))
+                                   ->when($navRegionId, fn($query) => $query->where('cities.region_id', $navRegionId))
+                                   ->count() }}">
                 {{ __('Städte/Gebiete') }}
             </flux:navlist.item>
         </flux:navlist.group>
