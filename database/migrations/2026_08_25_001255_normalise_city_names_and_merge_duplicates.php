@@ -136,13 +136,51 @@ return new class extends Migration
     }
 
     /**
-     * Die restlichen Namen trimmen — jetzt kollisionsfrei.
+     * Die restlichen Namen trimmen — aber nicht die mehrdeutigen.
+     *
+     * ## Warum hier eine Ausnahme steht
+     *
+     * Das zweite Gate hat den Fall gefunden: `mehrdeutige_dublette` in `cities:audit`
+     * erkennt seinen Fall am aeusseren Leerzeichen. Trimmt diese Migration im letzten
+     * Schritt ALLE Namen, loescht sie damit genau das Signal, auf das der Befund
+     * angewiesen ist — der Fall verschwindet lautlos, und zwar erst in der realen
+     * Ausfuehrungsreihenfolge, weshalb ein isolierter Test ihn nicht sieht.
+     *
+     * Also gilt „nicht anfassen" wortwoertlich: eine Zeile, deren Zuordnung mehrdeutig
+     * ist, behaelt ihr Leerzeichen. Sie ist ein offener Fall, und ein offener Fall soll
+     * aussehen wie einer. `cities:audit` meldet sie danach weiterhin — unter
+     * `mehrdeutige_dublette` und zusaetzlich unter `namen_mit_leerzeichen`, was hier
+     * kein Rauschen ist, sondern dieselbe Aussage von zwei Seiten.
+     *
+     * Der Preis: ein Name mit unsichtbarem Zeichen bleibt in der Tabelle stehen. Das
+     * ist billiger als ein Befund, der sich selbst zudeckt.
      */
     private function trimRemainingNames(): void
     {
         DB::table('cities')
             ->whereRaw('name <> TRIM(name)')
+            ->whereNotIn('id', $this->ambiguousIds())
             ->update(['name' => DB::raw('TRIM(name)')]);
+    }
+
+    /**
+     * Zeilen mit aeusserem Leerzeichen, deren getrimmter Name im selben Land MEHRFACH
+     * vorkommt — also die, die `mergeDuplicatesAfterTrim()` bewusst nicht angefasst hat.
+     *
+     * @return array<int, int>
+     */
+    private function ambiguousIds(): array
+    {
+        return DB::table('cities')
+            ->whereRaw('name <> TRIM(name)')
+            ->get(['id', 'name', 'country_id'])
+            ->filter(fn (object $zeile): bool => DB::table('cities')
+                ->where('country_id', $zeile->country_id)
+                ->where('name', trim($zeile->name))
+                ->where('id', '<>', $zeile->id)
+                ->count() > 1)
+            ->pluck('id')
+            ->all();
     }
 
     /**

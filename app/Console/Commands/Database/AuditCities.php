@@ -41,12 +41,22 @@ use Illuminate\Support\Facades\Http;
 #[Description('Prueft Staedte auf Namensdubletten, kaputte Koordinaten und Land-Widersprueche. Schreibt nichts.')]
 class AuditCities extends Command
 {
+    /**
+     * Ab welcher Naehe zwei gleichnamige Orte im selben Land verdaechtig sind.
+     *
+     * Kalibriert am kleinsten real gemessenen Abstand zwischen zwei gleichnamigen
+     * Gemeinden (39,4 km, Georgetown/Indiana) — mit doppeltem Sicherheitsabstand.
+     * Begruendung an `suspiciouslyCloseNamesakes()`.
+     */
+    private const NAMESAKE_THRESHOLD_KM = 20.0;
+
     /** @var array<string, array<int, array<string, mixed>>> */
     private array $findings = [];
 
     public function handle(): int
     {
         $this->duplicateNames();
+        $this->suspiciouslyCloseNamesakes();
         $this->untrimmedNames();
         $this->coordinatesOutOfRange();
         $this->nullIsland();
@@ -105,6 +115,84 @@ class AuditCities extends Command
                     'zwillinge' => $zwillinge->all(),
                 ]);
             });
+    }
+
+    /**
+     * Gleichnamige Orte im selben Land, die zu nah beieinander liegen, um zwei zu sein.
+     *
+     * Diese Pruefung schliesst die Luecke, die das zweite Gate benannt hat: zwei Zeilen
+     * `'Traunstein '` ohne sauberen Zwilling werden von der Migration beide getrimmt und
+     * sind danach buchstabengleich — das Leerzeichen-Signal ist weg, und keine der
+     * anderen Kategorien greift mehr. Ohne diese Pruefung stuenden sie fuer immer
+     * unbemerkt da.
+     *
+     * ## Die Schwelle ist gemessen, nicht geraten
+     *
+     * Gleichnamige Orte existieren wirklich, und sie duerfen kein Befund sein — das ist
+     * die Kernaussage dieses ganzen Plans. Die Frage ist also nicht „gleicher Name?",
+     * sondern „zu nah, um zwei verschiedene Orte zu sein?". Gemessen an Nominatim am
+     * 2026-08-25 ueber alle Paare gleichnamiger Orte:
+     *
+     *   Georgetown / Indiana ..... kleinster Abstand 39,4 km
+     *   Salem / Indiana .......... kleinster Abstand 45,2 km
+     *   Neuenkirchen / Niedersachsen  kleinster Abstand 48,5 km
+     *
+     * Der engste reale Fall liegt bei **39 km**. Eine Schwelle von 20 km trennt damit
+     * mit doppeltem Sicherheitsabstand: naeher zusammen heisst unterschiedliche
+     * Geocoding-Quelle, Rathaus gegen Ortsmittelpunkt, oder schlicht derselbe Ort
+     * zweimal — nicht zwei Gemeinden.
+     *
+     * Sie **entscheidet nicht, sie meldet**. Eine ausgedehnte Stadt kann intern weiter
+     * auseinanderliegen als 20 km; eine Automatik, die daraus einen Merge macht, waere
+     * derselbe stille Fehler, den dieser Plan gerade beseitigt hat.
+     */
+    private function suspiciouslyCloseNamesakes(): void
+    {
+        $kandidaten = DB::table('cities')
+            ->selectRaw('country_id, LOWER(TRIM(name)) as normalised, COUNT(*) as anzahl')
+            ->groupByRaw('country_id, LOWER(TRIM(name))')
+            ->havingRaw('COUNT(*) > 1')
+            ->get();
+
+        foreach ($kandidaten as $gruppe) {
+            $zeilen = DB::table('cities')
+                ->where('country_id', $gruppe->country_id)
+                ->whereRaw('LOWER(TRIM(name)) = ?', [$gruppe->normalised])
+                ->orderBy('id')
+                ->get(['id', 'name', 'latitude', 'longitude']);
+
+            foreach ($zeilen as $i => $a) {
+                foreach ($zeilen->slice($i + 1) as $b) {
+                    $km = $this->distanceInKm(
+                        (float) $a->latitude, (float) $a->longitude,
+                        (float) $b->latitude, (float) $b->longitude,
+                    );
+
+                    if ($km <= self::NAMESAKE_THRESHOLD_KM) {
+                        $this->add('gleichnamig_und_nah', [
+                            'ids' => [$a->id, $b->id],
+                            'name' => trim($a->name),
+                            'entfernung_km' => round($km, 1),
+                        ]);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Luftlinie in Kilometern (Haversine).
+     */
+    private function distanceInKm(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $r = 6371.0;
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $h = sin($dLat / 2) ** 2
+            + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon / 2) ** 2;
+
+        return 2 * $r * asin(min(1.0, sqrt($h)));
     }
 
     /**

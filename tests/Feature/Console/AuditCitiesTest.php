@@ -242,3 +242,43 @@ it('separates an ambiguous whitespace duplicate from an unambiguous one', functi
         ->and($befunde['namensdubletten'][0]['name'])->toBe('Offenburg ')
         ->and($befunde['mehrdeutige_dublette'][0]['zwillinge'])->toHaveCount(8);
 });
+
+/*
+ * Die Lücke, die das zweite Gate als Randbefund benannt hat.
+ *
+ * Zwei Zeilen `'Traunstein '` ohne sauberen Zwilling werden von der Migration beide
+ * getrimmt und sind danach buchstabengleich. Das Leerzeichen-Signal ist weg, und keine
+ * der anderen Kategorien greift — sie stünden für immer unbemerkt da.
+ *
+ * `gleichnamig_und_nah` fragt deshalb nicht „gleicher Name?" (das wäre bei acht
+ * Neuenkirchen dauerhaft rot), sondern „zu nah, um zwei verschiedene Orte zu sein?".
+ * Die 20-km-Schwelle ist am kleinsten real gemessenen Abstand kalibriert: 39,4 km
+ * zwischen zwei Georgetowns in Indiana.
+ */
+it('reports same-name places that are too close together, but not genuine namesakes', function () {
+    $country = Country::factory()->create();
+
+    // Acht echte Gemeinden, 40+ km auseinander — kein Befund.
+    neuenkirchenCities($country);
+
+    // Zwei Zeilen desselben Orts, 0,5 km auseinander — genau der Fall, den die
+    // Migration nach dem Trimmen unsichtbar zurücklässt.
+    City::factory()->create(['name' => 'Traunstein ', 'country_id' => $country->id, 'slug' => null,
+        'latitude' => 47.8683, 'longitude' => 12.6433]);
+    City::factory()->create(['name' => 'Traunstein ', 'country_id' => $country->id, 'slug' => null,
+        'latitude' => 47.8701, 'longitude' => 12.6500]);
+
+    (require base_path('database/migrations/2026_08_25_001255_normalise_city_names_and_merge_duplicates.php'))->up();
+
+    $exitCode = Artisan::call('cities:audit', ['--json' => true]);
+    $befunde = json_decode(Artisan::output(), true);
+
+    expect($exitCode)->toBe(1)
+        ->and($befunde['gleichnamig_und_nah'] ?? [])->toHaveCount(1)
+        ->and($befunde['gleichnamig_und_nah'][0]['name'])->toBe('Traunstein')
+        ->and($befunde['gleichnamig_und_nah'][0]['entfernung_km'])->toBeLessThan(20.0);
+
+    // Die acht echten Gemeinden tauchen nicht auf — sonst wäre das Kommando nach dem
+    // Import aus Issue #33 dauerhaft rot.
+    expect(collect($befunde['gleichnamig_und_nah'])->where('name', 'Neuenkirchen'))->toBeEmpty();
+});
