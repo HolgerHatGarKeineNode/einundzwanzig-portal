@@ -2,6 +2,7 @@
 
 use App\Models\Course;
 use App\Models\CourseEvent;
+use App\Models\SelfHostedService;
 use App\Models\User;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
@@ -99,4 +100,49 @@ it('refuses editing an existing course event to someone who is neither its creat
 
     Livewire::test('courses.create-edit-events', ['course' => $course, 'event' => $event])
         ->assertStatus(403);
+});
+
+it('refuses services.edit for someone who did not create the service', function () {
+    $service = SelfHostedService::factory()->create();
+    actingAsUser();
+
+    Livewire::test('services.edit', ['service' => $service])->assertStatus(403);
+});
+
+/**
+ * Die getroffene Entscheidung, gemessen: ein anonym eingestellter Dienst
+ * (`created_by = null`) war bisher für JEDEN Angemeldeten editierbar.
+ */
+it('refuses services.edit on an anonymous service to a signed-in stranger', function () {
+    $service = SelfHostedService::factory()->anonymous()->create();
+    actingAsUser();
+
+    expect($service->created_by)->toBeNull();
+
+    Livewire::test('services.edit', ['service' => $service])->assertStatus(403);
+});
+
+it('allows services.edit for the creator', function () {
+    $owner = actingAsUser();
+    $service = SelfHostedService::factory()->create(['created_by' => $owner->id]);
+
+    Livewire::test('services.edit', ['service' => $service])->assertStatus(200);
+});
+
+it('allows services.edit for a super-admin on a foreign service', function () {
+    $service = SelfHostedService::factory()->create();
+    $this->actingAs(superAdminUser());
+
+    Livewire::test('services.edit', ['service' => $service])->assertStatus(200);
+});
+
+/**
+ * Der Erbe der bestehenden anonymen Datensätze: der Super-Admin. Ohne diesen Test wäre
+ * die Verschärfung oben nicht von einem Totalausfall zu unterscheiden.
+ */
+it('allows services.edit on an anonymous service for a super-admin', function () {
+    $service = SelfHostedService::factory()->anonymous()->create();
+    $this->actingAs(superAdminUser());
+
+    Livewire::test('services.edit', ['service' => $service])->assertStatus(200);
 });

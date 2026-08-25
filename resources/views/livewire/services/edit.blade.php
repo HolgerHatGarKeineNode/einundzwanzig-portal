@@ -25,12 +25,18 @@ class extends Component {
         $this->form->setService($this->service);
     }
 
+    /**
+     * Bearbeiten darf der Ersteller — oder ein Super-Admin
+     * (`SelfHostedServicePolicy::update()`).
+     *
+     * Hier stand eine Inline-Bedingung, die `created_by === null` als Freigabe fuer jeden
+     * Angemeldeten las. Ein anonym eingestellter Dienst gehoerte damit allen. Die Policy
+     * beantwortet dieselbe Frage jetzt an einer Stelle — mit Super-Admin-Ausnahme, die
+     * die Inline-Bedingung nie hatte.
+     */
     protected function authorizeAccess(): void
     {
-        // Allow edit if user is the creator or if service was created anonymously
-        if (!is_null($this->service->created_by) && auth()->id() !== $this->service->created_by) {
-            abort(403);
-        }
+        abort_unless(auth()->user()?->can('update', $this->service), 403);
     }
 
     public function save(): void
