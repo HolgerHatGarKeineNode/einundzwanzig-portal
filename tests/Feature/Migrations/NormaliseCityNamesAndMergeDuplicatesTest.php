@@ -194,8 +194,21 @@ it('leaves an ambiguous whitespace duplicate alone instead of merging the whole 
     (require base_path('database/migrations/2026_08_25_001255_normalise_city_names_and_merge_duplicates.php'))->up();
 
     expect(City::whereRaw('LOWER(TRIM(name)) = ?', ['neuenkirchen'])->count())->toBe(9)
-        ->and(City::where('name', 'Offenburg')->count())->toBe(1)
-        ->and(City::whereRaw('name <> TRIM(name)')->count())->toBe(0);
+        ->and(City::where('name', 'Offenburg')->count())->toBe(1);
+
+    /*
+     * Die mehrdeutige Zeile behält ihr Leerzeichen — genau EINE, und zwar die.
+     *
+     * Diese Erwartung stand hier zuerst als `toBe(0)`: alle Namen getrimmt. Der volle
+     * `composer test`-Lauf hat sie rot gefärbt, nachdem der Randbefund des zweiten
+     * Gates behoben war, und das ist richtig so. Trimmte die Migration auch die
+     * mehrdeutige Zeile, löschte sie das Signal, an dem `cities:audit` den offenen Fall
+     * erkennt — der Befund deckte sich selbst zu.
+     *
+     * Ein offener Fall soll aussehen wie einer. Der Preis ist ein unsichtbares Zeichen,
+     * das stehen bleibt, bis ein Mensch entscheidet.
+     */
+    expect(City::whereRaw('name <> TRIM(name)')->pluck('name')->all())->toBe(['Neuenkirchen ']);
 
     expect(City::find(min($verschmutzt->id, $sauber->id)))->not->toBeNull()
         ->and(City::find(max($verschmutzt->id, $sauber->id)))->toBeNull();
