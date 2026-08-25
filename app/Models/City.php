@@ -440,11 +440,6 @@ class City extends Model implements DescribesItselfForDisambiguation
         return $this->hasMany(CourseEvent::class);
     }
 
-    public function bitcoinEvents(): HasMany
-    {
-        return $this->hasMany(BitcoinEvent::class);
-    }
-
     public function meetups()
     {
         return $this->hasMany(Meetup::class);

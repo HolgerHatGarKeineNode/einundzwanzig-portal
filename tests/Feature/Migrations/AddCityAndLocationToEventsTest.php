@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\BitcoinEvent;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Course;
@@ -14,6 +13,10 @@ use Illuminate\Support\Facades\Schema;
  * neither `venues` nor the `venue_id` columns exist any more. The test rebuilds just enough
  * of that vanished world to exercise the copy — which is worth doing, because the whole step
  * exists to stop 191 events from losing their address.
+ *
+ * Seit P7 gilt dasselbe fuer die zweite Tabelle: `bitcoin_events` ist gedroppt, die Faelle
+ * laufen deshalb ueber `course_events`. Der Mechanismus ist derselbe — die Migration
+ * behandelt beide Tabellen in derselben Schleife.
  */
 function withVenueWorld(array $venue, callable $test): void
 {
@@ -24,18 +27,14 @@ function withVenueWorld(array $venue, callable $test): void
         $table->string('street')->nullable();
     });
 
-    foreach (['course_events', 'bitcoin_events'] as $table) {
-        Schema::table($table, fn (Blueprint $blueprint) => $blueprint->unsignedBigInteger('venue_id')->nullable());
-    }
+    Schema::table('course_events', fn (Blueprint $blueprint) => $blueprint->unsignedBigInteger('venue_id')->nullable());
 
     $venueId = DB::table('venues')->insertGetId($venue);
 
     try {
         $test($venueId);
     } finally {
-        foreach (['course_events', 'bitcoin_events'] as $table) {
-            Schema::table($table, fn (Blueprint $blueprint) => $blueprint->dropColumn('venue_id'));
-        }
+        Schema::table('course_events', fn (Blueprint $blueprint) => $blueprint->dropColumn('venue_id'));
 
         Schema::drop('venues');
     }
@@ -52,11 +51,22 @@ beforeEach(function () {
     $this->city = City::factory()->create(['country_id' => $country->id]);
 });
 
-it('gives both event tables a city and a location column', function () {
-    foreach (['course_events', 'bitcoin_events'] as $table) {
-        expect(Schema::hasColumn($table, 'city_id'))->toBeTrue("{$table}.city_id fehlt")
-            ->and(Schema::hasColumn($table, 'location'))->toBeTrue("{$table}.location fehlt");
-    }
+it('gives the surviving event table a city and a location column', function () {
+    expect(Schema::hasColumn('course_events', 'city_id'))->toBeTrue('course_events.city_id fehlt')
+        ->and(Schema::hasColumn('course_events', 'location'))->toBeTrue('course_events.location fehlt');
+});
+
+/**
+ * Die zweite Tabelle, die diese Migration einst mitbediente, ist fort — und die Migration
+ * darf trotzdem noch laufen. Genau daran haengt dieser ganze Test: `runCityAndLocationCopy()`
+ * ruft `up()` auf einer durchmigrierten Datenbank auf.
+ */
+it('runs at all although bitcoin_events no longer exists', function () {
+    expect(Schema::hasTable('bitcoin_events'))->toBeFalse();
+
+    runCityAndLocationCopy(); // wirft nicht
+
+    expect(Schema::hasColumn('course_events', 'location'))->toBeTrue();
 });
 
 it('carries name and street of the venue into the event', function () {
@@ -87,8 +97,8 @@ it('does not repeat the name when the street merely echoes it', function () {
         'name' => 'Wunschort im Rhein-Neckar Kreis',
         'street' => 'Wunschort im Rhein-Neckar Kreis',
     ], function (int $venueId) {
-        $event = BitcoinEvent::factory()->create(['location' => null]);
-        DB::table('bitcoin_events')->where('id', $event->id)->update(['venue_id' => $venueId]);
+        $event = CourseEvent::factory()->create(['location' => null]);
+        DB::table('course_events')->where('id', $event->id)->update(['venue_id' => $venueId]);
 
         runCityAndLocationCopy();
 
@@ -102,8 +112,8 @@ it('copes with a venue whose street is blank', function () {
         'name' => 'Nur ein Name',
         'street' => '',
     ], function (int $venueId) {
-        $event = BitcoinEvent::factory()->create(['location' => null]);
-        DB::table('bitcoin_events')->where('id', $event->id)->update(['venue_id' => $venueId]);
+        $event = CourseEvent::factory()->create(['location' => null]);
+        DB::table('course_events')->where('id', $event->id)->update(['venue_id' => $venueId]);
 
         runCityAndLocationCopy();
 
@@ -117,10 +127,10 @@ it('never overwrites a location somebody entered by hand', function () {
         'name' => 'Alter Venue-Name',
         'street' => 'Alte Straße 1',
     ], function (int $venueId) {
-        $event = BitcoinEvent::factory()->create([
+        $event = CourseEvent::factory()->create([
             'location' => 'Vom Veranstalter korrigiert: Hinterhof, Eingang B',
         ]);
-        DB::table('bitcoin_events')->where('id', $event->id)->update(['venue_id' => $venueId]);
+        DB::table('course_events')->where('id', $event->id)->update(['venue_id' => $venueId]);
 
         runCityAndLocationCopy();
 
@@ -134,8 +144,8 @@ it('runs twice without changing anything the second time', function () {
         'name' => 'Doppelt hält besser',
         'street' => 'Teststraße 2',
     ], function (int $venueId) {
-        $event = BitcoinEvent::factory()->create(['location' => null]);
-        DB::table('bitcoin_events')->where('id', $event->id)->update(['venue_id' => $venueId]);
+        $event = CourseEvent::factory()->create(['location' => null]);
+        DB::table('course_events')->where('id', $event->id)->update(['venue_id' => $venueId]);
 
         runCityAndLocationCopy();
         $afterFirst = $event->fresh()->location;
@@ -151,8 +161,8 @@ it('truncates an overlong composition rather than failing the column', function 
         'name' => str_repeat('a', 200),
         'street' => str_repeat('b', 200),
     ], function (int $venueId) {
-        $event = BitcoinEvent::factory()->create(['location' => null]);
-        DB::table('bitcoin_events')->where('id', $event->id)->update(['venue_id' => $venueId]);
+        $event = CourseEvent::factory()->create(['location' => null]);
+        DB::table('course_events')->where('id', $event->id)->update(['venue_id' => $venueId]);
 
         runCityAndLocationCopy();
 
@@ -161,7 +171,7 @@ it('truncates an overlong composition rather than failing the column', function 
 });
 
 it('leaves events alone that never had a venue', function () {
-    $event = BitcoinEvent::factory()->create(['location' => 'Schon gesetzt']);
+    $event = CourseEvent::factory()->create(['location' => 'Schon gesetzt']);
 
     runCityAndLocationCopy();
 

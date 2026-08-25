@@ -25,7 +25,7 @@ final class MergeUserAccounts
 {
     /** Tables carrying a plain `created_by` user FK with no per-user uniqueness. */
     private const CREATED_BY_TABLES = [
-        'cities', 'lecturers', 'bitcoin_events', 'courses', 'course_events',
+        'cities', 'lecturers', 'courses', 'course_events',
         'libraries', 'podcasts', 'episodes', 'meetups', 'library_items',
         'self_hosted_services', 'votes', 'project_proposals', 'meetup_events',
     ];

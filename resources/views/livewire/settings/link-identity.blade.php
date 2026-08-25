@@ -170,7 +170,6 @@ class extends Component {
             'courses' => __('Kurse'),
             'course_events' => __('Kurs-Termine'),
             'meetup_events' => __('Meetup-Termine'),
-            'bitcoin_events' => __('Bitcoin-Events'),
             'podcasts' => __('Podcasts'),
             'episodes' => __('Episoden'),
             'libraries' => __('Bibliotheken'),

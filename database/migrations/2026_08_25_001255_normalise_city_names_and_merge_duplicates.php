@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Trimmt die Staedtenamen und legt die Dubletten zusammen, die erst dadurch entstehen.
@@ -129,6 +130,12 @@ return new class extends Migration
     private function mergeInto(int $behalten, int $aufzuloesen): void
     {
         foreach (self::REFERENCING_TABLES as $tabelle) {
+            // `bitcoin_events` faellt in einer spaeteren Migration weg; auf einer
+            // durchmigrierten Datenbank steht der Name hier nur noch als Historie.
+            if (! Schema::hasTable($tabelle)) {
+                continue;
+            }
+
             DB::table($tabelle)->where('city_id', $aufzuloesen)->update(['city_id' => $behalten]);
         }
 

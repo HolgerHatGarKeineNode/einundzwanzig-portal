@@ -15,12 +15,12 @@
 */
 
 use App\Models\ApiChange;
-use App\Models\BitcoinEvent;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\CourseEvent;
 use App\Models\Meetup;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 function runNormaliseCityNamesMigration(): void
 {
@@ -28,9 +28,15 @@ function runNormaliseCityNamesMigration(): void
 }
 
 // P2-a + P2-b + P2-c — Der Offenburg-Fall exakt nachgebaut: die AELTERE (kleinere id),
-// verschmutzte Zeile traegt ein Meetup; die JUENGERE, saubere traegt BitcoinEvent,
-// CourseEvent und einen api_changes-Eintrag (keine FK). Nach dem Merge muss die
-// kleinere id ueberleben und ALLE vier Referenzen tragen — nichts geht verloren.
+// verschmutzte Zeile traegt ein Meetup; die JUENGERE, saubere traegt CourseEvent und
+// einen api_changes-Eintrag (keine FK). Nach dem Merge muss die kleinere id ueberleben
+// und ALLE Referenzen tragen — nichts geht verloren.
+//
+// Der vierte Referenztyp, `bitcoin_events`, ist mit P7 gedroppt. Die Migration fuehrt
+// den Namen weiter in ihrer Liste (sie lief auf Produktion, bevor die Tabelle fiel) und
+// ueberspringt ihn seither per `Schema::hasTable()` — genau das prueft der Zusatztest
+// weiter unten, denn ein unbewachtes UPDATE auf eine fehlende Tabelle waere ein
+// SQL-Fehler mitten im Merge.
 it('merges the dirty older row, keeps every referencing row, and drags the FK-less api_changes along', function () {
     $country = Country::factory()->create();
 
@@ -40,13 +46,11 @@ it('merges the dirty older row, keeps every referencing row, and drags the FK-le
     expect($dirty->id)->toBeLessThan($clean->id); // Reihenfolge der Erzeugung == Reihenfolge der id
 
     $meetup = Meetup::factory()->create(['city_id' => $dirty->id]);
-    $bitcoinEvent = BitcoinEvent::factory()->create(['city_id' => $clean->id]);
     $courseEvent = CourseEvent::factory()->create(['city_id' => $clean->id]);
     $apiChange = ApiChange::factory()->create(['city_id' => $clean->id]);
 
     $citiesBefore = City::count();
     $meetupsBefore = Meetup::count();
-    $bitcoinEventsBefore = BitcoinEvent::count();
     $courseEventsBefore = CourseEvent::count();
     $apiChangesBefore = ApiChange::count();
 
@@ -56,7 +60,6 @@ it('merges the dirty older row, keeps every referencing row, and drags the FK-le
     // Tabellen unveraendert in ihrer Zeilenzahl.
     expect(City::count())->toBe($citiesBefore - 1)
         ->and(Meetup::count())->toBe($meetupsBefore)
-        ->and(BitcoinEvent::count())->toBe($bitcoinEventsBefore)
         ->and(CourseEvent::count())->toBe($courseEventsBefore)
         ->and(ApiChange::count())->toBe($apiChangesBefore);
 
@@ -67,7 +70,6 @@ it('merges the dirty older row, keeps every referencing row, and drags the FK-le
 
     // Beide vorher getrennten Datensaetze haengen jetzt an der ueberlebenden Zeile.
     expect($meetup->fresh()->city_id)->toBe($dirty->id)
-        ->and($bitcoinEvent->fresh()->city_id)->toBe($dirty->id)
         ->and($courseEvent->fresh()->city_id)->toBe($dirty->id);
 
     // P2-c — api_changes.city_id (KEIN Fremdschluessel) wurde mitgezogen, zeigt also
@@ -212,4 +214,30 @@ it('leaves an ambiguous whitespace duplicate alone instead of merging the whole 
 
     expect(City::find(min($verschmutzt->id, $sauber->id)))->not->toBeNull()
         ->and(City::find(max($verschmutzt->id, $sauber->id)))->toBeNull();
+});
+
+/**
+ * Der Merge laeuft, obwohl eine der vier Referenztabellen nicht mehr existiert.
+ *
+ * `REFERENCING_TABLES` nennt weiterhin `bitcoin_events` — die Migration lief auf
+ * Produktion, als die Tabelle noch stand, und ihre Liste ist Historie, die man nicht
+ * rueckwirkend faelscht. Auf einer durchmigrierten Datenbank ist die Tabelle aber fort,
+ * und ein `UPDATE bitcoin_events` waere dort ein SQL-Fehler MITTEN in der Transaktion:
+ * der Merge braeche ab, nachdem er `meetups` schon umgehaengt hat.
+ *
+ * Gemessen wird deshalb genau das: Tabelle nachweislich weg, Merge trotzdem vollstaendig.
+ */
+it('merges without the dropped bitcoin_events table getting in the way', function () {
+    expect(Schema::hasTable('bitcoin_events'))->toBeFalse();
+
+    $country = Country::factory()->create();
+    $dirty = City::factory()->create(['name' => 'Uznach SG ', 'country_id' => $country->id, 'slug' => null]);
+    $clean = City::factory()->create(['name' => 'Uznach SG', 'country_id' => $country->id, 'slug' => null]);
+    $meetup = Meetup::factory()->create(['city_id' => $clean->id]);
+
+    runNormaliseCityNamesMigration();
+
+    expect(City::find($dirty->id))->not->toBeNull()
+        ->and(City::find($clean->id))->toBeNull()
+        ->and($meetup->fresh()->city_id)->toBe($dirty->id);
 });

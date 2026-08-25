@@ -1,5 +1,5 @@
 @props([
-    // Das Model mit den osm_*-Spalten: MeetupEvent, CourseEvent, BitcoinEvent.
+    // Das Model mit den osm_*-Spalten: MeetupEvent, CourseEvent.
     'place',
     // 16 zeigt Strassenzuege samt Hausnummern — die Aufloesung, in der ein
     // Veranstaltungsort tatsaechlich wiederzuerkennen ist.
