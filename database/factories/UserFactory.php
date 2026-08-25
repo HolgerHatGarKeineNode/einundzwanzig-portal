@@ -59,6 +59,21 @@ class UserFactory extends Factory
         ]);
     }
 
+    /**
+     * Nutzer ohne Referenten-Abzeichen.
+     *
+     * `definition()` wuerfelt `fake()->boolean(20)`, ein Test darf sich darauf nicht
+     * verlassen. Das Abzeichen gatet seit dem Abbau der `is_lecturer`-Pruefung keine
+     * Policy mehr — was es noch gatet (die beiden MCP-Werkzeuge, die API-Ausgabe),
+     * braucht diesen Zustand deterministisch.
+     */
+    public function notLecturer(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_lecturer' => false,
+        ]);
+    }
+
     public function withNostr(): static
     {
         return $this->state(fn (array $attributes) => [

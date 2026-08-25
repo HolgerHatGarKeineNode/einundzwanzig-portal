@@ -24,7 +24,10 @@ function courseEventTag(string $german): Tag
 beforeEach(function () {
     $this->seed(TagSeeder::class);
     $this->user = actingAsUser();
-    $this->user->update(['timezone' => 'Europe/Berlin', 'is_lecturer' => true]);
+    // `is_lecturer` stand hier mit, solange CourseEventPolicy::create() es abfragte.
+    // Es gatet nichts mehr; was den Zugang zum Formular entscheidet, ist die
+    // Ersteller-Zugehoerigkeit des Kurses bzw. des Termins.
+    $this->user->update(['timezone' => 'Europe/Berlin']);
 });
 
 function fillCourseEvent($test, City $city): object

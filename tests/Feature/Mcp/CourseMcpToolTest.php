@@ -24,8 +24,13 @@ it('lets a lecturer create a course and stamps created_by', function () {
     ]);
 });
 
+/**
+ * Das MCP-Werkzeug prueft `is_lecturer` selbst (CreateCourseTool), nicht ueber die
+ * Policy. Der Test behaelt damit seinen Gegenstand, obwohl `CoursePolicy::create()` das
+ * Flag nicht mehr kennt — die REST-API laesst denselben Nutzer inzwischen durch.
+ */
 it('forbids a non-lecturer from creating a course', function () {
-    $user = User::factory()->create(['is_lecturer' => false]);
+    $user = User::factory()->notLecturer()->create();
     $lecturer = Lecturer::factory()->create();
 
     EinundzwanzigServer::actingAs($user)

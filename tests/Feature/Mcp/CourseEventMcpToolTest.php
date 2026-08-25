@@ -9,11 +9,16 @@ use App\Models\Course;
 use App\Models\CourseEvent;
 use App\Models\User;
 
+/**
+ * Das MCP-Werkzeug prueft `is_lecturer` selbst (CreateCourseEventTool), nicht ueber die
+ * Policy. Der Test behaelt damit seinen Gegenstand, obwohl `CourseEventPolicy::create()`
+ * das Flag nicht mehr kennt — die REST-API laesst denselben Nutzer inzwischen durch.
+ */
 it('forbids a non-lecturer from creating a course event', function () {
     $course = Course::factory()->create();
     $city = City::factory()->create();
 
-    EinundzwanzigServer::actingAs(User::factory()->create(['is_lecturer' => false]))
+    EinundzwanzigServer::actingAs(User::factory()->notLecturer()->create())
         ->tool(CreateCourseEventTool::class, [
             'course_id' => $course->id,
             'city_id' => $city->id,

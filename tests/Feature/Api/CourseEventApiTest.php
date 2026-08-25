@@ -16,14 +16,27 @@ it('rejects a guest creating a course with 401', function () {
     ])->assertUnauthorized();
 });
 
-it('forbids a non-lecturer from creating a course', function () {
-    Sanctum::actingAs(User::factory()->create(['is_lecturer' => false]));
+/**
+ * Frueher stand hier das Gegenteil: ohne `is_lecturer` ein 403.
+ *
+ * Der Gegenstand ist mit der Pruefung weggefallen — das Flag wird bei jeder
+ * Registrierung gesetzt, hat also nie jemanden ausgesperrt. Der Test bleibt als
+ * Nachweis der jetzt geltenden Regel stehen, statt ersatzlos zu verschwinden: wer
+ * angemeldet ist, darf anlegen; wem etwas gehoert, entscheidet erst `update`.
+ */
+it('lets a user without the lecturer badge create a course', function () {
+    Sanctum::actingAs($user = User::factory()->notLecturer()->create());
     $lecturer = Lecturer::factory()->create();
 
     $this->postJson('/api/courses', [
         'name' => 'Specter Shield Lite Workshop',
         'lecturer_id' => $lecturer->id,
-    ])->assertForbidden();
+    ])->assertCreated();
+
+    $this->assertDatabaseHas('courses', [
+        'name' => 'Specter Shield Lite Workshop',
+        'created_by' => $user->id,
+    ]);
 });
 
 it('lets a lecturer create a course', function () {
@@ -97,8 +110,12 @@ it('lets a lecturer create a course event', function () {
     ]);
 });
 
-it('forbids a non-lecturer from creating a course event', function () {
-    Sanctum::actingAs(User::factory()->create(['is_lecturer' => false]));
+/**
+ * Auch hier stand frueher das Gegenteil (403 ohne `is_lecturer`). Siehe oben: die
+ * Bedingung ist gefallen, weil sie nie eine war. Der Test haelt die neue Regel fest.
+ */
+it('lets a user without the lecturer badge create a course event', function () {
+    Sanctum::actingAs($user = User::factory()->notLecturer()->create());
     $course = Course::factory()->create();
     $city = City::factory()->create();
 
@@ -108,7 +125,12 @@ it('forbids a non-lecturer from creating a course event', function () {
         'from' => '2026-07-01 18:00:00',
         'to' => '2026-07-01 21:00:00',
         'link' => 'https://example.com/event',
-    ])->assertForbidden();
+    ])->assertCreated();
+
+    $this->assertDatabaseHas('course_events', [
+        'course_id' => $course->id,
+        'created_by' => $user->id,
+    ]);
 });
 
 it('fails course event validation without required fields', function () {
