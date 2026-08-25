@@ -176,6 +176,13 @@ pest()->extend(TestCase::class)
 | Unterschied "--fresh" plus volle Reihenfolge gegenueber einem gefilterten
 | Lauf, und die Browser-/Playwright-Tests als klassische Flake-Kandidaten.
 |
+| ZWISCHENSTAND 2026-08-25: Ein roter Lauf trat auf und war KEIN Flake.
+| NormaliseCityNamesAndMergeDuplicatesTest:198 schlug fehl, weil eine Erwartung
+| aus der Zeit vor einem Fix stammte — erklaerbar, reproduzierbar, am Test.
+| Der Befund oben bleibt davon unberuehrt: er wartet weiter auf einen roten
+| Lauf OHNE Erklaerung. Bemerkenswert war der Weg dorthin: nach dem Fix lief
+| nur ein gefilterter Lauf (13 passed), erst das volle Tor fand es.
+|
 | WER HIER LANDET, WEIL SEIN LAUF ROT IST: leite die Ausgabe NICHT durch
 | tail/head/grep, sondern vollstaendig in eine Datei, halte den Testnamen fest
 | und fahre danach den gezielten Bisect (wiederholte Laeufe nur der
