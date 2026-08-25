@@ -60,15 +60,15 @@ final class MergeUserAccounts
     /**
      * Encrypted-at-rest fields that must not land in the plaintext audit snapshot.
      *
-     * Diese Liste behaelt die auslaufenden Lightning-Felder ABSICHTLICH, bis die Spalten
-     * wirklich fort sind — anders als IDENTITY_FIELDS oben. Der Schwarzungs-Filter laeuft
-     * ueber `attributesToArray()` des Verlierers: solange die Spalte existiert, wuerde ein
-     * hier gestrichener Name die entschluesselte Lightning-Adresse im Klartext ins
-     * Audit-JSON schreiben. Ein Name, dessen Spalte es nicht mehr gibt, kostet dagegen
-     * nichts. Also erst mit der Migration entfernen, nie davor.
+     * Die vier Lightning-Namen und `lnbits` fielen hier ERST mit der Migration, einen
+     * Commit spaeter als in IDENTITY_FIELDS oben — und das war kein Versehen. Der
+     * Schwarzungs-Filter laeuft ueber `attributesToArray()` des Verlierers: solange die
+     * Spalte existierte, haette ein frueher gestrichener Name die entschluesselte
+     * Lightning-Adresse im Klartext ins Audit-JSON geschrieben. Erst als die Spalten fort
+     * waren, kostete das Streichen nichts.
      */
     private const REDACTED_SNAPSHOT_FIELDS = [
-        'public_key', 'lightning_address', 'lnurl', 'node_id', 'paynym', 'email', 'lnbits',
+        'public_key', 'email',
     ];
 
     /**

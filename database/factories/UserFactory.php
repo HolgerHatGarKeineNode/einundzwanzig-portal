@@ -32,11 +32,6 @@ class UserFactory extends Factory
             'timezone' => 'Europe/Berlin',
             'is_lecturer' => fake()->boolean(20),
             'nostr' => fake()->boolean(70) ? NostrHelper::randomNpub() : null,
-            'lightning_address' => fake()->boolean(40) ? NostrHelper::randomLightningAddress($name) : null,
-            'lnurl' => null,
-            'node_id' => null,
-            'paynym' => null,
-            'lnbits' => null,
             'public_key' => null,
             'change' => null,
             'change_time' => null,
@@ -77,7 +72,6 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'nostr' => NostrHelper::randomNpub(),
-            'lightning_address' => NostrHelper::randomLightningAddress($attributes['name'] ?? null),
         ]);
     }
 }

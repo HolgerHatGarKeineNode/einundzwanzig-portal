@@ -112,9 +112,6 @@
                                 @endforeach
                             </div>
 
-                            @if (!empty($info['lightning_address']))
-                                <div class="mt-2 truncate text-xs text-zinc-500">{{ __('Lightning-Adresse') }}: {{ $info['lightning_address'] }}</div>
-                            @endif
 
                             @if ($account['absorb'] && (!empty($info['leader_meetups']) || !empty($info['member_meetups']) || !empty($info['counts'])))
                                 <div class="mt-3 flex items-center gap-1.5 rounded-md bg-emerald-50 px-2 py-1.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">

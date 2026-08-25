@@ -12,7 +12,6 @@ use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use ParagonIE\CipherSweet\BlindIndex;
 use ParagonIE\CipherSweet\EncryptedRow;
-use ParagonIE\CipherSweet\JsonFieldMap;
 use Spatie\LaravelCipherSweet\Concerns\UsesCipherSweet;
 use Spatie\LaravelCipherSweet\Contracts\CipherSweetEncrypted;
 use Spatie\Permission\Traits\HasRoles;
@@ -37,12 +36,7 @@ class User extends Authenticatable implements CipherSweetEncrypted
         'is_leader',
         'current_team_id',
         'timezone',
-        'lightning_address',
-        'lnurl',
-        'node_id',
-        'paynym',
         'nostr',
-        'lnbits',
         'change',
         'change_time',
         'lightning_retired_at',
@@ -143,26 +137,28 @@ class User extends Authenticatable implements CipherSweetEncrypted
             ->implode('');
     }
 
+    /**
+     * Zwei verschluesselte Felder, zwei Blind-Indizes — mehr hat der Nutzer nicht.
+     *
+     * Bis P6 standen hier zusaetzlich `lightning_address`, `lnurl`, `node_id`, `paynym`
+     * und das JSON-Feld `lnbits` samt vier Blind-Indizes. Die Spalten sind fort
+     * (`2026_08_25_213000_drop_lightning_columns_from_users_table`), und diese Methode
+     * musste im SELBEN Schritt nachziehen: ein hier stehengebliebenes Feld liesse
+     * CipherSweet bei jedem Speichern auf eine Spalte schreiben, die es nicht mehr gibt.
+     *
+     * `public_key` bleibt — daran haengt der LNURL-Login: die Anmeldung sucht das Konto
+     * ueber `whereBlind('public_key', 'public_key_index', ...)`, ohne den Index gibt es
+     * keinen Treffer. `email` bleibt aus demselben Grund.
+     *
+     * NICHT zu verwechseln: {@see Lecturer} traegt vier gleichnamige Spalten. Sie sind
+     * ein anderer, oeffentlicher Vertrag und von dieser Aenderung nicht beruehrt.
+     */
     public static function configureCipherSweet(EncryptedRow $encryptedRow): void
     {
-        $map = (new JsonFieldMap)
-            ->addTextField('url')
-            ->addTextField('read_key')
-            ->addTextField('wallet_id');
-
         $encryptedRow
             ->addOptionalTextField('public_key')
-            ->addOptionalTextField('lightning_address')
-            ->addOptionalTextField('lnurl')
-            ->addOptionalTextField('node_id')
             ->addOptionalTextField('email')
-            ->addOptionalTextField('paynym')
-            ->addNullableJsonField('lnbits', $map, strict: false)
             ->addBlindIndex('public_key', new BlindIndex('public_key_index'))
-            ->addBlindIndex('lightning_address', new BlindIndex('lightning_address_index'))
-            ->addBlindIndex('lnurl', new BlindIndex('lnurl_index'))
-            ->addBlindIndex('node_id', new BlindIndex('node_id_index'))
-            ->addBlindIndex('paynym', new BlindIndex('paynym_index'))
             ->addBlindIndex('email', new BlindIndex('email_index'));
     }
 
