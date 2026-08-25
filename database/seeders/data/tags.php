@@ -28,6 +28,15 @@
 |   - wissenschaftliche Arbeit + Masterarbeit + Bachelorarbeit → Abschlussarbeit
 |   - "Nostr" kept despite 0 uses: live topic, will be needed
 |
+| `icon` must be a name from config('einundzwanzig.tag_icons'). The first draft
+| of this file used Font Awesome names (coin, beer-mug, chalkboard-user,
+| user-secret, seedling, graduation-cap, child, store, thought-bubble,
+| microphone-stand) while Flux ships Heroicons — every one of them would have
+| thrown "Flux component [icon.coin] does not exist" the moment a screen
+| rendered it. Rewritten on 2026-08-25 together with a data migration for the
+| rows already seeded; TagIconVocabularyTest keeps this file and the whitelist
+| in step.
+|
 */
 
 return [
@@ -38,15 +47,15 @@ return [
      */
     'meetup_event' => [
         // Formats
-        ['icon' => 'microphone-stand', 'featured' => true, 'name' => [
+        ['icon' => 'microphone', 'featured' => true, 'name' => [
             'de' => 'Vortrag', 'en' => 'Talk', 'cs' => 'Přednáška', 'es' => 'Charla',
             'hu' => 'Előadás', 'lv' => 'Lekcija', 'nl' => 'Lezing', 'pl' => 'Prelekcja', 'pt' => 'Palestra',
         ]],
-        ['icon' => 'chalkboard-user', 'featured' => true, 'name' => [
+        ['icon' => 'presentation-chart-bar', 'featured' => true, 'name' => [
             'de' => 'Workshop', 'en' => 'Workshop', 'cs' => 'Workshop', 'es' => 'Taller',
             'hu' => 'Műhely', 'lv' => 'Darbnīca', 'nl' => 'Workshop', 'pl' => 'Warsztaty', 'pt' => 'Oficina',
         ]],
-        ['icon' => 'beer-mug', 'featured' => true, 'name' => [
+        ['icon' => 'chat-bubble-left-right', 'featured' => true, 'name' => [
             'de' => 'Stammtisch', 'en' => 'Meetup', 'cs' => 'Setkání', 'es' => 'Encuentro',
             'hu' => 'Törzsasztal', 'lv' => 'Tikšanās', 'nl' => 'Stamtafel', 'pl' => 'Spotkanie', 'pt' => 'Encontro',
         ]],
@@ -60,27 +69,27 @@ return [
         ]],
 
         // Audience
-        ['icon' => 'seedling', 'featured' => true, 'name' => [
+        ['icon' => 'rocket-launch', 'featured' => true, 'name' => [
             'de' => 'Einsteiger', 'en' => 'Beginners', 'cs' => 'Začátečníci', 'es' => 'Principiantes',
             'hu' => 'Kezdők', 'lv' => 'Iesācēji', 'nl' => 'Beginners', 'pl' => 'Początkujący', 'pt' => 'Iniciantes',
         ]],
-        ['icon' => 'graduation-cap', 'featured' => false, 'name' => [
+        ['icon' => 'academic-cap', 'featured' => false, 'name' => [
             'de' => 'Fortgeschrittene', 'en' => 'Advanced', 'cs' => 'Pokročilí', 'es' => 'Avanzado',
             'hu' => 'Haladók', 'lv' => 'Pieredzējušiem', 'nl' => 'Gevorderden', 'pl' => 'Zaawansowani', 'pt' => 'Avançado',
         ]],
-        ['icon' => 'child', 'featured' => false, 'name' => [
+        ['icon' => 'user-group', 'featured' => false, 'name' => [
             'de' => 'Familien', 'en' => 'Families', 'cs' => 'Rodiny', 'es' => 'Familias',
             'hu' => 'Családok', 'lv' => 'Ģimenēm', 'nl' => 'Gezinnen', 'pl' => 'Rodziny', 'pt' => 'Famílias',
         ]],
 
         // Topics
-        ['icon' => 'coin', 'featured' => true, 'name' => 'Bitcoin'],
+        ['icon' => 'circle-stack', 'featured' => true, 'name' => 'Bitcoin'],
         ['icon' => 'bolt', 'featured' => true, 'name' => 'Lightning'],
         ['icon' => 'key', 'featured' => true, 'name' => [
             'de' => 'Selbstverwahrung', 'en' => 'Self-custody', 'cs' => 'Vlastní úschova', 'es' => 'Autocustodia',
             'hu' => 'Önőrzés', 'lv' => 'Pašglabāšana', 'nl' => 'Zelfbeheer', 'pl' => 'Samodzielne przechowywanie', 'pt' => 'Auto-custódia',
         ]],
-        ['icon' => 'user-secret', 'featured' => false, 'name' => [
+        ['icon' => 'eye-slash', 'featured' => false, 'name' => [
             'de' => 'Privatsphäre', 'en' => 'Privacy', 'cs' => 'Soukromí', 'es' => 'Privacidad',
             'hu' => 'Magánélet', 'lv' => 'Privātums', 'nl' => 'Privacy', 'pl' => 'Prywatność', 'pt' => 'Privacidade',
         ]],
@@ -89,7 +98,7 @@ return [
             'hu' => 'Bányászat', 'lv' => 'Ieguve', 'nl' => 'Mining', 'pl' => 'Kopanie', 'pt' => 'Mineração',
         ]],
         ['icon' => 'tag', 'featured' => false, 'name' => 'Nostr'],
-        ['icon' => 'store', 'featured' => false, 'name' => [
+        ['icon' => 'building-storefront', 'featured' => false, 'name' => [
             'de' => 'Annahmestellen', 'en' => 'Merchant adoption', 'cs' => 'Obchodníci', 'es' => 'Comercios',
             'hu' => 'Elfogadóhelyek', 'lv' => 'Tirgotāji', 'nl' => 'Acceptanten', 'pl' => 'Akceptanci', 'pt' => 'Comerciantes',
         ]],
@@ -99,7 +108,7 @@ return [
      * Course vocabulary — one tag, kept from live (18 + 3 uses, was duplicated).
      */
     'course' => [
-        ['icon' => 'coin', 'featured' => false, 'name' => 'Bitcoin'],
+        ['icon' => 'circle-stack', 'featured' => false, 'name' => 'Bitcoin'],
     ],
 
     /*
@@ -115,7 +124,7 @@ return [
             'de' => 'Artikel', 'en' => 'Article', 'cs' => 'Článek', 'es' => 'Artículo',
             'hu' => 'Cikk', 'lv' => 'Raksts', 'nl' => 'Artikel', 'pl' => 'Artykuł', 'pt' => 'Artigo',
         ]],
-        ['icon' => 'microphone-stand', 'name' => [
+        ['icon' => 'microphone', 'name' => [
             'de' => 'Interview', 'en' => 'Interview', 'cs' => 'Rozhovor', 'es' => 'Entrevista',
             'hu' => 'Interjú', 'lv' => 'Intervija', 'nl' => 'Interview', 'pl' => 'Wywiad', 'pt' => 'Entrevista',
         ]],
@@ -182,7 +191,7 @@ return [
             'de' => 'Bildung', 'en' => 'Education', 'cs' => 'Vzdělávání', 'es' => 'Educación',
             'hu' => 'Oktatás', 'lv' => 'Izglītība', 'nl' => 'Onderwijs', 'pl' => 'Edukacja', 'pt' => 'Educação',
         ]],
-        ['icon' => 'chalkboard-user', 'name' => [
+        ['icon' => 'presentation-chart-bar', 'name' => [
             'de' => 'Dozentenmaterial', 'en' => 'Lecturer material', 'cs' => 'Materiály pro lektory', 'es' => 'Material para docentes',
             'hu' => 'Oktatói anyag', 'lv' => 'Pasniedzēju materiāli', 'nl' => 'Docentmateriaal', 'pl' => 'Materiały dla wykładowców', 'pt' => 'Material para docentes',
         ]],
@@ -208,7 +217,7 @@ return [
         ]],
 
         // Bitcoin topics
-        ['icon' => 'coin', 'name' => [
+        ['icon' => 'circle-stack', 'name' => [
             'de' => 'Allgemein Bitcoin', 'en' => 'Bitcoin general', 'cs' => 'Bitcoin obecně', 'es' => 'Bitcoin general',
             'hu' => 'Bitcoin általában', 'lv' => 'Bitcoin vispārīgi', 'nl' => 'Bitcoin algemeen', 'pl' => 'Bitcoin ogólnie', 'pt' => 'Bitcoin geral',
         ]],
@@ -303,7 +312,7 @@ return [
         ['icon' => 'tag', 'name' => 'Middle-Income Trap'],
 
         // Society and philosophy
-        ['icon' => 'thought-bubble', 'name' => [
+        ['icon' => 'chat-bubble-oval-left-ellipsis', 'name' => [
             'de' => 'Philosophie', 'en' => 'Philosophy', 'cs' => 'Filozofie', 'es' => 'Filosofía',
             'hu' => 'Filozófia', 'lv' => 'Filozofija', 'nl' => 'Filosofie', 'pl' => 'Filozofia', 'pt' => 'Filosofia',
         ]],
@@ -315,7 +324,7 @@ return [
             'de' => 'Eigentum', 'en' => 'Property', 'cs' => 'Vlastnictví', 'es' => 'Propiedad',
             'hu' => 'Tulajdon', 'lv' => 'Īpašums', 'nl' => 'Eigendom', 'pl' => 'Własność', 'pt' => 'Propriedade',
         ]],
-        ['icon' => 'user-secret', 'name' => [
+        ['icon' => 'eye-slash', 'name' => [
             'de' => 'Privatsphäre', 'en' => 'Privacy', 'cs' => 'Soukromí', 'es' => 'Privacidad',
             'hu' => 'Magánélet', 'lv' => 'Privātums', 'nl' => 'Privacy', 'pl' => 'Prywatność', 'pt' => 'Privacidade',
         ]],
