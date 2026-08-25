@@ -19,10 +19,20 @@ class ExpandRecurrenceSeries
 {
     /**
      * Hard upper bound on the number of generated occurrences.
+     *
+     * This is a hard cut, not a warning: {@see self::collect()} stops here and the
+     * remainder of the series is never created. The form says so in as many words.
      */
     public const MAX_OCCURRENCES = 100;
 
     /**
+     * Expand a rule into concrete start datetimes.
+     *
+     * `$interval` is the number of units between two occurrences — 2 with a weekly
+     * type means fortnightly. Values below 1 are raised to 1: an interval of 0 would
+     * advance the cursor by nothing and fill the whole allowance with the same date.
+     *
+     * @param  int|null  $interval  Units between repeats; null and 0 both mean 1.
      * @return array<int, Carbon>
      */
     public function handle(
@@ -31,12 +41,14 @@ class ExpandRecurrenceSeries
         RecurrenceType $type,
         ?string $dayOfWeek = null,
         ?string $dayPosition = null,
+        ?int $interval = null,
     ): array {
         $start = $start->copy();
         $end = $end->copy();
+        $interval = max(1, $interval ?? 1);
 
         if ($dayOfWeek && $dayPosition) {
-            return $this->customRecurrence($start, $end, $dayOfWeek, $dayPosition);
+            return $this->customRecurrence($start, $end, $dayOfWeek, $dayPosition, $interval);
         }
 
         if ($type === RecurrenceType::Weekly && $dayOfWeek) {
@@ -49,15 +61,35 @@ class ExpandRecurrenceSeries
                     $cursor->addDay();
                 }
 
-                return $this->collect($cursor, $end, fn (Carbon $date) => $date->addWeek());
+                return $this->collect($cursor, $end, $this->advanceFor($type, $interval));
             }
         }
 
-        return $this->collect(
-            $start,
-            $end,
-            fn (Carbon $date) => $type === RecurrenceType::Weekly ? $date->addWeek() : $date->addMonth(),
-        );
+        return $this->collect($start, $end, $this->advanceFor($type, $interval));
+    }
+
+    /**
+     * How one occurrence advances to the next, per recurrence type.
+     *
+     * Every case of {@see RecurrenceType} is answered here. Until P5 only `Weekly` was
+     * treated separately and everything else fell through to `addMonth()` — which made
+     * `daily` produce monthly dates while both the REST API and the MCP tool happily
+     * accepted the type.
+     *
+     * `Custom` advances monthly on purpose: it is the "third Friday of the month"
+     * pattern, and without a weekday/position pair (which routes to
+     * {@see self::customRecurrence()}) there is nothing custom left to honour.
+     *
+     * @return Closure(Carbon): mixed
+     */
+    private function advanceFor(RecurrenceType $type, int $interval): Closure
+    {
+        return match ($type) {
+            RecurrenceType::Daily => fn (Carbon $date) => $date->addDays($interval),
+            RecurrenceType::Weekly => fn (Carbon $date) => $date->addWeeks($interval),
+            RecurrenceType::Yearly => fn (Carbon $date) => $date->addYears($interval),
+            RecurrenceType::Monthly, RecurrenceType::Custom => fn (Carbon $date) => $date->addMonths($interval),
+        };
     }
 
     /**
@@ -80,7 +112,7 @@ class ExpandRecurrenceSeries
     /**
      * @return array<int, Carbon>
      */
-    private function customRecurrence(CarbonInterface $start, CarbonInterface $end, string $dayOfWeek, string $dayPosition): array
+    private function customRecurrence(CarbonInterface $start, CarbonInterface $end, string $dayOfWeek, string $dayPosition, int $interval = 1): array
     {
         $dates = [];
         $cursor = $start->copy()->startOfMonth();
@@ -95,7 +127,7 @@ class ExpandRecurrenceSeries
                     $dates[] = $occurrenceWithTime;
                 }
 
-                $cursor = $cursor->copy()->addMonth();
+                $cursor = $cursor->copy()->addMonths($interval);
             } else {
                 break;
             }

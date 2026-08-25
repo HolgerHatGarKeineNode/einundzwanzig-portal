@@ -427,6 +427,29 @@ class Meetup extends Model implements HasMedia
             ->where('start', '>', now())
             ->exists();
 
+        /*
+         * Die dritte Bedingung bleibt bewusst stehen (P5, 2026-08-25).
+         *
+         * Sie galt als toter Zweig: die fuenf `recurrence_*`-Spalten wurden angeblich
+         * nie geschrieben. Das stimmt nur fuer den Livewire-Serienpfad. Ueber
+         * `POST /api/meetup-events` (Einzelpfad, {@see MeetupEventController::store})
+         * und ueber `PATCH` sind beide Felder seit jeher setzbar, und vier Tests in
+         * `tests/Feature/Database/UpdateMeetupActivityTest.php` legen das Verhalten
+         * ausdruecklich fest. Der Zweig ist also kein Versehen, sondern Vertrag.
+         *
+         * Seit P5 schreibt {@see CreateMeetupEventSeries} die Felder auf jedes
+         * Vorkommen. Das macht den Zweig haeufiger erfuellbar, aber nicht gefaehrlich:
+         * eine frisch angelegte Serie mit Enddatum in der Zukunft hat per Konstruktion
+         * auch kuenftige Vorkommen — `$hasFutureEvent` traegt denselben Fall bereits.
+         * Ein Massenumschlag auf Bestandsdaten ist ausgeschlossen, weil die
+         * Gruppierungs-Migration ausschliesslich `recurrence_group` fuellt und keine
+         * einzige `recurrence_*`-Spalte rueckwirkend setzt.
+         *
+         * Bekannte Restluecke, nicht in P5 geloest: schneidet
+         * {@see ExpandRecurrenceSeries::MAX_OCCURRENCES} eine lange Serie ab, steht ein
+         * Enddatum in der Zukunft, zu dem irgendwann kein Vorkommen mehr existiert —
+         * dann haelt allein dieser Zweig das Meetup aktiv.
+         */
         $hasActiveRecurrence = MeetupEvent::query()
             ->where('meetup_id', $this->id)
             ->whereNotNull('recurrence_type')

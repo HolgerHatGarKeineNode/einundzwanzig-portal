@@ -111,9 +111,12 @@ class StoreMeetupEventRequest extends FormRequest
             /**
              * How many units between repeats — 2 with a weekly type means fortnightly.
              *
+             * At least 1. An interval of 0 would advance a series by nothing and fill the
+             * whole 100-occurrence allowance with the same date.
+             *
              * @example 1
              */
-            'recurrence_interval' => ['nullable', 'integer'],
+            'recurrence_interval' => ['nullable', 'integer', 'min:1'],
 
             /**
              * When the series stops. The end of the SERIES — for the end of a single

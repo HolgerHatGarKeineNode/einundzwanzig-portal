@@ -665,7 +665,7 @@
     "Vielleicht": "Może",
     "Vierter": "Czwarty",
     "Vollständiger Name des Dozenten": "Pełne imię i nazwisko wykładowcy",
-    "Vorschau auf 100 Termine begrenzt. Es werden möglicherweise mehr Termine erstellt.": "Podgląd ograniczony do 100 terminów. Może zostać utworzonych więcej terminów.",
+    "Eine Serie umfasst höchstens 100 Termine. Spätere Termine dieser Serie werden nicht erstellt.": "Seria obejmuje maksymalnie 100 terminów. Późniejsze terminy tej serii nie zostaną utworzone.",
     "Vorschau der Termine": "Podgląd terminów",
     "Vorschläge von Nutzern ohne Redaktionsrecht. Bis zur Freigabe sind sie nur am eigenen Event des Vorschlagenden sichtbar.": "Propozycje użytkowników bez uprawnień redakcyjnych. Do zatwierdzenia widoczne są tylko przy własnym wydarzeniu zgłaszającego.",
     "Votes": "Głosy",

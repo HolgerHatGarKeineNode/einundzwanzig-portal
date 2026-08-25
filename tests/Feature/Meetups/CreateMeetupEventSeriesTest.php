@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\RecurrenceType;
+use App\Models\ApiChange;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use Livewire\Livewire;
@@ -39,4 +40,64 @@ it('previews the same dates it will create', function () {
         ->set('endDate', '2026-07-29')
         ->set('recurrenceType', RecurrenceType::Weekly->value)
         ->assertSet('previewDates', fn ($dates) => count($dates) === 5);
+});
+
+it('gives every occurrence created in the editor the same series identity', function () {
+    $meetup = Meetup::factory()->create(['created_by' => actingAsUser()->id]);
+
+    Livewire::test('meetups.create-edit-events', ['meetup' => $meetup])
+        ->set('seriesMode', true)
+        ->set('startDate', '2026-07-01')
+        ->set('startTime', '18:00')
+        ->set('endDate', '2026-07-29')
+        ->set('recurrenceType', RecurrenceType::Weekly->value)
+        ->set('recurrenceDayOfWeek', 'wednesday')
+        ->set('location', 'Marktplatz')
+        ->set('description', 'Wöchentlicher Stammtisch')
+        ->set('link', 'https://einundzwanzig.space')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $events = MeetupEvent::where('meetup_id', $meetup->id)->orderBy('start')->get();
+
+    expect($events)->toHaveCount(5)
+        ->and($events->pluck('recurrence_group')->unique())->toHaveCount(1)
+        ->and($events->first()->recurrence_group)->not->toBeNull();
+
+    foreach ($events as $event) {
+        expect($event->recurrence_type)->toBe(RecurrenceType::Weekly->value)
+            ->and($event->recurrence_day_of_week)->toBe('wednesday')
+            ->and($event->recurrence_interval)->toBe(1)
+            ->and($event->recurrence_end_date)->not->toBeNull();
+    }
+});
+
+it('records one meetup change for an editor series, not one per occurrence', function () {
+    config()->set('einundzwanzig.change_log.enabled', true);
+
+    $meetup = Meetup::factory()->create([
+        'created_by' => actingAsUser()->id,
+        'is_active' => false,
+        'last_event_at' => null,
+    ]);
+
+    $before = ApiChange::where('resource', 'meetup')->where('resource_id', $meetup->id)->count();
+
+    Livewire::test('meetups.create-edit-events', ['meetup' => $meetup])
+        ->set('seriesMode', true)
+        ->set('startDate', now()->subMonths(4)->format('Y-m-d'))
+        ->set('startTime', '18:00')
+        ->set('endDate', now()->subMonths(3)->format('Y-m-d'))
+        ->set('recurrenceType', RecurrenceType::Weekly->value)
+        ->set('location', 'Marktplatz')
+        ->set('description', 'Wöchentlicher Stammtisch')
+        ->set('link', 'https://einundzwanzig.space')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $occurrences = MeetupEvent::where('meetup_id', $meetup->id)->count();
+    $after = ApiChange::where('resource', 'meetup')->where('resource_id', $meetup->id)->count();
+
+    expect($occurrences)->toBeGreaterThan(1)
+        ->and($after - $before)->toBe(1);
 });

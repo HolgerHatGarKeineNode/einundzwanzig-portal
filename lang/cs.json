@@ -665,7 +665,7 @@
     "Vielleicht": "Možná",
     "Vierter": "Čtvrtý",
     "Vollständiger Name des Dozenten": "Celé jméno lektora",
-    "Vorschau auf 100 Termine begrenzt. Es werden möglicherweise mehr Termine erstellt.": "Náhled je omezen na 100 termínů. Vytvořeno jich může být více.",
+    "Eine Serie umfasst höchstens 100 Termine. Spätere Termine dieser Serie werden nicht erstellt.": "Série obsahuje nejvýše 100 termínů. Pozdější termíny této série se nevytvoří.",
     "Vorschau der Termine": "Náhled termínů",
     "Vorschläge von Nutzern ohne Redaktionsrecht. Bis zur Freigabe sind sie nur am eigenen Event des Vorschlagenden sichtbar.": "Návrhy uživatelů bez redakčních práv. Do schválení jsou viditelné jen u vlastní akce navrhovatele.",
     "Votes": "Hlasy",

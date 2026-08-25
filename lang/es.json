@@ -665,7 +665,7 @@
     "Vielleicht": "Quizás",
     "Vierter": "Cuarto",
     "Vollständiger Name des Dozenten": "Nombre completo del profesor",
-    "Vorschau auf 100 Termine begrenzt. Es werden möglicherweise mehr Termine erstellt.": "Vista previa limitada a 100 eventos. Es posible que se creen más eventos.",
+    "Eine Serie umfasst höchstens 100 Termine. Spätere Termine dieser Serie werden nicht erstellt.": "Una serie contiene como máximo 100 fechas. Las fechas posteriores de esta serie no se crean.",
     "Vorschau der Termine": "Vista previa de eventos",
     "Vorschläge von Nutzern ohne Redaktionsrecht. Bis zur Freigabe sind sie nur am eigenen Event des Vorschlagenden sichtbar.": "Sugerencias de usuarios sin permisos de edición. Hasta su aprobación solo se ven en el evento propio de quien las sugirió.",
     "Votes": "Votos",

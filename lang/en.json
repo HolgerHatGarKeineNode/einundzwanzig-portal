@@ -665,7 +665,7 @@
     "Vielleicht": "Maybe",
     "Vierter": "Fourth",
     "Vollständiger Name des Dozenten": "Full name of the lecturer",
-    "Vorschau auf 100 Termine begrenzt. Es werden möglicherweise mehr Termine erstellt.": "Preview limited to 100 events. More events may be created.",
+    "Eine Serie umfasst höchstens 100 Termine. Spätere Termine dieser Serie werden nicht erstellt.": "A series holds at most 100 dates. Later dates of this series are not created.",
     "Vorschau der Termine": "Preview of events",
     "Vorschläge von Nutzern ohne Redaktionsrecht. Bis zur Freigabe sind sie nur am eigenen Event des Vorschlagenden sichtbar.": "Suggestions from users without editing rights. Until approved they are only visible on the suggester's own event.",
     "Votes": "Votes",

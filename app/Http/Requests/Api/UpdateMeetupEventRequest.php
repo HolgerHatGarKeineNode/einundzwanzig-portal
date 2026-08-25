@@ -108,11 +108,12 @@ class UpdateMeetupEventRequest extends FormRequest
             'recurrence_day_position' => ['sometimes', 'nullable', 'string', 'max:255'],
 
             /**
-             * How many units between repeats.
+             * How many units between repeats. At least 1 — 2 with a weekly type means
+             * fortnightly.
              *
              * @example 1
              */
-            'recurrence_interval' => ['sometimes', 'nullable', 'integer'],
+            'recurrence_interval' => ['sometimes', 'nullable', 'integer', 'min:1'],
 
             /**
              * When the SERIES stops. Compared against `start` when both are sent; a PATCH

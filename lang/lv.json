@@ -665,7 +665,7 @@
     "Vielleicht": "Varbūt",
     "Vierter": "Ceturtais",
     "Vollständiger Name des Dozenten": "Pasniedzēja pilns vārds",
-    "Vorschau auf 100 Termine begrenzt. Es werden möglicherweise mehr Termine erstellt.": "Priekšskatījums ir ierobežots līdz 100 pasākumiem. Iespējams, tiks izveidoti vairāk pasākumi.",
+    "Eine Serie umfasst höchstens 100 Termine. Spätere Termine dieser Serie werden nicht erstellt.": "Sērijā ir ne vairāk kā 100 pasākumu. Vēlākie šīs sērijas pasākumi netiek izveidoti.",
     "Vorschau der Termine": "Pasākumu priekšskatījums",
     "Vorschläge von Nutzern ohne Redaktionsrecht. Bis zur Freigabe sind sie nur am eigenen Event des Vorschlagenden sichtbar.": "Ieteikumi no lietotājiem bez redaktora tiesībām. Līdz apstiprināšanai tie redzami tikai ieteicēja paša pasākumā.",
     "Votes": "Balsis",
