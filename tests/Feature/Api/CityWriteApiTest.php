@@ -34,14 +34,29 @@ it('lets an authenticated user create', function () {
     ]);
 });
 
+/*
+|--------------------------------------------------------------------------
+| Issue #33 — resolveOrCreate() loest ueber Name + Land auf, nicht mehr ueber
+| den Namen allein. Die beiden Tests unten waren bis 2026-08-25 falsch, ohne
+| aufzufallen: sie schickten fuer die "existierende Stadt" IMMER ein frisch
+| erzeugtes, damit zwangslaeufig ABWEICHENDES country_id mit
+| (`Country::factory()->create()->id` ist bei jedem Aufruf ein neues Land) —
+| unter altem Verhalten war das egal, weil der Name allein entschied. Unter
+| neuem Verhalten heisst ein abweichendes Land: KEIN Treffer, siehe den Test
+| direkt darunter ("rejects ... different country"). Fix: dasselbe Land fuer
+| Bestand und Anfrage, explizit.
+|--------------------------------------------------------------------------
+*/
+
 it('returns the existing city instead of duplicating it', function () {
     Sanctum::actingAs(User::factory()->create());
 
-    $existing = City::factory()->create(['name' => 'Mannheim']);
+    $country = Country::factory()->create();
+    $existing = City::factory()->create(['name' => 'Mannheim', 'country_id' => $country->id]);
 
     $response = $this->postJson('/api/cities', [
         'name' => 'Mannheim',
-        'country_id' => Country::factory()->create()->id,
+        'country_id' => $country->id,
         'longitude' => 8.474687,
         'latitude' => 49.498203,
     ]);
@@ -56,11 +71,12 @@ it('returns the existing city instead of duplicating it', function () {
 it('matches an existing city case insensitively', function () {
     Sanctum::actingAs(User::factory()->create());
 
-    $existing = City::factory()->create(['name' => 'Mannheim']);
+    $country = Country::factory()->create();
+    $existing = City::factory()->create(['name' => 'Mannheim', 'country_id' => $country->id]);
 
     $response = $this->postJson('/api/cities', [
         'name' => 'mannheim',
-        'country_id' => Country::factory()->create()->id,
+        'country_id' => $country->id,
         'longitude' => 8.474687,
         'latitude' => 49.498203,
     ]);
@@ -69,6 +85,25 @@ it('matches an existing city case insensitively', function () {
         ->assertJsonPath('data.id', $existing->id);
 
     expect(City::query()->count())->toBe(1);
+});
+
+it('rejects a name that exists in a different country, instead of returning the wrong match', function () {
+    Sanctum::actingAs(User::factory()->create());
+
+    City::factory()->create(['name' => 'Mannheim']);
+    $otherCountry = Country::factory()->create();
+
+    $response = $this->postJson('/api/cities', [
+        'name' => 'Mannheim',
+        'country_id' => $otherCountry->id,
+        'longitude' => 8.474687,
+        'latitude' => 49.498203,
+    ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['name']);
+
+    expect(City::query()->where('name', 'Mannheim')->count())->toBe(1);
 });
 
 it('fails validation', function () {
@@ -159,11 +194,17 @@ it('throttles an authenticated user after 60 requests to the write group', funct
     $this->postJson('/api/cities', [])->assertStatus(429);
 });
 
-it('rejects renaming to a name already used by another city with 422, not 500', function () {
+it('rejects renaming to a name already used by another city in the same country, with 422, not 500', function () {
     Sanctum::actingAs($user = User::factory()->create());
 
-    City::factory()->create(['name' => 'Regensburg']);
-    $mine = City::factory()->create(['created_by' => $user->id, 'name' => 'Ansbach']);
+    // Issue #33: `name.unique` auf UpdateCityRequest ist seit 2026-08-25 landesbezogen
+    // (Rule::unique('cities','name')->where('country_id', ...)), nicht mehr global. Bis
+    // dahin genuegte irgendein zweites 'Regensburg' irgendwo; jetzt muss es im SELBEN
+    // Land liegen, sonst kollidiert die Regel gar nicht mehr (siehe den Test direkt
+    // darunter, der genau das prueft).
+    $country = Country::factory()->create();
+    City::factory()->create(['name' => 'Regensburg', 'country_id' => $country->id]);
+    $mine = City::factory()->create(['created_by' => $user->id, 'name' => 'Ansbach', 'country_id' => $country->id]);
 
     $response = $this->patchJson("/api/cities/{$mine->id}", [
         'name' => 'Regensburg',
@@ -173,6 +214,22 @@ it('rejects renaming to a name already used by another city with 422, not 500', 
         ->assertJsonValidationErrors(['name']);
 
     expect($mine->fresh()->name)->toBe('Ansbach');
+});
+
+it('allows renaming to a name already used by another city in a DIFFERENT country', function () {
+    Sanctum::actingAs($user = User::factory()->create());
+
+    City::factory()->create(['name' => 'Regensburg']);
+    $mine = City::factory()->create(['created_by' => $user->id, 'name' => 'Ansbach']);
+
+    $response = $this->patchJson("/api/cities/{$mine->id}", [
+        'name' => 'Regensburg',
+    ]);
+
+    $response->assertSuccessful()
+        ->assertJsonPath('data.name', 'Regensburg');
+
+    expect($mine->fresh()->name)->toBe('Regensburg');
 });
 
 it('lets a city keep its own name unchanged on update', function () {

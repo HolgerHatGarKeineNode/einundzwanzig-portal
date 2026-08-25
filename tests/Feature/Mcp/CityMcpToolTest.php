@@ -29,10 +29,24 @@ it('lets an authenticated user create a city and stamps created_by', function ()
     ]);
 });
 
-it('returns the existing city instead of duplicating it', function () {
+/*
+|--------------------------------------------------------------------------
+| Issue #33 — City::resolveOrCreate() loest ueber Name + Land auf, nicht mehr
+| ueber den Namen allein. Diese beiden Tests waren bis 2026-08-25 EIN Test, der
+| das alte (falsche) Verhalten festnagelte: eine Stadt "Mannheim" mit einem
+| ANDEREN country_id bekam mit 200 den bestehenden Datensatz zurueck — der
+| Schadensfall aus Issue #33 selbst (Springfield/Missouri bekam
+| Springfield/Illinois). Aufgeteilt in zwei Zusagen, weil es jetzt zwei
+| verschiedene sind: dieselbe Kombination Name+Land trifft weiterhin den
+| Bestand (unveraendert), eine ABWEICHENDE Kombination scheitert jetzt sichtbar
+| statt still den falschen Datensatz zurueckzugeben.
+|--------------------------------------------------------------------------
+*/
+
+it('returns the existing city instead of duplicating it when the country matches', function () {
     $user = User::factory()->create();
     $country = Country::factory()->create();
-    City::factory()->create(['name' => 'Mannheim']);
+    City::factory()->create(['name' => 'Mannheim', 'country_id' => $country->id]);
 
     EinundzwanzigServer::actingAs($user)
         ->tool(CreateCityTool::class, [
@@ -44,6 +58,26 @@ it('returns the existing city instead of duplicating it', function () {
         ->assertOk()
         ->assertSee('already_existed');
 
+    expect(City::query()->where('name', 'Mannheim')->count())->toBe(1);
+});
+
+it('rejects creating a city whose name exists in a different country, instead of returning the wrong match', function () {
+    $user = User::factory()->create();
+    $otherCountry = Country::factory()->create();
+    City::factory()->create(['name' => 'Mannheim']);
+
+    EinundzwanzigServer::actingAs($user)
+        ->tool(CreateCityTool::class, [
+            'name' => 'Mannheim',
+            'country_id' => $otherCountry->id,
+            'longitude' => 8.474687,
+            'latitude' => 49.498203,
+        ])
+        ->assertHasErrors();
+
+    // Der eigentliche Schaden aus Issue #33: es darf NICHT still die falsche,
+    // bestehende Stadt zurueckgegeben und auch keine zweite ohne Rueckfrage
+    // angelegt werden.
     expect(City::query()->where('name', 'Mannheim')->count())->toBe(1);
 });
 
