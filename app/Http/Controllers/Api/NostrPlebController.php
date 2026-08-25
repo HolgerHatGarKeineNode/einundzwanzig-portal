@@ -19,18 +19,18 @@ class NostrPlebController extends Controller
      */
     public function __invoke(): Collection
     {
+        /*
+         * Nur die zwei Spalten, die diese Antwort braucht.
+         *
+         * Hier standen bis P6 alle fuenf Lightning-Spalten plus `email` und
+         * `public_key` — ausgeliefert wurde davon nie eine. Das war nicht nur
+         * ueberfluessig: `email`, `public_key`, `lightning_address`, `lnurl`, `node_id`,
+         * `paynym` und `lnbits` sind CipherSweet-verschluesselt, also kostete jede Zeile
+         * sieben Entschluesselungen fuer ein Feld, das im Klartext danebensteht.
+         * `nostr` ist keines davon.
+         */
         return User::query()
-            ->select([
-                'email',
-                'public_key',
-                'lightning_address',
-                'lnurl',
-                'node_id',
-                'paynym',
-                'lnbits',
-                'nostr',
-                'id',
-            ])
+            ->select(['id', 'nostr'])
             ->whereNotNull('nostr')
             ->where('nostr', 'like', 'npub1%')
             ->orderByDesc('id')

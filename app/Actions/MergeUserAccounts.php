@@ -45,13 +45,28 @@ final class MergeUserAccounts
      * public_key etc. carry a unique blind index, so the loser must be gone
      * before these are written — see the ordering in handle().
      *
+     * Bis P6 standen hier auch `lightning_address`, `lnurl`, `node_id` und `paynym`.
+     * Die vier Spalten laufen aus; sie hier stehen zu lassen haette nach dem Drop einen
+     * Schreibversuch auf eine nicht mehr vorhandene Spalte bedeutet. Sie fielen bewusst
+     * SCHON in diesem Commit — eine Zuordnung, die ein auslaufendes Feld nicht mehr
+     * kopiert, ist auch vor dem Drop unschaedlich, umgekehrt waere es ein Fehler.
+     *
      * @var list<string>
      */
     private const IDENTITY_FIELDS = [
-        'public_key', 'nostr', 'lightning_address', 'lnurl', 'node_id', 'paynym',
+        'public_key', 'nostr',
     ];
 
-    /** Encrypted-at-rest fields that must not land in the plaintext audit snapshot. */
+    /**
+     * Encrypted-at-rest fields that must not land in the plaintext audit snapshot.
+     *
+     * Diese Liste behaelt die auslaufenden Lightning-Felder ABSICHTLICH, bis die Spalten
+     * wirklich fort sind — anders als IDENTITY_FIELDS oben. Der Schwarzungs-Filter laeuft
+     * ueber `attributesToArray()` des Verlierers: solange die Spalte existiert, wuerde ein
+     * hier gestrichener Name die entschluesselte Lightning-Adresse im Klartext ins
+     * Audit-JSON schreiben. Ein Name, dessen Spalte es nicht mehr gibt, kostet dagegen
+     * nichts. Also erst mit der Migration entfernen, nie davor.
+     */
     private const REDACTED_SNAPSHOT_FIELDS = [
         'public_key', 'lightning_address', 'lnurl', 'node_id', 'paynym', 'email', 'lnbits',
     ];
