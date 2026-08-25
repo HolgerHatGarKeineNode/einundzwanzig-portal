@@ -209,6 +209,7 @@
     "Du signierst eine einmalige Anfrage mit deinem Nostr-Schlüssel (Browser-Extension oder Amber).": "Egy egyszeri kérést írsz alá a Nostr-kulcsoddal (böngészőkiterjesztéssel vagy Amberrel).",
     "Du wirst zum EINUNDZWANZIG-Portal weitergeleitet. Melde dich an (zum Beispiel per Lightning) und klicke auf »Authorize«, um Claude den Zugriff zu erlauben.": "Átirányítunk az EINUNDZWANZIG portálra. Jelentkezz be (például Lightninggel), és kattints az »Authorize« gombra, hogy hozzáférést adj a Claude-nak.",
     "Durchsuche alle Städte mit aktiven Bitcoin Meetups und finde Events in deiner Nähe.": "Böngészd az összes várost aktív Bitcoin meetupokkal és találj eseményeket a közeledben.",
+    "EINUNDZWANZIG": "HUSZONEGY",
     "EINUNDZWANZIG Community": "Huszonegy Közösség",
     "EINUNDZWANZIG Portal": "Huszonegy Portál",
     "EINUNDZWANZIG mit Claude verbinden": "Kösd össze az EINUNDZWANZIG-ot a Claude-dal",

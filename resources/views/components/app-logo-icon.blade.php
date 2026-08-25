@@ -1,5 +1,15 @@
+{{--
+    Die dunkle Flaeche gehoert an DIESEN Zweig, nicht an die Huelle in `app-logo`.
+    Das SVG ist hart `fill="#FFF"` — es braucht im Hellmodus eine Unterlage, sonst
+    steht Weiss auf Weiss. Die Bild-Fassungen brauchen sie nicht: `twenty-one.png`
+    bringt seine eigene abgerundete Kachel mit, und eine 6,4-px-Rundung in einer
+    2-px-Huelle liess vier schieferblaue Eckkeile stehen — das liest sich wie ein
+    Freistellfehler, nicht wie Gestaltung. Die Laender-JPGs sind deckend und haben
+    die Huellenflaeche ohnehin nie sichtbar gelassen.
+--}}
 @if(session('lang_country', 'de-DE') === 'de-DE')
-    <svg viewBox="0 0 1287 1287" version="1.1" xmlns="http://www.w3.org/2000/svg"
+    <svg class="rounded-xs bg-gray-800 dark:bg-transparent"
+         viewBox="0 0 1287 1287" version="1.1" xmlns="http://www.w3.org/2000/svg"
          xmlns:xlink="http://www.w3.org/1999/xlink">
         <g>
             <g transform="translate(664.886076, 1117.481013)">

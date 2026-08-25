@@ -105,11 +105,9 @@ class extends Component {
                 $this->url = url('/api/lnurl-auth-callback?tag=login&k1='.$this->k1.'&action=login');
             }
             $this->lnurl = lnurl\encodeUrl($this->url);
-            $image = 'public/img/domains/'.session('lang_country', 'de-DE').'.jpg';
-            $checkIfFileExists = base_path($image);
-            if (!file_exists($checkIfFileExists)) {
-                $image = 'public/img/domains/de-DE.jpg';
-            }
+            // Dieselbe Auswahl wie Kopfbereich und Social-Media-Vorschau: eine Fassung
+            // ohne eigenes Motiv bekommt TWENTY ONE, nicht mehr das deutsche Bild.
+            $image = 'public/'.domain_image_path();
             $this->qrCode = base64_encode(QrCode::format('png')
                 ->size(300)
                 ->merge('/'.$image, .3)

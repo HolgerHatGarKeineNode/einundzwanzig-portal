@@ -129,34 +129,62 @@ if (! function_exists('route_with_country')) {
     }
 }
 
-if (! function_exists('get_domain_attributes')) {
-    function get_domain_attributes(): array
+if (! function_exists('domain_image_path')) {
+    /**
+     * Das Motiv einer Sprachfassung, als Pfad RELATIV zu `public/`.
+     *
+     * Drei Stufen, in dieser Reihenfolge:
+     *   1. Spanischsprachiges Lateinamerika teilt sich `lat.png` und die veintiuno-Marke.
+     *      Der Fall steht vorn, weil die Datei kein `.jpg` ist und die Existenzpruefung
+     *      der zweiten Stufe ihn sonst auf den Default zurueckwerfen wuerde. Nur Laender,
+     *      die auch in `config/lang-country.php` unter 'allowed' stehen — alles andere
+     *      kann nie in `lang_country` landen und waere toter Code. Kommt eines dazu,
+     *      gehoert es in beide Listen.
+     *   2. Ein eigenes Motiv `<lang-COUNTRY>.jpg`, wo es eines gibt: de-DE, hu-HU,
+     *      nl-NL, pl-PL.
+     *   3. Sonst das TWENTY-ONE-Motiv.
+     *
+     * Stufe 3 fiel bis 2026-08-25 hart auf `de-DE.jpg`. Gedacht war das als „im Zweifel
+     * die Hauptdomain", gewirkt hat es als „im Zweifel DEUTSCH": die englische,
+     * franzoesische, italienische und tschechische Fassung bekamen samt und sonders das
+     * deutsche Motiv — sichtbar im Kopfbereich, in der Social-Media-Vorschau und als Logo
+     * mitten im Login-QR-Code. Mit `portal.bitcoindiana.org` (en-US) hat das zum ersten
+     * Mal eine eigene Domain getroffen. TWENTY ONE ist die sprachneutrale Marke des
+     * Netzwerks und damit der richtige Default; die vier Laender mit eigenem Motiv
+     * behalten es unveraendert.
+     *
+     * Die Auswahl lag dreimal kopiert im Code (hier, `auth/login`, `auth/mobile-login`)
+     * und war an den drei Stellen verschieden formuliert. Sie steht deshalb jetzt hier:
+     * zwei Kopien derselben Liste laufen auseinander, sobald ein Motiv dazukommt, und
+     * der Fehler zeigt sich dann nur an einer der Stellen.
+     */
+    function domain_image_path(?string $langCountry = null): string
     {
-        $langCountry = session('lang_country', 'de-DE');
+        $langCountry ??= session('lang_country', 'de-DE');
 
-        /*
-         * Spanischsprachiges Lateinamerika teilt sich ein Motiv und die
-         * veintiuno-Marke. Nur Länder, die auch in config/lang-country.php
-         * unter 'allowed' stehen — alles andere kann nie in lang_country
-         * landen und wäre toter Code. Kommt ein Land dazu, gehört es in
-         * beide Listen.
-         */
         $latinAmerican = [
             'es-CL', // Chile
             'es-CO', // Kolumbien
         ];
 
         if (in_array($langCountry, $latinAmerican, true)) {
-            // Vor dem Bild-Fallback: lat.png ist kein .jpg, die Prüfung unten
-            // würde die Erkennung sonst auf de-DE zurückwerfen.
-            $image = asset('img/domains/lat.png');
-        } else {
-            if (! file_exists(public_path('img/domains/'.$langCountry.'.jpg'))) {
-                $langCountry = 'de-DE';
-            }
-
-            $image = asset('img/domains/'.$langCountry.'.jpg');
+            return 'img/domains/lat.png';
         }
+
+        if (file_exists(public_path('img/domains/'.$langCountry.'.jpg'))) {
+            return 'img/domains/'.$langCountry.'.jpg';
+        }
+
+        return 'img/domains/twenty-one.png';
+    }
+}
+
+if (! function_exists('get_domain_attributes')) {
+    function get_domain_attributes(): array
+    {
+        $langCountry = session('lang_country', 'de-DE');
+
+        $image = asset(domain_image_path($langCountry));
 
         $countryAuthorMapping = [
             'de-DE' => 'einundzwanzig',

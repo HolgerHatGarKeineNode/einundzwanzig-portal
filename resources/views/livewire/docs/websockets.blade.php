@@ -629,11 +629,11 @@ class extends Component {
 
     {{-- Kopfleiste --}}
     <header class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-6">
-        <a href="{{ route('welcome') }}" wire:navigate class="flex items-center gap-3" aria-label="EINUNDZWANZIG">
+        <a href="{{ route('welcome') }}" wire:navigate class="flex items-center gap-3" aria-label="{{ __('EINUNDZWANZIG') }}">
             <div class="size-10">
                 <x-app-logo-icon/>
             </div>
-            <span class="hidden text-sm font-semibold tracking-tight sm:block">EINUNDZWANZIG</span>
+            <span class="hidden text-sm font-semibold tracking-tight sm:block">{{ __('EINUNDZWANZIG') }}</span>
         </a>
 
         <flux:button :href="route('scramble.docs.ui')" variant="ghost" icon="book-open-text" size="sm">
