@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Akuechler\Geoly;
 use App\Http\Controllers\Api\BtcMapCommunityController;
+use App\Models\Concerns\DescribesItselfForDisambiguation;
 use App\Models\Concerns\HasOsmReference;
 use App\Models\Concerns\SetsCreatedBy;
 use App\Observers\ApiChangeObserver;
@@ -21,7 +22,7 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 #[ObservedBy([ApiChangeObserver::class])]
-class City extends Model
+class City extends Model implements DescribesItselfForDisambiguation
 {
     use Geoly;
     use HasFactory;
@@ -342,22 +343,30 @@ class City extends Model
     {
         return $candidates
             ->take(10)
-            ->map(function (self $city): string {
-                $teile = ['#'.$city->getKey()];
-
-                if ($city->region_id !== null && $city->relationLoaded('region') === false) {
-                    $city->loadMissing('region');
-                }
-
-                if ($city->region?->code) {
-                    $teile[] = mb_strtoupper($city->region->code);
-                }
-
-                $teile[] = number_format((float) $city->latitude, 4).'/'.number_format((float) $city->longitude, 4);
-
-                return implode(' ', $teile);
-            })
+            ->map(fn (self $city): string => $city->disambiguationLabel())
             ->join('; ');
+    }
+
+    /**
+     * Wie diese Stadt sich von einer gleichnamigen unterscheidet: id, Region, Koordinaten.
+     *
+     * Die Region steht nur da, wenn es eine gibt. Ein leeres Feld waere in einem Land
+     * ohne Regionen — und das sind die meisten — nur Rauschen; die Koordinaten
+     * unterscheiden ohnehin immer, weil `latitude`/`longitude` NOT NULL sind.
+     */
+    public function disambiguationLabel(): string
+    {
+        $teile = ['#'.$this->getKey()];
+
+        $this->loadMissing('region');
+
+        if ($this->region?->code) {
+            $teile[] = mb_strtoupper($this->region->code);
+        }
+
+        $teile[] = number_format((float) $this->latitude, 4).'/'.number_format((float) $this->longitude, 4);
+
+        return implode(' ', $teile);
     }
 
     /**

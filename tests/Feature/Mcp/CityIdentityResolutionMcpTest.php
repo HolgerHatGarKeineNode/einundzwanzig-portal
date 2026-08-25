@@ -134,3 +134,28 @@ it('still blocks the same update-city rename when confirm_duplicate is missing',
 
     expect($mine->fresh()->name)->toBe('Ansbach');
 });
+
+/*
+ * Plan-Schritt P1.7, im ersten Gate als verfehlt beanstandet.
+ *
+ * `resolveGlobalByName()` meldete bei mehreren Treffern „Mehrere Städte passen zu X"
+ * und listete die NAMEN — bei acht Gemeinden namens Neuenkirchen also achtmal dasselbe
+ * Wort. Die Aufforderung „bitte präziser angeben" war damit nicht befolgbar: der
+ * Empfänger wusste nicht, wodurch sich die Kandidaten unterscheiden.
+ *
+ * Seither liefern Models, die `DescribesItselfForDisambiguation` erfüllen, ihre eigene
+ * Unterscheidung — bei einer Stadt id, Region (nur wo vorhanden) und Koordinaten.
+ */
+it('names the candidates distinguishably when a city name is ambiguous over MCP', function () {
+    $country = Country::factory()->create();
+    $staedte = neuenkirchenCities($country);
+    $user = User::factory()->create();
+
+    $erste = $staedte->sortBy('id')->first();
+
+    EinundzwanzigServer::actingAs($user)
+        ->tool(UpdateCityTool::class, ['city' => 'Neuenkirchen', 'population' => 1234])
+        ->assertHasErrors()
+        ->assertSee('#'.$erste->id)
+        ->assertSee(number_format((float) $erste->latitude, 4));
+});

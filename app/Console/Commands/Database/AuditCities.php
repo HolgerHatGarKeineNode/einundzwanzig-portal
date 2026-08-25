@@ -60,36 +60,49 @@ class AuditCities extends Command
     }
 
     /**
-     * Derselbe Ort, zweimal eingetippt — erkennbar daran, dass die beiden Namen sich
-     * nur in unsichtbaren Zeichen unterscheiden.
+     * Derselbe Ort, zweimal eingetippt — und der Fall, in dem das nicht entscheidbar ist.
      *
-     * `COUNT(DISTINCT name) > 1` ist auch hier die entscheidende Bedingung, aus
-     * demselben Grund wie in der Migration von 2026-08-25: Ohne sie meldet dieses
-     * Kommando die acht Gemeinden namens Neuenkirchen in Niedersachsen als Befund —
-     * und waere damit nach dem Import aus Issue #33 dauerhaft rot. Ein Pruefkommando,
-     * das im Normalbetrieb immer anschlaegt, wird nach der dritten Woche ignoriert und
-     * ist ab da wertlos.
+     * Zeilenweise, nicht gruppenweise, aus demselben Grund wie in der Migration von
+     * 2026-08-25: Eine Gruppierung nach `LOWER(TRIM(name))` wirft acht echte Gemeinden
+     * namens `Neuenkirchen` und eine einzelne `'Neuenkirchen '` in denselben Topf. Der
+     * `reviewer` hat reproduziert, dass die Migration daraufhin neun Zeilen zu einer
+     * machte. Dieses Kommando haette denselben Fall als eine Dublette gemeldet und damit
+     * zu einem Merge eingeladen, der sieben Orte kostet.
      *
-     * Gleichnamige Orte sind kein Fehler. Sie sind der Grund, warum es diesen Plan gibt.
+     * Zwei Befunde statt einem:
+     *
+     * - **`namensdubletten`** — eine verschmutzte Zeile hat **genau einen** sauberen
+     *   Zwilling. Das ist derselbe Ort, zweimal eingetippt; die Migration loest ihn auf.
+     * - **`mehrdeutige_dublette`** — eine verschmutzte Zeile hat **mehrere** Zwillinge.
+     *   Welcher gemeint war, weiss niemand. Die Migration laesst den Fall bewusst
+     *   stehen, und dieser Befund ist die Stelle, an der ein Mensch davon erfaehrt.
+     *
+     * Gleichnamige Orte ohne Whitespace-Problem sind **kein** Befund. Sie sind der
+     * Grund, warum es diesen Plan gibt — und ein Kommando, das im Normalbetrieb immer
+     * anschlaegt, wird nach der dritten Woche ignoriert.
      */
     private function duplicateNames(): void
     {
         DB::table('cities')
-            ->selectRaw('country_id, LOWER(TRIM(name)) as normalised, COUNT(*) as anzahl')
-            ->groupByRaw('country_id, LOWER(TRIM(name))')
-            ->havingRaw('COUNT(*) > 1 AND COUNT(DISTINCT name) > 1')
-            ->get()
-            ->each(function (object $gruppe): void {
-                $ids = DB::table('cities')
-                    ->where('country_id', $gruppe->country_id)
-                    ->whereRaw('LOWER(TRIM(name)) = ?', [$gruppe->normalised])
+            ->whereRaw('name <> TRIM(name)')
+            ->orderBy('id')
+            ->get(['id', 'name', 'country_id'])
+            ->each(function (object $zeile): void {
+                $zwillinge = DB::table('cities')
+                    ->where('country_id', $zeile->country_id)
+                    ->where('name', trim($zeile->name))
+                    ->where('id', '<>', $zeile->id)
                     ->orderBy('id')
                     ->pluck('id');
 
-                $this->add('namensdubletten', [
-                    'name' => $gruppe->normalised,
-                    'country_id' => $gruppe->country_id,
-                    'ids' => $ids->all(),
+                if ($zwillinge->isEmpty()) {
+                    return;
+                }
+
+                $this->add($zwillinge->count() === 1 ? 'namensdubletten' : 'mehrdeutige_dublette', [
+                    'id' => $zeile->id,
+                    'name' => $zeile->name,
+                    'zwillinge' => $zwillinge->all(),
                 ]);
             });
     }

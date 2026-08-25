@@ -63,59 +63,76 @@ return new class extends Migration
     }
 
     /**
-     * Namen, die ERST DURCH DEN TRIM mit einem anderen Namen im selben Land kollidieren.
+     * Jede verschmutzte Zeile einzeln ihrem sauberen Zwilling zuordnen — oder gar nicht.
      *
-     * Zuerst zusammenlegen, dann trimmen — die andere Reihenfolge scheitert an der
-     * Kollision, die sie gerade selbst erzeugt.
+     * ## Warum zeilenweise und nicht gruppenweise
      *
-     * ## `COUNT(DISTINCT name) > 1` ist die ganze Sicherung
+     * Die erste Fassung gruppierte nach `(country_id, LOWER(TRIM(name)))` und legte die
+     * Gruppe zusammen, sobald darin verschiedene rohe Namen vorkamen. Der `reviewer`
+     * hat den Fall reproduziert, den das uebersieht: **acht echte Gemeinden namens
+     * `Neuenkirchen` plus eine einzige Zeile `'Neuenkirchen '`** bilden eine Gruppe mit
+     * zwei verschiedenen rohen Namen — und die ganze Gruppe wurde zusammengelegt. Neun
+     * Zeilen wurden zu einer, acht davon echte Orte. Gemessen: `vorher => 9`,
+     * `nachher => 1`.
      *
-     * Ohne diese Bedingung legt die Gruppierung auch zusammen, was **schon vorher**
-     * buchstabengleich war — und das sind die acht Gemeinden namens `Neuenkirchen` in
-     * Niedersachsen, sechs `Georgetown` in Indiana, vier `Salem`. Also genau der
-     * Datenbestand, dessen Existenz der Anlass dieser ganzen Aenderung war. Aus acht
-     * Orten waere einer geworden, mit sieben stillen Loeschungen.
+     * Der Docblock behauptete damals, im schlimmsten Fall wuerden „zwei Orte"
+     * zusammengelegt. Tatsaechlich war es die gesamte Gruppe. Das ist derselbe
+     * Fehlertyp wie beim ersten Fund: der Kommentar beschrieb die Absicht, nicht den
+     * Code.
      *
-     * Der Test dazu (`NormaliseCityNamesAndMergeDuplicatesTest`, P2-d) hat den Fehler
-     * gefunden, bevor die Migration je gegen Produktion lief. Er stand nicht in der
-     * urspruenglichen Fassung, weil der Docblock behauptete, was der Code nicht tat.
+     * ## Was jetzt passiert
      *
-     * **Was die Bedingung leistet:** Sind die rohen Namen innerhalb einer Gruppe
-     * verschieden (`'Offenburg '` gegen `'Offenburg'`), entsteht die Kollision durch
-     * die Normalisierung — dann ist es derselbe Ort, zweimal eingetippt. Sind sie
-     * identisch, waren es immer schon zwei Orte, und daran aendert kein Trim etwas.
+     * Fuer jede Zeile mit aeusserem Leerzeichen wird gefragt: gibt es im selben Land
+     * **genau eine** Zeile, die exakt so heisst wie ihr getrimmter Name?
      *
-     * **Was sie nicht leistet:** Zwei WIRKLICH verschiedene Orte gleichen Namens, von
-     * denen einer ein Leerzeichen traegt, wuerden zusammengelegt. Das ist theoretisch
-     * moeglich und in Produktion nicht vorhanden — gemessen am 2026-08-24 ist
-     * `Offenburg` die einzige Gruppe ueberhaupt. Der umgekehrte Fehler waere teurer:
-     * lieber eine Dublette stehen lassen als einen Ort loeschen.
+     * - **Genau eine** → derselbe Ort, zweimal eingetippt. Zusammenlegen.
+     * - **Keine** → nichts zusammenzulegen, nur trimmen (der haeufige Fall: 11 der 12).
+     * - **Mehrere** → mehrdeutig. **Nicht anfassen.** Welcher der acht Neuenkirchen
+     *   gemeint war, weiss niemand — und raten heisst hier, sieben Orte zu loeschen.
+     *
+     * Der dritte Zweig ist der eigentliche Fix. Er laesst bewusst eine Dublette stehen,
+     * statt eine Entscheidung zu erfinden: `cities:audit` meldet den Fall danach als
+     * `mehrdeutige_dublette`, und ein Mensch loest ihn auf.
      */
     private function mergeDuplicatesAfterTrim(): void
     {
-        $gruppen = DB::table('cities')
-            ->selectRaw('country_id, LOWER(TRIM(name)) as normalisiert, COUNT(*) as anzahl')
-            ->groupByRaw('country_id, LOWER(TRIM(name))')
-            ->havingRaw('COUNT(*) > 1 AND COUNT(DISTINCT name) > 1')
-            ->get();
+        $verschmutzte = DB::table('cities')
+            ->whereRaw('name <> TRIM(name)')
+            ->orderBy('id')
+            ->get(['id', 'name', 'country_id']);
 
-        foreach ($gruppen as $gruppe) {
-            $ids = DB::table('cities')
-                ->where('country_id', $gruppe->country_id)
-                ->whereRaw('LOWER(TRIM(name)) = ?', [$gruppe->normalisiert])
+        foreach ($verschmutzte as $zeile) {
+            $zwillinge = DB::table('cities')
+                ->where('country_id', $zeile->country_id)
+                ->where('name', trim($zeile->name))
+                ->where('id', '<>', $zeile->id)
                 ->orderBy('id')
                 ->pluck('id');
 
-            $behalten = $ids->first();
-
-            foreach ($ids->skip(1) as $aufzuloesen) {
-                foreach (self::REFERENCING_TABLES as $tabelle) {
-                    DB::table($tabelle)->where('city_id', $aufzuloesen)->update(['city_id' => $behalten]);
-                }
-
-                DB::table('cities')->where('id', $aufzuloesen)->delete();
+            if ($zwillinge->count() !== 1) {
+                continue; // keiner: nichts zu tun. mehrere: mehrdeutig, Handarbeit.
             }
+
+            $this->mergeInto(
+                behalten: min($zeile->id, $zwillinge->first()),
+                aufzuloesen: max($zeile->id, $zwillinge->first()),
+            );
         }
+    }
+
+    /**
+     * Haengt alle Verweise um und loescht die aufgeloeste Zeile.
+     *
+     * Immer per UPDATE und immer VOR dem Loeschen: `meetups.city_id` ist NOT NULL mit
+     * ON DELETE CASCADE, ein Loeschen in falscher Reihenfolge reisst die Meetups mit.
+     */
+    private function mergeInto(int $behalten, int $aufzuloesen): void
+    {
+        foreach (self::REFERENCING_TABLES as $tabelle) {
+            DB::table($tabelle)->where('city_id', $aufzuloesen)->update(['city_id' => $behalten]);
+        }
+
+        DB::table('cities')->where('id', $aufzuloesen)->delete();
     }
 
     /**

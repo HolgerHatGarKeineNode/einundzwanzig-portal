@@ -36,8 +36,13 @@ it('reports namensdubletten for a trim collision in the same country', function 
     expect($exitCode)->toBe(1)
         ->and($findings['namensdubletten'] ?? null)->not->toBeNull();
 
-    $ids = collect($findings['namensdubletten'])->pluck('ids')->flatten()->all();
-    expect($ids)->toContain($dirty->id)->toContain($clean->id);
+    // Die Struktur trägt seit dem Gate-Fix die verschmutzte Zeile und ihre Zwillinge
+    // getrennt, statt beide in eine ids-Liste zu werfen: nur so ist unterscheidbar,
+    // WELCHE Zeile das Problem ist und welche der saubere Zwilling.
+    $befund = collect($findings['namensdubletten'])->firstWhere('id', $dirty->id);
+    expect($befund)->not->toBeNull()
+        ->and($befund['name'])->toBe('Offenburg ')
+        ->and($befund['zwillinge'])->toContain($clean->id);
 });
 
 // P6-a — namen_mit_leerzeichen: eine einzelne Stadt mit aeusserem Leerzeichen, ohne
@@ -208,4 +213,32 @@ it('does not report eight genuine same-name places — only whitespace collision
     City::factory()->create(['name' => 'Offenburg ', 'country_id' => $country->id, 'slug' => null]);
 
     $this->artisan('cities:audit')->assertFailed();
+});
+
+/*
+ * Der zweite Befundtyp, entstanden aus demselben Gate-Mangel.
+ *
+ * Eine verschmutzte Zeile mit MEHREREN gleichnamigen Zwillingen lässt die Migration
+ * bewusst stehen — welcher gemeint war, weiß niemand. Ohne diesen Befund verschwände
+ * der Fall lautlos: die Zeile wird getrimmt, steht dann als neunte `Neuenkirchen` da,
+ * und niemand erfährt, dass sie eine Dublette sein könnte.
+ */
+it('separates an ambiguous whitespace duplicate from an unambiguous one', function () {
+    $country = Country::factory()->create();
+    neuenkirchenCities($country);
+    City::factory()->create(['name' => 'Neuenkirchen ', 'country_id' => $country->id, 'slug' => null]);
+
+    City::factory()->create(['name' => 'Offenburg', 'country_id' => $country->id, 'slug' => null]);
+    City::factory()->create(['name' => 'Offenburg ', 'country_id' => $country->id, 'slug' => null]);
+
+    // Artisan::call, nicht $this->artisan: nur der erste schreibt in Artisan::output().
+    $exitCode = Artisan::call('cities:audit', ['--json' => true]);
+    $befunde = json_decode(Artisan::output(), true);
+
+    expect($exitCode)->toBe(1);
+
+    expect($befunde['namensdubletten'] ?? [])->toHaveCount(1)
+        ->and($befunde['mehrdeutige_dublette'] ?? [])->toHaveCount(1)
+        ->and($befunde['namensdubletten'][0]['name'])->toBe('Offenburg ')
+        ->and($befunde['mehrdeutige_dublette'][0]['zwillinge'])->toHaveCount(8);
 });
