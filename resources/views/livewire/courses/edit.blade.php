@@ -36,8 +36,24 @@ class extends Component {
     #[Locked]
     public ?string $updated_at = null;
 
+    /**
+     * Bearbeiten darf den Kurs sein Ersteller — oder ein Super-Admin
+     * (`CoursePolicy::update()` ueber `ChecksCreatorOwnership`).
+     *
+     * Hier stand bisher NICHTS. Die Route liegt hinter `auth`, sonst nichts: jeder
+     * Angemeldete konnte einen fremden Kurs per URL oeffnen, umbenennen, den Referenten
+     * austauschen und das Logo ersetzen. Deshalb auch in `updateCourse()` — Livewire ruft
+     * `mount()` nur beim ersten Aufbau, jede spaetere Aktion kommt an ihr vorbei.
+     */
+    protected function authorizeAccess(): void
+    {
+        abort_unless(auth()->user()?->can('update', $this->course), 403);
+    }
+
     public function mount(): void
     {
+        $this->authorizeAccess();
+
         $this->course->load('media');
 
         // Basic Information
@@ -53,6 +69,8 @@ class extends Component {
 
     public function updateCourse(): void
     {
+        $this->authorizeAccess();
+
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'lecturer_id' => ['required', 'exists:lecturers,id'],

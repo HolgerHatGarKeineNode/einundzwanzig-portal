@@ -67,7 +67,13 @@ it('saves tags on a course event', function () {
 it('loads existing tags when editing a course event', function () {
     $course = Course::factory()->create(['created_by' => $this->user->id]);
     $city = cityInCountry('de');
-    $event = CourseEvent::factory()->create(['course_id' => $course->id, 'city_id' => $city->id]);
+    // Der Termin gehört dem Nutzer, nicht nur der Kurs: einen bestehenden Termin ändert
+    // sein Ersteller (CourseEventPolicy::update), siehe authorizeManage() im Formular.
+    $event = CourseEvent::factory()->create([
+        'course_id' => $course->id,
+        'city_id' => $city->id,
+        'created_by' => $this->user->id,
+    ]);
     $tag = courseEventTag('Vortrag');
     $event->attachTag($tag);
 

@@ -47,8 +47,8 @@ it('mounts courses.create when authenticated', function () {
     Livewire::test('courses.create')->assertStatus(200);
 });
 
-it('mounts courses.edit when authenticated', function () {
-    actingAsUser();
+it('mounts courses.edit for the creator of the course', function () {
+    ownsTheCourse();
     Livewire::test('courses.edit', ['course' => $this->course])->assertStatus(200);
 });
 
@@ -66,8 +66,14 @@ it('refuses to manage events of a course somebody else owns', function () {
         ->assertStatus(403);
 });
 
+/**
+ * Einen bestehenden Termin ändert sein Ersteller — nicht der Kurs-Eigentümer.
+ * `ownsTheCourse()` allein reicht dafür nicht mehr, siehe authorizeManage().
+ */
 it('mounts courses.create-edit-events for existing event', function () {
     ownsTheCourse();
+    $this->event->forceFill(['created_by' => auth()->id()])->save();
+
     Livewire::test('courses.create-edit-events', [
         'course' => $this->course,
         'event' => $this->event,

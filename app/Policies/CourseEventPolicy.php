@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Course;
 use App\Models\CourseEvent;
 use App\Models\User;
 use App\Policies\Concerns\ChecksCreatorOwnership;
@@ -36,6 +37,26 @@ class CourseEventPolicy
     public function create(User $user): bool
     {
         return true;
+    }
+
+    /**
+     * Einen Termin an DIESEN Kurs haengen darf, wem der Kurs gehoert — oder ein
+     * Super-Admin.
+     *
+     * Warum es diese Ability ueberhaupt gibt: `create()` muss schrankenlos bleiben (die
+     * REST-API ruft sie ohne Kurs auf), aber das Terminformular kennt seinen Kurs. Ohne
+     * eine kurs-bezogene Frage waere die Pruefung im Formular nach dem Abbau von
+     * `is_lecturer` auf `true` zusammengefallen — und damit genau das Loch wieder offen,
+     * das `courses/create-edit-events.blade.php` erst kuerzlich geschlossen hat: die
+     * Route liegt nur hinter `auth`, jeder Angemeldete haette wieder Termine in fremde
+     * Kurse legen koennen.
+     *
+     * Die Zugehoerigkeit wird ueber `ChecksCreatorOwnership` beantwortet, nicht ueber
+     * `CoursePolicy` — diese Policy bleibt eigenstaendig.
+     */
+    public function createForCourse(User $user, Course $course): bool
+    {
+        return $this->owns($user, $course);
     }
 
     public function update(User $user, CourseEvent $courseEvent): bool

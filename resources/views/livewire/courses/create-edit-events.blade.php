@@ -138,18 +138,30 @@ class extends Component {
     }
 
     /**
-     * Termine darf nur verwalten, wer den zugehörigen Kurs bearbeiten darf — dieselbe
-     * update-Ability wie die Stammdaten, spiegelt meetups.create-edit-events.
+     * Die Termin-Berechtigung entscheidet, nicht die des Kurses — und sie ist eine andere,
+     * je nachdem ob hier ein Termin entsteht oder einer geändert wird.
      *
-     * Fehlte bisher vollständig: die Route lag nur hinter `auth`, und mount/save/delete
-     * prüften nichts. Jeder eingeloggte Nutzer konnte damit Termine fremder Kurse anlegen,
-     * ändern und löschen.
+     * Bisher fragte beides `update` auf dem KURS ab. Das war zu grob in beide Richtungen:
+     * es sperrte den Ersteller eines Termins aus, sobald ihm der Kurs nicht gehörte, und
+     * es band das Anlegen an eine Ability, die mit dem Termin nichts zu tun hat.
+     *
+     * - Neuer Termin → `createForCourse` auf CourseEventPolicy: wem der Kurs gehört
+     *   (oder Super-Admin). Bewusst NICHT die schrankenlose `create`-Ability, die die
+     *   REST-API ohne Kurs-Kontext benutzt — die Route liegt nur hinter `auth`, und mit
+     *   `create` allein stünde das kürzlich geschlossene Loch wieder offen.
+     * - Bestehender Termin → `update` auf dem Termin: sein Ersteller oder ein
+     *   Super-Admin, dieselbe Regel wie in REST-API und MCP-Werkzeug.
      */
     protected function authorizeManage(): void
     {
-        if (auth()->guest() || auth()->user()->cannot('update', $this->course)) {
-            abort(403);
-        }
+        $user = auth()->user();
+
+        abort_unless(
+            $this->event !== null
+                ? (bool) $user?->can('update', $this->event)
+                : (bool) $user?->can('createForCourse', [CourseEvent::class, $this->course]),
+            403
+        );
     }
 
     public function mount(): void
