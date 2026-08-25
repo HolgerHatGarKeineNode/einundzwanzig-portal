@@ -80,19 +80,52 @@ it('creates via OSM reference over the API even when the name is ambiguous in th
 
 /*
 |--------------------------------------------------------------------------
-| N11 — confirm_duplicate auf PATCH: NICHT abgedeckt, gemeldet statt getestet.
+| N11 — confirm_duplicate auf PATCH: seit 2026-08-25 gefixt, jetzt getestet.
 |--------------------------------------------------------------------------
 |
-| CityController::update() reicht $request->validated() unveraendert an
-| $city->update() durch — anders als City::resolveOrCreate(), das
-| Arr::except($attributes, [City::CONFIRM_DUPLICATE]) VOR create() aufruft
-| (City.php:236/250/278). 'confirm_duplicate' ist aber keine Spalte auf
-| `cities`. Ergebnis: jedes PATCH mit confirm_duplicate=true wirft eine
-| QueryException ("no such column: confirm_duplicate"), die als 500
-| rausgeht — der Rename-Workaround, den N11 hier eigentlich pruefen sollte,
-| crasht. Derselbe Fehler steckt in UpdateCityTool::handle() (MCP), siehe
-| tests/Feature/Mcp/CityIdentityResolutionMcpTest.php. Kein Test dafuer HIER,
-| weil er dauerhaft rot waere und Produktivcode nicht angefasst wird (Auftrag)
-| — belegt per vendor/bin/pest --agent, gemeldet im Abschlussbericht.
+| Bis hierher warf CityController::update() eine QueryException ("no such
+| column: confirm_duplicate"), weil es $request->validated() unveraendert an
+| $city->update() durchreichte — anders als City::resolveOrCreate(), das
+| Arr::except($attributes, [City::CONFIRM_DUPLICATE]) VOR create() aufruft.
+| Der Fix steht jetzt in CityController::update():
+| `$city->update(Arr::except($request->validated(), [City::CONFIRM_DUPLICATE]));`
+| — derselbe Fix in UpdateCityTool::handle() (MCP), siehe
+| tests/Feature/Mcp/CityIdentityResolutionMcpTest.php.
 |--------------------------------------------------------------------------
 */
+
+// N11 — confirm_duplicate ueber PATCH fuehrt zu Erfolg (200 + neuer Name), nicht zu
+// einer 500 durch eine unbekannte Spalte.
+it('renames via PATCH with confirm_duplicate instead of crashing', function () {
+    Sanctum::actingAs($user = User::factory()->create());
+    $country = Country::factory()->create();
+    City::factory()->create(['name' => 'Regensburg', 'country_id' => $country->id]);
+    $mine = City::factory()->create(['name' => 'Ansbach', 'country_id' => $country->id, 'created_by' => $user->id]);
+
+    $response = $this->patchJson("/api/cities/{$mine->id}", [
+        'name' => 'Regensburg',
+        'confirm_duplicate' => true,
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('data.name', 'Regensburg');
+
+    expect($mine->fresh()->name)->toBe('Regensburg')
+        ->and(City::query()->where('name', 'Regensburg')->where('country_id', $country->id)->count())->toBe(2);
+});
+
+// Gegenprobe: ohne confirm_duplicate blockiert derselbe Rename weiterhin per 422,
+// nicht per 500 — die Bremse ist unveraendert, nur der Ausweg daran vorbei ist jetzt heil.
+it('still blocks the same PATCH rename with a 422 when confirm_duplicate is missing', function () {
+    Sanctum::actingAs($user = User::factory()->create());
+    $country = Country::factory()->create();
+    City::factory()->create(['name' => 'Regensburg', 'country_id' => $country->id]);
+    $mine = City::factory()->create(['name' => 'Ansbach', 'country_id' => $country->id, 'created_by' => $user->id]);
+
+    $response = $this->patchJson("/api/cities/{$mine->id}", [
+        'name' => 'Regensburg',
+    ]);
+
+    $response->assertStatus(422);
+    expect($mine->fresh()->name)->toBe('Ansbach');
+});
