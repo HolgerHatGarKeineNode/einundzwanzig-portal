@@ -45,9 +45,12 @@ class CourseEventController extends Controller
     /**
      * Create a course event
      *
-     * Allows an authenticated lecturer to create a dated course event programmatically.
+     * Allows any authenticated user to create a dated course event programmatically.
+     *
+     * The former `is_lecturer` restriction is gone — it was never a restriction, because
+     * both sign-up paths set the flag on every new account. Ownership is enforced where
+     * it matters, on update.
      */
-    #[ResponseAttribute(status: 403, description: 'Only lecturers (is_lecturer) may create course events.')]
     public function store(StoreCourseEventRequest $request): JsonResponse
     {
         $courseEvent = CourseEvent::create($request->validated());
