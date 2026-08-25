@@ -2,6 +2,7 @@
 
 use App\Models\Course;
 use App\Models\CourseEvent;
+use App\Models\Lecturer;
 use App\Models\SelfHostedService;
 use App\Models\User;
 use Livewire\Livewire;
@@ -145,4 +146,29 @@ it('allows services.edit on an anonymous service for a super-admin', function ()
     $this->actingAs(superAdminUser());
 
     Livewire::test('services.edit', ['service' => $service])->assertStatus(200);
+});
+
+it('refuses lecturers.edit for someone who did not create the lecturer', function () {
+    $lecturer = Lecturer::factory()->create();
+    actingAsUser();
+
+    Livewire::test('lecturers.edit', ['lecturer' => $lecturer])->assertStatus(403);
+});
+
+it('allows lecturers.edit for the creator', function () {
+    $owner = actingAsUser();
+    $lecturer = Lecturer::factory()->create(['created_by' => $owner->id]);
+
+    Livewire::test('lecturers.edit', ['lecturer' => $lecturer])->assertStatus(200);
+});
+
+/**
+ * Der Super-Admin-Bypass lag seit jeher in ChecksCreatorOwnership — die Inline-Bedingung
+ * im Formular fragte ihn nur nie ab. Genau das misst dieser Test.
+ */
+it('allows lecturers.edit for a super-admin on a foreign lecturer', function () {
+    $lecturer = Lecturer::factory()->create();
+    $this->actingAs(superAdminUser());
+
+    Livewire::test('lecturers.edit', ['lecturer' => $lecturer])->assertStatus(200);
 });
