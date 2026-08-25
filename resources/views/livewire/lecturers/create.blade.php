@@ -31,8 +31,27 @@ class extends Component {
     public ?string $node_id = null;
     public ?string $paynym = null;
 
+    /**
+     * Einen Referenten anlegen darf, wem `LecturerPolicy::create()` es erlaubt.
+     *
+     * Das Formular hatte gar keine Pruefung — es verliess sich allein darauf, dass die
+     * Route hinter `auth` liegt. Die Ability sagt heute dasselbe wie `auth`, aber sie
+     * sagt es dort, wo eine spaetere Aenderung auch wirkt.
+     */
+    protected function authorizeAccess(): void
+    {
+        abort_unless(auth()->user()?->can('create', Lecturer::class), 403);
+    }
+
+    public function mount(): void
+    {
+        $this->authorizeAccess();
+    }
+
     public function createLecturer(): void
     {
+        $this->authorizeAccess();
+
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255', 'unique:lecturers,name'],
             'subtitle' => ['nullable', 'string'],

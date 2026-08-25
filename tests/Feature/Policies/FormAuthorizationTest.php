@@ -172,3 +172,23 @@ it('allows lecturers.edit for a super-admin on a foreign lecturer', function () 
 
     Livewire::test('lecturers.edit', ['lecturer' => $lecturer])->assertStatus(200);
 });
+
+it('refuses lecturers.create for a guest', function () {
+    Livewire::test('lecturers.create')->assertStatus(403);
+});
+
+it('allows lecturers.create for any signed-in user', function () {
+    actingAsUser();
+
+    Livewire::test('lecturers.create')->assertStatus(200);
+});
+
+it('refuses services.create for a guest', function () {
+    Livewire::test('services.create')->assertStatus(403);
+});
+
+it('allows services.create for any signed-in user', function () {
+    actingAsUser();
+
+    Livewire::test('services.create')->assertStatus(200);
+});
