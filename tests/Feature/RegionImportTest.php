@@ -2,6 +2,8 @@
 
 use App\Models\Country;
 use App\Models\Region;
+use App\Support\SupportedCountries;
+use Illuminate\Support\Str;
 
 it('imports the US states and is idempotent', function () {
     $country = Country::factory()->create(['code' => 'us']);
@@ -133,4 +135,79 @@ it('warns about an unknown country instead of failing silently', function () {
         ->assertFailed();
 
     expect(Region::count())->toBe(0);
+});
+
+/*
+ * ------------------------------------------------------------------------------------
+ * P7: der Default ohne `--country`
+ * ------------------------------------------------------------------------------------
+ *
+ * Vorher stand dort `['us']` — ein Platzhalter aus der Entwicklung. Eine Deploy-Zeile
+ * `php artisan regions:import` hat damit 51 US-Regionen angelegt und kein einziges der
+ * Laender, in denen dieses Portal betrieben wird. Der Fehler war unsichtbar, weil das
+ * Kommando erfolgreich meldete.
+ */
+
+it('derives its default countries from the language files, not from a hardcoded list', function () {
+    // Die Ableitung selbst: Schnittmenge aus lang/*.json und lang-country.allowed.
+    $erwartet = collect(config('lang-country.languages'))
+        ->only(collect(glob(lang_path('*.json')))->map(fn ($f) => pathinfo($f, PATHINFO_FILENAME))->all())
+        ->flatMap(fn (array $sprache) => $sprache['countries'])
+        ->intersect(config('lang-country.allowed'))
+        ->map(fn (string $paar) => mb_strtolower(Str::after($paar, '-')))
+        ->unique()->sort()->values()->all();
+
+    expect(SupportedCountries::codes())->toBe($erwartet)
+        // Und die Gegenprobe gegen einen leeren Vergleich: die Liste ist nicht leer und
+        // enthaelt die Faelle, an denen die Regex-Erweiterung haengt (AT einstellig,
+        // GB dreistellig).
+        ->and($erwartet)->toContain('at', 'gb', 'de', 'us')
+        ->and($erwartet)->not->toContain('fr'); // kein lang/fr.json — die Regel, nicht die Ausnahme
+});
+
+it('imports every derived country when called without an argument', function () {
+    $codes = SupportedCountries::codes();
+
+    /*
+     * Bewusst OHNE Factory: `CountryFactory` zieht seine Zeile per `faker->unique()`
+     * aus acht fest hinterlegten Laendern und wirft ab dem neunten Aufruf. Hier sind es
+     * siebzehn — die Factory ist fuer diesen Fall schlicht nicht gebaut, und sie dafuer
+     * umzubauen hiesse, dreissig bestehende Aufrufe anzufassen.
+     */
+    foreach ($codes as $code) {
+        Country::query()->create([
+            'code' => $code,
+            'name' => mb_strtoupper($code),
+            'language_codes' => [],
+        ]);
+    }
+
+    $this->artisan('regions:import')->assertSuccessful();
+
+    foreach ($codes as $code) {
+        expect(Region::whereRelation('country', 'code', $code)->count())
+            ->toBe(csvRegionRows($code), "Regionen fuer '{$code}' stimmen nicht mit der CSV ueberein");
+    }
+
+    // Nicht nur „irgendwas importiert": die Summe ist genau die der CSV-Zeilen.
+    expect(Region::count())->toBe(collect($codes)->sum(csvRegionRows(...)));
+});
+
+it('no longer falls back to us alone', function () {
+    Country::factory()->create(['code' => 'us']);
+    Country::factory()->create(['code' => 'de']);
+
+    $this->artisan('regions:import')->assertSuccessful();
+
+    // Deutschland kommt mit, obwohl niemand danach gefragt hat — das ist der Unterschied.
+    expect(Region::whereRelation('country', 'code', 'de')->count())->toBe(16)
+        ->and(Region::whereRelation('country', 'code', 'us')->count())->toBe(51);
+});
+
+it('names the countries it is about to import', function () {
+    Country::factory()->create(['code' => 'de']);
+
+    $this->artisan('regions:import')
+        ->expectsOutputToContain('aus den Sprachdateien abgeleitet')
+        ->assertSuccessful();
 });

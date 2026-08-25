@@ -190,7 +190,20 @@ class extends Component {
                             >
                                 {{ __('Details/Anmelden') }}
                             </flux:button>
-                            @if($course->created_by === auth()->id())
+                            {{--
+                                Hier stand `$course->created_by === auth()->id()` — die FALSCHE
+                                ENTITAET, nicht bloss eine zu enge Bedingung. Der Knopf fuehrt
+                                auf `courses.events.edit`, bearbeitet also den TERMIN; gefragt
+                                wurde nach dem Kurs.
+
+                                Nach P1 fallen die beiden auseinander: `CourseEventPolicy::update()`
+                                haengt am Ersteller des Termins, und der Kurs-Eigentuemer darf
+                                fremde Termine an seinem Kurs ausdruecklich NICHT mehr aendern.
+                                Der alte Vergleich zeigte ihm den Knopf trotzdem — und dem
+                                Termin-Ersteller, dem die Aktion offensteht, zeigte er keinen.
+                                Beides falsch, in beide Richtungen.
+                            --}}
+                            @can('update', $event)
                                 <flux:button
                                     :href="route_with_country('courses.events.edit', ['course' => $course, 'event' => $event])"
                                     size="xs"
@@ -199,7 +212,7 @@ class extends Component {
                                 >
                                     {{ __('Bearbeiten') }}
                                 </flux:button>
-                            @endif
+                            @endcan
                         </div>
                     </flux:card>
                 @endforeach

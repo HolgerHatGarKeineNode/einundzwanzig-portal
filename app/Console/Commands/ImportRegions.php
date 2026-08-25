@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Country;
 use App\Models\Region;
+use App\Support\SupportedCountries;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -17,12 +18,15 @@ use Illuminate\Support\Str;
  * aus dem Paket nach — das laeuft nur auf einer Entwicklungsmaschine.
  *
  * Gefiltert wird auf ausdruecklich freigeschaltete Laender: Regionen anzulegen, die
- * niemand pflegt, erzeugt nur URLs, hinter denen nie etwas steht.
+ * niemand pflegt, erzeugt nur URLs, hinter denen nie etwas steht. Ohne `--country` sind
+ * das die aus dem Code abgeleiteten Laender ({@see SupportedCountries}) — die Deploy-Zeile
+ * ist damit ein nacktes `php artisan regions:import` und bleibt richtig, wenn eine
+ * Sprachdatei dazukommt.
  */
 class ImportRegions extends Command
 {
     protected $signature = 'regions:import
-        {--country=* : Laendercodes, z. B. --country=us --country=de. Ohne Angabe: nur us}
+        {--country=* : Laendercodes, z. B. --country=us --country=de. Ohne Angabe: alle unterstuetzten Laender}
         {--refresh-source : Die CSV vorher aus vendor/squirephp/regions-en aktualisieren}';
 
     protected $description = 'Importiert ISO-3166-2-Regionen (Verwaltungsebene 1) fuer die angegebenen Laender';
@@ -45,9 +49,30 @@ class ImportRegions extends Command
             return self::FAILURE;
         }
 
+        /*
+         * OHNE `--country` gilt die abgeleitete Liste, nicht mehr `['us']`.
+         *
+         * Der alte Default war ein Platzhalter aus der Entwicklung und stand quer zur
+         * Absicht des Kommandos: ein nacktes `regions:import` legte 51 US-Regionen an und
+         * kein einziges der Laender, in denen dieses Portal tatsaechlich betrieben wird.
+         * Wer die Deploy-Zeile ohne Argumente schrieb, bekam still das Falsche.
+         *
+         * {@see SupportedCountries} rechnet die Liste aus den vorhandenen Sprachdateien
+         * und `config('lang-country.allowed')` — dieselbe Schnittmenge, die auch der
+         * Sprachwaehler zieht. Damit bleibt die Deploy-Zeile `artisan regions:import`
+         * richtig, wenn eine Sprache dazukommt oder wegfaellt.
+         */
         $wanted = array_values(array_unique(
-            array_map(mb_strtolower(...), $this->option('country') ?: ['us'])
+            array_map(mb_strtolower(...), $this->option('country') ?: SupportedCountries::codes())
         ));
+
+        if ($wanted === []) {
+            $this->error('Keine unterstuetzten Laender ableitbar (weder --country noch lang/*.json ∩ lang-country.allowed).');
+
+            return self::FAILURE;
+        }
+
+        $this->line('Laender: '.implode(', ', $wanted).($this->option('country') ? '' : ' (aus den Sprachdateien abgeleitet)'));
 
         /*
          * Case-insensitiv, weil `countries.code` je nach Datenbestand gross- oder

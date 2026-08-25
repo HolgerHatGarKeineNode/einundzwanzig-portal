@@ -3,6 +3,7 @@
 use App\Http\Controllers\DownloadMeetupCalendar;
 use App\Http\Controllers\ImageController;
 use App\Livewire\Helper\FollowTheRabbit;
+use App\Support\RegionRoutes;
 use Illuminate\Support\Facades\Route;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
@@ -126,12 +127,35 @@ Route::middleware([])
         Route::livewire('/service/{service:slug}', 'services.landingpage')->name('services.landingpage');
 
         /*
-         * Region-gefilterte Listen: /us/in/meetups, /de/by/map, …
+         * Region-gefilterte Listen: /us/in/meetups, /de/by/map, /gb/eng/cities, /at/9/map …
          *
-         * Das Segment ist auf zwei Kleinbuchstaben festgenagelt (ISO-3166-2-Suffix). Damit
-         * kann es keine der Routen darüber verschatten — deren zweites Segment ist immer
-         * ein festes Wort mit mehr als zwei Zeichen (meetup/, course/, service/, tags/).
-         * Die Registrierung am Ende der Gruppe ist nur der zweite Gürtel.
+         * ## Warum nicht mehr `[a-z]{2}`
+         *
+         * Das Muster stand auf ZWEI Kleinbuchstaben. ISO 3166-2 gibt das nicht her: der
+         * Suffix ist ein bis drei alphanumerische Zeichen. Gemessen an
+         * `database/data/regions.csv` fuer die unterstuetzten Laender
+         * ({@see \App\Console\Commands\ImportRegions}) sind das:
+         * AT eine Ziffer (`1`…`9`), GB/BE/LV drei Buchstaben (`eng`, `bru`, `011`),
+         * AU und CO gemischt zwei und drei. Auf Produktion waren dadurch u. a. die 13
+         * franzoesischen Regionen (`ara`, `bfc`, …) ueber KEINE URL erreichbar — die
+         * Zeilen standen in der Datenbank und niemand kam an sie heran.
+         *
+         * `{1,3}` statt `{2,3}`: ohne die Eins faellt Oesterreich komplett heraus.
+         * Grossbuchstaben bleiben draussen, weil `ImportRegions` den Code
+         * kleingeschrieben aus der CSV uebernimmt — ein `/de/BY/meetups` waere eine
+         * zweite URL fuer denselben Inhalt.
+         *
+         * ## Warum das keine andere Route kapert (geprueft, nicht vermutet)
+         *
+         * Diese drei Muster greifen nur bei GENAU drei Segmenten, deren drittes das feste
+         * Wort `meetups`, `map` oder `cities` ist. Jede andere Route dieser Gruppe mit
+         * einem variablen zweiten Segment hat entweder ein anderes drittes Wort
+         * (`/meetup/{meetup}/event/{event}`, `/course/{course}/event/{event}`) oder gar
+         * kein drittes. Und jede Route mit festem zweitem Segment traegt dort ein Wort
+         * mit mehr als drei Zeichen (`meetup`, `course`, `service`, `tags`,
+         * `all-meetups`), faellt also schon am Muster durch. Die Registrierung am Ende
+         * der Gruppe ist der zweite Guertel; `tests/Feature/RegionRouteSegmentTest.php`
+         * misst beides.
          *
          * Eigene Routennamen statt zusätzlicher Parameter an den bestehenden: so ändert
          * sich kein einziger vorhandener route()-Aufruf, und route_with_country() bleibt
@@ -139,13 +163,13 @@ Route::middleware([])
          */
         Route::livewire('/{region}/meetups', 'meetups.index')
             ->name('meetups.index-region')
-            ->where('region', '[a-z]{2}');
+            ->where('region', RegionRoutes::SEGMENT_PATTERN);
         Route::livewire('/{region}/map', 'meetups.map')
             ->name('meetups.map-region')
-            ->where('region', '[a-z]{2}');
+            ->where('region', RegionRoutes::SEGMENT_PATTERN);
         Route::livewire('/{region}/cities', 'cities.index')
             ->name('cities.index-region')
-            ->where('region', '[a-z]{2}');
+            ->where('region', RegionRoutes::SEGMENT_PATTERN);
     });
 
 // Authenticated user routes with country prefix
