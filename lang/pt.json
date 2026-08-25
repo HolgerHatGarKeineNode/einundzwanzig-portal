@@ -773,5 +773,8 @@
     "Found a mistake in one of those?": "",
     "Open an issue": "",
     "The BTC Map export uses the population figure together with the year and the city boundary. An empty year hides this city’s meetups from the export.": "",
-    "Anfahrt": ""
+    "Anfahrt": "",
+    "No regions have been imported for this country yet.": "Ainda não foram importadas regiões para este país.",
+    "Pick a country first.": "Escolhe primeiro um país.",
+    "— not set": "— não definido"
 }

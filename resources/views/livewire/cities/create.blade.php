@@ -274,17 +274,48 @@ class extends Component {
                     @endforeach
                 </flux:select>
 
-                {{-- Nur Laender mit gepflegten Regionen zeigen das Feld; fuer alle anderen
-                     bleibt das Formular unveraendert. --}}
-                @if($regions->isNotEmpty())
-                    <flux:select variant="listbox" searchable label="{{ __('Region') }}" wire:model="region_id">
-                        <flux:select.option value="">{{ __('No region') }}</flux:select.option>
-                        @foreach($regions as $region)
-                            <flux:select.option :key="$region->id" value="{{ $region->id }}">
-                                {{ $region->name }}
-                            </flux:select.option>
-                        @endforeach
-                    </flux:select>
+                {{-- Die Region-Zeile hat IMMER genau eine Auspraegung, nie null — siehe die
+                     ausfuehrliche Begruendung in cities/edit.blade.php. Hier fehlt die
+                     Rechtefrage: wer eine Stadt anlegt, ist ihr Ersteller und darf die
+                     Identitaetsfelder setzen. Also drei Zustaende statt fuenf, und kein
+                     Schloss — es steht hier nie eine Berechtigung im Weg.
+
+                     `data-region-row` benennt den Zustand und ist der Zaehlpunkt des Tests. --}}
+                @if(blank($country_id))
+                    {{-- Der Pfeil zeigt auf das Land-Select direkt darueber. --}}
+                    <flux:field data-region-row="no-country">
+                        <flux:label>{{ __('Region') }}</flux:label>
+                        <div class="flex h-10 items-center gap-2">
+                            <flux:icon.arrow-up variant="micro" data-region-icon="arrow-up" class="text-zinc-500 dark:text-zinc-400"/>
+                            <span class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('Pick a country first.') }}</span>
+                        </div>
+                        <flux:error name="region_id"/>
+                    </flux:field>
+                @elseif($regions->isEmpty())
+                    <flux:field data-region-row="no-catalog">
+                        <flux:label>{{ __('Region') }}</flux:label>
+                        <div class="flex min-h-10 items-start gap-2 py-2">
+                            <flux:icon.map variant="micro" data-region-icon="map" class="mt-0.5 text-zinc-500 dark:text-zinc-400"/>
+                            <p class="max-w-prose text-sm text-zinc-600 dark:text-zinc-300">
+                                {{ __('No regions have been imported for this country yet.') }}
+                                <flux:link class="whitespace-nowrap" href="https://github.com/HolgerHatGarKeineNode/einundzwanzig-app/issues" external>{{ __('Open an issue') }}</flux:link>
+                            </p>
+                        </div>
+                        <flux:error name="region_id"/>
+                    </flux:field>
+                @else
+                    <flux:field data-region-row="select">
+                        <flux:label>{{ __('Region') }}</flux:label>
+                        <flux:select variant="listbox" searchable wire:model="region_id">
+                            <flux:select.option value="">{{ __('No region') }}</flux:select.option>
+                            @foreach($regions as $region)
+                                <flux:select.option :key="$region->id" value="{{ $region->id }}">
+                                    {{ $region->name }}
+                                </flux:select.option>
+                            @endforeach
+                        </flux:select>
+                        <flux:error name="region_id"/>
+                    </flux:field>
                 @endif
 
                 {{-- Derselbe Picker wie in den Event-Formularen. Optional: eine Stadt ohne

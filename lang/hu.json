@@ -773,5 +773,8 @@
     "Found a mistake in one of those?": "",
     "Open an issue": "",
     "The BTC Map export uses the population figure together with the year and the city boundary. An empty year hides this city’s meetups from the export.": "",
-    "Anfahrt": ""
+    "Anfahrt": "",
+    "No regions have been imported for this country yet.": "Ehhez az országhoz még nem importáltunk régiókat.",
+    "Pick a country first.": "Először válassz országot.",
+    "— not set": "— nincs megadva"
 }
