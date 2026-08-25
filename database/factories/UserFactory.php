@@ -29,7 +29,6 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'reputation' => fake()->numberBetween(0, 1000),
-            'current_language' => fake()->randomElement(['de', 'en']),
             'timezone' => 'Europe/Berlin',
             'is_lecturer' => fake()->boolean(20),
             'nostr' => fake()->boolean(70) ? NostrHelper::randomNpub() : null,

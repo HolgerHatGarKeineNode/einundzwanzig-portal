@@ -36,7 +36,6 @@ class User extends Authenticatable implements CipherSweetEncrypted
         'is_lecturer',
         'is_leader',
         'current_team_id',
-        'current_language',
         'timezone',
         'lightning_address',
         'lnurl',
