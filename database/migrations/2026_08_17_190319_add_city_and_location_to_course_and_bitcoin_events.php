@@ -28,6 +28,13 @@ return new class extends Migration
     public function up(): void
     {
         foreach ($this->tables as $table) {
+            // `bitcoin_events` faellt in einer spaeteren Migration ganz weg. Auf einer
+            // durchmigrierten Datenbank gibt es die Tabelle also nicht mehr — und ein
+            // erneuter Aufruf (Test, Teil-Rollback) darf daran nicht scheitern.
+            if (! Schema::hasTable($table)) {
+                continue;
+            }
+
             Schema::table($table, function (Blueprint $blueprint) use ($table): void {
                 if (! Schema::hasColumn($table, 'city_id')) {
                     $blueprint->foreignId('city_id')
@@ -95,6 +102,10 @@ return new class extends Migration
     public function down(): void
     {
         foreach ($this->tables as $table) {
+            if (! Schema::hasTable($table)) {
+                continue;
+            }
+
             Schema::table($table, function (Blueprint $blueprint) use ($table): void {
                 if (Schema::hasColumn($table, 'city_id')) {
                     $blueprint->dropConstrainedForeignId('city_id');

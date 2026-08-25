@@ -24,6 +24,141 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Tag icons
+    |--------------------------------------------------------------------------
+    |
+    | The only icon names a tag may carry. Flux resolves `<flux:icon name="x">`
+    | by delegating to a Blade component `flux::icon.x`, and a name it cannot
+    | resolve is not a blank space — it is an uncaught exception that takes the
+    | whole page down:
+    |
+    |   Flux component [icon.coin] does not exist.
+    |
+    | The seed vocabulary was written against Font Awesome (`coin`, `beer-mug`,
+    | `chalkboard-user`, `user-secret`, …) while Flux ships Heroicons. Fifteen of
+    | the ninety-one production tags carried such a name. Nothing broke only
+    | because no screen rendered `tags.icon` at all; the first one that did would
+    | have thrown a 500 for every event offered one of those tags.
+    |
+    | So this list is a whitelist, not documentation. Every output site resolves
+    | through resources/views/livewire/tags/partials/icon.blade.php, which falls
+    | back to `tag` for anything not listed here. Deliberately NOT a try/catch:
+    | a catch swallows typos, and a vocabulary that silently accepts typos is not
+    | a vocabulary. A value outside this list survives in the database and is
+    | shown in the moderation screen as "<name> — not resolvable", so an old
+    | record stays visible and fixable instead of exploding.
+    |
+    | Names must exist under vendor/livewire/flux/stubs/resources/views/flux/icon
+    | (or resources/views/flux/icon for icons published by hand).
+    | TagIconVocabularyTest checks every entry against those two directories, so
+    | a typo here fails a test rather than a page.
+    |
+    */
+
+    'tag_icons' => [
+        // Format of the gathering
+        'microphone',
+        'presentation-chart-bar',
+        'chat-bubble-left-right',
+        'chat-bubble-oval-left-ellipsis',
+        'users',
+        'user-group',
+        'film',
+        'musical-note',
+        'video-camera',
+        'megaphone',
+        'ticket',
+        'calendar-days',
+        'clock',
+
+        // Level and material
+        'academic-cap',
+        'rocket-launch',
+        'book-open',
+        'newspaper',
+        'document-text',
+        'puzzle-piece',
+        'light-bulb',
+        'trophy',
+
+        // Place and reach
+        'map-pin',
+        'globe-europe-africa',
+        'building-storefront',
+        'building-library',
+        'home',
+        'truck',
+        'shopping-bag',
+
+        // Money
+        'circle-stack',
+        'banknotes',
+        'wallet',
+        'currency-euro',
+        'receipt-percent',
+        'bolt',
+
+        // Custody, privacy, law
+        'key',
+        'lock-closed',
+        'shield-check',
+        'eye-slash',
+        'finger-print',
+        'scale',
+
+        // Technology
+        'server',
+        'cpu-chip',
+        'code-bracket',
+        'command-line',
+        'wrench-screwdriver',
+        'beaker',
+
+        // Open-ended
+        'fire',
+        'heart',
+        'hand-raised',
+        'sparkles',
+        'star',
+        'tag',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Icons offered before the moderator types
+    |--------------------------------------------------------------------------
+    |
+    | The icon picker holds fifty-two names; showing all of them at rest turns a
+    | choice into a search. This subset is what the vocabulary actually uses
+    | today, so the resting list answers "what do we already say" rather than
+    | "what could you possibly pick". Typing reveals the full list — the same
+    | resting/searching split the tag picker itself uses.
+    |
+    | Must be a subset of tag_icons; TagIconVocabularyTest checks that too.
+    |
+    */
+
+    'tag_icons_common' => [
+        'tag',
+        'microphone',
+        'presentation-chart-bar',
+        'chat-bubble-left-right',
+        'chat-bubble-oval-left-ellipsis',
+        'users',
+        'user-group',
+        'film',
+        'academic-cap',
+        'rocket-launch',
+        'circle-stack',
+        'bolt',
+        'key',
+        'eye-slash',
+        'server',
+        'building-storefront',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Tag editors
     |--------------------------------------------------------------------------
     |

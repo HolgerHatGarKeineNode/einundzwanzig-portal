@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\MeetupEvent;
 
+use App\Actions\MeetupEvents\CreateMeetupEventSeries;
 use App\Http\Requests\Api\StoreMeetupEventRequest;
 use App\Http\Resources\MeetupEventResource;
 use App\Mcp\Tools\Concerns\ResolvesEntities;
@@ -19,6 +20,8 @@ use Laravel\Mcp\Server\Tool;
 class CreateMeetupEventTool extends Tool
 {
     use ResolvesEntities;
+
+    public function __construct(private readonly CreateMeetupEventSeries $createSeries) {}
 
     public function handle(Request $request): Response
     {
@@ -58,6 +61,25 @@ class CreateMeetupEventTool extends Tool
             $storeRequest->rules(),
             $storeRequest->messages(),
         );
+
+        /*
+         * Serie oder Einzeltermin — dieselbe Weiche wie in
+         * {@see \App\Http\Controllers\Api\MeetupEventController::store()}.
+         *
+         * Hier stand nur `MeetupEvent::create($validated)`. Mit `recurrence_type` UND
+         * `recurrence_end_date` entstand damit EIN Termin, der Serienmetadaten trug, aber
+         * kein einziges weiteres Vorkommen hatte. Das war nicht bloss unvollstaendig: der
+         * `hasActiveRecurrence`-Zweig in {@see \App\Models\Meetup::recalculateActivity()}
+         * fragt genau diese zwei Felder ab und haette das Meetup auf aktiv gestellt,
+         * obwohl kein Termin in der Zukunft liegt — samt Meldung in den oeffentlichen
+         * Aenderungs-Feed. Ueber die Action entstehen die Vorkommen wirklich, und der
+         * Zweig ist wieder wahr, weil er wahr ist.
+         */
+        if (! empty($validated['recurrence_type']) && ! empty($validated['recurrence_end_date'])) {
+            $events = $this->createSeries->handle($validated);
+
+            return Response::json(MeetupEventResource::collection($events)->resolve());
+        }
 
         $meetupEvent = MeetupEvent::create($validated);
 

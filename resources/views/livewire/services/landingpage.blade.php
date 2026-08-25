@@ -20,18 +20,21 @@ class extends Component {
         $this->country = request()->route('country', config('app.domain_country'));
     }
 
+    /**
+     * Hier stand `auth()->id() === $this->service->created_by`. Das war enger als die
+     * Policy: `SelfHostedServicePolicy` kennt den Super-Admin, diese Zeile nicht — er
+     * hatte das Recht und lief trotzdem in den 403. Seit P1 gilt die Policy, seit hier
+     * auch fuer diese Aktion.
+     */
     public function delete(): void
     {
-        // Only allow deletion if user is the creator
-        if (auth()->id() === $this->service->created_by) {
-            $this->service->delete();
+        $this->authorize('delete', $this->service);
 
-            session()->flash('status', __('Service erfolgreich gelöscht!'));
+        $this->service->delete();
 
-            redirect()->route('services.index', ['country' => $this->country]);
-        } else {
-            abort(403);
-        }
+        session()->flash('status', __('Service erfolgreich gelöscht!'));
+
+        redirect()->route('services.index', ['country' => $this->country]);
     }
 
     public function with(): array
@@ -58,20 +61,27 @@ class extends Component {
     <div class="mb-8">
         <div class="flex items-center justify-between mb-4">
             <flux:heading size="xl">{{ $service->name }}</flux:heading>
+            {{-- Knopf und Aktion fragen dieselbe Policy. Vorher stand hier
+                 `auth()->id() === $service->created_by`: der Super-Admin durfte, sah aber
+                 keinen Knopf. --}}
             @auth
-                @if(auth()->id() === $service->created_by)
+                @canany(['update', 'delete'], $service)
                     <div class="flex gap-2">
-                        <flux:button :href="route_with_country('services.edit', ['service' => $service])"
-                                     variant="primary" icon="pencil">
-                            {{ __('Bearbeiten') }}
-                        </flux:button>
-                        <flux:modal.trigger name="delete-service">
-                            <flux:button variant="danger" icon="trash">
-                                {{ __('Löschen') }}
+                        @can('update', $service)
+                            <flux:button :href="route_with_country('services.edit', ['service' => $service])"
+                                         variant="primary" icon="pencil">
+                                {{ __('Bearbeiten') }}
                             </flux:button>
-                        </flux:modal.trigger>
+                        @endcan
+                        @can('delete', $service)
+                            <flux:modal.trigger name="delete-service">
+                                <flux:button variant="danger" icon="trash">
+                                    {{ __('Löschen') }}
+                                </flux:button>
+                            </flux:modal.trigger>
+                        @endcan
                     </div>
-                @endif
+                @endcanany
             @endauth
         </div>
 

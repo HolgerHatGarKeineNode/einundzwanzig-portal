@@ -1,5 +1,5 @@
 @props([
-    // Das Model mit den osm_*-Spalten: MeetupEvent, CourseEvent, BitcoinEvent, City.
+    // Das Model mit den osm_*-Spalten: MeetupEvent, CourseEvent, City.
     'place',
     // Adresse und abweichenden Freitext mitzeigen — auf Detailseiten ja, in Kacheln nein.
     'showAddress' => false,

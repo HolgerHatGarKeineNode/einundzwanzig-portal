@@ -6,6 +6,7 @@ use App\Mcp\Tools\Course\UpdateCourseTool;
 use App\Models\Course;
 use App\Models\Lecturer;
 use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 
 it('lets a lecturer create a course and stamps created_by', function () {
     $user = User::factory()->lecturer()->create();
@@ -24,16 +25,37 @@ it('lets a lecturer create a course and stamps created_by', function () {
     ]);
 });
 
-it('forbids a non-lecturer from creating a course', function () {
-    $user = User::factory()->create(['is_lecturer' => false]);
+/**
+ * MCP und REST beantworten dieselbe Frage — jetzt auch gleich.
+ *
+ * Hier stand die Umkehrung: „verbietet einem Nicht-Referenten, einen Kurs anzulegen".
+ * Sie beschrieb eine Inline-Pruefung im Werkzeug, die P1 aus `CoursePolicy::create()`
+ * bereits entfernt hatte. Damit sagten die beiden Tueren zum selben Vorgang
+ * Verschiedenes: REST liess den Nutzer durch, MCP wies ihn ab.
+ *
+ * Der Test prueft deshalb beide Wege in einem Lauf. Ein Test, der nur die eine Tuer
+ * misst, kann dieses Auseinanderlaufen nicht sehen — es ist ja genau der Unterschied
+ * ZWISCHEN ihnen.
+ */
+it('lets a non-lecturer create a course through MCP, exactly as REST does', function () {
+    $user = User::factory()->notLecturer()->create();
     $lecturer = Lecturer::factory()->create();
 
     EinundzwanzigServer::actingAs($user)
         ->tool(CreateCourseTool::class, [
-            'name' => 'Verbotener Kurs',
+            'name' => 'Kurs ueber MCP',
             'lecturer_id' => $lecturer->id,
         ])
-        ->assertHasErrors();
+        ->assertOk();
+
+    Sanctum::actingAs($user);
+    $this->postJson('/api/courses', [
+        'name' => 'Kurs ueber REST',
+        'lecturer_id' => $lecturer->id,
+    ])->assertCreated();
+
+    expect(Course::query()->where('created_by', $user->id)->pluck('name')->sort()->values()->all())
+        ->toBe(['Kurs ueber MCP', 'Kurs ueber REST']);
 });
 
 it('fails validation for missing fields', function () {

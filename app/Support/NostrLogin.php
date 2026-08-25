@@ -130,17 +130,19 @@ final class NostrLogin
             return $user;
         }
 
+        /*
+         * Kein `lnbits` mehr (P6) — dieselbe Begruendung wie im LNURL-Zwilling
+         * ({@see \App\Http\Controllers\LnurlAuthController::findOrCreateUser()}): ein
+         * Null-Objekt ohne Schreiber und ohne Leser, dessen Spalte gleich faellt. Beide
+         * Anlagepfade mussten im selben Schritt weg; nur einen zu raeumen haette die
+         * Neuanmeldung ueber den anderen Weg nach der Migration zerbrochen.
+         */
         return User::create([
             'public_key' => null,
             'is_lecturer' => true,
             'name' => str()->random(10),
             'email' => str($npub)->substr(-12).'@portal.einundzwanzig.space',
             'nostr' => $npub,
-            'lnbits' => [
-                'read_key' => null,
-                'url' => null,
-                'wallet_id' => null,
-            ],
         ]);
     }
 }

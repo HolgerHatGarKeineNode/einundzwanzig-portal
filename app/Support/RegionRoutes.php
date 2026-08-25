@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Console\Commands\ImportRegions;
+
 /**
  * Welche Listen-Routen es in einer Landes- und einer Regionsvariante gibt.
  *
@@ -23,6 +25,18 @@ namespace App\Support;
  */
 class RegionRoutes
 {
+    /**
+     * Was als Regionssegment in einer URL stehen darf.
+     *
+     * Ein bis drei alphanumerische Kleinbuchstaben/Ziffern — der ISO-3166-2-Suffix ohne
+     * Landespraefix, so wie {@see ImportRegions} ihn ablegt. Steht
+     * hier und nicht dreimal in `routes/web.php`, damit die drei Regionsrouten nicht
+     * auseinanderlaufen koennen: eine Route mit engerem Muster antwortet auf denselben
+     * Regionscode mit 404, waehrend die anderen beiden ihn bedienen — ein Unterschied,
+     * den niemand sucht, weil die drei Zeilen nebeneinander stehen und gleich aussehen.
+     */
+    public const SEGMENT_PATTERN = '[a-z0-9]{1,3}';
+
     /**
      * Routenname → [Landesvariante, Regionsvariante].
      *

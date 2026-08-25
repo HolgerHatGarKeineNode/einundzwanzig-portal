@@ -1,7 +1,9 @@
 <?php
 
 it('shows the api token management UI and the one-time token reveal', function () {
-    $user = actingAsUser(['name' => 'Lecturer Demo', 'is_lecturer' => true]);
+    // `is_lecturer` stand hier ohne Wirkung: die Token-Seite fragt es nirgends ab, und
+    // seit dem Abbau der Pruefung gatet das Flag auch keine Policy mehr. Der Name bleibt.
+    $user = actingAsUser(['name' => 'Lecturer Demo']);
 
     // Pre-existing token so the "Aktive Tokens" table is populated.
     $user->createToken('Mein Laptop');

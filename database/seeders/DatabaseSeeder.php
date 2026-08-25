@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\BitcoinEvent;
 use App\Models\Category;
 use App\Models\City;
 use App\Models\Country;
@@ -84,10 +83,6 @@ class DatabaseSeeder extends Seeder
             ->create();
 
         $this->command->info('Phase 4: Events & Items (Tier-3)');
-        BitcoinEvent::factory()->count(15)
-            ->recycle($cities)
-            ->recycle($users)
-            ->create();
         $courseEvents = CourseEvent::factory()->count(30)
             ->recycle($courses)
             ->recycle($cities)

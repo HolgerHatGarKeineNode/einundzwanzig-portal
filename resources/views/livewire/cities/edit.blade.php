@@ -354,29 +354,100 @@ class extends Component {
                 </flux:select>
                 @endunless
 
-                {{-- Nur Laender mit gepflegten Regionen zeigen das Feld; fuer alle anderen
-                     bleibt das Formular unveraendert. Gesperrt zeigt es die Region nur, wenn
-                     die Stadt eine traegt — ein leeres, unbedienbares Feld waere kein
-                     Kontext, sondern eine Frage ohne Antwort. --}}
-                @if(! $canEditIdentity)
-                    @if($city->region)
-                        <flux:field>
-                            <flux:label>{{ __('Region') }}</flux:label>
-                            <div class="flex h-10 items-center gap-2" aria-describedby="identity-lock">
-                                <span class="text-zinc-800 dark:text-white">{{ $city->region->name }}</span>
-                                <flux:icon.lock-closed variant="micro" class="text-zinc-500 dark:text-zinc-400"/>
-                            </div>
-                        </flux:field>
-                    @endif
-                @elseif($regions->isNotEmpty())
-                    <flux:select variant="listbox" searchable label="{{ __('Region') }}" wire:model="region_id">
-                        <flux:select.option value="">{{ __('No region') }}</flux:select.option>
-                        @foreach($regions as $region)
-                            <flux:select.option :key="$region->id" value="{{ $region->id }}">
-                                {{ $region->name }}
-                            </flux:select.option>
-                        @endforeach
-                    </flux:select>
+                {{-- Die Region-Zeile hat IMMER genau eine Auspraegung, nie null.
+                     Vorher verschwand sie ganz, sobald `$regions` leer war — und das ist
+                     mit 6 von 8 Laendern ohne importierten Regionen-Katalog der Normalfall,
+                     nicht der Rand. Wer die Zeile nicht sieht, haelt das Feld fuer nicht
+                     vorhanden statt fuer noch nicht befuellbar.
+
+                     Alle fuenf Zweige haben dieselbe Form — Feld > Label > Inhalt > Fehler.
+                     Der Slot ist fest, nur seine Fuellung ist Zustand. `data-region-row`
+                     benennt den Zustand und ist zugleich der Zaehlpunkt des Tests: genau
+                     einer davon steht im Dokument.
+
+                     Das Icon traegt die URSACHE, nicht die Dekoration:
+                       lock-closed → dir fehlt das Recht
+                       map         → der Regionen-Katalog dieses Landes ist leer
+                       arrow-up    → waehl zuerst ein Land; das Land-Select steht direkt
+                                     darueber, der Pfeil zeigt buchstaeblich darauf. Wer
+                                     die Feldreihenfolge aendert, macht dieses Icon unwahr.
+                     Ein Schloss auf dem leeren Katalog waere gelogen: dort steht keine
+                     Berechtigung im Weg, sondern fehlende Referenzdaten.
+
+                     `data-region-icon` ist kein Schmuck, sondern die einzige Moeglichkeit,
+                     die Abwesenheit des Schlosses zu MESSEN: Flux inlined das Icon als
+                     rohes SVG, der Name "lock-closed" steht danach nirgends mehr im
+                     Dokument. Ein Test, der darauf greppt, meldet "kein Schloss" auch
+                     dort, wo eines steht — fail-open.
+
+                     Kein `disabled`-Select fuer die Leerfaelle — dieselbe Begruendung wie
+                     bei Name und Land oben: Flux dimmt per opacity-50, das Label faellt im
+                     Hellmodus von 15,13:1 auf 3,09:1, und der Tab-Stopp entfaellt ersatzlos.
+                     Text statt Attrappe. --}}
+                @if(! $canEditIdentity && $city->region)
+                    {{-- Kein Recht, Region gesetzt: der Wert ist die Antwort (voller
+                         Kontrast), das Schloss die Fussnote dahinter. --}}
+                    <flux:field data-region-row="locked-value">
+                        <flux:label>{{ __('Region') }}</flux:label>
+                        <div class="flex h-10 items-center gap-2" aria-describedby="identity-lock">
+                            <span class="text-zinc-800 dark:text-white">{{ $city->region->name }}</span>
+                            <flux:icon.lock-closed variant="micro" data-region-icon="lock-closed" class="text-zinc-500 dark:text-zinc-400"/>
+                        </div>
+                        <flux:error name="region_id"/>
+                    </flux:field>
+                @elseif(blank($country_id))
+                    {{-- Kein Land gewaehlt. `$regions` ist hier ebenfalls leer (:252-254),
+                         aber "fuer dieses Land gibt es keine Regionen" waere schlicht
+                         falsch — es gibt noch kein Land. --}}
+                    <flux:field data-region-row="no-country">
+                        <flux:label>{{ __('Region') }}</flux:label>
+                        <div class="flex h-10 items-center gap-2">
+                            <flux:icon.arrow-up variant="micro" data-region-icon="arrow-up" class="text-zinc-500 dark:text-zinc-400"/>
+                            <span class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('Pick a country first.') }}</span>
+                        </div>
+                        <flux:error name="region_id"/>
+                    </flux:field>
+                @elseif($regions->isEmpty())
+                    {{-- Leerer Katalog — unabhaengig vom Recht, deshalb VOR der Rechtefrage.
+                         `min-h-10` statt `h-10` und `items-start`: der Satz bricht bei 320 px
+                         und bei 200 % Textgroesse um (1.4.10/1.4.4), eine feste Zeilenhoehe
+                         wuerde ihn abschneiden. Das Icon behaelt seine Groesse, weil Flux
+                         `shrink-0` mitliefert, und `mt-0.5` setzt es auf die Versalhoehe. --}}
+                    <flux:field data-region-row="no-catalog">
+                        <flux:label>{{ __('Region') }}</flux:label>
+                        <div class="flex min-h-10 items-start gap-2 py-2">
+                            <flux:icon.map variant="micro" data-region-icon="map" class="mt-0.5 text-zinc-500 dark:text-zinc-400"/>
+                            <p class="max-w-prose text-sm text-zinc-600 dark:text-zinc-300">
+                                {{ __('No regions have been imported for this country yet.') }}
+                                <flux:link class="whitespace-nowrap" href="https://github.com/HolgerHatGarKeineNode/einundzwanzig-app/issues" external>{{ __('Open an issue') }}</flux:link>
+                            </p>
+                        </div>
+                        <flux:error name="region_id"/>
+                    </flux:field>
+                @elseif(! $canEditIdentity)
+                    {{-- Kein Recht und keine Region: die Zeile sagt, dass das Feld leer ist,
+                         statt so zu tun, als gaebe es sie nicht. --}}
+                    <flux:field data-region-row="locked-empty">
+                        <flux:label>{{ __('Region') }}</flux:label>
+                        <div class="flex h-10 items-center gap-2" aria-describedby="identity-lock">
+                            <span class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('— not set') }}</span>
+                            <flux:icon.lock-closed variant="micro" data-region-icon="lock-closed" class="text-zinc-500 dark:text-zinc-400"/>
+                        </div>
+                        <flux:error name="region_id"/>
+                    </flux:field>
+                @else
+                    <flux:field data-region-row="select">
+                        <flux:label>{{ __('Region') }}</flux:label>
+                        <flux:select variant="listbox" searchable wire:model="region_id">
+                            <flux:select.option value="">{{ __('No region') }}</flux:select.option>
+                            @foreach($regions as $region)
+                                <flux:select.option :key="$region->id" value="{{ $region->id }}">
+                                    {{ $region->name }}
+                                </flux:select.option>
+                            @endforeach
+                        </flux:select>
+                        <flux:error name="region_id"/>
+                    </flux:field>
                 @endif
 
                 {{-- Derselbe Picker wie in den Event-Formularen. Optional: eine Stadt ohne

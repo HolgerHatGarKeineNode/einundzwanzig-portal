@@ -156,16 +156,17 @@ final class LnurlAuthController extends Controller
 
         $fakeName = str()->random(10);
 
+        /*
+         * Kein `lnbits` mehr (P6). Der Wert war seit jeher ein Dreier-Null-Objekt, das
+         * kein Pfad je gefuellt und keine Ausgabe je gelesen hat; die Spalte faellt in
+         * der Folge-Migration. Diese Zeilen mussten VOR dem Drop weg, sonst waere jede
+         * Neuanmeldung ueber LNURL an einer Spalte gescheitert, die es nicht mehr gibt.
+         */
         return User::create([
             'public_key' => $publicKey,
             'is_lecturer' => true,
             'name' => $fakeName,
             'email' => str($publicKey)->substr(-12).'@portal.einundzwanzig.space',
-            'lnbits' => [
-                'read_key' => null,
-                'url' => null,
-                'wallet_id' => null,
-            ],
         ]);
     }
 

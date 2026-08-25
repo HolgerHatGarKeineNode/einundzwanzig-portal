@@ -388,27 +388,50 @@ class extends Component {
 
         $dates = $this->generateEventDates($startDate, $endDate);
 
-        foreach ($dates as $date) {
-            $utcDateTime = $date->copy()->setTimezone('UTC');
+        /*
+         * Die Serien-Identitaet (P5): ein UUID fuer alle Vorkommen, dazu die fuenf
+         * `recurrence_*`-Werte auf JEDEM Termin. Der MeetupEventResource verspricht sie
+         * seit jeher pro Termin und lieferte fuer jede je angelegte Serie null.
+         *
+         * Die Expansion bleibt hier und wandert NICHT in CreateMeetupEventSeries: dort
+         * laufen Start und Ende in UTC, hier in der Zeitzone des Nutzers. Ueber eine
+         * Zeitumstellung hinweg ist das der Unterschied zwischen "immer 18:00 Ortszeit"
+         * und "ab Ende Oktober 17:00".
+         */
+        $seriesFields = [
+            'recurrence_type' => $this->recurrenceType?->value,
+            'recurrence_day_of_week' => $this->recurrenceDayOfWeek ?: null,
+            'recurrence_day_position' => $this->recurrenceDayPosition ?: null,
+            'recurrence_interval' => 1,
+            'recurrence_end_date' => $endDate->copy()->setTimezone('UTC'),
+            'recurrence_group' => (string) \Illuminate\Support\Str::uuid(),
+        ];
 
-            $event = $this->meetup->meetupEvents()->create([
-                'start' => $utcDateTime,
-                'end' => $this->resolveEnd($date),
-                'title' => $this->title,
-                'location' => $this->location,
-                'description' => $this->description,
-                'link' => $this->link,
-                'created_by' => auth()->id(),
-                'attendees' => [],
-                'might_attendees' => [],
-                ...$this->osmFields(),
-            ]);
+        // Ein Nachlauf statt einer Neuberechnung je Termin, siehe MeetupEventObserver::batched().
+        \App\Observers\MeetupEventObserver::batched(function () use ($dates, $seriesFields, &$eventsCreated): void {
+            foreach ($dates as $date) {
+                $utcDateTime = $date->copy()->setTimezone('UTC');
 
-            // Every occurrence of a series carries the same tags.
-            $this->syncTags($event);
+                $event = $this->meetup->meetupEvents()->create([
+                    'start' => $utcDateTime,
+                    'end' => $this->resolveEnd($date),
+                    'title' => $this->title,
+                    'location' => $this->location,
+                    'description' => $this->description,
+                    'link' => $this->link,
+                    'created_by' => auth()->id(),
+                    'attendees' => [],
+                    'might_attendees' => [],
+                    ...$this->osmFields(),
+                    ...$seriesFields,
+                ]);
 
-            $eventsCreated++;
-        }
+                // Every occurrence of a series carries the same tags.
+                $this->syncTags($event);
+
+                $eventsCreated++;
+            }
+        });
 
         session()->flash('status', __(':count Events erfolgreich erstellt!', ['count' => $eventsCreated]));
     }
@@ -616,7 +639,7 @@ class extends Component {
 
                 @if(count($this->previewDates) >= 100)
                     <flux:text class="text-sm text-amber-600 dark:text-amber-400">
-                        {{ __('Vorschau auf 100 Termine begrenzt. Es werden möglicherweise mehr Termine erstellt.') }}
+                        {{ __('Eine Serie umfasst höchstens 100 Termine. Spätere Termine dieser Serie werden nicht erstellt.') }}
                     </flux:text>
                 @endif
             </flux:card>

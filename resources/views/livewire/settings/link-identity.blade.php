@@ -49,7 +49,6 @@ class extends Component {
     public array $profileChoices = [
         'photo' => 'survivor',
         'name' => 'survivor',
-        'lightning_address' => 'survivor',
     ];
 
     /** Must be checked before the merge runs: acknowledges Lightning is retired and the Nostr key is backed up. */
@@ -171,7 +170,6 @@ class extends Component {
             'courses' => __('Kurse'),
             'course_events' => __('Kurs-Termine'),
             'meetup_events' => __('Meetup-Termine'),
-            'bitcoin_events' => __('Bitcoin-Events'),
             'podcasts' => __('Podcasts'),
             'episodes' => __('Episoden'),
             'libraries' => __('Bibliotheken'),
@@ -202,8 +200,14 @@ class extends Component {
             'has_photo' => $u->profile_photo_path !== null,
             'created_at' => optional($u->created_at)->format('d.m.Y'),
             'reputation' => (int) $u->reputation,
-            'has_lightning' => (bool) ($u->public_key || $u->lightning_address || $u->lnurl),
-            'lightning_address' => $u->lightning_address,
+            /*
+             * Nur noch `public_key` (P6). `lightning_address` und `lnurl` sind hier
+             * abgeraeumt — sie waren nie das, was die Lightning-IDENTITAET ausmacht:
+             * angemeldet wird ueber `public_key` (LnurlAuthController), die beiden
+             * anderen waren Kontaktangaben ohne Schreibweg in der Oberflaeche. Das
+             * Abzeichen im Bestaetigungsschritt meint genau diesen Login.
+             */
+            'has_lightning' => (bool) $u->public_key,
             'has_nostr' => (bool) $u->nostr,
             'roles' => $u->getRoleNames()->all(),
             'leader_meetups' => $led,
@@ -246,22 +250,16 @@ class extends Component {
             }
         }
 
-        $lnOptions = [];
-        foreach (['survivor' => $survivor['lightning_address'] ?? null, 'loser' => $loser['lightning_address'] ?? null, 'nostr' => $nostr['lud16'] ?? null] as $src => $val) {
-            if (! empty($val)) {
-                $lnOptions[] = ['src' => $src, 'preview' => $val, 'is_new' => empty($survivor['lightning_address'])];
-            }
-        }
-
-        $fields = [
+        /*
+         * Kein Lightning-Adress-Feld mehr (P6). Hier stand eine dritte Auswahlzeile, die
+         * `lightning_address` aus Ueberlebendem, Verlierer oder dem `lud16` des
+         * Nostr-Profils zusammenlegte. Die Spalte faellt; eine Auswahl, deren Ergebnis
+         * nirgends mehr landet, waere eine Attrappe mit Klickweg.
+         */
+        return [
             'photo' => ['label' => __('Profilbild'), 'type' => 'photo', 'options' => $photoOptions],
             'name' => ['label' => __('Anzeigename'), 'type' => 'text', 'options' => $nameOptions],
         ];
-        if ($lnOptions !== []) {
-            $fields['lightning_address'] = ['label' => __('Lightning-Adresse'), 'type' => 'text', 'options' => $lnOptions];
-        }
-
-        return $fields;
     }
 
     /**
@@ -276,7 +274,6 @@ class extends Component {
         $survivorHas = [
             'photo' => ! empty($survivor['has_photo']),
             'name' => ! empty($survivor['name']),
-            'lightning_address' => ! empty($survivor['lightning_address']),
         ];
 
         foreach ($this->profileFields() as $field => $def) {
@@ -447,7 +444,7 @@ class extends Component {
      * meta). Empty picks are dropped so nothing is ever wiped.
      *
      * @param  array<string, mixed>|null  $nostrMeta
-     * @return array{name: ?string, lightning_address: ?string, photo_path: ?string, photo_url: ?string}
+     * @return array{name: ?string, photo_path: ?string, photo_url: ?string}
      */
     protected function resolveChosenProfile(User $survivor, ?User $loser, ?array $nostrMeta): array
     {
@@ -455,12 +452,6 @@ class extends Component {
             'loser' => $loser?->name,
             'nostr' => $nostrMeta['name'] ?? null,
             default => $survivor->name,
-        };
-
-        $lightning = match ($this->profileChoices['lightning_address'] ?? 'survivor') {
-            'loser' => $loser?->lightning_address,
-            'nostr' => $nostrMeta['lud16'] ?? null,
-            default => $survivor->lightning_address,
         };
 
         $photoChoice = $this->profileChoices['photo'] ?? 'survivor';
@@ -474,22 +465,18 @@ class extends Component {
 
         return [
             'name' => is_string($name) && $name !== '' ? $name : null,
-            'lightning_address' => is_string($lightning) && $lightning !== '' ? $lightning : null,
             'photo_path' => $photoPath,
             'photo_url' => $photoUrl,
         ];
     }
 
     /**
-     * @param  array{name: ?string, lightning_address: ?string, photo_path: ?string, photo_url: ?string}  $chosen
+     * @param  array{name: ?string, photo_path: ?string, photo_url: ?string}  $chosen
      */
     protected function applyChosenProfile(User $user, array $chosen): void
     {
         if ($chosen['name'] !== null) {
             $user->name = $chosen['name'];
-        }
-        if ($chosen['lightning_address'] !== null) {
-            $user->lightning_address = $chosen['lightning_address'];
         }
         if ($chosen['photo_path'] !== null) {
             $user->profile_photo_path = $chosen['photo_path'];

@@ -129,10 +129,13 @@ class CourseController extends Controller
     /**
      * Create a course
      *
-     * Allows an authenticated lecturer to create a course programmatically.
+     * Allows any authenticated user to create a course programmatically.
      * The creator (created_by) is set automatically to the signed-in user.
+     *
+     * The former `is_lecturer` restriction is gone — it was never a restriction, because
+     * both sign-up paths set the flag on every new account. Ownership is enforced where
+     * it matters, on update.
      */
-    #[ResponseAttribute(status: 403, description: 'Only lecturers (is_lecturer) may create courses.')]
     public function store(StoreCourseRequest $request): JsonResponse
     {
         $course = Course::create($request->validated());

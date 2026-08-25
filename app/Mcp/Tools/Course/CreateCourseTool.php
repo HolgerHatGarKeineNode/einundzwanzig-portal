@@ -5,9 +5,9 @@ namespace App\Mcp\Tools\Course;
 use App\Mcp\Tools\Concerns\ResolvesEntities;
 use App\Models\Course;
 use App\Models\Lecturer;
-use App\Models\User;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
+use Illuminate\Support\Facades\Gate;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
@@ -22,8 +22,22 @@ class CreateCourseTool extends Tool
     {
         $user = $request->user();
 
-        if (! $user instanceof User || ! (bool) $user->is_lecturer) {
-            return Response::error('Nur Referenten (is_lecturer) dürfen Kurse anlegen.');
+        /*
+         * Die Berechtigung beantwortet die Policy, nicht dieses Tool.
+         *
+         * Hier stand `! (bool) $user->is_lecturer`. Seit P1 ist genau diese Bedingung aus
+         * `CoursePolicy::create()` entfernt — sie war nie ein Gate, weil beide
+         * Anlagepfade das Flag bei jeder Registrierung setzen. Die Inline-Kopie hier
+         * blieb aber stehen und sperrte damit aus, was die REST-API (ueber
+         * `StoreCourseRequest::authorize()`) inzwischen erlaubt: MCP und REST sagten
+         * verschiedene Dinge ueber dieselbe Frage.
+         *
+         * Dass die Ability heute `true` liefert, macht den Aufruf nicht ueberfluessig —
+         * er sorgt dafuer, dass eine spaetere Aenderung an der Policy hier ankommt,
+         * statt hier vergessen zu werden. Was schuetzt, ist `update()`.
+         */
+        if ($user === null || Gate::forUser($user)->denies('create', Course::class)) {
+            return Response::error('Nicht berechtigt, einen Kurs anzulegen.');
         }
 
         if ($error = $this->mergeForeignKey($request, 'lecturer', 'lecturer_id', Lecturer::query(), 'Referenten')) {

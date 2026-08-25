@@ -48,9 +48,13 @@ it('rejects course creation with non-existent lecturer_id', function () {
         ->assertHasErrors(['lecturer_id' => 'exists']);
 });
 
-it('updates an existing course when authenticated', function () {
-    $course = Course::factory()->create(['name' => 'Old Name', 'lecturer_id' => $this->lecturer->id]);
-    actingAsUser();
+it('updates an existing course as its creator', function () {
+    $owner = actingAsUser();
+    $course = Course::factory()->create([
+        'name' => 'Old Name',
+        'lecturer_id' => $this->lecturer->id,
+        'created_by' => $owner->id,
+    ]);
 
     Livewire::test('courses.edit', ['course' => $course])
         ->set('name', 'New Name')

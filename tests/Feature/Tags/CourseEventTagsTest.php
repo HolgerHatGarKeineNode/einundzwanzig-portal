@@ -24,7 +24,10 @@ function courseEventTag(string $german): Tag
 beforeEach(function () {
     $this->seed(TagSeeder::class);
     $this->user = actingAsUser();
-    $this->user->update(['timezone' => 'Europe/Berlin', 'is_lecturer' => true]);
+    // `is_lecturer` stand hier mit, solange CourseEventPolicy::create() es abfragte.
+    // Es gatet nichts mehr; was den Zugang zum Formular entscheidet, ist die
+    // Ersteller-Zugehoerigkeit des Kurses bzw. des Termins.
+    $this->user->update(['timezone' => 'Europe/Berlin']);
 });
 
 function fillCourseEvent($test, City $city): object
@@ -64,7 +67,13 @@ it('saves tags on a course event', function () {
 it('loads existing tags when editing a course event', function () {
     $course = Course::factory()->create(['created_by' => $this->user->id]);
     $city = cityInCountry('de');
-    $event = CourseEvent::factory()->create(['course_id' => $course->id, 'city_id' => $city->id]);
+    // Der Termin gehört dem Nutzer, nicht nur der Kurs: einen bestehenden Termin ändert
+    // sein Ersteller (CourseEventPolicy::update), siehe authorizeManage() im Formular.
+    $event = CourseEvent::factory()->create([
+        'course_id' => $course->id,
+        'city_id' => $city->id,
+        'created_by' => $this->user->id,
+    ]);
     $tag = courseEventTag('Vortrag');
     $event->attachTag($tag);
 

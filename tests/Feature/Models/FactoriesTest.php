@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\BitcoinEvent;
 use App\Models\Category;
 use App\Models\City;
 use App\Models\Country;
@@ -44,7 +43,6 @@ it('creates a valid persisted record via the factory', function (string $modelCl
     'CourseEvent' => CourseEvent::class,
     'Meetup' => Meetup::class,
     'MeetupEvent' => MeetupEvent::class,
-    'BitcoinEvent' => BitcoinEvent::class,
     'Library' => Library::class,
     'LibraryItem' => LibraryItem::class,
     'Episode' => Episode::class,

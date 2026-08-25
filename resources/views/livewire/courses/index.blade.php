@@ -116,30 +116,51 @@ class extends Component {
 
                     <flux:table.cell>
                         <div class="flex flex-col space-y-2">
-                            @if(auth()->check() && $course->created_by === auth()->id())
+                            {{--
+                                Zwei Knoepfe, ZWEI verschiedene Fragen — und keine davon ist
+                                `created_by === auth()->id()`.
+
+                                Der Bearbeiten-Knopf gehoert an `CoursePolicy::update()`: dort
+                                kommt ueber `ChecksCreatorOwnership` der Super-Admin hinzu, der
+                                bisher das Recht hatte, aber keinen Knopf sah.
+
+                                Der Termin-Knopf ist NICHT dieselbe Frage. Er legt einen
+                                CourseEvent an diesem Kurs an, und genau dafuer gibt es seit P1
+                                `CourseEventPolicy::createForCourse()`. Wer ihn auf `update`
+                                legt, trifft heute zufaellig dasselbe Ergebnis und schreibt die
+                                falsche Absicht fest: `create()` muss schrankenlos bleiben (die
+                                REST-API ruft sie ohne Kurs auf), also beantwortet nur
+                                `createForCourse()` die Frage „an DIESEN Kurs".
+
+                                Die alte `:disabled`/`:href`-Doppelung faellt mit: sie stellte
+                                dieselbe Bedingung drei Mal und war innerhalb des @if ohnehin
+                                immer wahr — ein Knopf, der nie deaktiviert sein konnte.
+                            --}}
+                            @can('update', $course)
                                 <div>
                                     <flux:button
-                                        :disabled="$course->created_by !== auth()->id()"
-                                        :href="$course->created_by === auth()->id() ? route_with_country('courses.edit', ['course' => $course]) : null"
+                                        :href="route_with_country('courses.edit', ['course' => $course])"
                                         size="xs"
                                         variant="filled"
                                         icon="pencil">
                                         {{ __('Bearbeiten') }}
                                     </flux:button>
                                 </div>
+                            @endcan
+                            @can('createForCourse', [App\Models\CourseEvent::class, $course])
                                 <div>
                                     <flux:button
-                                        :disabled="$course->created_by !== auth()->id()"
-                                        :href="$course->created_by === auth()->id() ? route_with_country('courses.events.create', ['course' => $course]) : null"
+                                        :href="route_with_country('courses.events.create', ['course' => $course])"
                                         size="xs"
                                         variant="filled"
                                         icon="calendar">
                                         {{ __('Neues Event erstellen') }}
                                     </flux:button>
                                 </div>
-                            @elseif(!auth()->check())
+                            @endcan
+                            @guest
                                 <flux:link :href="route('login')">{{ __('Log in') }}</flux:link>
-                            @endif
+                            @endguest
                         </div>
                     </flux:table.cell>
                 </flux:table.row>

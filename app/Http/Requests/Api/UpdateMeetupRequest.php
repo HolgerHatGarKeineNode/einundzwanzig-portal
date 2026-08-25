@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Http\Resources\MeetupResource;
+use App\Models\Meetup;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateMeetupRequest extends FormRequest
@@ -12,6 +14,18 @@ class UpdateMeetupRequest extends FormRequest
     }
 
     /**
+     * `is_active` ist bewusst KEINE Eingabe.
+     *
+     * Das Feld ist ein Messwert, kein Wunsch: {@see Meetup::recalculateActivity()}
+     * leitet es aus dem letzten und dem naechsten Termin ab und schreibt es per `forceFill`.
+     * Ein setzbares `is_active` konnte diesen Wert nur ueberschreiben, bis der naechste
+     * Observer-Lauf ihn wieder herstellte — ein stiller Rueckfall, den niemand sah.
+     *
+     * AUSGELIEFERT wird es weiterhin ({@see MeetupResource}). Das ist
+     * oeffentlicher Vertrag und bleibt es: der Wechsel selbst wird ausdruecklich in den
+     * Aenderungs-Feed gemeldet (Issue #29, {@see Meetup::recalculateActivity()}).
+     * Lesen ja, schreiben nein.
+     *
      * @return array<string, array<int, string>>
      */
     public function rules(): array
@@ -29,7 +43,6 @@ class UpdateMeetupRequest extends FormRequest
             'signal' => ['sometimes', 'nullable', 'string', 'max:255'],
             'community' => ['sometimes', 'nullable', 'string', 'max:255'],
             'visible_on_map' => ['sometimes', 'boolean'],
-            'is_active' => ['sometimes', 'boolean'],
             'rsvp_enabled' => ['sometimes', 'boolean'],
             'attendees_public' => ['sometimes', 'boolean'],
         ];

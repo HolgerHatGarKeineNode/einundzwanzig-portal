@@ -70,12 +70,20 @@ new class extends Component {
     /**
      * Everything selectable: approved tags plus the current user's own pending
      * suggestions, so a suggester can re-select what they just proposed.
+     *
+     * `ordered()` is the moderation screen's sort order (tags.order_column). Without
+     * it the resting list came out in whatever order the database returned and the
+     * ordering controls over in tags.moderation would have moved a number nobody
+     * ever sees. sortByDesc() only lifts the featured block to the top; PHP's sort
+     * has been stable since 8.0, so the order_column sequence survives inside each
+     * block.
      */
     public function getOptionsProperty(): Collection
     {
         return Tag::query()
             ->where('type', $this->type)
             ->selectableBy(auth()->user())
+            ->ordered()
             ->get()
             ->sortByDesc('featured')
             ->values();
@@ -246,10 +254,19 @@ new class extends Component {
                         <span class="flex flex-col">
                             <span class="flex items-center gap-2">
                                 {{-- Glyph, not colour: the house palette is monochrome. --}}
-                                <span aria-hidden="true" class="text-xs opacity-60">{{ $tag->featured ? '●' : '○' }}</span>
+                                <span aria-hidden="true" class="text-xs text-zinc-600 dark:text-zinc-300">{{ $tag->featured ? '●' : '○' }}</span>
+
+                                {{-- Never `$tag->icon` directly: an unresolvable name throws
+                                     and takes the whole form down. --}}
+                                @include('livewire.tags.partials.icon', [
+                                    'tagIcon' => $tag->icon,
+                                    'tagIconClass' => 'size-4 text-zinc-600 dark:text-zinc-300',
+                                    'tagIconWrapperClass' => 'inline-flex shrink-0 self-center',
+                                ])
+
                                 <span>{{ $tag->displayName() }}</span>
                                 @unless ($tag->isApproved())
-                                    <span class="text-xs opacity-60">{{ __('in Prüfung') }}</span>
+                                    <span class="text-xs text-zinc-600 dark:text-zinc-300">{{ __('in Prüfung') }}</span>
                                 @endunless
                             </span>
 
@@ -260,7 +277,10 @@ new class extends Component {
                                 trying to end.
                             --}}
                             @if ($tag->isDisplayNameSubstituted())
-                                <span class="flex items-center gap-1 ps-5 text-xs opacity-60">
+                                {{-- opacity-60 on zinc-800 composites to #7d7d7d — 4.13:1 on
+                                     white, under the 4.5:1 of WCAG 1.4.3. Named colours
+                                     instead: 7.8:1 light, 12.5:1 dark. --}}
+                                <span class="flex items-center gap-1 ps-5 text-xs text-zinc-600 dark:text-zinc-300">
                                     <span aria-hidden="true">└</span>
                                     <span>{{ __('nur auf :lang vorhanden', ['lang' => mb_strtoupper($tag->displayLocale())]) }}</span>
                                 </span>

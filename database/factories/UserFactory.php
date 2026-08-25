@@ -29,15 +29,9 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'reputation' => fake()->numberBetween(0, 1000),
-            'current_language' => fake()->randomElement(['de', 'en']),
             'timezone' => 'Europe/Berlin',
             'is_lecturer' => fake()->boolean(20),
             'nostr' => fake()->boolean(70) ? NostrHelper::randomNpub() : null,
-            'lightning_address' => fake()->boolean(40) ? NostrHelper::randomLightningAddress($name) : null,
-            'lnurl' => null,
-            'node_id' => null,
-            'paynym' => null,
-            'lnbits' => null,
             'public_key' => null,
             'change' => null,
             'change_time' => null,
@@ -59,11 +53,25 @@ class UserFactory extends Factory
         ]);
     }
 
+    /**
+     * Nutzer ohne Referenten-Abzeichen.
+     *
+     * `definition()` wuerfelt `fake()->boolean(20)`, ein Test darf sich darauf nicht
+     * verlassen. Das Abzeichen gatet seit dem Abbau der `is_lecturer`-Pruefung keine
+     * Policy mehr — was es noch gatet (die beiden MCP-Werkzeuge, die API-Ausgabe),
+     * braucht diesen Zustand deterministisch.
+     */
+    public function notLecturer(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_lecturer' => false,
+        ]);
+    }
+
     public function withNostr(): static
     {
         return $this->state(fn (array $attributes) => [
             'nostr' => NostrHelper::randomNpub(),
-            'lightning_address' => NostrHelper::randomLightningAddress($attributes['name'] ?? null),
         ]);
     }
 }

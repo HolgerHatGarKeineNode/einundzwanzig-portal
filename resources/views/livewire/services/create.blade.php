@@ -3,6 +3,7 @@
 use App\Attributes\SeoDataAttribute;
 use App\Enums\SelfHostedServiceType;
 use App\Livewire\Forms\ServiceForm;
+use App\Models\SelfHostedService;
 use App\Traits\SeoTrait;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
@@ -19,13 +20,29 @@ class extends Component {
 
     public ServiceForm $form;
 
+    /**
+     * Einen Dienst anlegen darf, wem `SelfHostedServicePolicy::create()` es erlaubt.
+     *
+     * Das Formular hatte gar keine Pruefung — es verliess sich allein darauf, dass die
+     * Route hinter `auth` liegt. Die Ability sagt heute dasselbe wie `auth`, aber sie
+     * sagt es dort, wo eine spaetere Aenderung auch wirkt.
+     */
+    protected function authorizeAccess(): void
+    {
+        abort_unless(auth()->user()?->can('create', SelfHostedService::class), 403);
+    }
+
     public function mount(): void
     {
+        $this->authorizeAccess();
+
         $this->country = request()->route('country', config('app.domain_country'));
     }
 
     public function save(): void
     {
+        $this->authorizeAccess();
+
         $service = $this->form->store();
 
         session()->flash('status', __('Service erfolgreich erstellt!'));

@@ -21,8 +21,28 @@ class extends Component {
     public ?int $lecturer_id = null;
     public ?string $description = null;
 
+    /**
+     * Einen Kurs anlegen darf, wem `CoursePolicy::create()` es erlaubt.
+     *
+     * Das Formular hatte bisher gar keine Pruefung — es verliess sich allein darauf, dass
+     * die Route hinter `auth` liegt. Die Ability sagt heute dasselbe wie `auth`, aber sie
+     * sagt es an der Stelle, an der eine Aenderung spaeter auch wirkt: liegt die Erlaubnis
+     * eines Tages nicht mehr bei jedem Angemeldeten, greift sie hier ohne weiteres Zutun.
+     */
+    protected function authorizeAccess(): void
+    {
+        abort_unless(auth()->user()?->can('create', Course::class), 403);
+    }
+
+    public function mount(): void
+    {
+        $this->authorizeAccess();
+    }
+
     public function createCourse(): void
     {
+        $this->authorizeAccess();
+
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'lecturer_id' => ['required', 'exists:lecturers,id'],

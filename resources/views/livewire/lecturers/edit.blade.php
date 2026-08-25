@@ -45,11 +45,17 @@ class extends Component {
     #[Locked]
     public ?string $updated_at = null;
 
+    /**
+     * Bearbeiten darf der Ersteller — oder ein Super-Admin (`LecturerPolicy::update()`).
+     *
+     * Die Inline-Bedingung, die hier stand, kannte den Super-Admin nicht: die Ausnahme
+     * lag seit jeher in `ChecksCreatorOwnership::owns()`, nur fragte dieses Formular sie
+     * nie. Zweiter Unterschied: `created_by === null` galt inline als Freigabe fuer jeden
+     * Angemeldeten, die Policy antwortet darauf mit „nein" (ausser Super-Admin).
+     */
     protected function authorizeAccess(): void
     {
-        if (!is_null($this->lecturer->created_by) && auth()->id() !== $this->lecturer->created_by) {
-            abort(403);
-        }
+        abort_unless(auth()->user()?->can('update', $this->lecturer), 403);
     }
 
     public function mount(): void

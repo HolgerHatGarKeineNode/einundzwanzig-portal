@@ -63,7 +63,6 @@ class CreateMeetupTool extends Tool
             'signal' => $schema->string()->description('Signal-Gruppenlink.'),
             'community' => $schema->string()->description('Community-Bezeichnung.'),
             'visible_on_map' => $schema->boolean()->description('Auf der Karte sichtbar.'),
-            'is_active' => $schema->boolean()->description('Aktiv.'),
         ];
     }
 }

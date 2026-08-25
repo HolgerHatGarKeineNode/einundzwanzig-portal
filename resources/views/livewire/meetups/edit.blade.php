@@ -320,6 +320,11 @@ class extends Component
             'signal' => ['nullable', 'string', 'max:255'],
             'community' => ['required', 'string', 'max:255'],
             'github_data' => ['nullable', 'json'],
+            // Ohne diese Zeile faellt der Schalter unten stumm auf den Boden: das
+            // Formular schickt den Wert, `validate()` gibt nur zurueck, was es kennt,
+            // und `update($validated)` sieht das Feld nie. Property und mount() waren
+            // von Anfang an da (:63, :287) — nur diese beiden Enden fehlten.
+            'visible_on_map' => ['boolean'],
             'rsvp_enabled' => ['boolean'],
             'attendees_public' => ['boolean'],
             'logo' => ['nullable', 'image', 'mimes:jpeg,png,webp,avif', 'max:5120', 'dimensions:max_width=4000,max_height=4000'],
@@ -433,6 +438,18 @@ class extends Component
                     </flux:select>
                     <flux:description>{{ __('Die nächstgrößte Stadt oder Ort') }}</flux:description>
                     <flux:error name="city_id"/>
+                </flux:field>
+
+                {{-- Steht direkt neben der Stadt und in derselben Reihenfolge wie im
+                     Anlegen-Formular (create.blade.php:251-255). Wahre Nachbarschaft:
+                     der Kartenpunkt kommt aus der Stadt, also gehoert der Schalter
+                     darueber an die Stadt und nicht in die Sichtbarkeits-Gruppe weiter
+                     unten, die von Zusagen handelt. --}}
+                <flux:field>
+                    <flux:label>{{ __('Auf Karte sichtbar') }}</flux:label>
+                    <flux:switch wire:model="visible_on_map"/>
+                    <flux:description>{{ __('Soll dieses Meetup auf der Karte angezeigt werden?') }}</flux:description>
+                    <flux:error name="visible_on_map"/>
                 </flux:field>
             </div>
 

@@ -8,9 +8,9 @@ use App\Mcp\Tools\Concerns\ResolvesEntities;
 use App\Models\City;
 use App\Models\Course;
 use App\Models\CourseEvent;
-use App\Models\User;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
+use Illuminate\Support\Facades\Gate;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
@@ -25,8 +25,21 @@ class CreateCourseEventTool extends Tool
     {
         $user = $request->user();
 
-        if (! $user instanceof User || ! (bool) $user->is_lecturer) {
-            return Response::error('Nur Referenten (is_lecturer) dürfen Kurs-Events anlegen.');
+        /*
+         * Dieselbe Begruendung wie in {@see \App\Mcp\Tools\Course\CreateCourseTool}:
+         * `is_lecturer` ist seit P1 aus `CourseEventPolicy::create()` heraus, die
+         * Inline-Kopie hier blieb stehen und widersprach damit der REST-API
+         * ({@see \App\Http\Requests\Api\StoreCourseEventRequest::authorize()}, die
+         * dieselbe Ability fragt).
+         *
+         * Bewusst `create` und NICHT `createForCourse`: die kurs-bezogene Ability gehoert
+         * dem Terminformular, das seinen Kurs kennt. Dieses Tool folgt der REST-API, und
+         * dort darf einen Termin jeder anlegen — geaendert wird er nur vom Ersteller.
+         * Die Kurs-Aufloesung ueber den Namen ist ohnehin auf die eigenen Kurse
+         * beschraenkt ({@see ResolvesEntities::resolveOwnedByName()}).
+         */
+        if ($user === null || Gate::forUser($user)->denies('create', CourseEvent::class)) {
+            return Response::error('Nicht berechtigt, einen Kurstermin anzulegen.');
         }
 
         if (! $this->present($request->get('course_id'))) {
