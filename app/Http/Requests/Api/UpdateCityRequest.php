@@ -46,13 +46,13 @@ class UpdateCityRequest extends FormRequest
         return [
             'country_id' => ['sometimes', 'required', 'integer', 'exists:countries,id'],
             /*
-             * `unique` ist hier kein Komfort, sondern der Unterschied zwischen 422 und 500:
-             * `cities.name` ist auf DB-Ebene unique, und ohne diese Regel endete ein
-             * Rename auf einen belegten Namen in einer UniqueConstraintViolationException.
-             * `City::createOrFindByName()` faengt das nur beim ANLEGEN ab, nicht hier.
-             * Das Portal validiert es seit jeher (cities/edit); die API tat es nicht.
+             * `unique` schuetzt hier vor dem versehentlichen Rename auf einen im selben
+             * Land belegten Namen. Global ist der Name seit 2026-08-25 nicht mehr
+             * eindeutig (Issue #33) — die Regel ist deshalb landesbezogen und laesst
+             * sich mit `confirm_duplicate` aufheben, genau wie beim Anlegen.
              */
-            'name' => ['sometimes', 'required', 'string', 'max:255', $this->uniqueCityName($city)],
+            'name' => ['sometimes', 'required', 'string', 'max:255', ...$this->uniqueCityName($city)],
+            'confirm_duplicate' => ['sometimes', 'boolean'],
             'region_id' => $this->regionRules(
                 countryId: $this->input('country_id', $city?->country_id),
                 prefix: ['sometimes'],

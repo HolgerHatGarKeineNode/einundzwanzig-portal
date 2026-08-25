@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Concerns;
 
+use App\Models\Concerns\DescribesItselfForDisambiguation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -134,7 +135,26 @@ trait ResolvesEntities
             return Response::error("{$label} \"{$name}\" wurde nicht gefunden. Nutze das passende search-Tool, um den genauen Namen zu ermitteln.");
         }
 
-        return Response::error("Mehrere {$label} passen zu \"{$name}\": ".$matches->pluck($column)->take(15)->join('; ').'. Bitte präziser angeben.');
+        /*
+         * Die Trefferliste muss UNTERSCHEIDBAR sein, nicht nur vollstaendig.
+         *
+         * Bis 2026-08-25 stand hier `pluck($column)` — bei acht Gemeinden namens
+         * Neuenkirchen also achtmal dasselbe Wort. Die Meldung war formal korrekt und
+         * praktisch wertlos: der Empfaenger konnte „praeziser angeben" nicht befolgen,
+         * weil er nicht wusste, wodurch sich die Kandidaten unterscheiden. Seit die
+         * Namens-Unique gefallen ist (Issue #33), ist das kein Randfall mehr.
+         *
+         * Models, die `DescribesItselfForDisambiguation` erfuellen, liefern ihre eigene
+         * Unterscheidung — bei einer Stadt id, Region und Koordinaten. Alle anderen
+         * bekommen id plus Name, was immer noch besser ist als der Name allein.
+         */
+        $kandidaten = $matches->take(15)->map(
+            fn (Model $model): string => $model instanceof DescribesItselfForDisambiguation
+                ? $model->disambiguationLabel()
+                : '#'.$model->getKey().' '.$model->getAttribute($column)
+        )->join('; ');
+
+        return Response::error("Mehrere {$label} passen zu \"{$name}\": {$kandidaten}. Bitte praeziser angeben — die Kandidaten sind oben mit ihrer id genannt.");
     }
 
     /**

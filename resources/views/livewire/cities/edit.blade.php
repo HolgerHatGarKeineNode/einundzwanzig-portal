@@ -33,6 +33,12 @@ class extends Component {
     public ?int $population = null;
     public ?string $population_date = null;
 
+    /**
+     * Bestaetigung, dass die Stadt bewusst auf einen im selben Land bereits vergebenen
+     * Namen umbenannt wird — derselbe Ausweg wie beim Anlegen (Issue #33).
+     */
+    public bool $confirmDuplicate = false;
+
     /** Der Laenderkontext, mit dem der Nutzer hergekommen ist. */
     public string $country = 'de';
 
@@ -103,6 +109,16 @@ class extends Component {
     public function updateCity(): void
     {
         /*
+         * Trimmen VOR der Validierung, nicht danach. Die unique-Regel unten prueft den
+         * Wert, den sie bekommt — steht der Trim erst beim Speichern, laesst sie
+         * "Offenburg " an einem vorhandenen "Offenburg" vorbei und erzeugt genau die
+         * Dublette, die sie verhindern soll. Belegt: 12 der 305 Staedte in Produktion
+         * tragen ein nachgestelltes Leerzeichen, "Offenburg " steht dort seit 2023
+         * neben "Offenburg".
+         */
+        $this->name = trim($this->name);
+
+        /*
          * Der Riegel, nicht die Anzeige. Das Formular sperrt die Felder bereits, aber
          * eine gesperrte Eingabe ist nur eine Bitte: `wire:model`-Properties lassen
          * sich aus dem Browser heraus setzen, ohne dass das Formular mitspielt.
@@ -127,7 +143,17 @@ class extends Component {
         );
 
         $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:cities,name,'.$this->city->id],
+            // Landesbezogen statt global (Issue #33) — dieselbe Bedingung wie beim
+            // Anlegen, sonst liesse sich eine Stadt anlegen, aber nicht umbenennen.
+            // `confirmDuplicate` ist derselbe Ausweg wie dort.
+            'name' => [
+                'required', 'string', 'max:255',
+                ...($this->confirmDuplicate
+                    ? []
+                    : [Rule::unique('cities', 'name')
+                        ->where('country_id', $this->country_id)
+                        ->ignore($this->city->id)]),
+            ],
             'country_id' => ['required', 'exists:countries,id'],
             // Die Region MUSS zum gewaehlten Land gehoeren; ohne diese Einschraenkung
             // liesse sich jede beliebige Region-ID unterschieben.
@@ -279,6 +305,17 @@ class extends Component {
                 <flux:input label="{{ __('Name') }}" wire:model="name" required
                             :readonly="! $canEditIdentity" :icon:trailing="$identityLockIcon"
                             :aria-describedby="$canEditIdentity ? null : 'identity-lock'"/>
+
+                {{-- Der Ausweg an der landesbezogenen Namensbremse vorbei (Issue #33).
+                     Er erscheint erst, wenn sie angeschlagen hat: eine Checkbox, die
+                     immer dasteht, wird irgendwann aus Gewohnheit gesetzt — und dann
+                     schuetzt sie nichts mehr. --}}
+                @error('name')
+                    @if ($canEditIdentity)
+                        <flux:checkbox class="mt-3" wire:model.live="confirmDuplicate"
+                                       label="{{ __('Trotzdem umbenennen — es ist ein anderer Ort gleichen Namens') }}"/>
+                    @endif
+                @enderror
 
                 {{-- Identisch zu cities/create: rohe <option>-Tags koennen keine Flagge
                      tragen und liefern in einer Liste von ueber 240 Laendern keine Suche.

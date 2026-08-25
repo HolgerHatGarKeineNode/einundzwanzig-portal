@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -65,15 +66,25 @@ class CityController extends Controller
      * Allows an authenticated user to create a city programmatically.
      * The creator (created_by) is set automatically.
      *
-     * City names are globally unique: if the city already exists, it is
-     * returned with status 200 instead of creating a duplicate.
+     * City names are **not** unique — real places share names (eight municipalities
+     * called Neuenkirchen in Lower Saxony alone, six Georgetowns in Indiana). The city
+     * is resolved on name **plus country**, or exactly on `osm_type` + `osm_id` when
+     * you send them.
+     *
+     * - Exactly one match → it is returned with status 200.
+     * - No match → the city is created with status 201.
+     * - Several matches → **422**, listing the candidates. Pick one by its id, or send
+     *   `osm_type` + `osm_id` to be exact. This endpoint never guesses.
+     * - Creating a city while a place of that name already exists → **422**, unless you
+     *   send an OpenStreetMap reference or set `confirm_duplicate`. A second Georgetown
+     *   is allowed; it just has to be a decision rather than a side effect.
      */
     #[ResponseAttribute(status: 200, description: 'The city already existed and is returned unchanged.')]
     #[ResponseAttribute(status: 401, description: 'Not authenticated.')]
     #[ResponseAttribute(status: 422, description: 'Validation error.')]
     public function store(StoreCityRequest $request): JsonResponse
     {
-        $city = City::createOrFindByName($request->validated());
+        $city = City::resolveOrCreate($request->validated());
 
         $status = $city->wasRecentlyCreated ? Response::HTTP_CREATED : Response::HTTP_OK;
 
@@ -103,7 +114,13 @@ class CityController extends Controller
     #[ResponseAttribute(status: 422, description: 'Validation error.')]
     public function update(UpdateCityRequest $request, City $city): CityResource
     {
-        $city->update($request->validated());
+        /*
+         * `confirm_duplicate` ist ein Steuerfeld, keine Spalte — es hebt beim Rename die
+         * landesbezogene Namensbremse auf und hat danach nichts mehr in den Attributen
+         * zu suchen. Ohne diese Zeile wirft Eloquent eine QueryException, und aus einer
+         * bestaetigten Umbenennung wird ein 500 statt eines Erfolgs.
+         */
+        $city->update(Arr::except($request->validated(), [City::CONFIRM_DUPLICATE]));
 
         return CityResource::make($city->fresh());
     }

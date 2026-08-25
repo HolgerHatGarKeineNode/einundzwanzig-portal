@@ -5,6 +5,7 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
 use App\Traits\SeoTrait;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -42,10 +43,66 @@ class extends Component {
     public ?float $newCityLatitude = null;
     public ?float $newCityLongitude = null;
 
+    /**
+     * Bestaetigung, dass hier bewusst ein weiterer Ort gleichen Namens entsteht —
+     * siehe cities/create. Gleichnamige Orte gibt es wirklich (acht Neuenkirchen in
+     * Niedersachsen); wir verbieten sie nicht, wir verlangen eine Entscheidung.
+     */
+    public bool $confirmDuplicateCity = false;
+
+    /**
+     * Vorhandene Orte gleichen Namens im gewaehlten Land, nur zum Anzeigen.
+     *
+     * @var array<int, array{id: int, latitude: float, longitude: float}>
+     */
+    public array $duplicateCityCandidates = [];
+
+
+    /**
+     * Vorhandene Orte gleichen Namens im gewaehlten Land.
+     *
+     * Sucht ueber LOWER(TRIM(name)) wie City::resolveOrCreate(), damit dieses Formular
+     * denselben Bestand sieht wie die API.
+     *
+     * @return array<int, array{id: int, latitude: float, longitude: float}>
+     */
+    protected function duplicateCityCandidates(): array
+    {
+        if (trim($this->newCityName) === '' || $this->newCityCountryId === null) {
+            return [];
+        }
+
+        return City::matchingName($this->newCityName, $this->newCityCountryId)
+            ->map(fn (City $city): array => [
+                'id' => $city->getKey(),
+                'latitude' => (float) $city->latitude,
+                'longitude' => (float) $city->longitude,
+            ])
+            ->all();
+    }
+
     public function createCity(): void
     {
+        /*
+         * Trimmen VOR der Validierung, nicht danach. Die unique-Regel unten prueft den
+         * Wert, den sie bekommt — steht der Trim erst beim Speichern, laesst sie
+         * "Offenburg " an einem vorhandenen "Offenburg" vorbei und erzeugt genau die
+         * Dublette, die sie verhindern soll. Belegt: 12 der 305 Staedte in Produktion
+         * tragen ein nachgestelltes Leerzeichen, "Offenburg " steht dort seit 2023
+         * neben "Offenburg".
+         */
+        $this->newCityName = trim($this->newCityName);
+        $this->duplicateCityCandidates = $this->duplicateCityCandidates();
+
         $validated = $this->validate([
-            'newCityName' => ['required', 'string', 'max:255', 'unique:cities,name'],
+            // Landesbezogen, nicht global (Issue #33): Paris in Frankreich und Paris in
+            // Texas sind kein Konflikt. Innerhalb eines Landes bleibt die Bremse.
+            'newCityName' => [
+                'required', 'string', 'max:255',
+                ...($this->confirmDuplicateCity
+                    ? []
+                    : [Rule::unique('cities', 'name')->where('country_id', $this->newCityCountryId)]),
+            ],
             'newCityCountryId' => ['required', 'exists:countries,id'],
             'newCityLatitude' => ['required', 'numeric', 'between:-90,90'],
             'newCityLongitude' => ['required', 'numeric', 'between:-180,180'],
@@ -70,7 +127,7 @@ class extends Component {
         ]);
 
         $this->city_id = $city->id;
-        $this->reset(['newCityName', 'newCityCountryId', 'newCityLatitude', 'newCityLongitude']);
+        $this->reset(['newCityName', 'newCityCountryId', 'newCityLatitude', 'newCityLongitude', 'confirmDuplicateCity', 'duplicateCityCandidates']);
 
         \Flux\Flux::modal('add-city')->close();
     }
@@ -314,6 +371,22 @@ class extends Component {
                 <flux:label>{{ __('Stadtname') }} <span class="text-red-500">*</span></flux:label>
                 <flux:input wire:model="newCityName" placeholder="{{ __('z.B. Berlin') }}" required/>
                 <flux:error name="newCityName"/>
+                {{-- Rueckfrage aus Issue #33: gleichnamige Orte existieren wirklich.
+                     Nicht verbieten, sondern zur Entscheidung machen. --}}
+                @if ($duplicateCityCandidates !== [])
+                    <div class="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+                        <p class="font-semibold">
+                            {{ trans_choice('Es gibt in diesem Land bereits :count Ort dieses Namens.|Es gibt in diesem Land bereits :count Orte dieses Namens.', count($duplicateCityCandidates), ['count' => count($duplicateCityCandidates)]) }}
+                        </p>
+                        <ul class="mt-2 space-y-1 opacity-90">
+                            @foreach ($duplicateCityCandidates as $candidate)
+                                <li>#{{ $candidate['id'] }} · {{ number_format($candidate['latitude'], 4) }} / {{ number_format($candidate['longitude'], 4) }}</li>
+                            @endforeach
+                        </ul>
+                        <flux:checkbox class="mt-3" wire:model.live="confirmDuplicateCity"
+                                       label="{{ __('Trotzdem als weiteren Ort gleichen Namens anlegen') }}"/>
+                    </div>
+                @endif
             </flux:field>
 
             <flux:field>

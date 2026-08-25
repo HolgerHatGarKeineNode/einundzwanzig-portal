@@ -33,6 +33,29 @@ class extends Component {
     public ?int $population = null;
     public ?string $population_date = null;
 
+    /**
+     * Die ausdrueckliche Bestaetigung, dass hier bewusst ein weiterer Ort gleichen
+     * Namens im selben Land entsteht.
+     *
+     * Warum das Portal eine andere Antwort gibt als die API: `City::resolveOrCreate()`
+     * liefert bei genau einem Treffer den Bestand mit 200 zurueck — fuer einen
+     * Upsert-Endpunkt richtig, fuer ein Formular mit der Aufschrift „Stadt anlegen"
+     * falsch. Wer hier auf Absenden drueckt, will anlegen und nicht finden. Also bleibt
+     * die landesbezogene Namensbremse, und dieses Feld ist der Ausweg daran vorbei.
+     */
+    public bool $confirmDuplicate = false;
+
+    /**
+     * Die bereits vorhandenen Orte gleichen Namens, sobald die Bremse angeschlagen hat.
+     *
+     * Nur zum Anzeigen: bei acht Neuenkirchen steht der Name achtmal da und hilft
+     * niemandem — die Liste zeigt Koordinaten und Region, damit man sie auseinanderhalten
+     * kann.
+     *
+     * @var array<int, array{id: int, region: ?string, latitude: float, longitude: float}>
+     */
+    public array $duplicateCandidates = [];
+
     public function mount(): void
     {
         $this->country = request()->route('country', config('app.domain_country'));
@@ -45,6 +68,32 @@ class extends Component {
      * Ein Landwechsel macht die gewaehlte Region ungueltig — sonst haenge die Stadt an
      * einem Bundesstaat eines anderen Landes.
      */
+
+    /**
+     * Vorhandene Orte gleichen Namens im gewaehlten Land — fuer die Rueckfrage.
+     *
+     * Sucht ueber LOWER(TRIM(name)) wie `City::resolveOrCreate()`, damit Formular und
+     * API denselben Bestand sehen. Waere hier ein exakter Vergleich, meldete die
+     * Rueckfrage "kein Konflikt", waehrend die Bremse gleich darauf anschlaegt.
+     *
+     * @return array<int, array{id: int, region: ?string, latitude: float, longitude: float}>
+     */
+    protected function candidatesForName(): array
+    {
+        if ($this->name === '' || $this->country_id === null) {
+            return [];
+        }
+
+        return City::matchingName($this->name, $this->country_id)
+            ->load('region')
+            ->map(fn (City $city): array => [
+                'id' => $city->getKey(),
+                'region' => $city->region?->code ? mb_strtoupper($city->region->code) : null,
+                'latitude' => (float) $city->latitude,
+                'longitude' => (float) $city->longitude,
+            ])
+            ->all();
+    }
 
     /**
      * Der Laendercode fuer die Suche, damit "Springfield" nicht die halbe Welt trifft.
@@ -63,8 +112,28 @@ class extends Component {
 
     public function createCity(): void
     {
+        /*
+         * Trimmen VOR der Validierung, nicht danach. Die unique-Regel unten prueft den
+         * Wert, den sie bekommt — steht der Trim erst beim Speichern, laesst sie
+         * "Offenburg " an einem vorhandenen "Offenburg" vorbei und erzeugt genau die
+         * Dublette, die sie verhindern soll. Belegt: 12 der 305 Staedte in Produktion
+         * tragen ein nachgestelltes Leerzeichen, "Offenburg " steht dort seit 2023
+         * neben "Offenburg".
+         */
+        $this->name = trim($this->name);
+        $this->duplicateCandidates = $this->candidatesForName();
+
         $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:cities,name'],
+            // Landesbezogen, nicht global: seit Issue #33 duerfen gleichnamige Orte in
+            // verschiedenen Laendern nebeneinander stehen. Innerhalb EINES Landes bleibt
+            // die Bremse, damit ein zweites Georgetown eine Entscheidung ist und kein
+            // Tippfehler — und `confirmDuplicate` ist der Weg daran vorbei.
+            'name' => [
+                'required', 'string', 'max:255',
+                ...($this->confirmDuplicate
+                    ? []
+                    : [Rule::unique('cities', 'name')->where('country_id', $this->country_id)]),
+            ],
             'country_id' => ['required', 'exists:countries,id'],
             // Die Region MUSS zum gewaehlten Land gehoeren; ohne diese Einschraenkung
             // liesse sich jede beliebige Region-ID unterschieben.
@@ -166,6 +235,30 @@ class extends Component {
 
             <div class="space-y-6">
                 <flux:input label="{{ __('Name') }}" wire:model="name" required/>
+
+                {{-- Die Rueckfrage aus Issue #33: gleichnamige Orte gibt es wirklich
+                     (acht Neuenkirchen in Niedersachsen, sechs Georgetown in Indiana).
+                     Wir verbieten sie nicht — wir verlangen, dass es eine Entscheidung
+                     ist. Die Liste zeigt Koordinaten, weil der Name allein hier achtmal
+                     dasselbe Wort waere. --}}
+                @if ($duplicateCandidates !== [])
+                    <div class="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+                        <p class="font-semibold">
+                            {{ trans_choice('Es gibt in diesem Land bereits :count Ort dieses Namens.|Es gibt in diesem Land bereits :count Orte dieses Namens.', count($duplicateCandidates), ['count' => count($duplicateCandidates)]) }}
+                        </p>
+                        <ul class="mt-2 space-y-1 opacity-90">
+                            @foreach ($duplicateCandidates as $candidate)
+                                <li>
+                                    #{{ $candidate['id'] }}
+                                    @if ($candidate['region']) · {{ $candidate['region'] }} @endif
+                                    · {{ number_format($candidate['latitude'], 4) }} / {{ number_format($candidate['longitude'], 4) }}
+                                </li>
+                            @endforeach
+                        </ul>
+                        <flux:checkbox class="mt-3" wire:model.live="confirmDuplicate"
+                                       label="{{ __('Trotzdem als weiteren Ort gleichen Namens anlegen') }}"/>
+                    </div>
+                @endif
 
                 <flux:select variant="listbox" searchable label="{{ __('Country') }}" wire:model.live="country_id" required>
                     <flux:select.option value="">{{ __('Select a country') }}</flux:select.option>

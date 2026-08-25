@@ -1,6 +1,10 @@
 <?php
 
+use App\Models\City;
+use App\Models\Country;
+use App\Models\Region;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -209,4 +213,72 @@ function actingAsUser(array $attributes = []): User
 function defaultCountrySegment(): string
 {
     return (string) config('app.domain_country', 'de');
+}
+
+/*
+|--------------------------------------------------------------------------
+| Real ambiguous-name datasets (Issue #33 / staedte-identitaet-Plan)
+|--------------------------------------------------------------------------
+|
+| Der Plan verlangt echte Namensdubletten statt bequemer Beispiele ("acht
+| Neuenkirchen in Niedersachsen, sechs Georgetown in Indiana"). Koordinaten
+| sind auf Nominatim-Praezision gerundete Naeherungswerte der tatsaechlichen
+| Orte (Stand des Plans, 2026-08-25) — die Punkte selbst liegen echt in
+| Niedersachsen bzw. Indiana und mit dem im Plan gemessenen minimalen Abstand
+| (>= ~39 km, zwei davon im selben Landkreis Osnabrueck), nicht auf einem
+| Gitter erfunden. Geteilt, weil mehrere Specs (Model, REST, MCP) dieselbe
+| Mehrdeutigkeit brauchen — eine gemeinsame Fixture statt acht Mal
+| copy-pasteter Koordinaten.
+|
+| @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\City>
+*/
+function neuenkirchenCities(Country $country, ?Region $region = null): Collection
+{
+    $orte = [
+        ['lat' => 52.5057, 'lon' => 7.3585],  // Landkreis Emsland
+        ['lat' => 52.2874, 'lon' => 8.2038],  // Landkreis Osnabrueck (Melle)
+        ['lat' => 52.5461, 'lon' => 8.0523],  // Landkreis Osnabrueck (Rieste) — selber Kreis wie oben
+        ['lat' => 52.6893, 'lon' => 8.3390],  // Landkreis Vechta
+        ['lat' => 52.8580, 'lon' => 9.7503],  // Heidekreis
+        ['lat' => 53.6392, 'lon' => 9.3479],  // Landkreis Stade
+        ['lat' => 53.6817, 'lon' => 8.7458],  // Landkreis Cuxhaven
+        ['lat' => 53.1898, 'lon' => 9.3602],  // Landkreis Rotenburg (Wuemme)
+    ];
+
+    return City::factory()
+        ->count(8)
+        ->sequence(...array_map(fn (array $ort): array => [
+            'name' => 'Neuenkirchen',
+            'country_id' => $country->id,
+            'region_id' => $region?->id,
+            'latitude' => $ort['lat'],
+            'longitude' => $ort['lon'],
+        ], $orte))
+        ->create();
+}
+
+/*
+| @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\City>
+*/
+function georgetownCities(Country $country, ?Region $region = null): Collection
+{
+    $orte = [
+        ['lat' => 38.3223, 'lon' => -85.8730], // Floyd County
+        ['lat' => 38.5292, 'lon' => -86.0891], // Washington County
+        ['lat' => 40.0475, 'lon' => -84.8330], // Randolph County
+        ['lat' => 40.8709, 'lon' => -86.2039], // Cass County
+        ['lat' => 41.6636, 'lon' => -86.2520], // St. Joseph County
+        ['lat' => 41.0206, 'lon' => -85.0522], // Allen County
+    ];
+
+    return City::factory()
+        ->count(6)
+        ->sequence(...array_map(fn (array $ort): array => [
+            'name' => 'Georgetown',
+            'country_id' => $country->id,
+            'region_id' => $region?->id,
+            'latitude' => $ort['lat'],
+            'longitude' => $ort['lon'],
+        ], $orte))
+        ->create();
 }

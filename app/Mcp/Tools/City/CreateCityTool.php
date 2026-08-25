@@ -32,8 +32,8 @@ class CreateCityTool extends Tool
             return $error;
         }
 
-        // Wie in der API: Koordinaten aus dem OSM-Ort uebernehmen, eigene gewinnen.
-        $request->merge(StoreCityRequest::coordinatesFromOsm($request->all()));
+        // Wie in der API: Namen trimmen, Koordinaten aus dem OSM-Ort uebernehmen.
+        $request->merge(StoreCityRequest::normalise($request->all()));
 
         $storeRequest = new StoreCityRequest;
 
@@ -42,7 +42,7 @@ class CreateCityTool extends Tool
             $storeRequest->messages(),
         );
 
-        $city = City::createOrFindByName($validated);
+        $city = City::resolveOrCreate($validated);
 
         return Response::json([
             ...CityResource::make($city->fresh())->resolve(),
