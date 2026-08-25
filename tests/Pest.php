@@ -183,6 +183,33 @@ pest()->extend(TestCase::class)
 | Lauf OHNE Erklaerung. Bemerkenswert war der Weg dorthin: nach dem Fix lief
 | nur ein gefilterter Lauf (13 passed), erst das volle Tor fand es.
 |
+| ZWEITER ROTER LAUF, 2026-08-25 (Motiv-Default-Arbeit) — diesmal MIT Namen,
+| und er beantwortet eine der zwei offenen Verdachtsrichtungen:
+|   Lauf A (voll, 758 s, kein Replay): 1 failed / 1260 passed —
+|     ActiveRegionForGuardTest, UniqueConstraintViolationException auf
+|     regions.country_id/slug. KEIN Flake im Code, sondern in der Fixture:
+|     RegionFactory leitete den Slug vom Faker-Namen ab, den ein
+|     ['name' => 'North Carolina']-Override danach verwarf. Traf
+|     faker->state() zufaellig "Indiana", kollidierte der Slug mit dem des
+|     indiana()-States — rund 1/50. Behoben ueber configure()/afterMaking.
+|   Lauf B (TIA, 65 s, 1126 replayed): 1 failed / 1260 passed — ein ANDERER
+|     Test: CityIdentityLockTest > "it leaves population untouched for a
+|     stranger who picks an osm place with a population, and still saves",
+|     ViewException "Undefined array key osm_name" in einer kompilierten
+|     Livewire-View. Isoliert dreimal gruen.
+|   Lauf C (--fresh, 713 s, voller Lauf): 1261 passed, 0 failed.
+| Damit ist belegt, was oben nur vermutet war: der Unterschied liegt am
+| GEFILTERTEN Lauf, nicht an der Browser-Suite. Lauf B ist der einzige der
+| drei, der replayte, und der einzige, dessen roter Test sich nicht
+| reproduzieren laesst.
+| OFFENE AUFGABE, keine Erklaerung: kurz vor Lauf B lief ein "view:clear",
+| das die kompilierten Livewire-Views zur Neuentstehung zwang. Ob das die
+| Ursache ist, ist UNGEPRUEFT — faellig ist ein Lauf, der genau diese Folge
+| absichtlich herstellt.
+| KONSEQUENZ fuer jeden, der ein Tor braucht: "--fresh" IST das Tor. Ein
+| gefilterter Lauf ist eine Zwischenauskunft, kein Beleg — in beide
+| Richtungen, gruen wie rot.
+|
 | WER HIER LANDET, WEIL SEIN LAUF ROT IST: leite die Ausgabe NICHT durch
 | tail/head/grep, sondern vollstaendig in eine Datei, halte den Testnamen fest
 | und fahre danach den gezielten Bisect (wiederholte Laeufe nur der

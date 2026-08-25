@@ -209,6 +209,7 @@
     "Du signierst eine einmalige Anfrage mit deinem Nostr-Schlüssel (Browser-Extension oder Amber).": "You sign a one-time request with your Nostr key (browser extension or Amber).",
     "Du wirst zum EINUNDZWANZIG-Portal weitergeleitet. Melde dich an (zum Beispiel per Lightning) und klicke auf »Authorize«, um Claude den Zugriff zu erlauben.": "You will be redirected to the EINUNDZWANZIG portal. Sign in (for example via Lightning) and click »Authorize« to grant Claude access.",
     "Durchsuche alle Städte mit aktiven Bitcoin Meetups und finde Events in deiner Nähe.": "Browse all cities with active Bitcoin Meetups and find events near you.",
+    "EINUNDZWANZIG": "TWENTY ONE",
     "EINUNDZWANZIG Community": "Twenty One Community",
     "EINUNDZWANZIG Portal": "Twenty One Portal",
     "EINUNDZWANZIG mit Claude verbinden": "Connect EINUNDZWANZIG with Claude",

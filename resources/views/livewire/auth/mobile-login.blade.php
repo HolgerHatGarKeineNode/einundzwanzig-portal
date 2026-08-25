@@ -84,10 +84,9 @@ class extends Component {
 
         $this->lnurl = lnurl\encodeUrl($url);
 
-        $image = 'public/img/domains/'.session('lang_country', 'de-DE').'.jpg';
-        if (! file_exists(base_path($image))) {
-            $image = 'public/img/domains/de-DE.jpg';
-        }
+        // Dieselbe Auswahl wie Kopfbereich und Social-Media-Vorschau: eine Fassung
+        // ohne eigenes Motiv bekommt TWENTY ONE, nicht mehr das deutsche Bild.
+        $image = 'public/'.domain_image_path();
 
         $this->qrCode = base64_encode(QrCode::format('png')
             ->size(300)

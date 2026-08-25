@@ -112,7 +112,7 @@ class extends Component {
             <div class="size-10">
                 <x-app-logo-icon/>
             </div>
-            <span class="hidden text-sm font-semibold tracking-tight sm:block">EINUNDZWANZIG</span>
+            <span class="hidden text-sm font-semibold tracking-tight sm:block">{{ __('EINUNDZWANZIG') }}</span>
         </a>
 
         <div class="flex items-center gap-3">

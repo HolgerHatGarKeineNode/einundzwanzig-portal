@@ -63,11 +63,15 @@ it('gives spanish-speaking latin america the lat image and the veintiuno brand',
         ->twitter->toBe('veintiunolat');
 })->with(['es-CL', 'es-CO']);
 
-it('falls back to the german image for countries without their own', function () {
+it('falls back to the twenty-one image for countries without their own (regression: no longer german)', function () {
+    // Bis 2026-08-25 fiel der Bild-Fallback hart auf 'de-DE.jpg' — jede
+    // Fassung ohne eigenes Motiv (hier lv-LV) bekam damit das deutsche Bild.
+    // TWENTY ONE ist die sprachneutrale Marke und damit der richtige Default.
     session(['lang_country' => 'lv-LV']);
 
     expect(get_domain_attributes())
-        ->image->toContain('img/domains/de-DE.jpg')
+        ->image->toContain('img/domains/twenty-one.png')
+        ->image->not->toContain('img/domains/de-DE.jpg')
         ->author->toBe('einundzwanzig');
 });
 
