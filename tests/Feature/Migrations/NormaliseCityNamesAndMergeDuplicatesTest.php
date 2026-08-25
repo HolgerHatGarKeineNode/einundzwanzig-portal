@@ -95,47 +95,39 @@ it('keeps the smaller id as the survivor even though it is the dirty row', funct
 });
 
 /*
-|--------------------------------------------------------------------------
-| P2-d — Fund, nicht Test: die Migration merged acht REALE Neuenkirchen zu einem.
-|--------------------------------------------------------------------------
-|
-| `mergeDuplicatesAfterTrim()` gruppiert nach (country_id, LOWER(TRIM(name)))
-| und legt JEDE Gruppe mit COUNT(*) > 1 zusammen — ohne zu pruefen, ob die
-| Kollision UEBERHAUPT erst durch das Trimmen entsteht. Acht Zeilen, die alle
-| bereits byte-identisch "Neuenkirchen" heissen (keine einzige mit
-| Leerzeichen-Suffix), bilden dieselbe Gruppe wie 'Offenburg'/'Offenburg ' —
-| und werden genauso zusammengelegt. Das widerspricht woertlich dem Docblock
-| der Migration selbst ("Acht Neuenkirchen in Niedersachsen bleiben acht
-| Neuenkirchen") und der DoD dieser Phase (P2-d).
-|
-| Belegt per vendor/bin/pest --agent (2026-08-25) mit der Fixture aus
-| tests/Pest.php::neuenkirchenCities() (acht reale, unterschiedliche
-| Landkreise, alle country_id gleich, alle Namen exakt "Neuenkirchen"):
-|
-|   "before" => [1,2,3,4,5,6,7,8]
-|   "after"  => [1]
-|   "total_named_neuenkirchen" => 1
-|
-| Sieben von acht echten Gemeinden verschwinden, ihre etwaigen Meetups/Events
-| haengen danach an der Gemeinde mit der kleinsten id — ein "erfolgreiches
-| Aufraeumen", das keins ist (Risiko 7 im Plan).
-|
-| Fix-Kandidat (EINER, nicht umgesetzt — Produktivcode wird von dieser
-| Testreihe nicht angefasst): die Gruppe darf nur zusammengelegt werden, wenn
-| die Kollision durch das Trimmen ENTSTEHT — also mindestens eine Zeile der
-| Gruppe ein aeusseres Leerzeichen traegt. Etwa eine zusaetzliche Bedingung in
-| `mergeDuplicatesAfterTrim()`:
-| `havingRaw('COUNT(*) > 1 AND SUM(CASE WHEN name <> TRIM(name) THEN 1 ELSE 0 END) > 0')`.
-| Eine Gruppe aus ausschliesslich bereits sauberen, identischen Namen (echte
-| Homonyme) faellt damit durch und bleibt unangetastet.
-|
-| Diagnosekosten fuer eine vollstaendige Absicherung (Migration korrigieren +
-| Test von "Fund" auf gruene Zusage umstellen): klein, geschaetzt < 30 Min —
-| die Ursache ist bereits eindeutig lokalisiert, es fehlt nur die Entscheidung
-| des Koordinators, den Produktivcode anzufassen.
-|--------------------------------------------------------------------------
-*/
+ * P2-d — der Fund, der zur Zusage wurde.
+ *
+ * Diese Stelle trug bis zum 2026-08-25 einen Kommentarblock statt eines Tests: der
+ * `test-engineer` hatte gemessen, dass `mergeDuplicatesAfterTrim()` acht REALE
+ * Neuenkirchen zu einer Zeile zusammenlegt ("before" => [1..8], "after" => [1]), durfte
+ * den Produktivcode aber nicht anfassen. Der Koordinator hat die Migration danach
+ * korrigiert — `COUNT(DISTINCT name) > 1` —, und aus dem Fund wurde der Test darunter.
+ *
+ * Er steht hier und nicht bei den anderen, weil er die teuerste Zusage dieser Migration
+ * ist: sieben stille Loeschungen echter Gemeinden, deren Meetups danach an der Zeile mit
+ * der kleinsten id haengen. Ein "erfolgreiches Aufraeumen", das keins ist.
+ */
+it('leaves eight genuine same-name places untouched — only whitespace collisions merge', function () {
+    $country = Country::factory()->create();
+    $vorher = neuenkirchenCities($country);
 
+    // Der echte Trim-Fall daneben, damit der Test auch beweist, dass die Migration
+    // ueberhaupt noch etwas tut — sonst waere eine Migration, die gar nichts merged,
+    // ebenfalls gruen.
+    $verschmutzt = City::factory()->create(['name' => 'Offenburg ', 'country_id' => $country->id, 'slug' => null]);
+    $sauber = City::factory()->create(['name' => 'Offenburg', 'country_id' => $country->id, 'slug' => null]);
+
+    (require base_path('database/migrations/2026_08_25_001255_normalise_city_names_and_merge_duplicates.php'))->up();
+
+    expect(City::where('name', 'Neuenkirchen')->count())->toBe(8)
+        ->and(City::whereIn('id', $vorher->pluck('id'))->count())->toBe(8)
+        ->and(City::where('name', 'Offenburg')->count())->toBe(1)
+        ->and(City::whereRaw('name <> TRIM(name)')->count())->toBe(0);
+
+    // Die kleinere id ueberlebt auch hier.
+    expect(City::find(min($verschmutzt->id, $sauber->id)))->not->toBeNull()
+        ->and(City::find(max($verschmutzt->id, $sauber->id)))->toBeNull();
+});
 // P2-e — elf kollisionsfreie Trims laufen durch, ohne dass irgendetwas zusammengelegt
 // wird: dieselben Namen wie im Plan gemessen (Produktions-Stichprobe 2026-08-24).
 it('trims eleven collision-free names without merging or losing any row', function () {

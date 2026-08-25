@@ -60,20 +60,24 @@ class AuditCities extends Command
     }
 
     /**
-     * Gleicher Name (normalisiert) im selben Land — also derselbe Ort, zweimal eingetippt.
+     * Derselbe Ort, zweimal eingetippt — erkennbar daran, dass die beiden Namen sich
+     * nur in unsichtbaren Zeichen unterscheiden.
      *
-     * Gleichnamige Orte in verschiedenen Laendern sind KEIN Befund, und gleichnamige
-     * Orte im selben Land sind es nur dann, wenn sie buchstabengleich sind: acht
-     * Gemeinden namens Neuenkirchen in Niedersachsen sind acht Gemeinden, kein Fehler.
-     * Diese Pruefung meldet deshalb bewusst nur, was die Migration von 2026-08-25 auch
-     * zusammenlegen wuerde — sonst waere sie nach dem naechsten Import dauerhaft rot.
+     * `COUNT(DISTINCT name) > 1` ist auch hier die entscheidende Bedingung, aus
+     * demselben Grund wie in der Migration von 2026-08-25: Ohne sie meldet dieses
+     * Kommando die acht Gemeinden namens Neuenkirchen in Niedersachsen als Befund —
+     * und waere damit nach dem Import aus Issue #33 dauerhaft rot. Ein Pruefkommando,
+     * das im Normalbetrieb immer anschlaegt, wird nach der dritten Woche ignoriert und
+     * ist ab da wertlos.
+     *
+     * Gleichnamige Orte sind kein Fehler. Sie sind der Grund, warum es diesen Plan gibt.
      */
     private function duplicateNames(): void
     {
         DB::table('cities')
             ->selectRaw('country_id, LOWER(TRIM(name)) as normalised, COUNT(*) as anzahl')
             ->groupByRaw('country_id, LOWER(TRIM(name))')
-            ->havingRaw('COUNT(*) > 1')
+            ->havingRaw('COUNT(*) > 1 AND COUNT(DISTINCT name) > 1')
             ->get()
             ->each(function (object $gruppe): void {
                 $ids = DB::table('cities')

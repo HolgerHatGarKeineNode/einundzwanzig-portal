@@ -63,17 +63,40 @@ return new class extends Migration
     }
 
     /**
-     * Namen, die nach dem Trim mit einem anderen Namen im selben Land kollidieren.
+     * Namen, die ERST DURCH DEN TRIM mit einem anderen Namen im selben Land kollidieren.
      *
      * Zuerst zusammenlegen, dann trimmen — die andere Reihenfolge scheitert an der
      * Kollision, die sie gerade selbst erzeugt.
+     *
+     * ## `COUNT(DISTINCT name) > 1` ist die ganze Sicherung
+     *
+     * Ohne diese Bedingung legt die Gruppierung auch zusammen, was **schon vorher**
+     * buchstabengleich war — und das sind die acht Gemeinden namens `Neuenkirchen` in
+     * Niedersachsen, sechs `Georgetown` in Indiana, vier `Salem`. Also genau der
+     * Datenbestand, dessen Existenz der Anlass dieser ganzen Aenderung war. Aus acht
+     * Orten waere einer geworden, mit sieben stillen Loeschungen.
+     *
+     * Der Test dazu (`NormaliseCityNamesAndMergeDuplicatesTest`, P2-d) hat den Fehler
+     * gefunden, bevor die Migration je gegen Produktion lief. Er stand nicht in der
+     * urspruenglichen Fassung, weil der Docblock behauptete, was der Code nicht tat.
+     *
+     * **Was die Bedingung leistet:** Sind die rohen Namen innerhalb einer Gruppe
+     * verschieden (`'Offenburg '` gegen `'Offenburg'`), entsteht die Kollision durch
+     * die Normalisierung — dann ist es derselbe Ort, zweimal eingetippt. Sind sie
+     * identisch, waren es immer schon zwei Orte, und daran aendert kein Trim etwas.
+     *
+     * **Was sie nicht leistet:** Zwei WIRKLICH verschiedene Orte gleichen Namens, von
+     * denen einer ein Leerzeichen traegt, wuerden zusammengelegt. Das ist theoretisch
+     * moeglich und in Produktion nicht vorhanden — gemessen am 2026-08-24 ist
+     * `Offenburg` die einzige Gruppe ueberhaupt. Der umgekehrte Fehler waere teurer:
+     * lieber eine Dublette stehen lassen als einen Ort loeschen.
      */
     private function mergeDuplicatesAfterTrim(): void
     {
         $gruppen = DB::table('cities')
             ->selectRaw('country_id, LOWER(TRIM(name)) as normalisiert, COUNT(*) as anzahl')
             ->groupByRaw('country_id, LOWER(TRIM(name))')
-            ->havingRaw('COUNT(*) > 1')
+            ->havingRaw('COUNT(*) > 1 AND COUNT(DISTINCT name) > 1')
             ->get();
 
         foreach ($gruppen as $gruppe) {

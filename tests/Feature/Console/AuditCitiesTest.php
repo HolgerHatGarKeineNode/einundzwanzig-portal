@@ -10,12 +10,10 @@
 | — deshalb laeuft genau EIN Test mit `--reverse`, und er enthaelt exakt eine
 | Stadt, um die Laufzeit auf ~15s zu begrenzen.
 |
-| P6-e (acht Neuenkirchen sind KEIN Befund) ist am Ende dieser Datei als Fund
-| dokumentiert, nicht als Test: `duplicateNames()` teilt sich die Gruppierung
-| aus `mergeDuplicatesAfterTrim()` mit derselben Schwaeche wie das P2-Finding
-| in NormaliseCityNamesAndMergeDuplicatesTest.php — acht bereits saubere,
-| byte-identische Namen bilden ebenfalls eine Gruppe mit COUNT(*) > 1 und
-| werden gemeldet, obwohl die DoD das ausdruecklich ausschliesst.
+| P6-e (acht Neuenkirchen sind KEIN Befund) steht am Ende dieser Datei. Er war
+| zuerst ein Fund und keine Zusage: `duplicateNames()` teilte sich die
+| Gruppierung mit `mergeDuplicatesAfterTrim()` und meldete acht bereits
+| saubere, byte-identische Namen als Befund. Beide Stellen sind korrigiert.
 |--------------------------------------------------------------------------
 */
 
@@ -185,46 +183,29 @@ it('emits valid, well-formed JSON with --json', function () {
 });
 
 /*
-|--------------------------------------------------------------------------
-| P6-e — Fund, nicht Test: acht reale Neuenkirchen SIND ein Befund.
-|--------------------------------------------------------------------------
-|
-| Die DoD verlangt ausdruecklich das Gegenteil: "Acht Neuenkirchen sind KEIN
-| Befund — sonst waere das Kommando nach dem Import dauerhaft rot und damit
-| wertlos." `AuditCities::duplicateNames()` gruppiert nach genau derselben
-| Regel wie `mergeDuplicatesAfterTrim()` in der P2-Migration:
-|
-|   ->selectRaw('country_id, LOWER(TRIM(name)) as normalised, COUNT(*) as anzahl')
-|   ->groupByRaw('country_id, LOWER(TRIM(name))')
-|   ->havingRaw('COUNT(*) > 1')
-|
-| Acht Zeilen, die alle bereits byte-identisch "Neuenkirchen" heissen (keine
-| einzige mit Leerzeichen-Suffix), bilden dieselbe Gruppe wie eine echte
-| Leerzeichen-Dublette und werden gemeldet — Exitcode 1 statt 0.
-|
-| Belegt per vendor/bin/pest --agent (2026-08-25):
-|
-|   $country = Country::factory()->create();
-|   neuenkirchenCities($country);
-|   $this->artisan('cities:audit')->assertFailed();   // <- PASST, sollte durchfallen
-|
-| Ergebnis: assertFailed() ist gruen, obwohl acht reale Gemeinden gleichen
-| Namens per Definition kein Befund sein sollen. Derselbe Docblock-Kommentar
-| der Methode sagt das Gegenteil ("sonst waere sie nach dem naechsten Import
-| dauerhaft rot").
-|
-| Gleiche Ursache wie das P2-Finding in
-| NormaliseCityNamesAndMergeDuplicatesTest.php (identische Gruppierungslogik
-| an zwei Stellen dupliziert), zwei getrennte Symptome.
-|
-| Fix-Kandidat (EINER, nicht umgesetzt): `duplicateNames()` nur fuer Gruppen
-| melden, in denen mindestens eine Zeile ein aeusseres Leerzeichen traegt —
-| dieselbe Bedingung wie beim P2-Fix-Kandidaten. Eine Gruppe aus
-| ausschliesslich bereits sauberen, identischen Namen ist kein
-| Merge-Kandidat und darf auch hier nicht als Befund erscheinen.
-|
-| Diagnosekosten: klein (< 30 Min) — Ursache lokalisiert, es fehlt die
-| Entscheidung, Produktivcode anzufassen (in BEIDEN Dateien, P2 und P6,
-| konsistent).
-|--------------------------------------------------------------------------
-*/
+ * P6-e — der Fund, der zur Zusage wurde.
+ *
+ * Hier stand bis zum 2026-08-25 ein Kommentarblock: `duplicateNames()` meldete acht
+ * reale Neuenkirchen als Befund, weil es dieselbe Gruppierung benutzte wie die
+ * P2-Migration — dieselbe Zeile Logik, an zwei Stellen dupliziert, zwei Symptome. Der
+ * Koordinator hat beide korrigiert (`COUNT(DISTINCT name) > 1`); der Fund ist jetzt der
+ * Test darunter.
+ *
+ * Warum das die wichtigste Zusage dieses Kommandos ist: ein Pruefkommando, das im
+ * Normalbetrieb immer anschlaegt, wird nach der dritten Woche ignoriert. Nach dem
+ * Import aus Issue #33 waere es dauerhaft rot gewesen — und damit genau dann wertlos,
+ * wenn man es zum ersten Mal wirklich braucht.
+ */
+it('does not report eight genuine same-name places — only whitespace collisions count', function () {
+    $country = Country::factory()->create();
+    neuenkirchenCities($country);
+
+    $this->artisan('cities:audit')->assertSuccessful();
+
+    // Gegenprobe: EINE echte Leerzeichen-Dublette macht denselben Lauf rot. Ohne sie
+    // waere ein Kommando, das gar nichts meldet, ebenfalls gruen.
+    City::factory()->create(['name' => 'Offenburg', 'country_id' => $country->id, 'slug' => null]);
+    City::factory()->create(['name' => 'Offenburg ', 'country_id' => $country->id, 'slug' => null]);
+
+    $this->artisan('cities:audit')->assertFailed();
+});
