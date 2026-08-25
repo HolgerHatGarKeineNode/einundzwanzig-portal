@@ -10,6 +10,7 @@ use App\Models\Country;
 use App\Models\Region;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -93,7 +94,8 @@ class UpdateCityTool extends Tool
             ));
         }
 
-        $city->update($validated);
+        // Steuerfeld heraus, siehe CityController::update() — die Spalte gibt es nicht.
+        $city->update(Arr::except($validated, [City::CONFIRM_DUPLICATE]));
 
         return Response::json(CityResource::make($city->fresh())->resolve());
     }

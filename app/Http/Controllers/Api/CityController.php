@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -113,7 +114,13 @@ class CityController extends Controller
     #[ResponseAttribute(status: 422, description: 'Validation error.')]
     public function update(UpdateCityRequest $request, City $city): CityResource
     {
-        $city->update($request->validated());
+        /*
+         * `confirm_duplicate` ist ein Steuerfeld, keine Spalte — es hebt beim Rename die
+         * landesbezogene Namensbremse auf und hat danach nichts mehr in den Attributen
+         * zu suchen. Ohne diese Zeile wirft Eloquent eine QueryException, und aus einer
+         * bestaetigten Umbenennung wird ein 500 statt eines Erfolgs.
+         */
+        $city->update(Arr::except($request->validated(), [City::CONFIRM_DUPLICATE]));
 
         return CityResource::make($city->fresh());
     }

@@ -366,7 +366,29 @@ class City extends Model
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
-            ->generateSlugsFrom(['country.code', 'name'])
+            /*
+             * Die Region kommt in den Slug, wo es eine gibt.
+             *
+             * Seit der Namens-Unique gefallen ist (Issue #33), koennen zwei Staedte
+             * gleichen Namens im selben Land stehen — und Spatie haengt dann still eine
+             * Zaehlnummer an: `us-springfield`, `us-springfield-1`, `us-springfield-2`.
+             * Die Nummer ist eindeutig und sagt nichts. Mit der Region wird daraus
+             * `us-il-springfield` und `us-mo-springfield`.
+             *
+             * Bleibt die Region leer — was fuer 300 der 305 Staedte gilt und fuer alle
+             * Laender ohne Regionen dauerhaft so bleibt —, entsteht exakt derselbe Slug
+             * wie bisher. Das ist die Bedingung, unter der diese Aenderung ueberhaupt
+             * vertretbar ist: sie verschiebt keinen einzigen bestehenden Wert.
+             *
+             * Zwei gleichnamige Orte in DERSELBEN Region bekommen weiterhin eine
+             * Zaehlnummer. Das ist selten (im gemessenen Bestand kein einziger Fall) und
+             * korrekt — mehr Unterscheidung gibt die Verwaltungsebene nicht her.
+             */
+            ->generateSlugsFrom(fn (self $city): string => collect([
+                $city->country?->code,
+                $city->region?->code,
+                $city->name,
+            ])->filter()->join(' '))
             ->saveSlugsTo('slug')
             /*
              * Feste Sprache statt Cookie::get('lang'): die Transliteration haengt sonst
