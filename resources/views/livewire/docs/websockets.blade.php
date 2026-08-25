@@ -287,7 +287,7 @@ class extends Component {
                     "is_active": true,
                     "rsvp_enabled": true,
                     "attendees_public": true,
-                    "logo": "https://portal.einundzwanzig.space/img/domains/de-DE.jpg",
+                    "logo": "https://portal.einundzwanzig.space/img/domains/twenty-one.png",
                     "last_event_at": "2026-09-18T18:00:00.000000Z",
                     "created_by": 3,
                     "created_at": "2024-02-01T09:12:00.000000Z",
