@@ -8,25 +8,34 @@ use App\Models\City;
 use App\Models\Course;
 use App\Models\CourseEvent;
 use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 
 /**
- * Das MCP-Werkzeug prueft `is_lecturer` selbst (CreateCourseEventTool), nicht ueber die
- * Policy. Der Test behaelt damit seinen Gegenstand, obwohl `CourseEventPolicy::create()`
- * das Flag nicht mehr kennt — die REST-API laesst denselben Nutzer inzwischen durch.
+ * Wie beim Kurs-Zwilling: MCP und REST beantworten dieselbe Frage und mussten dasselbe
+ * sagen. Die fruehere Umkehrung dieses Tests beschrieb eine Inline-Pruefung, die P1 aus
+ * `CourseEventPolicy::create()` entfernt hatte — MCP wies ab, wo REST durchliess.
  */
-it('forbids a non-lecturer from creating a course event', function () {
+it('lets a non-lecturer create a course event through MCP, exactly as REST does', function () {
+    $user = User::factory()->notLecturer()->create();
     $course = Course::factory()->create();
     $city = City::factory()->create();
 
-    EinundzwanzigServer::actingAs(User::factory()->notLecturer()->create())
-        ->tool(CreateCourseEventTool::class, [
-            'course_id' => $course->id,
-            'city_id' => $city->id,
-            'from' => '2026-07-01 18:00:00',
-            'to' => '2026-07-01 21:00:00',
-            'link' => 'https://clavastack.com/produkt/specter-shield-lite-workshop',
-        ])
-        ->assertHasErrors();
+    $payload = [
+        'course_id' => $course->id,
+        'city_id' => $city->id,
+        'from' => '2026-07-01 18:00:00',
+        'to' => '2026-07-01 21:00:00',
+        'link' => 'https://clavastack.com/produkt/specter-shield-lite-workshop',
+    ];
+
+    EinundzwanzigServer::actingAs($user)
+        ->tool(CreateCourseEventTool::class, $payload)
+        ->assertOk();
+
+    Sanctum::actingAs($user);
+    $this->postJson('/api/course-events', $payload)->assertCreated();
+
+    expect(CourseEvent::query()->where('created_by', $user->id)->count())->toBe(2);
 });
 
 it('lets a lecturer create a course event and stamps created_by', function () {

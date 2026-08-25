@@ -45,17 +45,31 @@ class MeetupEvent extends Model
         // when a recurring series stops producing occurrences.
         'end' => 'datetime',
         'recurrence_end_date' => 'datetime',
+        /*
+         * Dieser Eintrag stand bis P6 in einer Eigenschaft `$enumCasts` — die es in
+         * Eloquent NICHT gibt. Der Cast lief damit ins Leere und `recurrence_type` kam
+         * als roher String zurueck.
+         *
+         * Das war nicht folgenlos, wie zunaechst angenommen, sondern ein 500er im
+         * Betrieb: `meetups.create-edit-events` haelt die Auswahl in
+         * `public ?RecurrenceType $recurrenceType` und weist ihr in `mount()` direkt
+         * `$this->event->recurrence_type` zu. Kommt das Model aus der Datenbank (also
+         * ueber Route-Model-Binding, also immer im echten Betrieb), ist das ein String,
+         * und die Zuweisung wirft `Cannot assign string to property ... of type
+         * ?App\Enums\RecurrenceType`. Jedes Bearbeiten eines bestehenden SERIEN-Termins
+         * lief in diesen Fehler.
+         *
+         * Warum kein Test das sah: alle bestehenden Tests reichen der Komponente ein
+         * frisch erzeugtes Model, dessen Attribut noch das Enum-Objekt aus dem
+         * `create()`-Aufruf haelt. Erst ein `find()` aus der Datenbank stellt den
+         * echten Zustand her — die Messung traf den Fall nie, nicht der Code den Test.
+         *
+         * Die Ausgabe aendert sich dadurch NICHT: ein Backed Enum serialisiert in JSON zu
+         * seinem Wert, `recurrence_type` bleibt also `"weekly"` in der API.
+         */
+        'recurrence_type' => RecurrenceType::class,
         'attendees' => 'array',
         'might_attendees' => 'array',
-    ];
-
-    /**
-     * The attributes that should be cast to enums.
-     *
-     * @var array
-     */
-    protected $enumCasts = [
-        'recurrence_type' => RecurrenceType::class,
     ];
 
     /**

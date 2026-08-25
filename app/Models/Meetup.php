@@ -65,6 +65,18 @@ class Meetup extends Model implements HasMedia
         'city_id' => 'integer',
         'github_data' => 'json',
         'simplified_geojson' => 'array',
+        /*
+         * Fehlte bis P6, waehrend die drei anderen Schalter des Meetups hier standen.
+         * Das Feld kam damit als `0`/`1` aus der API, wo `rsvp_enabled`,
+         * `attendees_public` und `is_active` `false`/`true` lieferten — dieselbe Sorte
+         * Wert, zwei Formen, je nachdem welche Zeile jemand ergaenzt hatte.
+         *
+         * Der Cast aendert die oeffentliche Ausgabe mit; das ist gewollt und der Grund,
+         * warum die Form jetzt in einem Test festgenagelt ist. Ein Konsument, der auf
+         * `== true` prueft, sieht keinen Unterschied; einer, der `=== 1` prueft, hat sich
+         * schon vorher auf eine Zufaelligkeit verlassen.
+         */
+        'visible_on_map' => 'boolean',
         'is_active' => 'boolean',
         'last_event_at' => 'datetime',
         'restore_point' => 'array',

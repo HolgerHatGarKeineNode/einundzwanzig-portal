@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\RecurrenceType;
 use App\Models\ApiChange;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
@@ -64,7 +65,9 @@ it('gives every occurrence of a series the same identity and the full rule', fun
         ->and($events->first()->recurrence_group)->not->toBeNull();
 
     foreach ($events as $event) {
-        expect($event->recurrence_type)->toBe('weekly')
+        // Seit P6 ein echter Enum-Cast; die API liefert unveraendert den String "weekly",
+        // weil ein Backed Enum in JSON zu seinem Wert wird (unten geprueft).
+        expect($event->recurrence_type)->toBe(RecurrenceType::Weekly)
             ->and($event->recurrence_day_of_week)->toBe('friday')
             ->and($event->recurrence_day_position)->toBeNull()
             ->and($event->recurrence_interval)->toBe(1)

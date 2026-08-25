@@ -145,18 +145,25 @@ class extends Component {
                     </flux:table.cell>
 
                     <flux:table.cell>
-                        @if(auth()->check() && $lecturer->created_by === auth()->id())
-                            <flux:button
-                                :disabled="$lecturer->created_by !== auth()->id()"
-                                :href="$lecturer->created_by === auth()->id() ? route_with_country('lecturers.edit', ['lecturer' => $lecturer]) : null"
-                                size="xs"
-                                variant="filled"
-                                icon="pencil">
-                                {{ __('Bearbeiten') }}
-                            </flux:button>
-                        @elseif(!auth()->check())
+                        {{-- `@can` statt `created_by === auth()->id()`: LecturerPolicy::update()
+                             laesst auch den Super-Admin durch, die alte Bedingung nicht — er
+                             hatte das Recht und sah keinen Knopf. Die drei gleichlautenden
+                             Vergleiche (Bedingung, :disabled, :href) sind damit ebenfalls weg;
+                             sie sagten dreimal dasselbe und mussten dreimal mitgeaendert
+                             werden. --}}
+                        @auth
+                            @can('update', $lecturer)
+                                <flux:button
+                                    :href="route_with_country('lecturers.edit', ['lecturer' => $lecturer])"
+                                    size="xs"
+                                    variant="filled"
+                                    icon="pencil">
+                                    {{ __('Bearbeiten') }}
+                                </flux:button>
+                            @endcan
+                        @else
                             <flux:link :href="route('login')">{{ __('Log in') }}</flux:link>
-                        @endif
+                        @endauth
                     </flux:table.cell>
                 </flux:table.row>
             @endforeach

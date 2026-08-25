@@ -65,7 +65,9 @@ it('gives every occurrence created in the editor the same series identity', func
         ->and($events->first()->recurrence_group)->not->toBeNull();
 
     foreach ($events as $event) {
-        expect($event->recurrence_type)->toBe(RecurrenceType::Weekly->value)
+        // Seit P6 traegt `recurrence_type` einen echten Enum-Cast (die alte Eigenschaft
+        // `$enumCasts` gab es in Eloquent nicht und sie lief ins Leere).
+        expect($event->recurrence_type)->toBe(RecurrenceType::Weekly)
             ->and($event->recurrence_day_of_week)->toBe('wednesday')
             ->and($event->recurrence_interval)->toBe(1)
             ->and($event->recurrence_end_date)->not->toBeNull();

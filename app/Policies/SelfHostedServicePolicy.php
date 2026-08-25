@@ -48,4 +48,19 @@ class SelfHostedServicePolicy
     {
         return $this->owns($user, $service);
     }
+
+    /**
+     * Loeschen darf, wer auch aendern darf — aber als EIGENE Frage.
+     *
+     * Der Loeschknopf auf der Landingpage lief bisher gegen
+     * `auth()->id() === $service->created_by`, waehrend die Policy den Super-Admin
+     * kennt. Den Knopf auf `update` umzuhaengen haette funktioniert und waere trotzdem
+     * falsch gewesen: die Blade-Zeile haette dann eine Ability gefragt, die sie nicht
+     * ausuebt. Wird das Loeschen spaeter enger gefasst als das Aendern, ist hier der
+     * Ort dafuer — und nicht eine Fundstelle, die niemand sucht.
+     */
+    public function delete(User $user, SelfHostedService $service): bool
+    {
+        return $this->owns($user, $service);
+    }
 }
