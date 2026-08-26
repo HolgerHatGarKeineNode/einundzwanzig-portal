@@ -135,7 +135,7 @@ class extends Component {
     public function createMeetup(): void
     {
         $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:meetups,name'],
+            'name' => ['required', 'string', 'max:255', new \App\Rules\UniqueMeetupName],
             'city_id' => ['required', 'exists:cities,id'],
             'intro' => ['nullable', 'string'],
             'telegram_link' => ['nullable', 'url', 'max:255'],

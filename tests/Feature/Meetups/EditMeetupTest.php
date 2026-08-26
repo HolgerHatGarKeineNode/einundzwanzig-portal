@@ -47,10 +47,12 @@ it('rejects update when name collides with another existing Meetup', function ()
     Livewire::test('meetups.edit', ['meetup' => $meetup])
         ->set('name', 'Other Name')
         ->call('updateMeetup')
-        ->assertHasErrors(['name' => 'unique']);
+        // Objekt-Regel UniqueMeetupName statt 'unique': sie prueft zusaetzlich
+        // ohne Ruecksicht auf Gross-/Kleinschreibung und traegt keinen Regelnamen.
+        ->assertHasErrors(['name']);
 });
 
-it('allows update when name is unchanged (Rule::unique ignores own id)', function () {
+it('allows update when name is unchanged (UniqueMeetupName ignores own id)', function () {
     $creator = actingAsUser();
     $meetup = Meetup::factory()->create([
         'city_id' => $this->city->id,

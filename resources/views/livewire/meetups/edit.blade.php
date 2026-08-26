@@ -308,7 +308,7 @@ class extends Component
         }
 
         $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255', Rule::unique('meetups')->ignore($this->meetup->id)],
+            'name' => ['required', 'string', 'max:255', new \App\Rules\UniqueMeetupName($this->meetup->id)],
             'city_id' => ['nullable', 'exists:cities,id'],
             'intro' => ['nullable', 'string'],
             'telegram_link' => ['nullable', 'url', 'max:255'],

@@ -35,6 +35,12 @@ final class TextNormalizer
      * Gemessen am 26.08.2026 tragen 1232 Termin-Beschreibungen und 86
      * Meetup-Intros Zeilenumbrueche. Die Label-Regel wuerde diese Absaetze zu
      * einer Zeile verschmelzen — stiller Datenverlust an 1318 Texten.
+     *
+     * `trim()` raeumt auch \n und \r ab, aber nur am Rand: eine fuehrende oder
+     * abschliessende Leerzeile faellt mit, jeder Umbruch INNERHALB des Textes
+     * bleibt. Beim Lauf vom 26.08. betraf das 42 der 291 korrigierten
+     * Beschreibungen — bei allen 42 stand der Umbruch ausschliesslich am Rand,
+     * kein Text verlor eine innere Zeile.
      */
     public static function prose(string $value): string
     {

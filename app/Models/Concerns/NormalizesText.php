@@ -24,7 +24,8 @@ use Illuminate\Database\Eloquent\Model;
  * - `$normalizedProse` (intro, description): NUR die Raender trimmen. Gemessen am
  *   26.08.2026 tragen 1232 Termin-Beschreibungen und 86 Meetup-Intros
  *   Zeilenumbrueche. Die Label-Regel wuerde diese Absaetze zu einer Zeile
- *   verschmelzen — stiller Datenverlust an 1318 Texten.
+ *   verschmelzen — stiller Datenverlust an 1318 Texten. Am Rand raeumt auch die
+ *   Prosa-Regel Leerzeilen ab; das ist Trimmen und kein Verlust.
  *
  * Beide Regeln stehen in {@see TextNormalizer} — geteilt mit dem einmaligen
  * Aufraeum-Lauf, damit Bestand und Neuzugang dieselbe Form erzeugen.

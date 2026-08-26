@@ -116,7 +116,7 @@ class NormalizeTextFields extends Command
 
         $this->line('');
         $this->info(sprintf(
-            '%s %d Feldwert(e). Freitexte wurden nur an den Raendern getrimmt — Zeilenumbrueche bleiben unangetastet.',
+            '%s %d Feldwert(e). Bei Freitexten nur die Raender: Umbrueche IM Text bleiben, eine Leerzeile davor oder danach faellt mit.',
             $force ? 'Korrigiert:' : '[DRY-RUN] Betroffen:',
             $gesamt,
         ));

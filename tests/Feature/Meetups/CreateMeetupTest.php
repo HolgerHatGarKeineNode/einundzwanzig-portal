@@ -82,7 +82,9 @@ it('rejects creation with a duplicate meetup name', function () {
         ->set('city_id', $this->city->id)
         ->set('community', 'einundzwanzig')
         ->call('createMeetup')
-        ->assertHasErrors(['name' => 'unique']);
+        // Objekt-Regel UniqueMeetupName statt 'unique': sie prueft zusaetzlich
+        // ohne Ruecksicht auf Gross-/Kleinschreibung und traegt keinen Regelnamen.
+        ->assertHasErrors(['name']);
 });
 
 it('rejects creation when telegram_link is not a valid URL', function () {

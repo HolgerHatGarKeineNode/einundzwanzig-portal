@@ -4,6 +4,7 @@ namespace App\Http\Requests\Api;
 
 use App\Http\Resources\MeetupResource;
 use App\Models\Meetup;
+use App\Rules\UniqueMeetupName;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateMeetupRequest extends FormRequest
@@ -26,12 +27,19 @@ class UpdateMeetupRequest extends FormRequest
      * Aenderungs-Feed gemeldet (Issue #29, {@see Meetup::recalculateActivity()}).
      * Lesen ja, schreiben nein.
      *
-     * @return array<string, array<int, string>>
+     * `$meetupId` ist fuer die Aufrufer ohne Route da: das MCP-Tool baut diese
+     * Request von Hand (`new UpdateMeetupRequest`), dort liefert `route('meetup')`
+     * null. Ohne die id wuerde die Eindeutigkeitspruefung das Meetup gegen sich
+     * selbst pruefen — ein Speichern ohne Namensaenderung schluege fehl.
+     *
+     * @return array<string, array<int, mixed>>
      */
-    public function rules(): array
+    public function rules(?int $meetupId = null): array
     {
+        $meetupId ??= $this->route('meetup')?->getKey();
+
         return [
-            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'name' => ['sometimes', 'required', 'string', 'max:255', new UniqueMeetupName($meetupId)],
             'city_id' => ['sometimes', 'required', 'integer', 'exists:cities,id'],
             'intro' => ['sometimes', 'nullable', 'string'],
             'telegram_link' => ['sometimes', 'nullable', 'url', 'max:255'],

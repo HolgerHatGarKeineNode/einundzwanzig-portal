@@ -38,7 +38,7 @@ class UpdateMeetupTool extends Tool
             return $error;
         }
 
-        $validated = $request->validate((new UpdateMeetupRequest)->rules());
+        $validated = $request->validate((new UpdateMeetupRequest)->rules($meetup->getKey()));
 
         $meetup->update($validated);
 

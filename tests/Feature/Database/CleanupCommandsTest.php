@@ -32,9 +32,18 @@ function meetupWithId(int $id, string $name, int $cityId, int $creatorId): Meetu
     return $meetup->fresh();
 }
 
-/** Die vom Betreiber am 26.08.2026 entschiedene Konstellation nachbauen. */
+/**
+ * Die vom Betreiber am 26.08.2026 entschiedene Konstellation nachbauen.
+ *
+ * Der Index `meetups_lower_name_unique` faellt dafuer weg: 'EINUNDZWANZIG Mannheim'
+ * neben 'Einundzwanzig Mannheim' ist genau das, was er kuenftig verhindert — und
+ * genau der Zustand, den dieser Command aufraeumen soll. Der Altbestand entstand
+ * vor dem Index; ohne das Fallenlassen liesse er sich nicht mehr nachstellen.
+ */
 function entscheidungsLage(int $cityId, int $creatorId): void
 {
+    DB::statement('DROP INDEX IF EXISTS meetups_lower_name_unique');
+
     foreach ([
         [45, 'Einundzwanzig Mannheim'], [162, 'EINUNDZWANZIG Mannheim'],
         [232, 'Einundzwanzig Ulm'], [305, 'Einundzwanzig Ulm '], [63, 'Bitcoin Ulm'],

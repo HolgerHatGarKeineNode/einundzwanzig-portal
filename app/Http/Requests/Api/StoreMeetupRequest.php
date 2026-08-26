@@ -4,6 +4,7 @@ namespace App\Http\Requests\Api;
 
 use App\Http\Resources\MeetupResource;
 use App\Models\Meetup;
+use App\Rules\UniqueMeetupName;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreMeetupRequest extends FormRequest
@@ -31,7 +32,7 @@ class StoreMeetupRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', new UniqueMeetupName],
             'city_id' => ['required', 'integer', 'exists:cities,id'],
             'intro' => ['nullable', 'string'],
             'telegram_link' => ['nullable', 'url', 'max:255'],
