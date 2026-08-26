@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\NormalizesText;
 use App\Models\Concerns\SetsCreatedBy;
 use App\Observers\ApiChangeObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -23,7 +24,17 @@ class Lecturer extends Model implements HasMedia
     use HasFactory;
     use HasSlug;
     use InteractsWithMedia;
+    use NormalizesText;
     use SetsCreatedBy;
+
+    /** @var list<string> */
+    protected array $normalizedLabels = ['name', 'subtitle'];
+
+    /** @var list<string> */
+    protected array $normalizedProse = ['intro', 'description'];
+
+    /** @var list<string> */
+    protected array $normalizedRequired = ['name'];
 
     /**
      * @var array<int, string>

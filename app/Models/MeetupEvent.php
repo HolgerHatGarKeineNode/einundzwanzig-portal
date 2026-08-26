@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\RecurrenceType;
 use App\Enums\RsvpStatus;
+use App\Models\Concerns\NormalizesText;
 use App\Models\Concerns\SetsCreatedBy;
 use App\Observers\ApiChangeObserver;
 use App\Observers\MeetupEventObserver;
@@ -20,7 +21,14 @@ class MeetupEvent extends Model
 {
     use HasFactory;
     use HasTags;
+    use NormalizesText;
     use SetsCreatedBy;
+
+    /** @var list<string> */
+    protected array $normalizedLabels = ['title', 'location'];
+
+    /** @var list<string> */
+    protected array $normalizedProse = ['description'];
 
     /**
      * The attributes that aren't mass assignable.

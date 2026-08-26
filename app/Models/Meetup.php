@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\NormalizesText;
 use App\Models\Concerns\SetsCreatedBy;
 use App\Observers\ApiChangeObserver;
 use App\Support\Broadcasting\ChangeRecorder;
@@ -28,7 +29,17 @@ class Meetup extends Model implements HasMedia
     use HasFactory;
     use HasSlug;
     use InteractsWithMedia;
+    use NormalizesText;
     use SetsCreatedBy;
+
+    /** @var list<string> */
+    protected array $normalizedLabels = ['name'];
+
+    /** @var list<string> */
+    protected array $normalizedProse = ['intro'];
+
+    /** @var list<string> */
+    protected array $normalizedRequired = ['name'];
 
     /**
      * @var array<int, string>

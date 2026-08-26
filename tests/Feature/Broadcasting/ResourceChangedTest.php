@@ -329,7 +329,11 @@ it('sends exactly what ChangeRecorder::broadcastPayload produces', function (): 
 });
 
 it('strips data from an oversized broadcast while the row keeps everything', function (): void {
-    $description = str_repeat('Bitcoin. ', 1500); // ~13,5 KB
+    // rtrim, weil NormalizesText das nachlaufende Leerzeichen beim Speichern
+    // entfernt. Die Aussage des Tests ist die GROESSE des Payloads, nicht sein
+    // letztes Zeichen — ohne das rtrim vergliche er gegen einen Wert, den die
+    // Datenbank so gar nicht mehr annimmt.
+    $description = rtrim(str_repeat('Bitcoin. ', 1500)); // ~13,5 KB
 
     MeetupEvent::factory()->create(['description' => $description]);
 

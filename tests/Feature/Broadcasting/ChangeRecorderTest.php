@@ -298,7 +298,11 @@ it('resumes recording even when the muted block throws', function (): void {
 });
 
 it('keeps the full object in the table but strips data from an oversized broadcast', function (): void {
-    $description = str_repeat('Bitcoin. ', 1500); // ~13,5 KB
+    // rtrim, weil NormalizesText das nachlaufende Leerzeichen beim Speichern
+    // entfernt. Die Aussage des Tests ist die GROESSE des Payloads, nicht sein
+    // letztes Zeichen — ohne das rtrim vergliche er gegen einen Wert, den die
+    // Datenbank so gar nicht mehr annimmt.
+    $description = rtrim(str_repeat('Bitcoin. ', 1500)); // ~13,5 KB
 
     $event = MeetupEvent::factory()->create(['description' => $description]);
 
