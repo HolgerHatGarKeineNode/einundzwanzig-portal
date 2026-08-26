@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\MeetupLeaderController;
 use App\Http\Controllers\Api\MeetupMapController;
 use App\Http\Controllers\Api\MobileMeetupListController;
 use App\Http\Controllers\Api\NostrPlebController;
+use App\Http\Controllers\Api\PublicMeetupLeaderController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VereinGatedMeetupController;
 use App\Http\Controllers\LnurlAuthController;
@@ -36,6 +37,10 @@ Route::middleware([SetApiLocale::class, 'throttle:60,1'])
         // Schlanke, schnelle Meetup-Liste eigens für die mobile App (getrennt von
         // /api/meetups, damit andere Konsumenten der Karte unberührt bleiben).
         Route::get('mobile/meetups', MobileMeetupListController::class);
+        // Leader-npubs je Meetup fuer die Badge-Pruefung externer Clients.
+        // Bewusst NICHT in der API-Referenz (ExcludeRouteFromDocs) — erreichbar,
+        // aber nicht beworben, solange die Form sich noch setzen kann.
+        Route::get('meetup-leaders', PublicMeetupLeaderController::class);
         Route::get('meetup-events/{date?}', MeetupEventController::class);
         Route::get('btc-map-communities', BtcMapCommunityController::class);
         // Der Resync-Weg fuer Konsumenten (Issue #29): alle Aenderungen ab einem
