@@ -5,7 +5,8 @@
             "namespace": "android_app",
             "package_name": "space.einundzwanzig.mobile",
             "sha256_cert_fingerprints": [
-                "74:25:57:3B:24:69:97:97:45:8E:27:CC:1E:26:D7:A2:82:73:EC:BB:0D:B9:47:78:2A:18:B5:94:54:B0:79:ED"
+                "74:25:57:3B:24:69:97:97:45:8E:27:CC:1E:26:D7:A2:82:73:EC:BB:0D:B9:47:78:2A:18:B5:94:54:B0:79:ED",
+                "44:41:1E:20:A1:B4:3D:0F:66:CF:99:E1:23:8A:33:E7:E8:FD:92:48:F0:D0:D2:58:F5:E0:72:7C:FA:BF:0B:7C"
             ]
         }
     }
