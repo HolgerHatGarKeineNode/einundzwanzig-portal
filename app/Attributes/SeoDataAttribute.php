@@ -2,6 +2,7 @@
 
 namespace App\Attributes;
 
+use RalphJSmit\Laravel\SEO\Support\ImageMeta;
 use RalphJSmit\Laravel\SEO\Support\SEOData;
 
 #[\Attribute(\Attribute::TARGET_METHOD | \Attribute::TARGET_CLASS)]
@@ -26,7 +27,25 @@ class SeoDataAttribute
     private static function initDefinitions(): void
     {
         $domainAttributes = get_domain_attributes();
-        $domainImage = $domainAttributes['image'];
+
+        /*
+         * Die Vorschau bekommt ihr EIGENES Bild, nicht das Motiv aus dem Kopfbereich:
+         * `social_image_path()` liefert ein 1200×630-Blatt, wo es eines gibt, und faellt
+         * sonst auf genau das Motiv zurueck, das hier bisher stand. Fuer jede Fassung
+         * ohne eigenes Vorschaubild aendert sich damit nichts.
+         *
+         * `imageMeta` wird ausdruecklich mitgegeben, obwohl SEOData es sonst selbst
+         * erzeugt. Sein Lazy-Weg baut `new ImageMeta($this->image)`, und ImageMeta gibt
+         * bei einer URL sofort auf (`filter_var(…, FILTER_VALIDATE_URL)` → return) —
+         * `og:image` MUSS aber absolut sein. Beide Wege sind also nur gemeinsam richtig:
+         * die URL in `image`, der Dateipfad in `imageMeta`. Ohne das fehlten
+         * `og:image:width` und `:height` ganz, und daran entscheidet Facebook, ob es die
+         * grosse Karte zeigt oder auf das kleine Quadrat zurueckfaellt.
+         */
+        $socialImagePath = social_image_path();
+        $domainImage = asset($socialImagePath);
+        $domainImageMeta = new ImageMeta($socialImagePath);
+
         $domainAuthor = $domainAttributes['author'];
         $domainTwitter = $domainAttributes['twitter'];
         $domainSiteName = $domainAttributes['siteName'];
@@ -37,6 +56,7 @@ class SeoDataAttribute
                 description: __('Logge dich ein, um auf dein Bitcoin Meetup Konto zuzugreifen und an der Community teilzunehmen.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -45,6 +65,7 @@ class SeoDataAttribute
                 description: __('Verwalte deine Bitcoin Meetups, Events und Einstellungen in deinem persönlichen Dashboard.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -53,6 +74,7 @@ class SeoDataAttribute
                 description: __('Entdecke die Bitcoin Community in deiner Nähe. Finde lokale Meetups und vernetze dich mit Gleichgesinnten.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -61,6 +83,7 @@ class SeoDataAttribute
                 description: __('Starte deine Bitcoin-Reise und entdecke spannende Inhalte rund um Bitcoin und Blockchain.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -69,6 +92,7 @@ class SeoDataAttribute
                 description: __('Füge eine neue Stadt hinzu, um Bitcoin Meetups in deiner Region zu organisieren.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -77,6 +101,7 @@ class SeoDataAttribute
                 description: __('Aktualisiere die Informationen für Bitcoin Meetup Standorte in deiner Stadt.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -85,6 +110,7 @@ class SeoDataAttribute
                 description: __('Durchsuche alle Städte mit aktiven Bitcoin Meetups und finde Events in deiner Nähe.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -93,6 +119,7 @@ class SeoDataAttribute
                 description: __('Erstelle einen neuen Bitcoin-Bildungskurs und teile dein Wissen mit der Community.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -101,6 +128,7 @@ class SeoDataAttribute
                 description: __('Verwalte die Termine und Details deiner Bitcoin-Bildungsveranstaltungen.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -109,6 +137,7 @@ class SeoDataAttribute
                 description: __('Aktualisiere die Inhalte und Informationen deines Bitcoin-Bildungskurses.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -117,6 +146,7 @@ class SeoDataAttribute
                 description: __('Entdecke unsere vielfältigen Bitcoin-Bildungsangebote und Workshops.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -125,6 +155,7 @@ class SeoDataAttribute
                 description: __('Lerne alles über Bitcoin - von den Grundlagen bis zu fortgeschrittenen Themen.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -133,6 +164,7 @@ class SeoDataAttribute
                 description: __('Werde Bitcoin-Dozent und teile dein Expertenwissen mit der Community.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -141,6 +173,7 @@ class SeoDataAttribute
                 description: __('Aktualisiere dein Profil als Bitcoin-Dozent und deine Kursangebote.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -149,6 +182,7 @@ class SeoDataAttribute
                 description: __('Lerne unsere erfahrenen Bitcoin-Dozenten und ihre Expertise kennen.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -157,6 +191,7 @@ class SeoDataAttribute
                 description: __('Erstelle und bearbeite Bitcoin Meetup Events für deine Community.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -165,6 +200,7 @@ class SeoDataAttribute
                 description: __('Aktualisiere die Details und Informationen deines Bitcoin Meetups.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -173,6 +209,7 @@ class SeoDataAttribute
                 description: __('Finde alle aktuellen Bitcoin Meetups und Events in deiner Region.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -181,6 +218,7 @@ class SeoDataAttribute
                 description: __('Entdecke Bitcoin Community Events und vernetze dich mit Gleichgesinnten.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -189,6 +227,7 @@ class SeoDataAttribute
                 description: __('Alle Informationen zum ausgewählten Bitcoin Meetup Event.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -197,6 +236,7 @@ class SeoDataAttribute
                 description: __('Finde Bitcoin Meetups in deiner Nähe mit unserer interaktiven Karte.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -205,6 +245,7 @@ class SeoDataAttribute
                 description: __('Passe das Erscheinungsbild deines Bitcoin Meetup Profils an.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -213,6 +254,7 @@ class SeoDataAttribute
                 description: __('Verbinde dein Lightning- und Nostr-Konto, ohne deine Meetup-Leaderships zu verlieren.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -221,6 +263,7 @@ class SeoDataAttribute
                 description: __('Verwalte deine persönlichen Zugriffstokens für den programmatischen API-Zugriff auf dein Bitcoin Meetup Konto.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -229,6 +272,7 @@ class SeoDataAttribute
                 description: __('Informationen zum Löschen deines Bitcoin Meetup Kontos.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -237,6 +281,7 @@ class SeoDataAttribute
                 description: __('Ändere dein Passwort für mehr Sicherheit deines Bitcoin Meetup Kontos.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -245,6 +290,7 @@ class SeoDataAttribute
                 description: __('Aktualisiere deine persönlichen Informationen und Profileinstellungen.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -253,6 +299,7 @@ class SeoDataAttribute
                 description: __('Füge einen neuen Self-Hosted Service zur Bitcoin Community hinzu.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -261,6 +308,7 @@ class SeoDataAttribute
                 description: __('Aktualisiere die Details deines Self-Hosted Service.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -269,6 +317,7 @@ class SeoDataAttribute
                 description: __('Entdecke Bitcoin Self-Hosted Services und dezentrale Angebote der Community.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -277,6 +326,7 @@ class SeoDataAttribute
                 description: __('Erfahre mehr über diesen Self-Hosted Service aus der Bitcoin Community.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -285,6 +335,7 @@ class SeoDataAttribute
                 description: __('Verwalte deine Meetups, Termine und Kurse ganz einfach per Chat – mit der KI von claude.ai. Ganz ohne Technikwissen.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -299,6 +350,7 @@ class SeoDataAttribute
                 description: 'WebSocket channels and the /api/changes cursor feed: learn about created, updated and deleted meetups, dates, cities, courses and lecturers as they happen.',
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
@@ -308,6 +360,7 @@ class SeoDataAttribute
                 description: __('Toximalistisches Infotainment für bullische Bitcoiner.'),
                 author: $domainAuthor,
                 image: $domainImage,
+                imageMeta: $domainImageMeta,
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),

@@ -179,6 +179,46 @@ if (! function_exists('domain_image_path')) {
     }
 }
 
+if (! function_exists('social_image_path')) {
+    /**
+     * Das Bild fuer die Social-Media-Vorschau (`og:image`), RELATIV zu `public/`.
+     *
+     * Ein eigener Weg neben `domain_image_path()`, weil die Vorschau ein anderes Format
+     * braucht als der Kopfbereich: die Plattformen schneiden `summary_large_image` auf
+     * 1,91:1 zu, und Facebook faellt unter 600 px Breite ganz auf die kleine Quadrat-Karte
+     * zurueck. Die Motive sind quadratisch (320–512 px) — als Vorschau sind sie damit
+     * bestenfalls ein Kompromiss und im Fall der drei- und vierzeiligen Laender-JPGs ein
+     * echter Fehler: der Zuschnitt koepft ihre Wortmarke oben und unten.
+     *
+     * Drei Stufen:
+     *   1. `img/social/<lang-COUNTRY>.png` — ein Bild fuer genau eine Fassung.
+     *   2. `img/social/<lang>.png` — eines fuer die ganze Sprache. Diese Stufe traegt den
+     *      Regelfall: `en.png` gilt fuer en-US, en-GB, en-CA und en-AU gleichermassen. Eine
+     *      Domain ins Bild zu schreiben waere fuer drei der vier falsch.
+     *   3. Sonst das Motiv aus `domain_image_path()` — unveraendertes Verhalten fuer jede
+     *      Fassung, die noch kein eigenes Vorschaubild hat.
+     *
+     * `public/img/social.jpg` (1600×900) ist NICHT diese Stufe und bleibt, wo es ist: es
+     * ist deutsch gebrandet und haengt als Hintergrund an `layouts/error.blade.php`.
+     */
+    function social_image_path(?string $langCountry = null): string
+    {
+        $langCountry ??= session('lang_country', 'de-DE');
+
+        if (file_exists(public_path('img/social/'.$langCountry.'.png'))) {
+            return 'img/social/'.$langCountry.'.png';
+        }
+
+        $language = str($langCountry)->before('-')->lower()->value();
+
+        if ($language !== '' && file_exists(public_path('img/social/'.$language.'.png'))) {
+            return 'img/social/'.$language.'.png';
+        }
+
+        return domain_image_path($langCountry);
+    }
+}
+
 if (! function_exists('get_domain_attributes')) {
     function get_domain_attributes(): array
     {
@@ -186,10 +226,21 @@ if (! function_exists('get_domain_attributes')) {
 
         $image = asset(domain_image_path($langCountry));
 
+        /*
+         * en-AU, en-CA und en-CH standen hier nicht, obwohl `config/lang-country.php` sie
+         * erlaubt — sie fielen ueber das `??` unten auf „einundzwanzig". Solange die
+         * Vorschau ohnehin das deutsche Motiv zeigte, war das nur unstimmig; seit sie das
+         * englische TWENTY-ONE-Blatt zeigt, widerspricht die Karte sich selbst: Bild und
+         * Autorenzeile nennen zwei verschiedene Marken. Die Sprache entscheidet, nicht das
+         * Land — genau wie eine Zeile weiter oben beim Bild.
+         */
         $countryAuthorMapping = [
             'de-DE' => 'einundzwanzig',
             'de-AT' => 'einundzwanzig',
             'de-CH' => 'einundzwanzig',
+            'en-AU' => 'twenty-one',
+            'en-CA' => 'twenty-one',
+            'en-CH' => 'twenty-one',
             'en-GB' => 'twenty-one',
             'en-US' => 'twenty-one',
             'es-ES' => 'veintiuno',
@@ -204,6 +255,11 @@ if (! function_exists('get_domain_attributes')) {
             'de-DE' => '_einundzwanzig_',
             'de-AT' => '_einundzwanzig_',
             'de-CH' => '_einundzwanzig_',
+            // Dasselbe Konto wie im deutschen Bestand — das ist Absicht und stand fuer
+            // en-GB/en-US schon so da; ein eigenes englisches Konto gibt es nicht.
+            'en-AU' => '_einundzwanzig_',
+            'en-CA' => '_einundzwanzig_',
+            'en-CH' => '_einundzwanzig_',
             'en-GB' => '_einundzwanzig_',
             'en-US' => '_einundzwanzig_',
             'es-CL' => 'veintiunolat',

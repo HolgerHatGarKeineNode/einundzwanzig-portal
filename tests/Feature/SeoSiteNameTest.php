@@ -84,6 +84,23 @@ it('keeps its own image for countries that have one', function () {
         ->twitter->toBe('HUSZONEGYworld');
 });
 
+it('gives the new english variants (AU/CA/CH) the twenty-one brand, not the einundzwanzig fallback', function (string $langCountry) {
+    // Vorher fielen diese drei Codes ueber das '??' unten auf 'einundzwanzig'
+    // / '_einundzwanzig_' zurueck, obwohl config/lang-country.php sie erlaubt
+    // — solange die Vorschau ohnehin das deutsche Motiv zeigte, war das nur
+    // unstimmig; seit sie das englische TWENTY-ONE-Blatt zeigt, widerspricht
+    // sich die Karte selbst: englisches Bild, deutsche Autorenzeile.
+    session(['lang_country' => $langCountry]);
+
+    expect(get_domain_attributes())
+        ->author->toBe('twenty-one')
+        ->twitter->toBe('_einundzwanzig_');
+})->with([
+    'australien' => ['en-AU'],
+    'kanada' => ['en-CA'],
+    'schweiz (englisch)' => ['en-CH'],
+]);
+
 it('keeps the brand when the user switches the interface language', function () {
     // Ein Deutscher auf der niederlaendischen Domain liest weiterhin auf dem
     // EENENTWINTIG Portaal — die Site heisst so, unabhaengig von der Sprache.
