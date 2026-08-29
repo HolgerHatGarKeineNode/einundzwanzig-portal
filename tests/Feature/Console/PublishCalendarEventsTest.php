@@ -49,7 +49,7 @@ it('publishes a meetup as a kind 31924 calendar and stores its coordinate', func
         $mock->shouldReceive('transmit')->once()->andReturn(true);
     });
 
-    $meetup = meetupWithCity();
+    $meetup = meetupWithCity(['nostr_publishing_enabled' => true]);
 
     $this->artisan('nostr:publish-calendar', ['--model' => 'Meetup'])
         ->assertExitCode(0);
@@ -64,7 +64,7 @@ it('publishes a meetup event as a kind 31923 event and stores its coordinate', f
         $mock->shouldReceive('transmit')->once()->andReturn(true);
     });
 
-    $meetup = meetupWithCity();
+    $meetup = meetupWithCity(['nostr_publishing_enabled' => true]);
     $meetupEvent = MeetupEvent::factory()->create([
         'meetup_id' => $meetup->id,
         'start' => now()->addWeek(),
@@ -76,6 +76,36 @@ it('publishes a meetup event as a kind 31923 event and stores its coordinate', f
     $pubkey = (new Key)->getPublicKey(TEST_PRIVATE_KEY);
 
     expect($meetupEvent->refresh()->nostr_coordinate)->toBe("31923:{$pubkey}:meetup-event-{$meetupEvent->id}");
+});
+
+it('does not publish a meetup that has not opted in to nostr publishing', function () {
+    $this->mock(NostrEventTransmitter::class, function ($mock) {
+        $mock->shouldNotReceive('transmit');
+    });
+
+    $meetup = meetupWithCity(['nostr_publishing_enabled' => false]);
+
+    $this->artisan('nostr:publish-calendar', ['--model' => 'Meetup'])
+        ->assertExitCode(0);
+
+    expect($meetup->refresh()->nostr_coordinate)->toBeNull();
+});
+
+it('does not publish a meetup event whose meetup has not opted in to nostr publishing', function () {
+    $this->mock(NostrEventTransmitter::class, function ($mock) {
+        $mock->shouldNotReceive('transmit');
+    });
+
+    $meetup = meetupWithCity(['nostr_publishing_enabled' => false]);
+    $meetupEvent = MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+        'start' => now()->addWeek(),
+    ]);
+
+    $this->artisan('nostr:publish-calendar', ['--model' => 'MeetupEvent'])
+        ->assertExitCode(0);
+
+    expect($meetupEvent->refresh()->nostr_coordinate)->toBeNull();
 });
 
 it('does not touch already-published meetups', function () {
@@ -111,7 +141,7 @@ it('leaves nostr_coordinate empty when no relay accepts the event', function () 
         $mock->shouldReceive('transmit')->once()->andReturn(false);
     });
 
-    $meetup = meetupWithCity();
+    $meetup = meetupWithCity(['nostr_publishing_enabled' => true]);
 
     $this->artisan('nostr:publish-calendar', ['--model' => 'Meetup'])
         ->assertExitCode(1);

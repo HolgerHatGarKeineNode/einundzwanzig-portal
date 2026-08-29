@@ -44,11 +44,13 @@ class PublishCalendarEvents extends Command
             'Meetup' => Meetup::query()
                 ->with('city.country')
                 ->whereNull('nostr_coordinate')
+                ->where('nostr_publishing_enabled', true)
                 ->orderByDesc('created_at'),
             'MeetupEvent' => MeetupEvent::query()
                 ->with('meetup.city.country')
                 ->whereNull('nostr_coordinate')
                 ->where('start', '>', now())
+                ->whereHas('meetup', fn ($meetup) => $meetup->where('nostr_publishing_enabled', true))
                 ->orderByDesc('created_at'),
             default => null,
         };

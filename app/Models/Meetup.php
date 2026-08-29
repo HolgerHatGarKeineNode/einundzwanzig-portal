@@ -64,6 +64,7 @@ class Meetup extends Model implements HasMedia
         'last_event_at',
         'rsvp_enabled',
         'attendees_public',
+        'nostr_publishing_enabled',
     ];
 
     /**
@@ -93,6 +94,7 @@ class Meetup extends Model implements HasMedia
         'restore_point' => 'array',
         'rsvp_enabled' => 'boolean',
         'attendees_public' => 'boolean',
+        'nostr_publishing_enabled' => 'boolean',
     ];
 
     /**

@@ -67,6 +67,10 @@ class extends Component
 
     public bool $attendees_public = true;
 
+    // Opt-in: Meetup und Termine als NIP-52-Kalender-Events (kind 31924/31923)
+    // auf Nostr veröffentlichen. Default false, siehe UpdateMeetupRequest.
+    public bool $nostr_publishing_enabled = false;
+
     // System fields (read-only) - locked to prevent client-side tampering
     #[Locked]
     public ?int $created_by = null;
@@ -287,6 +291,7 @@ class extends Component
         $this->visible_on_map = (bool) $this->meetup->visible_on_map;
         $this->rsvp_enabled = (bool) $this->meetup->rsvp_enabled;
         $this->attendees_public = (bool) $this->meetup->attendees_public;
+        $this->nostr_publishing_enabled = (bool) $this->meetup->nostr_publishing_enabled;
 
         // System fields
         $this->created_by = $this->meetup->created_by;
@@ -327,6 +332,7 @@ class extends Component
             'visible_on_map' => ['boolean'],
             'rsvp_enabled' => ['boolean'],
             'attendees_public' => ['boolean'],
+            'nostr_publishing_enabled' => ['boolean'],
             'logo' => ['nullable', 'image', 'mimes:jpeg,png,webp,avif', 'max:5120', 'dimensions:max_width=4000,max_height=4000'],
         ]);
 
@@ -564,6 +570,18 @@ class extends Component
                         :label="__('Teilnehmerliste öffentlich zeigen')"
                         :description="__('Aus: Zu-/Absagen und Zähler bleiben öffentlich verborgen. Du und weitere Leader seht sie weiterhin.')"/>
                 </div>
+            </div>
+        </flux:fieldset>
+
+        <!-- Nostr-Veröffentlichung -->
+        <flux:fieldset class="space-y-6">
+            <flux:legend>{{ __('Nostr-Veröffentlichung') }}</flux:legend>
+
+            <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
+                <flux:switch
+                    wire:model="nostr_publishing_enabled"
+                    :label="__('Meetup und Termine auf Nostr veröffentlichen')"
+                    :description="__('Aus: Es werden keine Nostr-Kalender-Events für dieses Meetup gesendet. An: Meetup und kommende Termine werden automatisch als NIP-52-Kalender-Events an die konfigurierten Relays veröffentlicht — öffentlich und für jeden Nostr-Client sichtbar.')"/>
             </div>
         </flux:fieldset>
 

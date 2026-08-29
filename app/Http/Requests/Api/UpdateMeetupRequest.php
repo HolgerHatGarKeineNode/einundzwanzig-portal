@@ -53,6 +53,7 @@ class UpdateMeetupRequest extends FormRequest
             'visible_on_map' => ['sometimes', 'boolean'],
             'rsvp_enabled' => ['sometimes', 'boolean'],
             'attendees_public' => ['sometimes', 'boolean'],
+            'nostr_publishing_enabled' => ['sometimes', 'boolean'],
         ];
     }
 
