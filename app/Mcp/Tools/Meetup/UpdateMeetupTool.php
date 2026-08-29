@@ -66,6 +66,7 @@ class UpdateMeetupTool extends Tool
             'signal' => $schema->string()->description('Signal-Gruppenlink.'),
             'community' => $schema->string()->description('Community-Bezeichnung.'),
             'visible_on_map' => $schema->boolean()->description('Auf der Karte sichtbar.'),
+            'nostr_publishing_enabled' => $schema->boolean()->description('Meetup und Termine automatisch als NIP-52-Kalender-Events (kind 31924/31923) auf Nostr veröffentlichen. Standard: aus.'),
         ];
     }
 }

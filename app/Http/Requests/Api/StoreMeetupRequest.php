@@ -46,6 +46,7 @@ class StoreMeetupRequest extends FormRequest
             'visible_on_map' => ['boolean'],
             'rsvp_enabled' => ['boolean'],
             'attendees_public' => ['boolean'],
+            'nostr_publishing_enabled' => ['boolean'],
         ];
     }
 
