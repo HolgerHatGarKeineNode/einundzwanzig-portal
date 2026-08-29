@@ -36,6 +36,25 @@ return [
     ],
 
     /*
+    |--------------------------------------------------------------------------
+    | Nostr-Publisher (NIP-52 Kalender-Events, Issue #34)
+    |--------------------------------------------------------------------------
+    |
+    | Eigene Identitaet fuer die vom Portal signierten kind 31923/31924 Events —
+    | getrennt vom bestehenden kind:1-Textnote-Versand (der laeuft ueber `noscl`
+    | und dessen eigenen, serverseitig konfigurierten Schluessel, siehe NostrTrait).
+    | nsec- oder Hex-Format, beides akzeptiert `nostr:publish-calendar`.
+    |
+    */
+    'nostr' => [
+        'publisher_key' => env('NOSTR_PUBLISHER_NSEC'),
+        'relays' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('NOSTR_RELAYS', 'wss://nos.lol,wss://relay.damus.io'))
+        ))),
+    ],
+
+    /*
      * Server-zu-Server Bearer-Token für den vereinsmitglied-gegateten Meetup-Endpunkt
      * (GET /api/verein/gated-meetups). Wird gegen den Authorization: Bearer <token>
      * Header geprüft. In Prod-.env als VEREIN_GATE_TOKEN setzen.
