@@ -55,6 +55,16 @@ new class extends Component {
     public function updatedLangCountry(): void
     {
         /*
+         * Die durchsuchbare flux:select-Listbox sendet beim Leeren der Auswahl ein
+         * leeres Array statt eines Strings — kein Sprachwechsel, sondern ein Reset auf
+         * "nichts gewaehlt". Ungeprueft in redirectRoute() haette das "Array to string
+         * conversion" geworfen, weil der Routen-Parameter dort einen String erwartet.
+         */
+        if (! is_string($this->langCountry) || $this->langCountry === '') {
+            return;
+        }
+
+        /*
          * Die bewusste Wahl getrennt festhalten: `lang_country` allein sagt nicht, ob
          * sie jemand getroffen oder eine Middleware aus Accept-Language geraten hat.
          * ApplyChosenLanguageAfterLogin braucht diesen Unterschied.

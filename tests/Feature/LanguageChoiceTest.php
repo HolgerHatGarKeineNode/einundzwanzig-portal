@@ -59,6 +59,20 @@ it('switches the language in a single request instead of racing two', function (
     expect(session('lang_country_chosen'))->toBe('cs-CZ');
 });
 
+it('ignores an empty selection from the searchable listbox instead of throwing', function () {
+    /*
+     * Gemeldeter Fehler (ErrorException: Array to string conversion): die durchsuchbare
+     * flux:select-Listbox sendet beim Leeren der Auswahl `[]` statt eines Strings.
+     * Ungeprueft landete das als Routen-Parameter in redirectRoute() und
+     * RouteUrlGenerator versuchte, das Array in die URL einzusetzen.
+     */
+    Livewire::test('language.selector')
+        ->set('langCountry', [])
+        ->assertNoRedirect();
+
+    expect(session('lang_country_chosen'))->toBeNull();
+});
+
 it('no longer carries a wire:change handler on the language select', function () {
     /*
      * Regressionsanker: die zweite Anfrage war die Ursache, nicht ein Symptom.
