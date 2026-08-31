@@ -17,7 +17,10 @@ class WebhookSubscriptionFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'url' => 'https://example.com/webhooks/'.fake()->unique()->uuid(),
+            // A literal public IP, not a hostname: SsrfGuard::isPublicUrl() does a
+            // live DNS lookup for a hostname, which would make every test relying
+            // on this default depend on outbound DNS at test-run time.
+            'url' => 'https://1.1.1.1/webhooks/'.fake()->unique()->uuid(),
             'secret' => bin2hex(random_bytes(32)),
             'resources' => ['meetup', 'meetup-event'],
             'approved_at' => now(),
