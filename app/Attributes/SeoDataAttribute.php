@@ -267,6 +267,15 @@ class SeoDataAttribute
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
+            'settings_webhooks' => new SEOData(
+                title: __('Webhooks - Einstellungen'),
+                description: __('Verwalte deine Webhook-Subscriptions für Änderungen an Meetups und Meetup-Terminen.'),
+                author: $domainAuthor,
+                image: $domainImage,
+                imageMeta: $domainImageMeta,
+                twitter_username: $domainTwitter,
+                site_name: $domainSiteName,
+            ),
             'settings_delete_user_form' => new SEOData(
                 title: __('Konto löschen - Bitcoin Meetups'),
                 description: __('Informationen zum Löschen deines Bitcoin Meetup Kontos.'),

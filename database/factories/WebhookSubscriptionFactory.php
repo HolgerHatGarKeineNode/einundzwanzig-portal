@@ -22,6 +22,7 @@ class WebhookSubscriptionFactory extends Factory
             // on this default depend on outbound DNS at test-run time.
             'url' => 'https://1.1.1.1/webhooks/'.fake()->unique()->uuid(),
             'secret' => bin2hex(random_bytes(32)),
+            'reveal_secret' => false,
             'resources' => ['meetup', 'meetup-event'],
             'approved_at' => now(),
             'active' => true,
@@ -44,5 +45,13 @@ class WebhookSubscriptionFactory extends Factory
             'consecutive_failures' => 10,
             'disabled_at' => now(),
         ]);
+    }
+
+    /**
+     * The owner opted in to retrieving their own secret again after creation.
+     */
+    public function revealSecret(): static
+    {
+        return $this->state(fn (array $attributes): array => ['reveal_secret' => true]);
     }
 }

@@ -211,3 +211,102 @@ it('forbids deleting someone elses subscription', function () {
     $response->assertForbidden();
     expect(WebhookSubscription::query()->find($subscription->id))->not->toBeNull();
 });
+
+/*
+|--------------------------------------------------------------------------
+| reveal_secret — owner-controlled secret exposure after creation
+|--------------------------------------------------------------------------
+*/
+
+it('defaults reveal_secret to false and keeps the one-time-reveal behaviour', function () {
+    config()->set('einundzwanzig.webhooks.require_approval', false);
+    Sanctum::actingAs($user = User::factory()->create());
+
+    $response = $this->postJson('/api/webhook-subscriptions', [
+        'url' => 'https://1.1.1.1/hook',
+        'resources' => ['meetup'],
+    ]);
+
+    $response->assertCreated()->assertJsonPath('data.reveal_secret', false);
+
+    $subscription = WebhookSubscription::query()->where('user_id', $user->id)->sole();
+    expect($subscription->reveal_secret)->toBeFalse();
+
+    $this->getJson('/api/webhook-subscriptions')
+        ->assertSuccessful()
+        ->assertJsonMissingPath('data.0.secret');
+});
+
+it('rejects a non-boolean reveal_secret', function () {
+    Sanctum::actingAs(User::factory()->create());
+
+    $response = $this->postJson('/api/webhook-subscriptions', [
+        'url' => 'https://1.1.1.1/hook',
+        'resources' => ['meetup'],
+        'reveal_secret' => 'maybe',
+    ]);
+
+    $response->assertStatus(422)->assertJsonValidationErrors(['reveal_secret']);
+});
+
+it('lets the owner opt in to retrieving their own secret again after creation', function () {
+    config()->set('einundzwanzig.webhooks.require_approval', false);
+    Sanctum::actingAs(User::factory()->create());
+
+    $response = $this->postJson('/api/webhook-subscriptions', [
+        'url' => 'https://1.1.1.1/hook',
+        'resources' => ['meetup'],
+        'reveal_secret' => true,
+    ]);
+
+    $response->assertCreated()->assertJsonPath('data.reveal_secret', true);
+    $secret = $response->json('data.secret');
+
+    $this->getJson('/api/webhook-subscriptions')
+        ->assertSuccessful()
+        ->assertJsonPath('data.0.secret', $secret);
+});
+
+it('lets the owner turn secret retrieval on and off again via update', function () {
+    Sanctum::actingAs($user = User::factory()->create());
+    $subscription = WebhookSubscription::factory()->create(['user_id' => $user->id]);
+    $secret = $subscription->secret;
+
+    $this->getJson('/api/webhook-subscriptions')
+        ->assertSuccessful()
+        ->assertJsonMissingPath('data.0.secret');
+
+    $this->patchJson("/api/webhook-subscriptions/{$subscription->id}", ['reveal_secret' => true])
+        ->assertSuccessful()
+        ->assertJsonPath('data.secret', $secret);
+
+    $this->getJson('/api/webhook-subscriptions')
+        ->assertSuccessful()
+        ->assertJsonPath('data.0.secret', $secret);
+
+    $this->patchJson("/api/webhook-subscriptions/{$subscription->id}", ['reveal_secret' => false])
+        ->assertSuccessful()
+        ->assertJsonMissingPath('data.secret');
+
+    $this->getJson('/api/webhook-subscriptions')
+        ->assertSuccessful()
+        ->assertJsonMissingPath('data.0.secret');
+});
+
+it('never exposes another users secret, regardless of that subscriptions reveal_secret flag', function () {
+    $owner = User::factory()->create();
+    $subscription = WebhookSubscription::factory()->revealSecret()->create(['user_id' => $owner->id]);
+
+    Sanctum::actingAs(User::factory()->create());
+
+    $index = $this->getJson('/api/webhook-subscriptions');
+    $index->assertSuccessful();
+    expect(collect($index->json('data'))->pluck('id'))->not->toContain($subscription->id);
+
+    $response = $this->patchJson("/api/webhook-subscriptions/{$subscription->id}", [
+        'reveal_secret' => true,
+    ]);
+
+    $response->assertForbidden();
+    expect($response->getContent())->not->toContain($subscription->secret);
+});

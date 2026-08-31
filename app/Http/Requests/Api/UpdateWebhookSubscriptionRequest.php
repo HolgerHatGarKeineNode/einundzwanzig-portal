@@ -25,6 +25,8 @@ class UpdateWebhookSubscriptionRequest extends FormRequest
             'resources.*' => ['string', Rule::in(config('einundzwanzig.webhooks.allowed_resources'))],
             /** Pause (false) or resume (true) delivery. Resuming a system-disabled subscription also clears its failure count. */
             'active' => ['sometimes', 'boolean'],
+            /** Whether the owner can retrieve their own secret again after creation. */
+            'reveal_secret' => ['sometimes', 'boolean'],
         ];
     }
 }

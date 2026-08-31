@@ -24,6 +24,8 @@ class StoreWebhookSubscriptionRequest extends FormRequest
             'resources' => ['required', 'array', 'min:1'],
             /** One or more of: meetup, meetup-event. */
             'resources.*' => ['string', Rule::in(config('einundzwanzig.webhooks.allowed_resources'))],
+            /** Whether the owner can retrieve their own secret again after creation. Defaults to false (today's one-time reveal). */
+            'reveal_secret' => ['sometimes', 'boolean'],
         ];
     }
 }

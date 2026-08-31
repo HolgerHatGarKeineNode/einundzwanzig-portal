@@ -207,6 +207,7 @@ Route::middleware(['auth'])
         Route::livewire('/settings/password', 'settings.password')->name('settings.password');
         Route::livewire('/settings/appearance', 'settings.appearance')->name('settings.appearance');
         Route::livewire('/settings/api-tokens', 'settings.api-tokens')->name('settings.api-tokens');
+        Route::livewire('/settings/webhooks', 'settings.webhooks')->name('settings.webhooks');
         Route::livewire('/settings/link-identity', 'settings.link-identity')->name('settings.link-identity');
     });
 

@@ -21,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property int $user_id
  * @property string $url
  * @property string $secret
+ * @property bool $reveal_secret
  * @property array<int, string> $resources
  * @property Carbon|null $approved_at
  * @property bool $active
@@ -38,6 +39,7 @@ class WebhookSubscription extends Model
         'user_id',
         'url',
         'secret',
+        'reveal_secret',
         'resources',
         'approved_at',
         'active',
@@ -63,6 +65,7 @@ class WebhookSubscription extends Model
             // "secret ... stored encrypted (Crypt)" requirement, without a bespoke
             // encryption path to get subtly wrong.
             'secret' => 'encrypted',
+            'reveal_secret' => 'boolean',
             'approved_at' => 'datetime',
             'active' => 'boolean',
             'consecutive_failures' => 'integer',

@@ -18,7 +18,8 @@ class WebhookSubscriptionController extends Controller
     /**
      * List my webhook subscriptions
      *
-     * Own subscriptions only, never including the secret again — see store().
+     * Own subscriptions only. The secret is included again only for a
+     * subscription with `reveal_secret: true` — see store().
      */
     public function index(): JsonResponse
     {
@@ -33,9 +34,11 @@ class WebhookSubscriptionController extends Controller
     /**
      * Create a webhook subscription
      *
-     * Generates a secret (≥32 bytes of entropy) and returns it in this response
-     * only — it is never shown again, and rotating it means deleting and
-     * recreating the subscription. Behind `einundzwanzig.webhooks.require_approval`
+     * Generates a secret (≥32 bytes of entropy) and returns it in this response.
+     * With `reveal_secret: false` (the default), that is the only time it is
+     * shown — rotating it then means deleting and recreating the subscription.
+     * With `reveal_secret: true`, the owner can retrieve it again later via
+     * index()/update(). Behind `einundzwanzig.webhooks.require_approval`
      * (default on) the subscription starts pending: an operator has to approve it
      * before any delivery is queued for it.
      */
@@ -47,6 +50,7 @@ class WebhookSubscriptionController extends Controller
             'user_id' => $request->user()->id,
             'url' => $request->string('url')->toString(),
             'secret' => $secret,
+            'reveal_secret' => $request->boolean('reveal_secret'),
             'resources' => $request->input('resources'),
             'approved_at' => config('einundzwanzig.webhooks.require_approval', true) ? null : now(),
             // Explicit, not left to the column default: create() never re-reads a
@@ -76,7 +80,7 @@ class WebhookSubscriptionController extends Controller
      */
     public function update(UpdateWebhookSubscriptionRequest $request, WebhookSubscription $webhookSubscription): WebhookSubscriptionResource
     {
-        $webhookSubscription->fill($request->only(['url', 'resources']));
+        $webhookSubscription->fill($request->only(['url', 'resources', 'reveal_secret']));
 
         if ($request->has('active')) {
             $active = $request->boolean('active');
