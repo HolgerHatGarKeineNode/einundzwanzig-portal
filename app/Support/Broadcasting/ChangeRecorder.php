@@ -9,6 +9,7 @@ use App\Http\Resources\CourseResource;
 use App\Http\Resources\LecturerResource;
 use App\Http\Resources\MeetupEventResource;
 use App\Http\Resources\MeetupResource;
+use App\Jobs\DeliverWebhookJob;
 use App\Models\ApiChange;
 use App\Models\City;
 use App\Models\Course;
@@ -16,6 +17,8 @@ use App\Models\CourseEvent;
 use App\Models\Lecturer;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
+use App\Models\WebhookDelivery;
+use App\Models\WebhookSubscription;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -258,7 +261,57 @@ class ChangeRecorder
             ]);
         }
 
+        self::dispatchWebhooks($change, $definition['name']);
+
         return $change;
+    }
+
+    /**
+     * Queues one delivery per active+approved subscription matching this
+     * resource (Issue #36).
+     *
+     * Same "must never break the write path" guarantee as the broadcast above,
+     * and the same reason: this runs inside the Eloquent observer, mid-request.
+     * A subscriptions query that throws (a migration not yet run, a DB hiccup)
+     * must not take the write down with it.
+     *
+     * Guarded on `allowed_resources` before even querying: only meetup and
+     * meetup-event are offered to subscribers today, so the other four
+     * resources — the majority of writes — never pay for a lookup that can
+     * only ever come back empty.
+     */
+    private static function dispatchWebhooks(ApiChange $change, string $resource): void
+    {
+        if (! in_array($resource, config('einundzwanzig.webhooks.allowed_resources', []), true)) {
+            return;
+        }
+
+        try {
+            $subscriptions = WebhookSubscription::query()
+                ->eligibleForDelivery()
+                ->whereJsonContains('resources', $resource)
+                ->get();
+
+            foreach ($subscriptions as $subscription) {
+                $delivery = WebhookDelivery::create([
+                    'subscription_id' => $subscription->id,
+                    'api_change_id' => $change->id,
+                    // The full envelope, exactly as stored in api_changes.payload —
+                    // not the size-truncated broadcastPayload() variant.
+                    'payload' => $change->payload,
+                ]);
+
+                DeliverWebhookJob::dispatch($subscription->id, $delivery->id);
+            }
+        } catch (Throwable $e) {
+            Log::warning('Webhook-Zustellung konnte nicht eingeplant werden', [
+                'sequence' => $change->id,
+                'resource' => $change->resource,
+                'action' => $change->action,
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

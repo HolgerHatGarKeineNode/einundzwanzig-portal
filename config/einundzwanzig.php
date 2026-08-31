@@ -236,6 +236,46 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Outbound webhooks for change-log consumers
+    |--------------------------------------------------------------------------
+    |
+    | Issue #36: consumers who cannot run a resident WebSocket process or a
+    | poller register a URL and get an HTTP POST for every matching change,
+    | dispatched from ChangeRecorder::record() (the same chokepoint as the
+    | broadcast). See App\Support\Webhooks\WebhookDispatcher.
+    |
+    | `require_approval` is the abuse brake: portal accounts are cheap
+    | (Nostr/LNURL login) and a webhook makes the server POST to a URL an
+    | account holder chose, so a new subscription is inert until an operator
+    | approves it — today that is a direct database action, not an endpoint.
+    |
+    | `allowed_resources` restricts subscriptions to a subset of
+    | ChangeRecorder::resourceNames(): only meetup and meetup-event are
+    | offered initially, though the recorder already logs six resources.
+    | Widening this later is a config change, not a migration.
+    |
+    | `backoff_seconds` is both the retry schedule AND the attempt count: one
+    | initial attempt plus one retry per entry. Five entries below means six
+    | attempts in total, satisfying the "at least 5 attempts" requirement
+    | with room for the job's own first try.
+    |
+    | `auto_disable_after` counts failed deliveries (each one already
+    | exhausted every retry above), not failed HTTP attempts — a subscription
+    | that fails ten separate events in a row is disabled and stays disabled
+    | until its owner re-enables it via PATCH.
+    |
+    */
+
+    'webhooks' => [
+        'require_approval' => env('WEBHOOKS_REQUIRE_APPROVAL', true),
+        'allowed_resources' => ['meetup', 'meetup-event'],
+        'timeout_seconds' => 10,
+        'backoff_seconds' => [60, 300, 1800, 7200, 21600],
+        'auto_disable_after' => 10,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Realtime — wohin ein KONSUMENT verbindet
     |--------------------------------------------------------------------------
     |

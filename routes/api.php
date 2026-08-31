@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\NostrPlebController;
 use App\Http\Controllers\Api\PublicMeetupLeaderController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VereinGatedMeetupController;
+use App\Http\Controllers\Api\WebhookSubscriptionController;
 use App\Http\Controllers\LnurlAuthController;
 use App\Http\Controllers\MobileAuthController;
 use App\Http\Middleware\SetApiLocale;
@@ -111,6 +112,14 @@ Route::middleware([SetApiLocale::class, 'auth:sanctum', 'throttle:60,1'])
         Route::get('my-meetup-events/{meetupEvent}', [MeetupEventController::class, 'mineShow'])->name('meetup-events.mine.show');
         Route::get('meetup-events/{meetupEvent}/rsvp', [MeetupEventController::class, 'rsvpStatus'])->name('meetup-events.rsvp.show');
         Route::post('meetup-events/{meetupEvent}/rsvp', [MeetupEventController::class, 'rsvp'])->name('meetup-events.rsvp');
+
+        // Self-service outbound webhook subscriptions for meetup/meetup-event changes
+        // (Issue #36). New subscriptions start pending behind
+        // einundzwanzig.webhooks.require_approval — see WebhookSubscriptionController.
+        Route::get('webhook-subscriptions', [WebhookSubscriptionController::class, 'index'])->name('webhook-subscriptions.index');
+        Route::post('webhook-subscriptions', [WebhookSubscriptionController::class, 'store'])->name('webhook-subscriptions.store');
+        Route::patch('webhook-subscriptions/{webhookSubscription}', [WebhookSubscriptionController::class, 'update'])->name('webhook-subscriptions.update');
+        Route::delete('webhook-subscriptions/{webhookSubscription}', [WebhookSubscriptionController::class, 'destroy'])->name('webhook-subscriptions.destroy');
     });
 
 // Vereinsmitglied-gegatete Meetups für den Nostr-Client (Server-zu-Server,
