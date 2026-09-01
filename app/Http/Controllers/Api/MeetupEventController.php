@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Carbon\Exceptions\InvalidFormatException;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\PathParameter;
+use Dedoc\Scramble\Attributes\QueryParameter;
 use Dedoc\Scramble\Attributes\Response as ResponseAttribute;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,9 +36,12 @@ class MeetupEventController extends Controller
      * @return Collection<int, array<string, mixed>>
      */
     #[PathParameter(name: 'date', description: 'Optional date (Y-m-d); filters to the month of that date.', required: false, type: 'string')]
+    #[QueryParameter(name: 'locale', description: 'Requested language for tag names (ISO 639-1, e.g. "cs"). Falls back to the Accept-Language header, then to the existing display-chain default.', required: false, type: 'string')]
     #[ResponseAttribute(status: 400, description: 'The given date cannot be parsed (Y-m-d is expected).')]
-    public function __invoke(?string $date = null): Collection
+    public function __invoke(Request $request, ?string $date = null): Collection
     {
+        $requestedLocale = $this->resolveRequestedLocale($request);
+
         if ($date) {
             try {
                 $date = Carbon::parse($date);
@@ -69,11 +73,12 @@ class MeetupEventController extends Controller
             'location' => $event->location,
             'description' => $event->description,
             'link' => $event->link,
-            // Names resolved through the display chain, so a tag that exists only in
-            // German still reads as something rather than as an empty string.
+            // Names resolved through the display chain for the requested locale, so a
+            // tag that exists only in German still reads as something rather than as
+            // an empty string when the client asked for e.g. Czech.
             'tags' => $event->tags->map(fn ($tag) => [
-                'name' => $tag->displayName(),
-                'locale' => $tag->displayLocale(),
+                'name' => $tag->displayName($requestedLocale),
+                'locale' => $tag->displayLocale($requestedLocale),
             ])->all(),
             // null = the attendee count is not public for this meetup (attendees_public=false).
             'attendees' => $event->meetup->attendees_public ? $event->attendeesCount() : null,
@@ -246,5 +251,29 @@ class MeetupEventController extends Controller
                     ->all()
                 : null,
         ];
+    }
+
+    /**
+     * The language the client asked for a tag name in, or null to leave it to the
+     * display chain's own default.
+     *
+     * `?locale=` takes precedence over `Accept-Language` because it is explicit and
+     * survives a client that cannot set custom headers. Neither is required: absent
+     * both, this returns null and `Tag::displayName()`/`displayLocale()` fall back to
+     * `app()->getLocale()`, which `SetApiLocale` has already forced to English for
+     * this route group — deliberately not overridden here, that middleware's own
+     * reasoning still applies to every other string in the response.
+     */
+    private function resolveRequestedLocale(Request $request): ?string
+    {
+        $queryLocale = $request->query('locale');
+
+        if (is_string($queryLocale) && $queryLocale !== '') {
+            return $queryLocale;
+        }
+
+        $preferred = $request->getLanguages()[0] ?? null;
+
+        return $preferred === null ? null : str($preferred)->before('_')->toString();
     }
 }

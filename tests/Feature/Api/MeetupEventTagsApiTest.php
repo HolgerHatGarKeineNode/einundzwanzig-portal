@@ -32,12 +32,68 @@ it('exposes title, end and tags on the public list endpoint', function () {
     ]);
     $event->attachTag(anEventTag('Vortrag'));
 
-    $row = collect($this->getJson('/api/meetup-events')->assertOk()->json())
-        ->firstWhere('id', $event->id);
+    // Explicit locale: Laravel's test client always sends a synthetic
+    // Accept-Language header (Symfony's Request::create() default is
+    // "en-us,en;q=0.5"), so leaving this implicit would make the assertion
+    // depend on that test-client detail rather than on a real client's choice.
+    $row = collect(
+        $this->getJson('/api/meetup-events', ['Accept-Language' => 'de'])
+            ->assertOk()
+            ->json(),
+    )->firstWhere('id', $event->id);
 
     expect($row['title'])->toBe('Einsteigerabend')
         ->and($row['end'])->not->toBeNull()
         ->and(collect($row['tags'])->pluck('name'))->toContain('Vortrag');
+});
+
+it('returns the tag name in the locale requested via the Accept-Language header', function () {
+    $event = MeetupEvent::factory()->create(['meetup_id' => $this->meetup->id]);
+    $event->attachTag(anEventTag('Vortrag'));
+
+    $row = collect(
+        $this->getJson('/api/meetup-events', ['Accept-Language' => 'cs'])
+            ->assertOk()
+            ->json(),
+    )->firstWhere('id', $event->id);
+
+    expect($row['tags'][0]['name'])->toBe('Přednáška')
+        ->and($row['tags'][0]['locale'])->toBe('cs');
+});
+
+it('returns the tag name in the locale requested via the ?locale= query parameter', function () {
+    $event = MeetupEvent::factory()->create(['meetup_id' => $this->meetup->id]);
+    $event->attachTag(anEventTag('Vortrag'));
+
+    // Sent together with a conflicting header to prove ?locale= wins.
+    $row = collect(
+        $this->getJson('/api/meetup-events?locale=cs', ['Accept-Language' => 'de'])
+            ->assertOk()
+            ->json(),
+    )->firstWhere('id', $event->id);
+
+    expect($row['tags'][0]['name'])->toBe('Přednáška')
+        ->and($row['tags'][0]['locale'])->toBe('cs');
+});
+
+it('falls back to another translation and reports it when the requested locale has none', function () {
+    $event = MeetupEvent::factory()->create(['meetup_id' => $this->meetup->id]);
+
+    $german = new Tag(['type' => 'meetup_event']);
+    $german->setTranslation('name', 'de', 'Nur Deutsch');
+    $german->approved_at = now();
+    $german->save();
+
+    $event->attachTag($german);
+
+    $row = collect(
+        $this->getJson('/api/meetup-events', ['Accept-Language' => 'cs'])
+            ->assertOk()
+            ->json(),
+    )->firstWhere('id', $event->id);
+
+    expect($row['tags'][0]['name'])->toBe('Nur Deutsch')
+        ->and($row['tags'][0]['locale'])->toBe('de');
 });
 
 it('never returns an empty tag name, even for a german-only tag', function () {
