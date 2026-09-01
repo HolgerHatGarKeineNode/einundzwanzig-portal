@@ -92,7 +92,9 @@ class extends Component {
         ];
     }
 
-    #[Validate('required|string|max:255')]
+    // A structured OSM place is an equally valid answer to "where" — see save()'s
+    // matching 'required_without:osmPlace.osm_id' rule, the one that actually applies.
+    #[Validate('nullable|string|max:255|required_without:osmPlace.osm_id')]
     public ?string $location = null;
 
     #[Validate('required|string')]
@@ -247,7 +249,9 @@ class extends Component {
         $validationRules = [
             'startDate' => 'required|date',
             'startTime' => 'required',
-            'location' => 'required|string|max:255',
+            // A structured OSM place is an equally valid answer to "where" — only reject
+            // when the event has neither a text location nor a picked map place.
+            'location' => ['nullable', 'string', 'max:255', 'required_without:osmPlace.osm_id'],
             'description' => 'required|string',
             'link' => 'required|url|max:255',
             // Both optional: existing events have neither, and a meetup event without
@@ -266,6 +270,7 @@ class extends Component {
         }
 
         $this->validate($validationRules, [
+            'location.required_without' => __('Gib entweder einen Ort als Text ein oder wähle einen Ort auf der Karte.'),
             'tagIds.required' => __('Bitte wähle mindestens einen Tag.'),
             'tagIds.min' => __('Bitte wähle mindestens einen Tag.'),
         ]);
@@ -282,6 +287,18 @@ class extends Component {
 
         $this->redirect(route('meetups.landingpage', ['meetup' => $this->meetup, 'country' => $this->country]),
             navigate: true);
+    }
+
+    /**
+     * The free-text location, or null when it was left blank.
+     *
+     * Blank rather than an empty string: 'required_without:osmPlace.osm_id' allows an
+     * event with only a structured place to clear the text field, and the empty string
+     * Livewire binds from a cleared input should not linger in the column afterwards.
+     */
+    private function normalizedLocation(): ?string
+    {
+        return blank($this->location) ? null : $this->location;
     }
 
     /**
@@ -353,7 +370,7 @@ class extends Component {
             'start' => $utcDateTime,
             'end' => $this->resolveEnd($localDateTime),
             'title' => $this->title,
-            'location' => $this->location,
+            'location' => $this->normalizedLocation(),
             'description' => $this->description,
             'link' => $this->link,
             ...$this->osmFields(),
@@ -416,7 +433,7 @@ class extends Component {
                     'start' => $utcDateTime,
                     'end' => $this->resolveEnd($date),
                     'title' => $this->title,
-                    'location' => $this->location,
+                    'location' => $this->normalizedLocation(),
                     'description' => $this->description,
                     'link' => $this->link,
                     'created_by' => auth()->id(),
