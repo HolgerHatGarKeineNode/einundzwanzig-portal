@@ -143,6 +143,40 @@ it('does nothing for a subscription or delivery that no longer exists', function
 
 /*
 |--------------------------------------------------------------------------
+| Issue #36 follow-up — a pending (unapproved) subscription is not eligible
+|--------------------------------------------------------------------------
+|
+| ChangeRecorder::dispatchWebhooks() queries WebhookSubscription::eligibleForDelivery(),
+| which requires approved_at not null — this exercises that path end to end,
+| not just the scope in isolation.
+|
+*/
+it('queues no delivery for a pending subscription', function () {
+    config()->set('einundzwanzig.change_log.enabled', true);
+    $subscription = WebhookSubscription::factory()->pending()->create(['resources' => ['meetup-event']]);
+
+    Http::fake(['*' => Http::response('', 200)]);
+
+    MeetupEvent::factory()->create();
+
+    Http::assertNothingSent();
+    expect(WebhookDelivery::query()->where('subscription_id', $subscription->id)->count())->toBe(0);
+});
+
+it('queues no delivery for a rejected subscription', function () {
+    config()->set('einundzwanzig.change_log.enabled', true);
+    $subscription = WebhookSubscription::factory()->rejected()->create(['resources' => ['meetup-event']]);
+
+    Http::fake(['*' => Http::response('', 200)]);
+
+    MeetupEvent::factory()->create();
+
+    Http::assertNothingSent();
+    expect(WebhookDelivery::query()->where('subscription_id', $subscription->id)->count())->toBe(0);
+});
+
+/*
+|--------------------------------------------------------------------------
 | Regression: a deletion delivers correctly after the source row is gone
 |--------------------------------------------------------------------------
 |
