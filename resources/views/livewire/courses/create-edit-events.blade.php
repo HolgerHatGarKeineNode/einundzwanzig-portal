@@ -53,8 +53,11 @@ class extends Component {
      *
      * This is the fallback that always works — "Bürgerhaus, Fischergasse 1" or "wird noch
      * bekannt gegeben". The map place below it is the precise version, when one exists.
+     *
+     * A structured OSM place is an equally valid answer to "where" — see save()'s
+     * matching 'required_without:osmPlace.osm_id' rule, the one that actually applies.
      */
-    #[Validate('required|string|max:255')]
+    #[Validate('nullable|string|max:255|required_without:osmPlace.osm_id')]
     public ?string $location = null;
 
     #[Validate('required|url|max:255')]
@@ -210,10 +213,13 @@ class extends Component {
             'toDate' => 'required|date|after_or_equal:fromDate',
             'toTime' => 'required',
             'city_id' => 'required|exists:cities,id',
-            'location' => 'required|string|max:255',
+            // A structured OSM place is an equally valid answer to "where" — only reject
+            // when the event has neither a text location nor a picked map place.
+            'location' => ['nullable', 'string', 'max:255', 'required_without:osmPlace.osm_id'],
             'link' => 'required|url|max:255',
             ...($this->tagsRequired ? ['tagIds' => 'required|array|min:1'] : []),
         ], [
+            'location.required_without' => __('Gib entweder einen Ort als Text ein oder wähle einen Ort auf der Karte.'),
             'tagIds.required' => __('Bitte wähle mindestens einen Tag.'),
             'tagIds.min' => __('Bitte wähle mindestens einen Tag.'),
         ]);
@@ -238,7 +244,7 @@ class extends Component {
             'from' => $utcFrom,
             'to' => $utcTo,
             'city_id' => $this->city_id,
-            'location' => $this->location,
+            'location' => $this->normalizedLocation(),
             'link' => $this->link,
             ...$this->osmFields(),
         ];
@@ -260,6 +266,18 @@ class extends Component {
 
         $this->redirect(route('courses.landingpage', ['course' => $this->course, 'country' => $this->country]),
             navigate: true);
+    }
+
+    /**
+     * The free-text location, or null when it was left blank.
+     *
+     * Blank rather than an empty string: 'required_without:osmPlace.osm_id' allows an
+     * event with only a structured place to clear the text field, and the empty string
+     * Livewire binds from a cleared input should not linger in the column afterwards.
+     */
+    private function normalizedLocation(): ?string
+    {
+        return blank($this->location) ? null : $this->location;
     }
 
     /**
