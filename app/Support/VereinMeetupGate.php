@@ -181,8 +181,12 @@ class VereinMeetupGate
 
     /**
      * npub (bech32) → hex, fault-tolerant (null for an invalid/empty value).
+     *
+     * Public so other gates built on the same association-membership matching
+     * (e.g. App\Support\BoardGate) normalize npubs the same way instead of
+     * reimplementing the conversion.
      */
-    private function npubToHex(?string $npub): ?string
+    public function npubToHex(?string $npub): ?string
     {
         if (! is_string($npub) || ! str_starts_with($npub, 'npub1')) {
             return null;

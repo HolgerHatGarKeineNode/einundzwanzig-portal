@@ -186,6 +186,39 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | EINUNDZWANZIG board — webhook approval admin gate
+    |--------------------------------------------------------------------------
+    |
+    | Who may reach /admin/webhooks and approve or revoke a pending webhook
+    | subscription (Issue #36's require_approval gate, Issue #40's admin UI
+    | over it). A separate copy from `tag_editors` above on purpose — the two
+    | happen to be the same people today, but one gates tag creation and the
+    | other gates outbound-HTTP approval, and they should be free to diverge
+    | without a change to one silently touching the other.
+    |
+    | Hardcoded and copied on 2026-09-01 from einundzwanzig-verein,
+    | config/einundzwanzig/config.php ('current_board') — deliberately NOT
+    | VereinMeetupGate::vereinMemberHexes()'s verein.einundzwanzig.space API
+    | call, whose fail-soft-to-empty-set behaviour on a network error would
+    | make this gate silently inaccessible to the whole board instead of
+    | loudly broken. That repository remains the authoritative list — this is
+    | a copy, so it needs updating by hand whenever the board changes. See
+    | App\Support\BoardGate.
+    |
+    */
+
+    'board_members' => [
+        'npub1pt0kw36ue3w2g4haxq3wgm6a2fhtptmzsjlc2j2vphtcgle72qesgpjyc6',
+        'npub1gvqkjccl9urg93svaw60jqkk3ux8r3ycl5t3rlvc9uzjeu0agfuss8x8qy',
+        'npub10t8npnmqhpwx9w8k232kess7gqtdlr6kqjemdzf8jnughwqd0gwsez0924',
+        'npub1r8343wqpra05l3jnc4jud4xz7vlnyeslf7gfsty7ahpf92rhfmpsmqwym8',
+        'npub17fqtu2mgf7zueq2kdusgzwr2lqwhgfl2scjsez77ddag2qx8vxaq3vnr8y',
+        'npub1v4lgwjv7qfn3t7qjscpsgz9vqvspf6hecdp2ckgp0dz89uqn5slsgrhw3p',
+        'npub14r770s5wrqpm8jmzur5arnm9aum9x0wasaxwczael54xhjggl7ws5lygc6',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Countries requiring tags on events
     |--------------------------------------------------------------------------
     |

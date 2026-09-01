@@ -827,7 +827,6 @@
     "Webhook aktualisiert.": "",
     "Webhook gelöscht.": "",
     "Erhalte eine HTTP-Benachrichtigung, sobald sich ein Meetup oder ein Meetup-Termin ändert.": "",
-    "Eine Webhook-Subscription sendet einen signierten HTTP-POST an deine URL, sobald sich eine der ausgewählten Ressourcen ändert. Neue Subscriptions müssen von einem Team-Mitglied freigeschaltet werden, bevor sie Zustellungen erhalten.": "",
     "Dein neues Webhook-Secret": "",
     "Kopiere das Secret jetzt. Ohne aktivierte Anzeige (siehe unten) wird es dir nur dieses eine Mal gezeigt.": "",
     "Ziel-URL": "",
@@ -846,5 +845,19 @@
     "Pausieren": "",
     "Fortsetzen": "",
     "Webhook löschen": "",
-    "Webhook wirklich löschen? Zustellungen an :url stoppen sofort.": ""
+    "Webhook wirklich löschen? Zustellungen an :url stoppen sofort.": "",
+    "Webhook-Subscription freigegeben.": "",
+    "Freigabe zurückgezogen.": "",
+    "Vom Besitzer pausiert — erhält trotz Freigabe keine Zustellungen.": "",
+    "Automatisch deaktiviert nach wiederholten Zustellungsfehlern.": "",
+    "Webhook-Freigaben": "",
+    "Neue Webhook-Subscriptions bleiben inaktiv, bis ein Vorstandsmitglied sie hier freischaltet.": "",
+    "Wartet auf Freigabe (:count)": "",
+    "Keine offenen Anfragen.": "",
+    "Besitzer": "",
+    "Angefragt am :date": "",
+    "Freigeschaltet (:count)": "",
+    "Noch keine Subscription freigeschaltet.": "",
+    "Zurückziehen": "",
+    "Eine Webhook-Subscription sendet einen signierten HTTP-POST an deine URL, sobald sich eine der ausgewählten Ressourcen ändert. Neue Subscriptions müssen vom Vorstand des EINUNDZWANZIG e.V. freigeschaltet werden, bevor sie Zustellungen erhalten.": ""
 }

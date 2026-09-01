@@ -218,7 +218,7 @@ class extends Component {
 
         <div class="space-y-8">
             <flux:text>
-                {{ __('Eine Webhook-Subscription sendet einen signierten HTTP-POST an deine URL, sobald sich eine der ausgewählten Ressourcen ändert. Neue Subscriptions müssen von einem Team-Mitglied freigeschaltet werden, bevor sie Zustellungen erhalten.') }}
+                {{ __('Eine Webhook-Subscription sendet einen signierten HTTP-POST an deine URL, sobald sich eine der ausgewählten Ressourcen ändert. Neue Subscriptions müssen vom Vorstand des EINUNDZWANZIG e.V. freigeschaltet werden, bevor sie Zustellungen erhalten.') }}
             </flux:text>
 
             @if (session('status'))

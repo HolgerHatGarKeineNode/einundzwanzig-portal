@@ -209,6 +209,11 @@ Route::middleware(['auth'])
         Route::livewire('/settings/api-tokens', 'settings.api-tokens')->name('settings.api-tokens');
         Route::livewire('/settings/webhooks', 'settings.webhooks')->name('settings.webhooks');
         Route::livewire('/settings/link-identity', 'settings.link-identity')->name('settings.link-identity');
+
+        // Board-only admin view to approve/revoke pending webhook subscriptions
+        // (Issue #40). 403 for non-board users is enforced in the component's
+        // mount() via BoardGate, not by route middleware.
+        Route::livewire('/admin/webhooks', 'admin.webhooks')->name('admin.webhooks');
     });
 
 // Commented out feed routes (RSS/Atom feeds)

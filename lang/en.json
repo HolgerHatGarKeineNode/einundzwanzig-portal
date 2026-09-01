@@ -827,7 +827,6 @@
     "Webhook aktualisiert.": "Webhook updated.",
     "Webhook gelöscht.": "Webhook deleted.",
     "Erhalte eine HTTP-Benachrichtigung, sobald sich ein Meetup oder ein Meetup-Termin ändert.": "Get an HTTP notification whenever a meetup or a meetup event changes.",
-    "Eine Webhook-Subscription sendet einen signierten HTTP-POST an deine URL, sobald sich eine der ausgewählten Ressourcen ändert. Neue Subscriptions müssen von einem Team-Mitglied freigeschaltet werden, bevor sie Zustellungen erhalten.": "A webhook subscription sends a signed HTTP POST to your URL whenever one of the selected resources changes. New subscriptions must be approved by a team member before they receive deliveries.",
     "Dein neues Webhook-Secret": "Your new webhook secret",
     "Kopiere das Secret jetzt. Ohne aktivierte Anzeige (siehe unten) wird es dir nur dieses eine Mal gezeigt.": "Copy the secret now. Without the display enabled (see below), it is shown to you only this one time.",
     "Ziel-URL": "Target URL",
@@ -846,5 +845,19 @@
     "Pausieren": "Pause",
     "Fortsetzen": "Resume",
     "Webhook löschen": "Delete webhook",
-    "Webhook wirklich löschen? Zustellungen an :url stoppen sofort.": "Really delete this webhook? Deliveries to :url stop immediately."
+    "Webhook wirklich löschen? Zustellungen an :url stoppen sofort.": "Really delete this webhook? Deliveries to :url stop immediately.",
+    "Webhook-Subscription freigegeben.": "Webhook subscription approved.",
+    "Freigabe zurückgezogen.": "Approval revoked.",
+    "Vom Besitzer pausiert — erhält trotz Freigabe keine Zustellungen.": "Paused by the owner — will not receive deliveries despite being approved.",
+    "Automatisch deaktiviert nach wiederholten Zustellungsfehlern.": "Automatically disabled after repeated delivery failures.",
+    "Webhook-Freigaben": "Webhook approvals",
+    "Neue Webhook-Subscriptions bleiben inaktiv, bis ein Vorstandsmitglied sie hier freischaltet.": "New webhook subscriptions stay inactive until a board member approves them here.",
+    "Wartet auf Freigabe (:count)": "Awaiting approval (:count)",
+    "Keine offenen Anfragen.": "No open requests.",
+    "Besitzer": "Owner",
+    "Angefragt am :date": "Requested on :date",
+    "Freigeschaltet (:count)": "Approved (:count)",
+    "Noch keine Subscription freigeschaltet.": "No subscription has been approved yet.",
+    "Zurückziehen": "Revoke",
+    "Eine Webhook-Subscription sendet einen signierten HTTP-POST an deine URL, sobald sich eine der ausgewählten Ressourcen ändert. Neue Subscriptions müssen vom Vorstand des EINUNDZWANZIG e.V. freigeschaltet werden, bevor sie Zustellungen erhalten.": "A webhook subscription sends a signed HTTP POST to your URL whenever one of the selected resources changes. New subscriptions must be approved by the EINUNDZWANZIG e.V. board before they receive deliveries."
 }

@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\WebhookSubscription;
+use App\Support\BoardGate;
 
 class WebhookSubscriptionPolicy
 {
@@ -36,6 +37,23 @@ class WebhookSubscriptionPolicy
     public function delete(User $user, WebhookSubscription $subscription): bool
     {
         return $this->owns($user, $subscription);
+    }
+
+    /**
+     * Board-only: unlocks delivery by setting `approved_at` (Issue #40).
+     */
+    public function approve(User $user, WebhookSubscription $subscription): bool
+    {
+        return BoardGate::allows($user);
+    }
+
+    /**
+     * Board-only: clears `approved_at` again, without touching `active` or
+     * the subscription itself.
+     */
+    public function revoke(User $user, WebhookSubscription $subscription): bool
+    {
+        return BoardGate::allows($user);
     }
 
     private function owns(User $user, WebhookSubscription $subscription): bool
