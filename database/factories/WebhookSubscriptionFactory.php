@@ -39,6 +39,17 @@ class WebhookSubscriptionFactory extends Factory
         return $this->state(fn (array $attributes): array => ['approved_at' => null]);
     }
 
+    /**
+     * Looked at and declined by an operator — distinct from pending().
+     */
+    public function rejected(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'approved_at' => null,
+            'rejected_at' => now(),
+        ]);
+    }
+
     public function disabled(): static
     {
         return $this->state(fn (array $attributes): array => [

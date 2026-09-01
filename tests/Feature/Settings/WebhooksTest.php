@@ -134,6 +134,15 @@ it('lets the owner delete a subscription', function () {
     expect(WebhookSubscription::query()->find($subscription->id))->toBeNull();
 });
 
+it('shows a rejected subscription as distinguishable from a pending one', function () {
+    $user = actingAsUser();
+    WebhookSubscription::factory()->rejected()->create(['user_id' => $user->id]);
+
+    Livewire::test('settings.webhooks')
+        ->assertSee('Abgelehnt')
+        ->assertDontSee('Wartet auf Freigabe');
+});
+
 it('never lets another user edit, delete or see the secret of someones elses subscription', function () {
     $owner = User::factory()->create();
     $subscription = WebhookSubscription::factory()->revealSecret()->create(['user_id' => $owner->id]);

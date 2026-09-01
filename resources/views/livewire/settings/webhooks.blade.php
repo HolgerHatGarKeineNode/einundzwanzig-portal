@@ -175,11 +175,18 @@ class extends Component {
     }
 
     /**
-     * A single, human-facing label for the three states that matter to an
-     * owner — the same rule WebhookSubscriptionResource::status() uses.
+     * A single, human-facing label for the states that matter to an owner —
+     * the same rule WebhookSubscriptionResource::status() uses. Checked
+     * before the `approved_at === null` branch below, since a rejected
+     * subscription also has a null `approved_at` — the two only differ in
+     * `rejected_at` (Issue #36 follow-up).
      */
     public function statusFor(WebhookSubscription $subscription): string
     {
+        if ($subscription->rejected_at !== null) {
+            return 'rejected';
+        }
+
         if ($subscription->approved_at === null) {
             return 'pending';
         }
@@ -337,12 +344,14 @@ class extends Component {
                                                 'active' => 'lime',
                                                 'paused' => 'zinc',
                                                 'disabled' => 'red',
+                                                'rejected' => 'red',
                                                 default => 'amber',
                                             };
                                             $statusLabel = match ($status) {
                                                 'active' => __('Aktiv'),
                                                 'paused' => __('Pausiert'),
                                                 'disabled' => __('Deaktiviert'),
+                                                'rejected' => __('Abgelehnt'),
                                                 default => __('Wartet auf Freigabe'),
                                             };
                                         @endphp

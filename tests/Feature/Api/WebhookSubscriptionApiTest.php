@@ -69,6 +69,15 @@ it('starts a subscription pending when approval is required, by default', functi
     expect($subscription->approved_at)->toBeNull();
 });
 
+it('shows a rejected subscription as rejected, not pending, to its owner', function () {
+    Sanctum::actingAs($user = User::factory()->create());
+    WebhookSubscription::factory()->rejected()->create(['user_id' => $user->id]);
+
+    $response = $this->getJson('/api/webhook-subscriptions');
+
+    $response->assertSuccessful()->assertJsonPath('data.0.status', 'rejected');
+});
+
 it('rejects a non-https url', function () {
     Sanctum::actingAs(User::factory()->create());
 

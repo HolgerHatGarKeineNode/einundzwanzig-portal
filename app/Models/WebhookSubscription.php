@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property bool $reveal_secret
  * @property array<int, string> $resources
  * @property Carbon|null $approved_at
+ * @property Carbon|null $rejected_at
  * @property bool $active
  * @property int $consecutive_failures
  * @property Carbon|null $disabled_at
@@ -42,6 +43,7 @@ class WebhookSubscription extends Model
         'reveal_secret',
         'resources',
         'approved_at',
+        'rejected_at',
         'active',
         'consecutive_failures',
         'disabled_at',
@@ -67,6 +69,7 @@ class WebhookSubscription extends Model
             'secret' => 'encrypted',
             'reveal_secret' => 'boolean',
             'approved_at' => 'datetime',
+            'rejected_at' => 'datetime',
             'active' => 'boolean',
             'consecutive_failures' => 'integer',
             'disabled_at' => 'datetime',
@@ -93,5 +96,18 @@ class WebhookSubscription extends Model
             ->whereNotNull('approved_at')
             ->where('active', true)
             ->whereNull('disabled_at');
+    }
+
+    /**
+     * Awaiting an operator's decision: neither approved nor rejected yet. What
+     * `webhook:approve --list` shows — a rejected subscription must not
+     * resurface here, or "reject" would be indistinguishable from "not yet
+     * looked at" (Issue #36 follow-up).
+     */
+    public function scopePending(Builder $query): Builder
+    {
+        return $query
+            ->whereNull('approved_at')
+            ->whereNull('rejected_at');
     }
 }

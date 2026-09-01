@@ -43,11 +43,18 @@ class WebhookSubscriptionResource extends JsonResource
     }
 
     /**
-     * A single, human-facing label for the three states that matter to an
-     * owner: pending approval, running, or stopped (whichever way it stopped).
+     * A single, human-facing label for the states that matter to an owner:
+     * pending or rejected approval, running, or stopped (whichever way it
+     * stopped). Checked before the `approved_at === null` branch below, since
+     * a rejected subscription also has a null `approved_at` — the two only
+     * differ in `rejected_at` (Issue #36 follow-up).
      */
     private function status(): string
     {
+        if ($this->resource->rejected_at !== null) {
+            return 'rejected';
+        }
+
         if ($this->resource->approved_at === null) {
             return 'pending';
         }
