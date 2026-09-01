@@ -93,7 +93,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
   timeout 900 php artisan test --compact --exclude-testsuite=Browser
   ```
 
-  Browser assertions stay available on purpose — run them deliberately through `vendor/bin/pest --agent='…'`, never as a side effect of a full run.
+  Browser assertions stay available on purpose — run them deliberately through `vendor/bin/pest --testsuite=Browser`, never as a side effect of a full run.
 
 === laravel/core rules ===
 
