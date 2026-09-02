@@ -32,21 +32,25 @@ class DomainMiddleware
                 'locale' => 'de',
                 'lang_country' => 'de-DE',
                 'app_name' => 'EINUNDZWANZIG Portal',
+                'timezone' => 'Europe/Berlin',
             ],
             'portal.eenentwintig.net' => [
                 'locale' => 'nl',
                 'lang_country' => 'nl-NL',
                 'app_name' => 'EENENTWINTIG Portaal',
+                'timezone' => 'Europe/Amsterdam',
             ],
             'portal.huszonegy.world' => [
                 'locale' => 'hu',
                 'lang_country' => 'hu-HU',
                 'app_name' => 'HUSZONEGY Portál',
+                'timezone' => 'Europe/Budapest',
             ],
             'portal.dwadziesciajeden.pl' => [
                 'locale' => 'pl',
                 'lang_country' => 'pl-PL',
                 'app_name' => 'DWADZIEŚCIA JEDEN Portal',
+                'timezone' => 'Europe/Warsaw',
             ],
             /*
              * Die erste Domain, bei der Sprache und Land AUSEINANDERFALLEN — und die
@@ -64,17 +68,20 @@ class DomainMiddleware
                 'country' => 'us',
                 'region' => 'in',
                 'app_name' => 'Bitcoin Indiana',
+                'timezone' => 'America/Indiana/Indianapolis',
             ],
 
             'pl.localhost' => [
                 'locale' => 'pl',
                 'lang_country' => 'pl-PL',
                 'app_name' => 'DWADZIEŚCIA JEDEN Portal',
+                'timezone' => 'Europe/Warsaw',
             ],
             'hu.localhost' => [
                 'locale' => 'hu',
                 'lang_country' => 'hu-HU',
                 'app_name' => 'HUSZONEGY Portál',
+                'timezone' => 'Europe/Budapest',
             ],
         ];
 
@@ -111,6 +118,7 @@ class DomainMiddleware
             'app.name' => $domainConfig['app_name'],
             'app.domain_country' => $domainConfig['country'] ?? $domainConfig['locale'],
             'app.domain_region' => $domainConfig['region'] ?? null,
+            'app.domain_timezone' => $domainConfig['timezone'] ?? 'UTC',
         ]);
 
         $currentLangCountry = session('lang_country', $domainConfig['lang_country']);

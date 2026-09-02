@@ -26,6 +26,13 @@ return [
     'domain_region' => null,
 
     /*
+     * Die IANA-Zeitzone, in der diese Domain ihre Termine anzeigt (z. B. fuer den
+     * iCalendar-Feed). Gesetzt wird der Wert zur Laufzeit von DomainMiddleware; hier
+     * steht nur der Default, damit config('app.domain_timezone') nie undefiniert ist.
+     */
+    'domain_timezone' => 'UTC',
+
+    /*
     |--------------------------------------------------------------------------
     | Local Tunnel (Expose) Base URL
     |--------------------------------------------------------------------------
