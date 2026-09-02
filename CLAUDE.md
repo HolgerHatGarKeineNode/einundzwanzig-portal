@@ -87,6 +87,13 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 - Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
 - Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test --compact` with a specific filename or filter.
+- **Never run the full suite unfiltered in an automated context.** `php artisan test --compact` includes the `Browser` testsuite, which starts a Playwright server; where none can start it hangs with no output until something kills it. Measured 2026-09-01: 25+ minutes of silence, twice, on a change that touched only `lang/en.json`. Scope it instead:
+
+  ```
+  timeout 900 php artisan test --compact --exclude-testsuite=Browser
+  ```
+
+  Browser assertions stay available on purpose — run them deliberately through `vendor/bin/pest --testsuite=Browser`, never as a side effect of a full run.
 
 === laravel/core rules ===
 
