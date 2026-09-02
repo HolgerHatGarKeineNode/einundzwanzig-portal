@@ -100,7 +100,7 @@ class extends Component {
     #[Validate('required|string')]
     public ?string $description = null;
 
-    #[Validate('required|url|max:255')]
+    #[Validate('nullable|url|max:255')]
     public ?string $link = null;
 
     public ?string $title = null;
@@ -253,7 +253,7 @@ class extends Component {
             // when the event has neither a text location nor a picked map place.
             'location' => ['nullable', 'string', 'max:255', 'required_without:osmPlace.osm_id'],
             'description' => 'required|string',
-            'link' => 'required|url|max:255',
+            'link' => 'nullable|url|max:255',
             // Both optional: existing events have neither, and a meetup event without
             // its own title simply carries the meetup's name.
             'title' => 'nullable|string|max:255',
@@ -299,6 +299,15 @@ class extends Component {
     private function normalizedLocation(): ?string
     {
         return blank($this->location) ? null : $this->location;
+    }
+
+    /**
+     * Same reasoning as {@see self::normalizedLocation()}: the empty string Livewire
+     * binds from a cleared input should not linger in the column as a fake value.
+     */
+    private function normalizedLink(): ?string
+    {
+        return blank($this->link) ? null : $this->link;
     }
 
     /**
@@ -372,7 +381,7 @@ class extends Component {
             'title' => $this->title,
             'location' => $this->normalizedLocation(),
             'description' => $this->description,
-            'link' => $this->link,
+            'link' => $this->normalizedLink(),
             ...$this->osmFields(),
         ];
 
@@ -435,7 +444,7 @@ class extends Component {
                     'title' => $this->title,
                     'location' => $this->normalizedLocation(),
                     'description' => $this->description,
-                    'link' => $this->link,
+                    'link' => $this->normalizedLink(),
                     'created_by' => auth()->id(),
                     'attendees' => [],
                     'might_attendees' => [],
