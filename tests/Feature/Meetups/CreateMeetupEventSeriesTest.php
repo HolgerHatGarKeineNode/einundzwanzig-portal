@@ -4,6 +4,8 @@ use App\Enums\RecurrenceType;
 use App\Models\ApiChange;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
+use App\Models\Tag;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 it('creates a weekly series via the web editor using the shared action', function () {
@@ -102,4 +104,43 @@ it('records one meetup change for an editor series, not one per occurrence', fun
 
     expect($occurrences)->toBeGreaterThan(1)
         ->and($after - $before)->toBe(1);
+});
+
+it('resolves the selectable tag list once for an event series, not once per occurrence', function () {
+    $meetup = Meetup::factory()->create(['created_by' => actingAsUser()->id]);
+    $tag = Tag::factory()->ofType('meetup_event')->create();
+
+    DB::enableQueryLog();
+
+    Livewire::test('meetups.create-edit-events', ['meetup' => $meetup])
+        ->set('seriesMode', true)
+        ->set('startDate', '2026-07-01')
+        ->set('startTime', '18:00')
+        ->set('endDate', '2026-07-29')
+        ->set('recurrenceType', RecurrenceType::Weekly->value)
+        ->set('location', 'Marktplatz')
+        ->set('description', 'Wöchentlicher Stammtisch')
+        ->set('link', 'https://einundzwanzig.space')
+        ->set('tagIds', [$tag->id])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    // Die 5 Termine (siehe Test oben) muessen alle den Tag tragen — sonst waere die
+    // Anfrage bloss weggefallen statt aus der Schleife gehoben.
+    $eventsWithTag = MeetupEvent::where('meetup_id', $meetup->id)
+        ->whereHas('tags', fn ($query) => $query->whereKey($tag->id))
+        ->count();
+
+    // "id" in (...) unterscheidet allowedTags() vom Tag-Picker-Subkomponenten-Query
+    // (das selbe "tags"/"type"-Muster, aber ohne die whereIn()-Einschraenkung).
+    $tagSelects = collect(DB::getQueryLog())
+        ->filter(fn (array $entry): bool => str_contains($entry['query'], 'from "tags"') && str_contains($entry['query'], '"id" in'))
+        ->count();
+
+    DB::disableQueryLog();
+
+    expect($eventsWithTag)->toBe(5)
+        // Vorher: einmal PRO Termin (5x identisch). Die Auswahl darf sich waehrend
+        // einer Serie nicht aendern, also genuegt eine einzige Anfrage.
+        ->and($tagSelects)->toBe(1);
 });

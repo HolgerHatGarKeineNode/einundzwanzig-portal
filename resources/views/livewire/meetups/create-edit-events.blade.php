@@ -351,18 +351,30 @@ class extends Component {
     }
 
     /**
-     * Attach the picked tags, scoped to the event type so nothing else is disturbed.
-     *
-     * Only ids the user was actually offered are accepted — a crafted request must not
-     * be able to attach someone else's unapproved suggestion.
+     * The tags the user was actually offered, resolved once. Every occurrence of a
+     * series shares the same selection (see {@see self::syncTags()}), so this must not
+     * run again per occurrence — the query is otherwise identical every time.
      */
-    private function syncTags(MeetupEvent $event): void
+    private function allowedTags(): \Illuminate\Support\Collection
     {
-        $allowed = \App\Models\Tag::query()
+        return \App\Models\Tag::query()
             ->where('type', 'meetup_event')
             ->selectableBy(auth()->user())
             ->whereIn('id', $this->tagIds)
             ->get();
+    }
+
+    /**
+     * Attach the picked tags, scoped to the event type so nothing else is disturbed.
+     *
+     * Only ids the user was actually offered are accepted — a crafted request must not
+     * be able to attach someone else's unapproved suggestion. Pass an already-resolved
+     * $allowedTags when calling this in a loop (see {@see self::createEventSeries()});
+     * without it, each call re-resolves the same list from scratch.
+     */
+    private function syncTags(MeetupEvent $event, ?\Illuminate\Support\Collection $allowedTags = null): void
+    {
+        $allowed = $allowedTags ?? $this->allowedTags();
 
         $event->syncTagsWithType($allowed->all(), 'meetup_event');
     }
@@ -414,6 +426,10 @@ class extends Component {
 
         $dates = $this->generateEventDates($startDate, $endDate);
 
+        // Resolved once: every occurrence shares the same selection, and the query
+        // behind it is otherwise identical on every iteration below.
+        $allowedTags = $this->allowedTags();
+
         /*
          * Die Serien-Identitaet (P5): ein UUID fuer alle Vorkommen, dazu die fuenf
          * `recurrence_*`-Werte auf JEDEM Termin. Der MeetupEventResource verspricht sie
@@ -434,7 +450,7 @@ class extends Component {
         ];
 
         // Ein Nachlauf statt einer Neuberechnung je Termin, siehe MeetupEventObserver::batched().
-        \App\Observers\MeetupEventObserver::batched(function () use ($dates, $seriesFields, &$eventsCreated): void {
+        \App\Observers\MeetupEventObserver::batched(function () use ($dates, $seriesFields, $allowedTags, &$eventsCreated): void {
             foreach ($dates as $date) {
                 $utcDateTime = $date->copy()->setTimezone('UTC');
 
@@ -453,7 +469,7 @@ class extends Component {
                 ]);
 
                 // Every occurrence of a series carries the same tags.
-                $this->syncTags($event);
+                $this->syncTags($event, $allowedTags);
 
                 $eventsCreated++;
             }
@@ -694,9 +710,23 @@ class extends Component {
                     </flux:text>
                 @endif
 
+                {{-- Not gated on seriesMode: both save paths (single event and series)
+                     need a visible pending indicator, not only a disabled button.
+                     Plain span, not <flux:text> — Flux renders `wire:loading` as
+                     `wire:loading=""` rather than the bare attribute Livewire expects. --}}
+                <span wire:loading wire:target="save" class="text-sm text-zinc-500 dark:text-zinc-400">
+                    {{ __('Wird gespeichert…') }}
+                </span>
+
                 @if($seriesMode)
+                    {{-- Disabled while save() is in flight: the confirm button below
+                         sits after the form's closing tag, so Livewire's automatic
+                         form-disabling (which only reaches elements inside the <form>)
+                         never covers it — without this, a second click here reopens
+                         the modal and fires a second series while the first is still
+                         saving. --}}
                     <flux:modal.trigger name="confirm-series">
-                        <flux:button variant="primary" type="button">
+                        <flux:button variant="primary" type="button" wire:loading.attr="disabled" wire:target="save">
                             {{ __('Serientermine erstellen') }}
                         </flux:button>
                     </flux:modal.trigger>
@@ -730,7 +760,7 @@ class extends Component {
                 </flux:modal.close>
 
                 <flux:modal.close>
-                    <flux:button type="submit" variant="primary" wire:click="save">{{ __('Jetzt erstellen') }}</flux:button>
+                    <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="save" wire:click="save">{{ __('Jetzt erstellen') }}</flux:button>
                 </flux:modal.close>
             </div>
         </div>

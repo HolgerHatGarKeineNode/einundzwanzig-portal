@@ -359,6 +359,11 @@ class Meetup extends Model implements HasMedia
      * (Gegenstück zu {@see belongsToMe()}, aber leader- statt mitgliedschafts-
      * basiert).
      */
+    /**
+     * ->shouldCache() matters: bool-returning accessors are NOT cached by Eloquent by
+     * default (only object-returning ones are), so without it every template access —
+     * e.g. once per event card on a meetup's events list — re-ran this query.
+     */
     protected function leadByMe(): Attribute
     {
         return Attribute::make(
@@ -367,7 +372,7 @@ class Meetup extends Model implements HasMedia
                 ->where('user_id', auth()->id())
                 ->where('is_leader', true)
                 ->exists()
-        );
+        )->shouldCache();
     }
 
     public function city(): BelongsTo

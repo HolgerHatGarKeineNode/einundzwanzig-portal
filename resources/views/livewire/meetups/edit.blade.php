@@ -360,13 +360,19 @@ class extends Component
     public function with(): array
     {
         return [
+            // Column-limited: this Livewire request re-runs on every re-render (any
+            // validation error, any wire:model.live change), and City carries
+            // osm_relation/simplified_geojson — JSON blobs the picker never reads but
+            // would otherwise hydrate for every row on every one of those round trips.
             'cities' => City::query()
-                ->with([
-                    'country',
-                ])
+                ->select(['id', 'name', 'country_id'])
+                ->with(['country:id,name'])
                 ->orderBy('name')
                 ->get(),
-            'countries' => Country::query()->orderBy('countries.name')->get(),
+            'countries' => Country::query()
+                ->select(['id', 'name', 'code'])
+                ->orderBy('countries.name')
+                ->get(),
         ];
     }
 }; ?>
