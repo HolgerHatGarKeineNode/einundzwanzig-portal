@@ -106,28 +106,27 @@ class DownloadMeetupCalendar extends Controller
     }
 
     /**
-     * `country` bestimmt nur den Feed-INHALT (Punkt 2 der Definition of Done, das
-     * "ALLE"- vs. "nur dieses Land"-Buttonpaar) — nie die Sprache oder Zeitzone der
-     * Ausgabe. Reihenfolge: URL-Parameter, dann Domain-Default, dann gar kein Filter
-     * (das entspricht dem heutigen, ungefilterten Verhalten).
+     * `country` only ever scopes the feed CONTENT (the "all events" vs. "this
+     * country only" button pair) — never the calendar name or timezone of the
+     * output, unlike `language`/`timezone` below. That is why an unknown or
+     * malformed value resolves to null (no filter) here instead of falling
+     * back to the domain's own country: unlike language/timezone, where a
+     * fallback only changes display, defaulting country to the domain would
+     * silently narrow an existing subscription's content on a typo'd or
+     * stale URL — the exact regression the "no `country` param" case is
+     * required to avoid. No filter is the behavior every URL had before this
+     * feature existed, so it is also the safe default for a value we can't
+     * make sense of.
      */
     private function resolveCountryCode(Request $request): ?string
     {
         $requested = mb_strtolower(trim((string) $request->query('country', '')));
 
-        if ($requested !== '' && Country::query()->where('code', $requested)->exists()) {
-            return $requested;
-        }
-
         if ($requested === '') {
             return null;
         }
 
-        $domainDefault = mb_strtolower((string) config('app.domain_country', ''));
-
-        return ($domainDefault !== '' && Country::query()->where('code', $domainDefault)->exists())
-            ? $domainDefault
-            : null;
+        return Country::query()->where('code', $requested)->exists() ? $requested : null;
     }
 
     /**

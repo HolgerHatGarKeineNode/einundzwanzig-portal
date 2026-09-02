@@ -243,7 +243,7 @@ it('scopes the feed content to the selected country when the country parameter i
     expect($ics)->toContain('SUMMARY:Czech Event')->not->toContain('SUMMARY:German Event');
 });
 
-it('falls back to the domain default instead of erroring on an unknown or malformed country, language or timezone', function () {
+it('falls back to the domain default instead of erroring on an unknown or malformed language or timezone', function () {
     $meetup = Meetup::factory()->create(['city_id' => $this->city->id]);
     MeetupEvent::factory()->create([
         'meetup_id' => $meetup->id,
@@ -260,6 +260,25 @@ it('falls back to the domain default instead of erroring on an unknown or malfor
         ->toContain('X-WR-CALNAME:EINUNDZWANZIG Portal')
         ->toContain('TZID:Europe/Berlin')
         ->toContain('DTSTART;TZID=Europe/Berlin:');
+});
+
+it('leaves the feed content unfiltered — not scoped to the domain default — for an unknown or malformed country value', function () {
+    $czechCountry = Country::factory()->create(['code' => 'cz']);
+    $czechCity = City::factory()->create(['country_id' => $czechCountry->id]);
+
+    $germanMeetup = Meetup::factory()->create(['city_id' => $this->city->id, 'name' => 'German Meetup']);
+    $czechMeetup = Meetup::factory()->create(['city_id' => $czechCity->id, 'name' => 'Czech Meetup']);
+    MeetupEvent::factory()->create(['meetup_id' => $germanMeetup->id, 'title' => 'German Event', 'start' => now()->addWeek()]);
+    MeetupEvent::factory()->create(['meetup_id' => $czechMeetup->id, 'title' => 'Czech Event', 'start' => now()->addWeek()]);
+
+    // "zz" matches no Country row. The domain serving this request (portal.einundzwanzig.space)
+    // defaults to "de" — if resolveCountryCode() fell back to that domain default instead of
+    // null, this would silently drop the Czech event, exactly like an explicit ?country=de
+    // would. It must not: an unrecognized value is not a request for "my own country", it is
+    // the same as no country parameter at all.
+    $ics = unfoldIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar?country=zz')->getContent());
+
+    expect($ics)->toContain('SUMMARY:German Event')->toContain('SUMMARY:Czech Event');
 });
 
 it('keeps the UID stable across a rename, bumps SEQUENCE, and drops the event once it is cancelled (D-update/D-cancel)', function () {
