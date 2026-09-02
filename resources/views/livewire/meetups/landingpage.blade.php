@@ -66,9 +66,7 @@ class extends Component {
                     <flux:subheading class="text-gray-600 dark:text-gray-400">
                         {{ $meetup->city->name }}, {{ $meetup->city->country->name }}
                     </flux:subheading>
-                    <flux:button class="cursor-pointer"
-                                 x-copy-to-clipboard="'{{ route('ics', ['meetup' => $meetup]) }}'"
-                                 icon="calendar-date-range">{{ __('Kalender-Stream-URL kopieren') }}</flux:button>
+                    <x-calendar-stream-picker :meetup-id="$meetup->id"/>
                 </div>
             </div>
 
@@ -237,8 +235,7 @@ class extends Component {
                         {{ __('Neues Event erstellen') }}
                     </flux:button>
                 @endif
-                <flux:button class="cursor-pointer" x-copy-to-clipboard="'{{ route('ics', ['meetup' => $meetup]) }}'"
-                             icon="calendar-date-range">{{ __('Kalender-Stream-URL kopieren') }}</flux:button>
+                <x-calendar-stream-picker :meetup-id="$meetup->id"/>
             </div>
 
             {{-- Einmalig statt pro Karte: attendeesVisibleTo() löst sonst je Event

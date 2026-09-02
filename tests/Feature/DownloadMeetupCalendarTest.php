@@ -183,6 +183,85 @@ it('escapes commas, semicolons and backslashes per RFC 5545 and folds long lines
     expect($unfolded)->toContain('LOCATION:'.escapeIcsText($rawLocation));
 });
 
+it('lets an explicit language and timezone selection override the requesting domain (Issue e5233554)', function () {
+    $meetup = Meetup::factory()->create(['city_id' => $this->city->id]);
+    MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+        'start' => now()->addWeek()->setTime(19, 0),
+    ]);
+
+    // Domain is the German one — without the new parameters this would be
+    // "EINUNDZWANZIG Portal" / Europe/Berlin, exactly like the first test above.
+    $ics = unfoldIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar?language=cs&timezone=Europe/Prague')->getContent());
+
+    expect($ics)
+        ->toContain('X-WR-CALNAME:Jednadvacet')
+        ->toContain('TZID:Europe/Prague')
+        ->toContain('DTSTART;TZID=Europe/Prague:');
+});
+
+it('translates tag names into the requested language instead of the domain locale', function () {
+    $meetup = Meetup::factory()->create(['city_id' => $this->city->id]);
+    $event = MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+        'start' => now()->addWeek(),
+    ]);
+    $event->attachTag(Tag::factory()->named(['de' => 'Bitcoin-Stammtisch', 'cs' => 'Bitcoin setkání'])->ofType('meetup_event')->create());
+
+    $default = unfoldIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar')->getContent());
+    $czech = unfoldIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar?language=cs')->getContent());
+
+    expect($default)->toContain('[Bitcoin-Stammtisch]');
+    expect($czech)->toContain('[Bitcoin setkání]');
+});
+
+it('leaves the feed content unfiltered by country when no country parameter is present (no regression)', function () {
+    $czechCountry = Country::factory()->create(['code' => 'cz']);
+    $czechCity = City::factory()->create(['country_id' => $czechCountry->id]);
+
+    $germanMeetup = Meetup::factory()->create(['city_id' => $this->city->id, 'name' => 'German Meetup']);
+    $czechMeetup = Meetup::factory()->create(['city_id' => $czechCity->id, 'name' => 'Czech Meetup']);
+    MeetupEvent::factory()->create(['meetup_id' => $germanMeetup->id, 'title' => 'German Event', 'start' => now()->addWeek()]);
+    MeetupEvent::factory()->create(['meetup_id' => $czechMeetup->id, 'title' => 'Czech Event', 'start' => now()->addWeek()]);
+
+    $ics = unfoldIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar')->getContent());
+
+    expect($ics)->toContain('SUMMARY:German Event')->toContain('SUMMARY:Czech Event');
+});
+
+it('scopes the feed content to the selected country when the country parameter is present', function () {
+    $czechCountry = Country::factory()->create(['code' => 'cz']);
+    $czechCity = City::factory()->create(['country_id' => $czechCountry->id]);
+
+    $germanMeetup = Meetup::factory()->create(['city_id' => $this->city->id, 'name' => 'German Meetup']);
+    $czechMeetup = Meetup::factory()->create(['city_id' => $czechCity->id, 'name' => 'Czech Meetup']);
+    MeetupEvent::factory()->create(['meetup_id' => $germanMeetup->id, 'title' => 'German Event', 'start' => now()->addWeek()]);
+    MeetupEvent::factory()->create(['meetup_id' => $czechMeetup->id, 'title' => 'Czech Event', 'start' => now()->addWeek()]);
+
+    $ics = unfoldIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar?country=cz')->getContent());
+
+    expect($ics)->toContain('SUMMARY:Czech Event')->not->toContain('SUMMARY:German Event');
+});
+
+it('falls back to the domain default instead of erroring on an unknown or malformed country, language or timezone', function () {
+    $meetup = Meetup::factory()->create(['city_id' => $this->city->id]);
+    MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+        'start' => now()->addWeek()->setTime(19, 0),
+    ]);
+
+    $response = test()->get('http://portal.einundzwanzig.space/stream-calendar?country=zz&language=xx&timezone=Not%2FARealZone');
+
+    $response->assertSuccessful();
+
+    $ics = unfoldIcs($response->getContent());
+
+    expect($ics)
+        ->toContain('X-WR-CALNAME:EINUNDZWANZIG Portal')
+        ->toContain('TZID:Europe/Berlin')
+        ->toContain('DTSTART;TZID=Europe/Berlin:');
+});
+
 it('keeps the UID stable across a rename, bumps SEQUENCE, and drops the event once it is cancelled (D-update/D-cancel)', function () {
     $meetup = Meetup::factory()->create(['city_id' => $this->city->id, 'name' => 'Bitcoin Meetup Erfurt']);
     $event = MeetupEvent::factory()->create([

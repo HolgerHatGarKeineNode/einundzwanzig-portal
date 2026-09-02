@@ -46,14 +46,14 @@ return [
     'fallback_based_on_current_locale' => false,
 
     'languages' => [
-        'cs' => ['name' => 'Čeština', 'countries' => ['cs-CZ']],
-        'de' => ['name' => 'Deutsch', 'countries' => ['de-DE', 'de-AT', 'de-CH']],
-        'en' => ['name' => 'English', 'countries' => ['en-GB', 'en-US', 'en-AU', 'en-CA']],
-        'es' => ['name' => 'Español', 'countries' => ['es-ES', 'es-CL', 'es-CO']],
-        'hu' => ['name' => 'Magyar', 'countries' => ['hu-HU']],
-        'lv' => ['name' => 'Latviešu', 'countries' => ['lv-LV']],
-        'nl' => ['name' => 'Nederlands', 'countries' => ['nl-NL', 'nl-BE']],
-        'pl' => ['name' => 'Polski', 'countries' => ['pl-PL']],
-        'pt' => ['name' => 'Português', 'countries' => ['pt-PT']],
+        'cs' => ['name' => 'Čeština', 'countries' => ['cs-CZ'], 'calendar_name' => 'Jednadvacet'],
+        'de' => ['name' => 'Deutsch', 'countries' => ['de-DE', 'de-AT', 'de-CH'], 'calendar_name' => 'Einundzwanzig'],
+        'en' => ['name' => 'English', 'countries' => ['en-GB', 'en-US', 'en-AU', 'en-CA'], 'calendar_name' => 'Twenty-one'],
+        'es' => ['name' => 'Español', 'countries' => ['es-ES', 'es-CL', 'es-CO'], 'calendar_name' => 'Veintiuno'],
+        'hu' => ['name' => 'Magyar', 'countries' => ['hu-HU'], 'calendar_name' => 'Huszonegy'],
+        'lv' => ['name' => 'Latviešu', 'countries' => ['lv-LV'], 'calendar_name' => 'Divdesmit viens'],
+        'nl' => ['name' => 'Nederlands', 'countries' => ['nl-NL', 'nl-BE'], 'calendar_name' => 'Eenentwintig'],
+        'pl' => ['name' => 'Polski', 'countries' => ['pl-PL'], 'calendar_name' => 'Dwadzieścia jeden'],
+        'pt' => ['name' => 'Português', 'countries' => ['pt-PT'], 'calendar_name' => 'Vinte e um'],
     ],
 ];

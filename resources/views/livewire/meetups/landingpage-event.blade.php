@@ -376,9 +376,7 @@ class extends Component {
                     <flux:subheading class="text-gray-600 dark:text-gray-400">
                         {{ $event->meetup->city->name }}, {{ $event->meetup->city->country->name }}
                     </flux:subheading>
-                    <flux:button class="cursor-pointer"
-                                 x-copy-to-clipboard="'{{ route('ics', ['meetup' => $event->meetup]) }}'"
-                                 icon="calendar-date-range">{{ __('Kalender-Stream-URL kopieren') }}</flux:button>
+                    <x-calendar-stream-picker :meetup-id="$event->meetup->id"/>
                 </div>
             </div>
 

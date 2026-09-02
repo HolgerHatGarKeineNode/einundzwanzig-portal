@@ -73,8 +73,7 @@ class extends Component {
             {{-- Der Einstieg in die Regions-Ansicht. Zeigt sich nur, wenn das Land
                  Regionen hat — sonst bleibt die Leiste wie bisher. --}}
             <livewire:region.chooser/>
-            <flux:button class="cursor-pointer" x-copy-to-clipboard="'{{ route('ics') }}'"
-                         icon="calendar-date-range">{{ __('Kalender-Stream-URL kopieren') }}</flux:button>
+            <x-calendar-stream-picker/>
             <flux:input
                 wire:model.live="search"
                 :placeholder="__('Suche nach Meetups...')"
