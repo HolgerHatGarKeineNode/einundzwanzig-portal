@@ -130,13 +130,19 @@ it('survives the session id migration that Auth::login performs', function () {
         ->and($user->fresh()->lang_country)->toBe('de-DE');
 });
 
-it('never lets the browser header decide the language on an unknown domain', function () {
+it('lets a supported browser header decide the language on an unknown domain, but never persists the guess', function () {
     /*
      * Lokal, hinter einem CNAME oder auf einem Vorschau-Host griff DomainMiddleware
-     * nicht — und LangCountrySession riet die Sprache aus HTTP_ACCEPT_LANGUAGE. Beim
-     * ersten Login schrieb sie den geratenen Wert ungefragt ins Konto, und ab da holte
-     * der Login-Listener des Pakets ihn jedes Mal zurueck. Das ist die Herkunft eines
-     * en-US-Kontos, das nie jemand gewaehlt hat.
+     * fruehr nicht, und LangCountrySession riet die Sprache aus HTTP_ACCEPT_LANGUAGE.
+     * Beim ersten Login schrieb sie den geratenen Wert ungefragt ins Konto, und ab da
+     * holte der Login-Listener des Pakets ihn jedes Mal zurueck. Das war die Herkunft
+     * eines en-US-Kontos, das nie jemand gewaehlt hat.
+     *
+     * DomainMiddleware macht die Sprachwahl aus dem Browser-Header inzwischen selbst
+     * (Issue #46) — die Session bekommt jetzt tatsaechlich en-US statt der deutschen
+     * Domain-Vorgabe. Der Teil des alten Fixes, der weiterhin gilt: das Konto bleibt
+     * leer, weil die Session VOR LangCountrySession schon gefuellt ist und dessen
+     * guess-and-persist-Zweig deshalb nie laeuft.
      */
     $user = User::factory()->create(['lang_country' => null]);
 
@@ -147,8 +153,8 @@ it('never lets the browser header decide the language on an unknown domain', fun
         ->get('/')
         ->assertRedirect();
 
-    expect(session('lang_country'))->toBe('de-DE')
-        ->and(session('locale'))->toBe('de')
+    expect(session('lang_country'))->toBe('en-US')
+        ->and(session('locale'))->toBe('en')
         /*
          * Und das Konto bleibt leer: LangCountrySession schreibt nur, wenn sie selbst
          * raten musste. Weil die Session jetzt schon gefuellt ist, laeuft sie gar nicht
