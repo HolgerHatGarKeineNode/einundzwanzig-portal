@@ -18,7 +18,8 @@ use Livewire\Component;
  */
 new
 #[SeoDataAttribute(key: 'settings_webhooks')]
-class extends Component {
+class extends Component
+{
     use SeoTrait;
 
     public string $url = '';
@@ -198,6 +199,28 @@ class extends Component {
         return $subscription->active ? 'active' : 'paused';
     }
 
+    /**
+     * Product wording for one of `webhooks.allowed_resources`' slugs.
+     *
+     * The config holds database names (`meetup-event`); a reader of this page
+     * has never seen that word anywhere else in the portal, which calls the
+     * thing a Meetup-Termin — including in this page's own subheading. Going
+     * through __() also gets the label translated, which the raw slug never
+     * was: it read identically in all nine locales.
+     *
+     * An unknown slug falls back to itself, so a resource added to the config
+     * without a label here still shows up (technically worded) instead of
+     * silently rendering as an empty checkbox label.
+     */
+    public function resourceLabel(string $resource): string
+    {
+        return match ($resource) {
+            'meetup' => __('Meetup'),
+            'meetup-event' => __('Meetup-Termin'),
+            default => $resource,
+        };
+    }
+
     private function ownSubscriptionOrFail(?int $id): WebhookSubscription
     {
         return WebhookSubscription::query()
@@ -267,7 +290,7 @@ class extends Component {
 
                 <flux:checkbox.group wire:model="resources" :label="__('Ressourcen')">
                     @foreach ($allowedResources as $resource)
-                        <flux:checkbox value="{{ $resource }}" label="{{ $resource }}" />
+                        <flux:checkbox value="{{ $resource }}" :label="$this->resourceLabel($resource)" />
                     @endforeach
                 </flux:checkbox.group>
 
@@ -311,7 +334,7 @@ class extends Component {
 
                                         <flux:checkbox.group wire:model="editResources" :label="__('Ressourcen')">
                                             @foreach ($allowedResources as $resource)
-                                                <flux:checkbox value="{{ $resource }}" label="{{ $resource }}" />
+                                                <flux:checkbox value="{{ $resource }}" :label="$this->resourceLabel($resource)" />
                                             @endforeach
                                         </flux:checkbox.group>
 
@@ -334,7 +357,9 @@ class extends Component {
                                         <div class="min-w-0">
                                             <p class="truncate font-mono text-sm">{{ $subscription->url }}</p>
                                             <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                                                {{ implode(', ', $subscription->resources) }}
+                                                {{ collect($subscription->resources)
+                                                    ->map(fn (string $resource): string => $this->resourceLabel($resource))
+                                                    ->implode(', ') }}
                                             </p>
                                         </div>
 

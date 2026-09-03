@@ -41,6 +41,48 @@
             ->whereHas('country', fn ($query) => $query->whereRaw('LOWER(code) = ?', [mb_strtolower((string) $navCountry)]))
             ->whereRaw('LOWER(code) = ?', [mb_strtolower($navRegionCode)])
             ->value('id');
+
+        /*
+         * Die Meetups, die der angemeldete Nutzer als Leader fuehrt (Issue #45): ohne sie
+         * kommt ein Organisator nur ueber die Laenderliste an sein eigenes Meetup.
+         * Weil diese Sidebar auch die mobile Navigation ist (flux:sidebar.toggle unten),
+         * deckt derselbe Block das Mobil-Kriterium des Issues mit ab.
+         *
+         * `ledBy()` haengt an `meetup_user.is_leader`, NICHT an `created_by` — dieselbe
+         * Grenze, die im Portal ueber die Termin-Affordancen entscheidet
+         * (meetups/index.blade.php:226). Ein Ersteller ohne Leader-Flag steht hier also
+         * nicht; das ist die vorhandene Definition von "meine Meetups", nicht eine neue.
+         *
+         * Kostengrenze: drei Abfragen, unabhaengig von der Anzahl der Meetups (eine fuer
+         * die Meetups, je eine fuer die eager geladenen Staedte und Laender), und keine
+         * einzige fuer einen Gast. Die Sidebar rendert auf jeder Seite — ein Query pro
+         * Eintrag waere hier eine Regression ueber die ganze App. `simplified_geojson`
+         * liegt auf `meetups` und waere bei `select *` pro Zeile mitgelesen worden,
+         * deshalb die ausdrueckliche Spaltenliste.
+         */
+        $myMeetups = auth()->check()
+            ? \App\Models\Meetup::query()
+                ->ledBy(auth()->id())
+                ->with(['city:id,country_id', 'city.country:id,code'])
+                ->orderBy('name')
+                ->get(['id', 'name', 'slug', 'city_id'])
+            : collect();
+
+        /*
+         * Das Land fuer den Link kommt aus dem Meetup selbst, nicht aus der laufenden
+         * Ansicht: wer ein Schweizer Meetup fuehrt und gerade /de/... liest, soll trotzdem
+         * auf /ch/meetup/... landen. `countries.code` steht gross in der Datenbank ('DE'),
+         * die URLs des Portals sind klein.
+         */
+        $navMeetupCountry = static fn (\App\Models\Meetup $meetup): ?string => ($code = $meetup->city?->country?->code) === null
+            ? null
+            : mb_strtolower($code);
+
+        /* request()->route('meetup') ist je nach Bindung Modell oder Slug — beides abfangen. */
+        $navCurrentMeetup = request()->route('meetup');
+        $navCurrentMeetupSlug = $navCurrentMeetup instanceof \App\Models\Meetup
+            ? $navCurrentMeetup->slug
+            : (is_string($navCurrentMeetup) ? $navCurrentMeetup : null);
     @endphp
 
     <flux:navlist variant="outline">
@@ -91,6 +133,16 @@
                     <flux:icon name="globe-europe-africa"/>
                 </div>
             </flux:navlist.item>
+
+            @foreach ($myMeetups as $myMeetup)
+                <flux:navlist.item icon="star"
+                                   :href="route_with_country('meetups.landingpage', ['meetup' => $myMeetup, 'country' => $navMeetupCountry($myMeetup)])"
+                                   :current="request()->routeIs('meetups.landingpage') && $navCurrentMeetupSlug === $myMeetup->slug"
+                                   wire:navigate
+                                   data-testid="sidebar-my-meetup">
+                    {{ $myMeetup->name }}
+                </flux:navlist.item>
+            @endforeach
         </flux:navlist.group>
 
         <flux:navlist.group :heading="__('Community & Dienste')" class="grid">
@@ -142,6 +194,20 @@
                 {{ __('Städte/Gebiete') }}
             </flux:navlist.item>
         </flux:navlist.group>
+
+        {{-- Vorstandsbereich (Issue #40): der Zugang haengt an derselben BoardGate, die
+             die Seite selbst in ihrem mount() prueft — der Eintrag ist die Auffindbarkeit,
+             nicht die Rechtegrenze. Ohne ihn musste ein Vorstandsmitglied die URL kennen. --}}
+        @if (\App\Support\BoardGate::allows(auth()->user()))
+            <flux:navlist.group :heading="__('Vorstand')" class="grid">
+                <flux:navlist.item icon="shield-check" :href="route_with_country('admin.webhooks')"
+                                   :current="request()->routeIs('admin.webhooks')"
+                                   wire:navigate
+                                   data-testid="sidebar-admin-webhooks">
+                    {{ __('Webhook-Freigaben') }}
+                </flux:navlist.item>
+            </flux:navlist.group>
+        @endif
     </flux:navlist>
 
     <flux:spacer/>

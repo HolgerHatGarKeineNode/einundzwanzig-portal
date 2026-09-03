@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Models\WebhookSubscription;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Lang;
 use Livewire\Livewire;
 
 /*
@@ -162,4 +163,76 @@ it('never lets another user edit, delete or see the secret of someones elses sub
     expect(WebhookSubscription::query()->find($subscription->id))
         ->not->toBeNull()
         ->reveal_secret->toBeTrue();
+});
+
+/*
+|--------------------------------------------------------------------------
+| Resource labels (P4 of the #36-#45 gap closure)
+|--------------------------------------------------------------------------
+|
+| `webhooks.allowed_resources` holds database names. The picker used to print
+| them raw, so a reader saw "meetup-event" — a word that appears nowhere else
+| in the portal's UI — and saw it identically in all nine locales, because a
+| raw slug never passes through __(). The checkbox VALUE stays the slug; only
+| the label is product wording.
+|
+*/
+
+/**
+ * Only the text a reader sees — an assertion about a LABEL must not pass on
+ * the checkbox's value attribute, which stays the API slug on purpose.
+ */
+function visibleText(string $html): string
+{
+    return html_entity_decode(strip_tags($html));
+}
+
+it('labels the resource checkboxes with product wording, not the config slugs', function () {
+    actingAsUser();
+
+    $html = Livewire::test('settings.webhooks')
+        ->assertSee('Meetup-Termin')
+        // The submitted value is still the API slug, not the label.
+        ->assertSeeHtml('value="meetup-event"')
+        ->html();
+
+    expect(visibleText($html))->not->toContain('meetup-event');
+});
+
+it('labels the resources of an existing subscription with product wording', function () {
+    $user = actingAsUser();
+    WebhookSubscription::factory()->create([
+        'user_id' => $user->id,
+        'resources' => ['meetup', 'meetup-event'],
+    ]);
+
+    Livewire::test('settings.webhooks')
+        ->assertSee('Meetup, Meetup-Termin')
+        ->assertDontSee('meetup, meetup-event');
+});
+
+it('translates the resource labels instead of printing one string for all nine locales', function () {
+    $user = actingAsUser();
+    WebhookSubscription::factory()->create([
+        'user_id' => $user->id,
+        'resources' => ['meetup-event'],
+    ]);
+
+    // lang/*.json only gains the key in P6, so the label is injected here instead:
+    // a raw slug could not follow the locale at all, a translated label must.
+    app()->setLocale('en');
+    Lang::addLines(['*.Meetup-Termin' => 'Meetup event'], 'en');
+
+    $html = Livewire::test('settings.webhooks')
+        ->assertSee('Meetup event')
+        ->html();
+
+    expect(visibleText($html))->not->toContain('meetup-event');
+});
+
+it('falls back to the raw slug for a resource that has no label yet', function () {
+    actingAsUser();
+
+    expect(Livewire::test('settings.webhooks')->instance()->resourceLabel('brand-new-resource'))
+        ->toBe('brand-new-resource');
 });
