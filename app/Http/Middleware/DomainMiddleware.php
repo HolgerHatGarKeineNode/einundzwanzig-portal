@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
+use Stefro\LaravelLangCountry\Services\PreferredLanguage;
 use Symfony\Component\HttpFoundation\Response;
 
 class DomainMiddleware
@@ -85,27 +86,33 @@ class DomainMiddleware
             ],
         ];
 
-        /*
-         * Faellt die Domain durch (localhost, eine Partner-Domain per CNAME, ein
-         * Vorschau-Host), lief bisher nichts von alledem — und die naechste Middleware,
-         * LangCountrySession, fand eine leere Session vor und riet die Sprache aus
-         * HTTP_ACCEPT_LANGUAGE. Schlimmer: beim ersten Login schreibt sie den geratenen
-         * Wert ungefragt in users.lang_country, und ab da stellt der Login-Listener des
-         * Pakets die Sprache jedes Mal wieder darauf zurueck. Genau so entsteht ein
-         * Konto, das hartnaeckig auf en-US zurueckspringt, obwohl niemand das je
-         * gewaehlt hat.
-         *
-         * Der Default des Portals ist deshalb der Rueckfall, nicht der Browser-Header.
-         */
         $domainConfig = $domainArray[$domain] ?? $domainArray[self::FALLBACK_DOMAIN];
+
+        /*
+         * Resolved only on a real first visit (neither key is in the session yet). An
+         * explicit prior choice, an already-guessed value from an earlier request, or an
+         * authenticated account's stored preference (applied at login by the package's
+         * UserAuthenticated listener, before this request) all populate `lang_country`
+         * beforehand and are never overridden here.
+         *
+         * This still only ever writes to the session, never to `users.lang_country` — that
+         * is what keeps issue #18 fixed: LangCountrySession finds both keys already set and
+         * never runs its own guess-and-persist branch (see the class doc above). A value
+         * only becomes permanent through an explicit choice (ApplyChosenLanguageAfterLogin).
+         */
+        $browserLangCountry = session()->has('lang_country')
+            ? null
+            : $this->resolveFromAcceptLanguage($request);
 
         // Nur beim ersten Besuch setzen, damit eine getroffene Wahl bestehen bleibt.
         if (! session()->has('lang_country')) {
-            session(['lang_country' => $domainConfig['lang_country']]);
+            session(['lang_country' => $browserLangCountry ?? $domainConfig['lang_country']]);
         }
 
         if (! session()->has('locale')) {
-            session(['locale' => $domainConfig['locale']]);
+            session(['locale' => $browserLangCountry !== null
+                ? explode('-', $browserLangCountry)[0]
+                : $domainConfig['locale']]);
         }
 
         /*
@@ -125,5 +132,19 @@ class DomainMiddleware
         App::setLocale(explode('-', $currentLangCountry)[0]);
 
         return $next($request);
+    }
+
+    /**
+     * Matches Accept-Language against the lang_country values LangCountry actually
+     * supports (config('lang-country.allowed')), most-preferred first. Returns null when
+     * the header is missing or names nothing supported, so the caller keeps today's
+     * domain default instead of the package's own generic fallback.
+     */
+    private function resolveFromAcceptLanguage(Request $request): ?string
+    {
+        $preferred = new PreferredLanguage($request->server('HTTP_ACCEPT_LANGUAGE'));
+
+        return $preferred->findExactMatchForFourCharsOrReturnNull()
+            ?? $preferred->findFirstMatchBasedOnOnlyTheLangChars();
     }
 }
