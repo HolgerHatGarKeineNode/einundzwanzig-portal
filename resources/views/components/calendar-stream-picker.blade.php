@@ -34,9 +34,16 @@
 
     $baseUrl = route('ics', $meetupId ? ['meetup' => $meetupId] : []);
 
-    // Eindeutig je Instanz: landingpage.blade.php rendert diese Komponente zweimal
-    // auf derselben Seite, und ein statisches data-testid waere dort mehrdeutig.
-    $testIdPrefix = 'calendar-stream-'.\Illuminate\Support\Str::random(8);
+    /*
+     * Eindeutig je Instanz, aber STABIL ueber Re-Renders: landingpage.blade.php
+     * rendert die Komponente zweimal auf derselben Seite, ein statisches
+     * data-testid waere dort mehrdeutig. Vorher stand hier Str::random(8) — auf
+     * meetups/index.blade.php sitzt die Komponente neben wire:model.live="search",
+     * also erzeugte jeder Tastendruck neue Test-IDs und jede selektor-basierte
+     * Messung lief ins Leere. Ein Zaehler pro Request leistet dasselbe und bleibt.
+     */
+    static $calendarStreamPickerInstance = 0;
+    $testIdPrefix = 'calendar-stream-'.(++$calendarStreamPickerInstance);
 @endphp
 
 {{-- `triggerLabel` carries the language and the timezone, deliberately NOT the
@@ -55,9 +62,6 @@
         timezone: {!! \Illuminate\Support\Js::from($defaultTimezone)->toHtml() !!},
         baseUrl: {!! \Illuminate\Support\Js::from($baseUrl)->toHtml() !!},
         scopedCopyTemplate: {!! \Illuminate\Support\Js::from(__('Kalenderlink kopieren (nur :country)'))->toHtml() !!},
-        get triggerLabel() {
-            return this.language.toUpperCase() + ' · ' + this.timezone;
-        },
         get scopedCopyLabel() {
             return this.scopedCopyTemplate.replace(':country', this.country.toUpperCase());
         },
@@ -74,37 +78,48 @@
         },
     }"
 >
-    {{-- The trigger names the action, not the state: "DE · DE · Europe/Berlin"
-         told a visitor nothing about what the button opens. The selected codes
-         stay visible as a secondary line, because they are what distinguishes
-         this trigger from a plain link — but they are no longer the label.
+    {{-- The trigger names the action and nothing else. It used to read
+         "DE · DE · Europe/Berlin", which told a visitor nothing about what the
+         button opens; the first fix kept those codes as a second line and made
+         it worse — in a narrow flex slot (meetups index: between the region
+         select and the search field) the label wrapped to five lines and the
+         button grew into a block. The codes are redundant anyway: the three
+         selects inside the popover show the same values, editable.
 
-         Same width problem as the two copy buttons below: the timezone is data
-         driven (`\DateTimeZone::listIdentifiers()` has 419 entries, longest 30
-         characters, "America/Argentina/Buenos_Aires"), so Flux' default
-         `whitespace-nowrap` plus the fixed `h-10` (button/index.blade.php:65,73)
-         would push this button past the edge of its container — here next to a
-         128px avatar on the meetup landing page. `!whitespace-normal !h-auto`
-         lets it wrap instead; `min-h-11` keeps the 44px touch target. --}}
+         So: one line, Flux' own `whitespace-nowrap` back in force. That is safe
+         now because the label is a fixed translated string — the data-driven
+         width came from the timezone id (`\DateTimeZone::listIdentifiers()` has
+         419 entries, longest 30 characters), and it no longer appears here.
+         `min-h-11` keeps the 44px touch target. --}}
     <flux:button
-        align="start"
-        class="cursor-pointer min-h-11 !h-auto !whitespace-normal py-2 text-start"
+        class="cursor-pointer min-h-11"
         icon="calendar-date-range"
         data-testid="{{ $testIdPrefix }}-trigger"
     >
-        <span class="flex flex-col items-start leading-tight">
-            <span>{{ __('Kalender abonnieren') }}</span>
-            <span class="text-xs font-normal opacity-70" x-text="triggerLabel"></span>
-        </span>
+        {{ __('Kalender abonnieren') }}
     </flux:button>
 
     <flux:popover class="w-[20rem] max-w-[calc(100vw-2rem)] space-y-4" data-testid="{{ $testIdPrefix }}-panel">
+        {{-- Durchsuchbare Listbox statt eines nackten <select>, und zwar nach dem
+             Muster, das dieses Repo fuer genau diese drei Listen schon hat:
+             country/chooser.blade.php (Flagge + Name) und timezone/chooser.blade.php
+             (Suchfeld). \DateTimeZone::listIdentifiers() liefert 419 Eintraege — in
+             einem 320px-Popover ist das ohne Suche nicht bedienbar. --}}
         <flux:field>
             <flux:label>{{ __('Land') }}</flux:label>
-            <flux:select x-model="country" class="min-h-11" data-testid="{{ $testIdPrefix }}-country">
+            <flux:select variant="listbox" searchable x-model="country" class="min-h-11"
+                         data-testid="{{ $testIdPrefix }}-country">
+                <x-slot name="search">
+                    <flux:select.search class="px-4" :placeholder="__('Suche dein Land...')"/>
+                </x-slot>
                 @foreach($countries as $option)
                     <flux:select.option value="{{ mb_strtolower($option->code) }}">
-                        {{ $option->name }} ({{ strtoupper($option->code) }})
+                        <div class="flex items-center space-x-2">
+                            <img alt="{{ mb_strtolower($option->code) }}"
+                                 src="{{ asset('vendor/blade-flags/country-'.mb_strtolower($option->code).'.svg') }}"
+                                 width="24" height="12"/>
+                            <span>{{ $option->name }} ({{ strtoupper($option->code) }})</span>
+                        </div>
                     </flux:select.option>
                 @endforeach
             </flux:select>
@@ -112,16 +127,39 @@
 
         <flux:field>
             <flux:label>{{ __('Sprache') }}</flux:label>
-            <flux:select x-model="language" class="min-h-11" data-testid="{{ $testIdPrefix }}-language">
+            <flux:select variant="listbox" searchable x-model="language" class="min-h-11"
+                         data-testid="{{ $testIdPrefix }}-language">
+                <x-slot name="search">
+                    <flux:select.search class="px-4" :placeholder="__('Suche deine Sprache...')"/>
+                </x-slot>
                 @foreach($supportedLanguages as $code => $data)
-                    <flux:select.option value="{{ $code }}">{{ $data['name'] }}</flux:select.option>
+                    <flux:select.option value="{{ $code }}">
+                        <div class="flex items-center space-x-2">
+                            @php
+                                // 'countries' listet die Locales dieser Sprache
+                                // ("de" => de-DE, de-AT, de-CH). Die erste ist die
+                                // Leitregion und liefert die Flagge.
+                                $flagCode = mb_strtolower((string) str($data['countries'][0] ?? '')->after('-'));
+                            @endphp
+                            @if($flagCode !== '')
+                                <img alt="{{ $flagCode }}"
+                                     src="{{ asset('vendor/blade-flags/country-'.$flagCode.'.svg') }}"
+                                     width="24" height="12"/>
+                            @endif
+                            <span>{{ $data['name'] }}</span>
+                        </div>
+                    </flux:select.option>
                 @endforeach
             </flux:select>
         </flux:field>
 
         <flux:field>
             <flux:label>{{ __('Zeitzone') }}</flux:label>
-            <flux:select x-model="timezone" class="min-h-11" data-testid="{{ $testIdPrefix }}-timezone">
+            <flux:select variant="listbox" searchable x-model="timezone" class="min-h-11"
+                         data-testid="{{ $testIdPrefix }}-timezone">
+                <x-slot name="search">
+                    <flux:select.search class="px-4" :placeholder="__('Suche Zeitzone...')"/>
+                </x-slot>
                 @foreach($timezones as $tz)
                     <flux:select.option value="{{ $tz }}">{{ $tz }}</flux:select.option>
                 @endforeach

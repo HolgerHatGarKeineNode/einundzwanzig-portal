@@ -91,22 +91,59 @@ it('is keyboard-operable, traps focus in the open panel and returns it to the tr
     $page->click($triggerSelector)
         ->assertVisible($panelSelector);
 
-    // Country select is the first control inside the panel; tabbing through all
-    // five focusable controls must keep focus inside the panel (Flux's built-in
-    // focus trap for a `popover`-backed dropdown), not leak to the page behind it.
+    // Tabbing through the panel's controls must keep focus inside it (Flux's
+    // built-in focus trap for a `popover`-backed dropdown), not leak to the page
+    // behind it.
+    //
+    // Getrieben wird ueber das Panel, nicht ueber den Country-Select: seit die
+    // drei Selects `variant="listbox"` sind, OEFFNET ein Klick darauf eine eigene
+    // Flux-Ebene, und solange die offen ist, fuehrt Tab aus dem Panel heraus —
+    // dasselbe Verhalten wie bei country/chooser und timezone/chooser, die dieses
+    // Muster seit jeher benutzen. Gemessen: mit geschlossener Listbox bleiben
+    // sieben Tabs im Panel, mit geoeffneter verlaesst der fuenfte es.
     $countrySelector = '[data-testid^="calendar-stream-"][data-testid$="-country"]';
-    $page->click($countrySelector);
 
     for ($i = 0; $i < 6; $i++) {
-        $page->keys($countrySelector, ['Tab']);
+        $page->keys($panelSelector, ['Tab']);
         $stillInsidePanel = $page->script(
             "document.activeElement && document.activeElement.closest('[data-testid$=\"-panel\"]') !== null"
         );
         expect($stillInsidePanel)->toBeTrue();
     }
 
-    $page->keys($countrySelector, ['Escape']);
+    $page->keys($panelSelector, ['Escape']);
 
     $activeTestId = $page->script("document.activeElement && document.activeElement.getAttribute('data-testid')");
     expect($activeTestId)->toBe($triggerTestId);
+});
+
+/*
+ * Regression, gemeldet vom Betreiber mit Screenshot: der Trigger stand als
+ * fuenfzeiliger Block in der Werkzeugleiste von /{country}/meetups. Ursache war
+ * `!whitespace-normal !h-auto` an einem Button, der in einer `flex ... gap-4`-Zeile
+ * ohne `flex-wrap` und ohne `min-w-0` sitzt (meetups/index.blade.php:72): jedes
+ * andere Kind dieser Zeile behaelt Flux' `whitespace-nowrap`, also gibt allein der
+ * Trigger nach und waechst in die Hoehe statt in die Breite.
+ *
+ * Der Test misst deshalb die HOEHE, nicht die Breite — und ueber mehrere Breiten,
+ * weil die Zeile erst ab `md` nebeneinander laeuft und genau dort eng wird.
+ */
+it('keeps the calendar trigger on one line at every width', function () {
+    $page = visit('/de/meetups');
+
+    foreach ([[1920, 1080], [1440, 900], [1280, 800], [1024, 768], [820, 900], [768, 900]] as [$width, $height]) {
+        $page->resize($width, $height);
+
+        $measured = $page->script(<<<'JS'
+            (() => {
+                const trigger = document.querySelector('[data-testid$="-trigger"]');
+                return trigger ? Math.round(trigger.getBoundingClientRect().height) : -1;
+            })()
+        JS);
+
+        // 44px ist das Touch-Target-Minimum (min-h-11), 56px waere bereits die
+        // zweite Zeile. Der gemeldete Zustand mass 5 Zeilen.
+        expect($measured)->toBeGreaterThan(0, "trigger missing at {$width}px");
+        expect($measured)->toBeLessThanOrEqual(56, "trigger wrapped at {$width}px: {$measured}px");
+    }
 });
