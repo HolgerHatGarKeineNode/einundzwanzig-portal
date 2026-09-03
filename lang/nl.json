@@ -880,5 +880,8 @@
     "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "Je stelt de reeks in bij het aanmaken, later niet meer.",
     ":time Uhr": ":time uur",
     ":from - :to Uhr": ":from - :to uur",
-    "Besucher sehen an dieser Stelle dasselbe.": "Bezoekers zien hier hetzelfde."
+    "Besucher sehen an dieser Stelle dasselbe.": "Bezoekers zien hier hetzelfde.",
+    "Ort als Text": "Locatie als tekst",
+    "z.B. Hinterzimmer im Café Mustermann": "bijv. achterzaal in Café Mustermann",
+    "Freitext für Besucher. Auch Details, die ein Kartenpunkt nicht zeigt.": "Vrije tekst voor bezoekers. Ook details die een kaartpunt niet toont."
 }

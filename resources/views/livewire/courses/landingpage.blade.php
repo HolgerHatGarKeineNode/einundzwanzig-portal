@@ -141,12 +141,12 @@ class extends Component {
                 @foreach($events as $event)
                     <flux:card size="sm" class="h-full flex flex-col">
                         <flux:heading class="flex items-center gap-2">
-                            {{ $event->from->format('d.m.Y') }}
+                            {{ $event->from->asDate() }}
                         </flux:heading>
 
                         <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
                             <flux:icon.clock class="inline w-4 h-4"/>
-                            {{ __(':from - :to Uhr', ['from' => $event->from->format('H:i'), 'to' => $event->to->format('H:i')]) }}
+                            {{ __(':from - :to Uhr', ['from' => $event->from->asTime(), 'to' => $event->to->asTime()]) }}
                         </flux:text>
 
                         {{-- Die Whitelist fuer osm_type, das 24px-Ziel und der Pfeil stehen

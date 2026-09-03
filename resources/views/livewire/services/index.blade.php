@@ -175,7 +175,7 @@ class extends Component {
                                 <div class="flex items-center gap-1">
                                     <flux:icon.plus variant="micro" class="text-green-600 dark:text-green-400"/>
                                     <span
-                                        class="text-gray-600 dark:text-gray-400">{{ $service->created_at->format('d.m.Y') }}</span>
+                                        class="text-gray-600 dark:text-gray-400">{{ $service->created_at->asDateTime() }}</span>
                                 </div>
                             </flux:tooltip>
                             @if($service->created_at->ne($service->updated_at))
@@ -183,7 +183,7 @@ class extends Component {
                                     <div class="flex items-center gap-1">
                                         <flux:icon.pencil variant="micro" class="text-blue-600 dark:text-blue-400"/>
                                         <span
-                                            class="text-gray-600 dark:text-gray-400">{{ $service->updated_at->format('d.m.Y') }}</span>
+                                            class="text-gray-600 dark:text-gray-400">{{ $service->updated_at->asDateTime() }}</span>
                                     </div>
                                 </flux:tooltip>
                             @endif

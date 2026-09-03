@@ -295,8 +295,8 @@ class extends Component
 
         // System fields
         $this->created_by = $this->meetup->created_by;
-        $this->created_at = $this->meetup->created_at?->format('Y-m-d H:i:s');
-        $this->updated_at = $this->meetup->updated_at?->format('Y-m-d H:i:s');
+        $this->created_at = $this->meetup->created_at?->asDateTime();
+        $this->updated_at = $this->meetup->updated_at?->asDateTime();
     }
 
     public function updateMeetup(): void

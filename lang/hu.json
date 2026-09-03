@@ -880,5 +880,8 @@
     "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "Az ismétlődést a létrehozáskor állítod be, utólag már nem.",
     ":time Uhr": ":time",
     ":from - :to Uhr": ":from - :to",
-    "Besucher sehen an dieser Stelle dasselbe.": "A látogatók ugyanezt látják itt."
+    "Besucher sehen an dieser Stelle dasselbe.": "A látogatók ugyanezt látják itt.",
+    "Ort als Text": "Helyszín szövegként",
+    "z.B. Hinterzimmer im Café Mustermann": "pl. hátsó terem a Café Mustermannban",
+    "Freitext für Besucher. Auch Details, die ein Kartenpunkt nicht zeigt.": "Szabad szöveg a látogatóknak. Olyan részletek is, amelyeket a térképpont nem mutat."
 }

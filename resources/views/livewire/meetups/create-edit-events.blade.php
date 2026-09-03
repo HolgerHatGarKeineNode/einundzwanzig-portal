@@ -63,7 +63,12 @@ class extends Component
 
             return array_map(fn (Carbon $date): array => [
                 'date' => $date,
-                'formatted' => $date->translatedFormat('l, d.m.Y'),
+                // ISO 8601, like every other date the portal renders. The instances
+                // ExpandRecurrenceSeries returns keep the timezone they were built with
+                // ($timezone above), so no conversion belongs here — same as 'time' below.
+                // translatedFormat('l, d.m.Y') used to sit here and was the last display
+                // site that carried both a day name and a d.m.Y date (issue #48).
+                'formatted' => $date->format('Y-m-d'),
                 'time' => $date->format('H:i'),
             ], $this->generateEventDates($startDate, $endDate));
         } catch (Exception $e) {
@@ -530,7 +535,61 @@ class extends Component
         <flux:fieldset class="space-y-6">
             <flux:legend>{{ __('Event Details') }}</flux:legend>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {{-- When the event happens is ONE fact, so it is one row (issue #48). The end
+                 time used to sit further down, after the title and a callout, labelled
+                 just "Ende" — which does not say end of what, in a form that also creates
+                 series and therefore has a genuine end DATE elsewhere. Start and end now
+                 sit side by side, where the only way to read them is against each other.
+
+                 "Startzeit"/"Endzeit" are not new words: the courses form next door has
+                 used them all along, so this aligns the two forms instead of inventing a
+                 third vocabulary — and both keys already exist in all nine locales.
+
+                 Three columns collapse to one below lg, the same breakpoint every other
+                 row in this form uses. That is deliberate: two time pickers side by side
+                 on a phone is the obvious way for this to go wrong.
+
+                 Known and measured: the End time control sits 6.66px higher than its two
+                 neighbours (control top 185.5 vs 192.16 at 1280px, wrapper height 40 vs
+                 46.67). Flux renders a required, non-clearable picker taller than an
+                 optional clearable one, and the gap between label and control is a
+                 correct 8px in all three. Not patched here: neither equalising the label
+                 boxes (h-6 on all three) nor a shared min-height on the controls reaches
+                 the element that differs, and End time must stay clearable, so
+                 :clearable="false" is not an option. Left visible and reported rather
+                 than papered over with a class that does not explain itself.
+
+                 These pickers follow the portal's own language selection, and that is
+                 SETTLED — do not pin them to an ISO locale. Issue #48 put the portal on
+                 ISO 8601 in every locale, but that rule governs DATA DISPLAY, not an input
+                 widget: a date picker is a control the organiser operates, and its calendar
+                 may speak their language. What must be ISO is what the form renders as data
+                 (the series preview above) and what it stores.
+
+                 Written down because someone will try the ISO pinning again, and the
+                 measurement is worth more than the code was. Flux hardcodes
+                 {day:"numeric", month:"short", year:"numeric"} for the selected-date
+                 display (vendor/livewire/flux-pro/dist/flux.js:8383) and offers no `format`
+                 attribute, so `locale` is the only lever over it. Across 74 language tags
+                 measured in Chromium, exactly one answers that option set with a plain
+                 YYYY-MM-DD: lt-*. Not sv-SE, the usual ISO candidate — it renders
+                 "7 sep. 2026"; de-DE gives "7. Sept. 2026", en-US "Sep 7, 2026".
+
+                 A locale="lt-LT" pinning was built, measured and then REJECTED by the owner
+                 on 2026-09-04: the same attribute also drives the popover, so it turned the
+                 month heading ("2026 m. rugsėjis"), the weekday initials and every day
+                 cell's aria-label Lithuanian — the last of those is what a US organiser's
+                 screen reader announces ("2026 m. rugsėjo 7 d., pirmadienis"). Trading an
+                 accessible calendar for an ISO string in one input field is the wrong way
+                 round.
+
+                 What actually matters here is storage, and it is independent of this
+                 attribute: `locale` touches display only, wire:model carries Y-m-d and H:i,
+                 and createOrUpdateSingleEvent() converts those from the user's timezone to
+                 UTC. Measured through the real widget on 2026-09-04 for an
+                 America/Indiana/Indianapolis organiser — en-US and lt-LT store the
+                 identical instant, which is what makes the choice of locale here free. --}}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <flux:field>
                     <flux:label>{{ $seriesMode && !$event ? __('Startdatum') : __('Datum') }} <span class="text-red-500">*</span></flux:label>
                     <flux:date-picker :clearable="false" min="today" wire:model.live="startDate" required locale="{{ session('lang_country', 'de-DE') }}"/>
@@ -539,10 +598,17 @@ class extends Component
                 </flux:field>
 
                 <flux:field>
-                    <flux:label>{{ __('Uhrzeit') }} <span class="text-red-500">*</span></flux:label>
+                    <flux:label>{{ __('Startzeit') }} <span class="text-red-500">*</span></flux:label>
                     <flux:time-picker :clearable="false" wire:model="startTime" required locale="{{ session('lang_country', 'de-DE') }}"/>
                     <flux:description>{{ __('Um wie viel Uhr startet das Event?') }} ({{ $this->userTimezone }})</flux:description>
                     <flux:error name="startTime"/>
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>{{ __('Endzeit') }}</flux:label>
+                    <flux:time-picker wire:model="endTime" locale="{{ session('lang_country', 'de-DE') }}"/>
+                    <flux:description>{{ __('Optional. Eine Zeit vor dem Beginn bedeutet: das Event endet nach Mitternacht.') }}</flux:description>
+                    <flux:error name="endTime"/>
                 </flux:field>
             </div>
 
@@ -656,13 +722,6 @@ class extends Component
                 <flux:error name="title"/>
             </flux:field>
 
-            <flux:field>
-                <flux:label>{{ __('Ende') }}</flux:label>
-                <flux:time-picker wire:model="endTime" locale="{{ session('lang_country', 'de-DE') }}"/>
-                <flux:description>{{ __('Optional. Eine Zeit vor dem Beginn bedeutet: das Event endet nach Mitternacht.') }}</flux:description>
-                <flux:error name="endTime"/>
-            </flux:field>
-
             @if ($this->needsOsmHint)
                 <flux:callout icon="map-pin" data-testid="osm-missing-hint">
                     <flux:callout.heading>{{ __('Dieses Event hat noch keinen Kartenort') }}</flux:callout.heading>
@@ -677,10 +736,20 @@ class extends Component
                 :country-code="$this->osmCountry"
             />
 
+            {{-- Issue #48: this field and the map picker above it were called "Ort" and
+                 "Ort auf der Karte" and carried the SAME placeholder, so nothing told the
+                 user which to use. The names are now a contrastive pair — auf der Karte
+                 vs als Text — where only the distinguishing word changes, and the
+                 placeholder shows the job a map pin cannot do rather than repeating an
+                 address the picker above already asks for.
+
+                 The picker's own copy is deliberately untouched: its placeholder IS an
+                 address because it feeds an OSM search, which is correct. The field at
+                 fault was this one, imitating a search box while being free text. --}}
             <flux:field>
-                <flux:label>{{ __('Ort') }}</flux:label>
-                <flux:input wire:model="location" placeholder="{{ __('z.B. Café Mustermann, Hauptstr. 1') }}"/>
-                <flux:description>{{ __('Wo findet das Event statt?') }}</flux:description>
+                <flux:label>{{ __('Ort als Text') }}</flux:label>
+                <flux:input wire:model="location" placeholder="{{ __('z.B. Hinterzimmer im Café Mustermann') }}"/>
+                <flux:description>{{ __('Freitext für Besucher. Auch Details, die ein Kartenpunkt nicht zeigt.') }}</flux:description>
                 <flux:error name="location"/>
             </flux:field>
 

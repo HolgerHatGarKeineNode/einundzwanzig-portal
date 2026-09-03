@@ -50,6 +50,19 @@ trait NostrTrait
             ]),
             $model instanceof MeetupEvent => __('nostr.meetup_event_text', [
                 'from' => $this->getFrom($model),
+                /*
+                 * asDateTime() feeds the text of a published kind:1 note, not a page.
+                 * The ISO 8601 switch (issue #48) therefore changed the shape of every
+                 * note this trait publishes from now on — "08.10.2026 19:00 (CEST)"
+                 * became "2026-10-08 19:00 (CEST)". Notes already on the relays keep
+                 * the old shape; a Nostr event is immutable, so the two forms coexist
+                 * in the wild forever and any consumer parsing this string sees both.
+                 *
+                 * Recorded because nothing guards it: `grep -rn
+                 * 'meetup_event_text\|publishOnNostr' tests/` finds no coverage at all,
+                 * so a future change to the formatters will alter published note text
+                 * again with no test going red.
+                 */
                 'start' => $model->start->asDateTime(),
                 'location' => $model->location,
                 'url' => $this->getUrl($model, $countryCode),

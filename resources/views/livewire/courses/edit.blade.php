@@ -63,8 +63,8 @@ class extends Component {
 
         // System fields
         $this->created_by = $this->course->created_by;
-        $this->created_at = $this->course->created_at?->format('Y-m-d H:i:s');
-        $this->updated_at = $this->course->updated_at?->format('Y-m-d H:i:s');
+        $this->created_at = $this->course->created_at?->asDateTime();
+        $this->updated_at = $this->course->updated_at?->asDateTime();
     }
 
     public function updateCourse(): void

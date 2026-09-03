@@ -143,7 +143,7 @@ class extends Component {
                                             <flux:badge size="sm" color="zinc">{{ __('Nie') }}</flux:badge>
                                         @endif
                                     </flux:table.cell>
-                                    <flux:table.cell>{{ $token->created_at->format('d.m.Y') }}</flux:table.cell>
+                                    <flux:table.cell>{{ $token->created_at->asDateTime() }}</flux:table.cell>
                                     <flux:table.cell align="end">
                                         <flux:tooltip :content="__('Widerrufen')">
                                             <flux:button variant="danger" size="sm" icon="trash"

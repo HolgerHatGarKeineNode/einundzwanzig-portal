@@ -176,7 +176,7 @@ new class extends Component
                                 {{ implode(', ', $subscription->resources) }}
                             </p>
                             <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                                {{ __('Angefragt am :date', ['date' => $subscription->created_at?->format('d.m.Y H:i')]) }}
+                                {{ __('Angefragt am :date', ['date' => $subscription->created_at?->asDateTime()]) }}
                             </p>
                         </div>
 

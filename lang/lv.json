@@ -880,5 +880,8 @@
     "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "Atkārtošanos iestati, veidojot pasākumu, vēlāk vairs ne.",
     ":time Uhr": ":time",
     ":from - :to Uhr": ":from - :to",
-    "Besucher sehen an dieser Stelle dasselbe.": "Apmeklētāji šeit redz to pašu."
+    "Besucher sehen an dieser Stelle dasselbe.": "Apmeklētāji šeit redz to pašu.",
+    "Ort als Text": "Vieta kā teksts",
+    "z.B. Hinterzimmer im Café Mustermann": "piem., aizmugurējā telpa Café Mustermann",
+    "Freitext für Besucher. Auch Details, die ein Kartenpunkt nicht zeigt.": "Brīvs teksts apmeklētājiem. Arī detaļas, ko kartes punkts neparāda."
 }

@@ -75,7 +75,14 @@ class MobileMeetupListController extends Controller
                 // a fallback URL (country placeholder). Without a real logo the
                 // app should show the initials avatar, so null instead of a placeholder URL.
                 'logo' => $meetup->getFirstMedia('logo')?->getUrl(),
-                // Same format as GET /api/meetup-events (see MeetupEventController).
+                /*
+                 * Same format as GET /api/meetup-events (see MeetupEventController),
+                 * and deliberately left alone by the ISO 8601 work (issue #48):
+                 * `Y-m-d H:i` in UTC, no zone marker, no user-timezone conversion.
+                 * A published API contract with a live mobile consumer — changing its
+                 * shape is a breaking change that needs its own decision, and it has to
+                 * be taken for both endpoints at once.
+                 */
                 'next_event_start' => $meetup->next_event_start
                     ? Carbon::parse($meetup->next_event_start)->format('Y-m-d H:i')
                     : null,

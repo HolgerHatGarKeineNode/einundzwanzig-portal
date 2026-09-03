@@ -880,5 +880,8 @@
     "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "Cykliczność ustawiasz przy tworzeniu wydarzenia, później już nie.",
     ":time Uhr": ":time",
     ":from - :to Uhr": ":from - :to",
-    "Besucher sehen an dieser Stelle dasselbe.": "Odwiedzający widzą tutaj to samo."
+    "Besucher sehen an dieser Stelle dasselbe.": "Odwiedzający widzą tutaj to samo.",
+    "Ort als Text": "Lokalizacja jako tekst",
+    "z.B. Hinterzimmer im Café Mustermann": "np. zaplecze w Café Mustermann",
+    "Freitext für Besucher. Auch Details, die ein Kartenpunkt nicht zeigt.": "Wolny tekst dla odwiedzających. Także szczegóły, których nie pokaże punkt na mapie."
 }

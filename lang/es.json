@@ -880,5 +880,8 @@
     "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "Defines las fechas periódicas al crear el evento, no después.",
     ":time Uhr": ":time h",
     ":from - :to Uhr": ":from - :to h",
-    "Besucher sehen an dieser Stelle dasselbe.": "Los visitantes ven aquí lo mismo."
+    "Besucher sehen an dieser Stelle dasselbe.": "Los visitantes ven aquí lo mismo.",
+    "Ort als Text": "Ubicación como texto",
+    "z.B. Hinterzimmer im Café Mustermann": "p. ej. sala trasera del Café Mustermann",
+    "Freitext für Besucher. Auch Details, die ein Kartenpunkt nicht zeigt.": "Texto libre para los visitantes. También detalles que un punto en el mapa no muestra."
 }
