@@ -9,6 +9,7 @@ use App\Http\Requests\Api\RsvpMeetupEventRequest;
 use App\Http\Requests\Api\StoreMeetupEventRequest;
 use App\Http\Requests\Api\UpdateMeetupEventRequest;
 use App\Http\Resources\MeetupEventResource;
+use App\Http\Resources\TagResource;
 use App\Models\MeetupEvent;
 use App\Models\User;
 use Carbon\Carbon;
@@ -70,7 +71,21 @@ class MeetupEventController extends Controller
             'title' => $event->title,
             'start' => $event->start->format('Y-m-d H:i'),
             'end' => $event->end?->format('Y-m-d H:i'),
+            /*
+             * The venue in up to two layers, and the six osm_* keys are ALWAYS present
+             * — null when no map place was picked, never absent (Issue #37 follow-up).
+             * A typed client sees one stable shape and does not have to distinguish
+             * "this event has no map place" from "this endpoint does not serve them".
+             * Same fields, same names and same string-typed coordinates as
+             * MeetupEventResource, so one type covers both.
+             */
             'location' => $event->location,
+            'osm_type' => $event->osm_type,
+            'osm_id' => $event->osm_id,
+            'osm_name' => $event->osm_name,
+            'osm_address' => $event->osm_address,
+            'osm_lat' => $event->osm_lat,
+            'osm_lon' => $event->osm_lon,
             'description' => $event->description,
             'link' => $event->link,
             // Names resolved through the display chain for the requested locale, so a
@@ -257,23 +272,19 @@ class MeetupEventController extends Controller
      * The language the client asked for a tag name in, or null to leave it to the
      * display chain's own default.
      *
-     * `?locale=` takes precedence over `Accept-Language` because it is explicit and
-     * survives a client that cannot set custom headers. Neither is required: absent
-     * both, this returns null and `Tag::displayName()`/`displayLocale()` fall back to
-     * `app()->getLocale()`, which `SetApiLocale` has already forced to English for
-     * this route group — deliberately not overridden here, that middleware's own
-     * reasoning still applies to every other string in the response.
+     * The rule itself lives on {@see TagResource::requestedLocale()}, because every
+     * OTHER tag-bearing response resolves it there — this endpoint is the one that
+     * hand-builds its tag array instead of going through the resource, and a second
+     * copy of the precedence rule would be a second thing to keep in step.
+     *
+     * Absent both `?locale=` and `Accept-Language` this is null, and
+     * `Tag::displayName()`/`displayLocale()` fall back to `app()->getLocale()` —
+     * which on this route group is `config('app.locale')` (German), NOT English:
+     * `SetApiLocale` switches the translator only and deliberately leaves
+     * `app.locale` alone (see that middleware's docblock on slug transliteration).
      */
     private function resolveRequestedLocale(Request $request): ?string
     {
-        $queryLocale = $request->query('locale');
-
-        if (is_string($queryLocale) && $queryLocale !== '') {
-            return $queryLocale;
-        }
-
-        $preferred = $request->getLanguages()[0] ?? null;
-
-        return $preferred === null ? null : str($preferred)->before('_')->toString();
+        return TagResource::requestedLocale($request);
     }
 }

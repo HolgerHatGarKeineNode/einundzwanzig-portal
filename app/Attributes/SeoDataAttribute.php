@@ -363,6 +363,19 @@ class SeoDataAttribute
                 twitter_username: $domainTwitter,
                 site_name: $domainSiteName,
             ),
+            /*
+             * Ebenfalls bewusst NICHT durch __() gefuehrt, aus demselben Grund wie
+             * docs_websockets darueber: die Seite ist englisch.
+             */
+            'docs_webhooks' => new SEOData(
+                title: 'Outbound webhooks - EINUNDZWANZIG API',
+                description: 'Register a URL and receive a signed HTTP POST for every created, updated or deleted meetup and meetup date: headers, HMAC verification in TypeScript, retry schedule and gap recovery.',
+                author: $domainAuthor,
+                image: $domainImage,
+                imageMeta: $domainImageMeta,
+                twitter_username: $domainTwitter,
+                site_name: $domainSiteName,
+            ),
             // Add more as needed
             'default' => new SEOData(
                 title: __('Willkommen'),

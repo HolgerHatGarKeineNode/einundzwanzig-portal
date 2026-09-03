@@ -44,6 +44,14 @@ Route::livewire('/ki-assistent', 'ki-assistent')->name('ki-assistent');
  */
 Route::livewire('/docs/websockets', 'docs.websockets')->name('docs.websockets');
 
+/*
+ * Consumer documentation for the outbound webhooks (Issue #36). Sibling of the page
+ * above and wired the same way: the subscription endpoints themselves ARE Laravel
+ * routes and appear in /docs/api, but the delivery contract — headers, HMAC, retry
+ * schedule, dedupe, gap recovery — has no operation Scramble could generate it from.
+ */
+Route::livewire('/docs/webhooks', 'docs.webhooks')->name('docs.webhooks');
+
 // Stream calendar route to download meetup calendar as ICS file
 Route::get('stream-calendar', DownloadMeetupCalendar::class)
     ->name('ics')
