@@ -22,8 +22,8 @@ function unfoldIcs(string $ics): string
  * assertions can compute the expected escaped wire value from a raw string
  * instead of hand-typing escape sequences (an easy way to assert the wrong
  * thing, since RFC 5545 escapes ANY comma or semicolon in a TEXT value —
- * including ones a test author placed there on purpose, like the comma
- * inside the "[Tag1,Tag2]" line).
+ * including ones a test author placed there on purpose, like the commas
+ * inside a formatted OSM address).
  */
 function escapeIcsText(string $text): string
 {
@@ -100,28 +100,40 @@ it('includes the end time when the source provides one and omits it otherwise', 
     expect($events->filter(fn ($event): bool => str_contains($event, 'DTEND')))->toHaveCount(1);
 });
 
-it('composes LOCATION from the OSM venue title and formatted address, omitting it entirely when both are missing', function (?string $osmName, ?string $osmAddress) {
+/*
+ * The expected value is asserted WITH its terminating CRLF (the response is
+ * unfolded first, so a CRLF that is still there marks the end of the logical
+ * value). A plain `toContain('LOCATION:Café Central\, Marktplatz 1')` would
+ * also pass if the controller appended the free-text column to the OSM pair —
+ * the CRLF is what makes "and nothing else" assertable.
+ */
+it('prefers the OSM venue for LOCATION, falls back to the free-text location and omits the property when neither exists', function (?string $osmName, ?string $osmAddress, ?string $freeText, ?string $expected) {
     $meetup = Meetup::factory()->create(['city_id' => $this->city->id]);
     MeetupEvent::factory()->create([
         'meetup_id' => $meetup->id,
         'start' => now()->addWeek(),
         'osm_name' => $osmName,
         'osm_address' => $osmAddress,
+        'location' => $freeText,
     ]);
 
     $ics = unfoldIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar')->getContent());
-    $rawLocation = collect([$osmName, $osmAddress])->filter()->implode(', ');
 
-    if ($rawLocation === '') {
+    if ($expected === null) {
         expect($ics)->not->toContain('LOCATION');
     } else {
-        expect($ics)->toContain('LOCATION:'.escapeIcsText($rawLocation));
+        expect($ics)->toContain('LOCATION:'.escapeIcsText($expected)."\r\n");
     }
 })->with([
-    'both values' => ['Café Central', 'Marktplatz 1, 99084 Erfurt'],
-    'only the venue title' => ['Café Central', null],
-    'only the address' => [null, 'Marktplatz 1, 99084 Erfurt'],
-    'neither value' => [null, null],
+    'osm title and address' => ['Café Central', 'Marktplatz 1, 99084 Erfurt', null, 'Café Central, Marktplatz 1, 99084 Erfurt'],
+    'only the osm venue title' => ['Café Central', null, null, 'Café Central'],
+    'only the osm address' => [null, 'Marktplatz 1, 99084 Erfurt', null, 'Marktplatz 1, 99084 Erfurt'],
+    // Issue #36's own sample row: free text, all six osm_* columns null. This is
+    // the majority shape in the table, and 8e4f1be5 dropped it from the feed.
+    'only the free-text location' => [null, null, 'Schwabach', 'Schwabach'],
+    // OSM data wins, and the free text is not appended to it.
+    'osm data alongside free text' => ['Café Central', 'Marktplatz 1, 99084 Erfurt', 'Schwabach', 'Café Central, Marktplatz 1, 99084 Erfurt'],
+    'neither value' => [null, null, null, null],
 ]);
 
 it('omits optional properties instead of placeholders when the source has no value', function () {
@@ -133,6 +145,10 @@ it('omits optional properties instead of placeholders when the source has no val
         'description' => null,
         'osm_name' => null,
         'osm_address' => null,
+        // The factory fills `location` with a fake address by default; LOCATION
+        // now falls back to that column, so an "everything empty" event has to
+        // clear it explicitly.
+        'location' => null,
     ]);
 
     $ics = unfoldIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar')->getContent());
@@ -145,7 +161,7 @@ it('omits optional properties instead of placeholders when the source has no val
         ->not->toContain('TBA');
 });
 
-it('puts tags as a [Tag1,Tag2] first line and keeps paragraph breaks in the rest of the description', function () {
+it('puts tags as a [Tag1] [Tag2] first line and keeps paragraph breaks in the rest of the description', function () {
     $meetup = Meetup::factory()->create(['city_id' => $this->city->id]);
     $event = MeetupEvent::factory()->create([
         'meetup_id' => $meetup->id,
@@ -155,10 +171,25 @@ it('puts tags as a [Tag1,Tag2] first line and keeps paragraph breaks in the rest
     $event->attachTag(Tag::factory()->named(['de' => 'Bitcoin', 'en' => 'Bitcoin'])->ofType('meetup_event')->create());
     $event->attachTag(Tag::factory()->named(['de' => 'Meetup', 'en' => 'Meetup'])->ofType('meetup_event')->create());
 
-    $ics = unfoldIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar')->getContent());
-    $rawDescription = "[Bitcoin,Meetup]\n\nErster Absatz.\n\nZweiter Absatz.";
+    $raw = test()->get('http://portal.einundzwanzig.space/stream-calendar')->getContent();
+    $ics = unfoldIcs($raw);
+    $rawDescription = "[Bitcoin] [Meetup]\n\nErster Absatz.\n\nZweiter Absatz.";
 
-    expect($ics)->toContain('DESCRIPTION:'.escapeIcsText($rawDescription));
+    expect($ics)
+        ->toContain('DESCRIPTION:'.escapeIcsText($rawDescription))
+        // The separator is now a space, and a space is not in RFC 5545's escape
+        // set — so the tag line reaches the wire verbatim. The previous "[A,B]"
+        // shape was emitted as "[Bitcoin\,Meetup]"; asserting the literal here
+        // proves the escape sequence is gone rather than merely relocated.
+        ->toContain('DESCRIPTION:[Bitcoin] [Meetup]')
+        ->not->toContain('[Bitcoin\\,Meetup]');
+
+    // Folding is unchanged too. Asserted against the RAW response, where a fold
+    // would appear as "\r\n " mid-value: the whole property is 67 octets (it was
+    // 66 as "[Bitcoin\,Meetup]" — one escape sequence traded for one space and
+    // one bracket pair), so it stays under RFC 5545's 75-octet limit and still
+    // arrives as a single physical line.
+    expect($raw)->toContain("DESCRIPTION:[Bitcoin] [Meetup]\\n\\nErster Absatz.\\n\\nZweiter Absatz.\r\n");
 });
 
 it('escapes commas, semicolons and backslashes per RFC 5545 and folds long lines', function () {
