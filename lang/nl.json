@@ -879,5 +879,6 @@
     "Dieser Termin gehört zu einer wiederkehrenden Serie.": "Dit evenement maakt deel uit van een terugkerende reeks.",
     "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "Je stelt de reeks in bij het aanmaken, later niet meer.",
     ":time Uhr": ":time uur",
-    ":from - :to Uhr": ":from - :to uur"
+    ":from - :to Uhr": ":from - :to uur",
+    "Besucher sehen an dieser Stelle dasselbe.": "Bezoekers zien hier hetzelfde."
 }
