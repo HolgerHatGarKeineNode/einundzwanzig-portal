@@ -635,7 +635,6 @@
     "URL (Onion/Tor)": "URL (Onion/Tor)",
     "URL (pkdns)": "URL (pkdns)",
     "URLs & Erreichbarkeit": "URLs & Accessibility",
-    "Uhr": "o'clock",
     "Uhrzeit": "Time",
     "Um wie viel Uhr beginnt das Event?": "At what time does the event start?",
     "Um wie viel Uhr endet das Event?": "At what time does the event end?",
@@ -878,5 +877,7 @@
     "Suche deine Sprache...": "Search your language...",
     "Serie": "Series",
     "Dieser Termin gehört zu einer wiederkehrenden Serie.": "This event is part of a recurring series.",
-    "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "You set recurring dates when you create the event, not afterwards."
+    "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "You set recurring dates when you create the event, not afterwards.",
+    ":time Uhr": ":time",
+    ":from - :to Uhr": ":from - :to"
 }

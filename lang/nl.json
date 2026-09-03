@@ -635,7 +635,6 @@
     "URL (Onion/Tor)": "URL (Onion/Tor)",
     "URL (pkdns)": "URL (pkdns)",
     "URLs & Erreichbarkeit": "URL's & Bereikbaarheid",
-    "Uhr": "uur",
     "Uhrzeit": "Tijd",
     "Um wie viel Uhr beginnt das Event?": "Hoe laat begint het evenement?",
     "Um wie viel Uhr endet das Event?": "Hoe laat eindigt het evenement?",
@@ -878,5 +877,7 @@
     "Suche deine Sprache...": "Zoek je taal...",
     "Serie": "Reeks",
     "Dieser Termin gehört zu einer wiederkehrenden Serie.": "Dit evenement maakt deel uit van een terugkerende reeks.",
-    "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "Je stelt de reeks in bij het aanmaken, later niet meer."
+    "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "Je stelt de reeks in bij het aanmaken, later niet meer.",
+    ":time Uhr": ":time uur",
+    ":from - :to Uhr": ":from - :to uur"
 }

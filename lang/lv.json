@@ -635,7 +635,6 @@
     "URL (Onion/Tor)": "URL (Onion/Tor)",
     "URL (pkdns)": "URL (pkdns)",
     "URLs & Erreichbarkeit": "URL un pieejamība",
-    "Uhr": "plkst.",
     "Uhrzeit": "Laiks",
     "Um wie viel Uhr beginnt das Event?": "Cikos pasākums sākas?",
     "Um wie viel Uhr endet das Event?": "Cikos pasākums beidzas?",
@@ -878,5 +877,7 @@
     "Suche deine Sprache...": "Meklēt valodu...",
     "Serie": "Sērija",
     "Dieser Termin gehört zu einer wiederkehrenden Serie.": "Šis pasākums ir daļa no atkārtojošās sērijas.",
-    "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "Atkārtošanos iestati, veidojot pasākumu, vēlāk vairs ne."
+    "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "Atkārtošanos iestati, veidojot pasākumu, vēlāk vairs ne.",
+    ":time Uhr": ":time",
+    ":from - :to Uhr": ":from - :to"
 }

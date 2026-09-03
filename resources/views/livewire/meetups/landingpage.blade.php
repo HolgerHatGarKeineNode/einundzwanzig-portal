@@ -102,7 +102,7 @@ class extends Component
                         <flux:button href="{{ $meetup->webpage }}" target="_blank" rel="noopener noreferrer" variant="ghost"
                                      class="justify-start">
                             <flux:icon.globe-alt class="w-5 h-5 mr-2"/>
-                            Webseite
+                            {{ __('Webseite') }}
                         </flux:button>
                     @endif
 
@@ -292,7 +292,7 @@ class extends Component
 
                         <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
                             <flux:icon.clock class="inline w-4 h-4"/>
-                            {{ $event->start->asTime() }} Uhr
+                            {{ __(':time Uhr', ['time' => $event->start->asTime()]) }}
                         </flux:text>
 
                         {{-- Einzeilig: die Kachel beantwortet "welcher Termin", der Ortsname

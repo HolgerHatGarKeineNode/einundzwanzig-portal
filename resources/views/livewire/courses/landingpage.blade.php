@@ -146,7 +146,7 @@ class extends Component {
 
                         <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
                             <flux:icon.clock class="inline w-4 h-4"/>
-                            {{ $event->from->format('H:i') }} - {{ $event->to->format('H:i') }} Uhr
+                            {{ __(':from - :to Uhr', ['from' => $event->from->format('H:i'), 'to' => $event->to->format('H:i')]) }}
                         </flux:text>
 
                         {{-- Die Whitelist fuer osm_type, das 24px-Ziel und der Pfeil stehen

@@ -724,7 +724,7 @@ class extends Component
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <flux:text class="font-semibold text-sm truncate">{{ $dateInfo['formatted'] }}</flux:text>
-                                    <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">{{ $dateInfo['time'] }} {{ __('Uhr') }}</flux:text>
+                                    <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">{{ __(':time Uhr', ['time' => $dateInfo['time']]) }}</flux:text>
                                 </div>
                             </div>
                         </flux:card>
