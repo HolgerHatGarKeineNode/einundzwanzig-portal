@@ -7,7 +7,9 @@ use App\Models\CourseEvent;
 use App\Models\Lecturer;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Date;
 
 /*
 |--------------------------------------------------------------------------
@@ -33,19 +35,100 @@ use Illuminate\Support\Facades\Blade;
 | in this file that can pass without a page having been rendered is the wrong
 | test.
 |
-| Known and deliberately NOT asserted: App\Support\Carbon::asDate() and its
-| siblings hardcode ->locale('de'), so month and weekday names render in
-| German for every visitor ("05. Januar 2027"). Separate defect, separate
-| owner; putting it in the list below would leave this guard permanently red,
-| and a permanently red guard gets switched off.
+| Dates USED to be excluded here: App\Support\Carbon::asDate() and its
+| siblings hardcoded ->locale('de'), so month and weekday names rendered in
+| German for every visitor ("05. Januar 2027"). Listing them would have left
+| this guard permanently red, and a permanently red guard gets switched off.
+|
+| That justification expired on 2026-09-03 with issue #48: every formatter now
+| emits ISO 8601 ("2027-01-05") in every locale, so no month name may appear
+| in a date on any page, in any language. The German month names are therefore
+| in the watch list below — a reintroduced ->locale('de') puts "Oktober"
+| straight onto an English page and this guard fires.
+|
+| The SHAPE of a date is not this file's business; tests/Feature/Lang/
+| IsoDateFormatTest.php owns that, including the timezone conversion and the
+| per-locale pattern. This file only watches for German words on an English
+| page, and a month name is one.
 */
 
 /**
- * The German literals that were found in English screenshots on 2026-09-03.
+ * German month names that cannot also be read as English.
+ *
+ * April, August, September and November are deliberately absent: they are
+ * spelled identically in English, so watching for them would fire on
+ * legitimate English output and the guard would be deleted rather than fixed.
+ *
+ * Weekday names are absent for a different reason — "Montag" and its siblings
+ * turn up in ordinary German prose (recurrence wording, opening hours) far
+ * more readily than a month name does, and the negative control below asserts
+ * an EXACT word list per page, which such a word would have to be carried in
+ * forever.
+ *
+ * Under ISO 8601 (issue #48) no date carries a month name in any locale, so
+ * while the fix holds, none of these can appear on any page and the four
+ * guards below pass them for free. That is precisely how this list was
+ * decoration for one round: it needs the page-level negative control at the
+ * bottom of this file, which binds the pre-#48 formatter and requires the
+ * matcher to find the month again, plus the pinned fixture date that keeps a
+ * WATCHED month on the page whatever day the suite runs.
  *
  * @var list<string>
  */
-const RENDERED_GERMAN_LITERALS = ['Uhr', 'Webseite'];
+const RENDERED_GERMAN_MONTH_NAMES = ['Januar', 'Februar', 'März', 'Mai', 'Juni', 'Juli', 'Oktober', 'Dezember'];
+
+/**
+ * The German literals that were found in English screenshots on 2026-09-03,
+ * plus the month names that issue #48 made watchable (see above).
+ *
+ * @var list<string>
+ */
+const RENDERED_GERMAN_LITERALS = ['Uhr', 'Webseite', ...RENDERED_GERMAN_MONTH_NAMES];
+
+/**
+ * The date formatter as it stood before issue #48 — hardcoded ->locale('de'),
+ * copied from app/Support/Carbon.php at commit 336ccec.
+ *
+ * Bound through Date::use() in the negative control at the bottom, it puts a
+ * German month name back onto the real pages, which is the only honest way to
+ * show that the month names above are watched rather than merely listed. The
+ * app is never touched, not even briefly: app/ and resources/ belong to
+ * another author this round.
+ *
+ * IsoDateFormatTest carries the same fixture under its own name. Duplicated on
+ * purpose rather than shared: a test file that is run alone
+ * (`pest tests/Feature/Lang/RenderedLocaleTest.php`) does not have the other
+ * file's declarations, and a guard that fatals depending on how the suite was
+ * invoked is worse than twenty duplicated lines.
+ */
+class PreIsoGermanDate extends CarbonImmutable
+{
+    public function asDate(): string
+    {
+        $dt = $this->timezone(config('app.user-timezone'))->locale('de');
+
+        return str($dt->day)->padLeft(2, '0').'. '.$dt->monthName.' '.$dt->year;
+    }
+
+    public function asTime(): string
+    {
+        return $this->timezone(config('app.user-timezone'))->locale('de')
+            ->format('H:i');
+    }
+
+    public function asDateTime(): string
+    {
+        $dt = $this->timezone(config('app.user-timezone'))->locale('de');
+
+        return sprintf('%s.%s.%s %s (%s)',
+            str($dt->day)->padLeft(2, '0'),
+            str($dt->month)->padLeft(2, '0'),
+            $dt->year,
+            $dt->format('H:i'),
+            $dt->timezoneAbbreviatedName
+        );
+    }
+}
 
 /**
  * Returns those of $words that occur in $html as WHOLE words.
@@ -74,6 +157,43 @@ function renderedGermanWords(string $html, array $words): array
             $html
         ) === 1
     ));
+}
+
+/**
+ * The date these fixtures use, pinned to a month this guard actually watches.
+ *
+ * `now()->addDays(7)` was here until 2026-09-04 and made the month-name half
+ * of the guard calendar-dependent: on 2026-09-03 the fixture fell on
+ * 2026-09-10, whose German month name is "September" — one of the four names
+ * excluded for being spelled the same in English. Measured by the reviewer
+ * with App\Support\Carbon genuinely reverted: all seven tests in this file
+ * passed, and the same page with the event forced into October failed. A guard
+ * that is silent for four months of the year, including the day it was
+ * written, is decoration.
+ *
+ * So the month is chosen, not inherited: the 15th of the next month whose
+ * German name is in RENDERED_GERMAN_MONTH_NAMES, always in the future — the
+ * meetup landing page lists only `start >= now()`, and an event that dropped
+ * out of the list would take the guard with it.
+ *
+ * The horizon is at most 98 days, measured over a thousand consecutive days
+ * rather than reasoned about; the worst case is 9–14 July, where the search
+ * starts at 15 August and has to step over both excluded summer names. The
+ * test at the bottom of this file holds all three properties for every
+ * calendar day, so this paragraph cannot quietly go stale.
+ */
+function watchedMonthFixtureDate(): CarbonImmutable
+{
+    $candidate = CarbonImmutable::now()->addDays(7);
+
+    // Past the 15th, the 15th of THIS month would be in the past.
+    $candidate = $candidate->day > 15 ? $candidate->addMonth()->day(15) : $candidate->day(15);
+
+    while (! in_array($candidate->locale('de')->monthName, RENDERED_GERMAN_MONTH_NAMES, true)) {
+        $candidate = $candidate->addMonth();
+    }
+
+    return $candidate->startOfDay();
 }
 
 /**
@@ -109,6 +229,8 @@ beforeEach(function () {
     $this->country = Country::factory()->create(['code' => 'de']);
     $this->city = City::factory()->create(['country_id' => $this->country->id]);
 
+    $this->fixtureDate = watchedMonthFixtureDate();
+
     // Every free-text field these pages echo is set explicitly. The factories
     // fill them from fake(), and a random German paragraph is exactly the kind
     // of input that makes a text-matching guard flap.
@@ -123,7 +245,7 @@ beforeEach(function () {
 
     $this->event = MeetupEvent::factory()->create([
         'meetup_id' => $this->meetup->id,
-        'start' => now()->addDays(7)->setTime(19, 30),
+        'start' => $this->fixtureDate->setTime(19, 30),
         'location' => 'Main Street 1',
         'description' => 'An evening about bitcoin.',
         'link' => 'https://example.com/event',
@@ -139,8 +261,8 @@ beforeEach(function () {
     CourseEvent::factory()->create([
         'course_id' => $this->course->id,
         'city_id' => $this->city->id,
-        'from' => now()->addDays(7)->setTime(18, 0),
-        'to' => now()->addDays(7)->setTime(20, 0),
+        'from' => $this->fixtureDate->setTime(18, 0),
+        'to' => $this->fixtureDate->setTime(20, 0),
         'location' => 'Main Street 1',
         'link' => 'https://example.com/course-event',
     ]);
@@ -232,4 +354,100 @@ it('flags a whole German word in rendered output and spares English words that c
     );
 
     expect(renderedGermanWords($html, ['Uhr', 'Webseite', 'Serie']))->toBe(['Uhr']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Negative control for the month names — on a REAL page, not on a fixture
+|--------------------------------------------------------------------------
+|
+| The four guards above cannot demonstrate the month half of the list: while
+| dates are ISO, no page carries a month name, so those eight entries pass for
+| free on every run. The reviewer's measurement of 2026-09-04 showed what that
+| is worth — with App\Support\Carbon reverted for real, this whole file stayed
+| green, because the fixture happened to fall in September.
+|
+| So the regression is reproduced here instead: the pre-#48 formatter is bound
+| over the same page and the same matcher must now find the month.
+*/
+it('pins the fixture into a watched month and into the future, on every calendar day', function () {
+    /*
+     * The defect this replaced was a fixture that happened to be fine on the
+     * day it was written. Asserting the pinning for TODAY only would repeat
+     * exactly that mistake, so every day of a leap year and the two years
+     * after it is walked. Three properties, all of them load-bearing:
+     * the month must be one the guard watches, the date must stay in the
+     * future (the landing page lists `start >= now()` and would otherwise drop
+     * the event, taking the guard with it), and the horizon must stay short
+     * enough that the fixture is not silently a year away.
+     */
+    $offenders = [];
+    $longestHorizonDays = 0;
+
+    try {
+        $firstDay = CarbonImmutable::create(2024, 1, 1, 12, 0, 0);
+
+        for ($offset = 0; $offset < 1000; $offset++) {
+            $today = $firstDay->addDays($offset);
+            CarbonImmutable::setTestNow($today);
+
+            $fixture = watchedMonthFixtureDate();
+            $germanMonth = $fixture->locale('de')->monthName;
+            $horizonDays = (int) $today->startOfDay()->diffInDays($fixture);
+            $longestHorizonDays = max($longestHorizonDays, $horizonDays);
+
+            $offenders[$today->toDateString()] = match (true) {
+                ! in_array($germanMonth, RENDERED_GERMAN_MONTH_NAMES, true) => "excluded month {$germanMonth}",
+                $fixture->lessThanOrEqualTo($today) => "not in the future: {$fixture->toDateString()}",
+                default => null,
+            };
+        }
+    } finally {
+        CarbonImmutable::setTestNow();
+    }
+
+    expect(array_filter($offenders))->toBe([], 'watchedMonthFixtureDate() does not hold on these days.');
+
+    /*
+     * The horizon is asserted rather than described, because the first version
+     * of the docblock above got it wrong: it claimed "at most two months",
+     * and this loop measured 98 days. The worst case is the 9th to the 14th of
+     * July — past the 15th of July, so the search starts at 15 August, and
+     * August and September are both excluded names.
+     */
+    expect($longestHorizonDays)->toBe(98, 'The fixture horizon moved; the docblock above states 98 days.');
+});
+
+it('finds a German month name on the English page once the pre-issue-48 formatter is bound', function () {
+    Date::use(PreIsoGermanDate::class);
+
+    $watchedMonth = $this->fixtureDate->locale('de')->monthName;
+
+    // Positive control on the pinning, not on the page: if the fixture date
+    // ever slid back into an excluded month, the assertion below would be
+    // unreachable and this control would go quiet along with the guard.
+    expect(RENDERED_GERMAN_MONTH_NAMES)->toContain($watchedMonth);
+
+    $html = renderAsVisitor($this, $this->meetupUrl, 'en');
+
+    expect(renderedGermanWords($html, RENDERED_GERMAN_LITERALS))
+        ->toContain($watchedMonth);
+});
+
+/*
+ * Matcher-level calibration for the month names, kept alongside the page-level
+ * control above because it pins down the boundary behaviour the page cannot
+ * exercise: the reason April, August, September and November are absent from
+ * the list is that an English page legitimately printing "August" must not
+ * trip a German-word guard.
+ */
+it('flags a German month name in a date and spares the months English spells the same way', function () {
+    $germanDate = Blade::render('<p>08. Oktober 2026</p><p>05. Januar 2027</p><p>01. März 2026</p>');
+
+    expect(renderedGermanWords($germanDate, RENDERED_GERMAN_LITERALS))
+        ->toBe(['Januar', 'März', 'Oktober']);
+
+    $englishDate = Blade::render('<p>August 8, 2026</p><p>September 5</p><p>2026-10-08</p>');
+
+    expect(renderedGermanWords($englishDate, RENDERED_GERMAN_LITERALS))->toBe([]);
 });

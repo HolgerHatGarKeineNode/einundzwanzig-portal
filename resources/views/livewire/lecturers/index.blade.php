@@ -105,7 +105,7 @@ class extends Component {
                             <div class="flex flex-col gap-1">
                                 <a href="{{ route('courses.landingpage', ['course' => $nextEvent->course, 'country' => $country]) }}">
                                     <flux:badge color="green" size="sm">
-                                        {{ $nextEvent->from->format('d.m.Y H:i') }}
+                                        {{ $nextEvent->from->asDateTime() }}
                                     </flux:badge>
                                 </a>
                                 @if($lecturer->future_events_count > 1)

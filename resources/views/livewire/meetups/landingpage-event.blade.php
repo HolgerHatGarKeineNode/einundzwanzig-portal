@@ -184,7 +184,7 @@ class extends Component {
                 {{ $event->meetup->name }}
             </a>
             <span class="mx-2">/</span>
-            <span>{{ $event->start->format('d.m.Y') }}</span>
+            <span>{{ $event->start->asDate() }}</span>
         </flux:text>
     </div>
 

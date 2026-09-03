@@ -79,8 +79,8 @@ class extends Component {
         $this->paynym = $this->lecturer->paynym;
 
         $this->created_by = $this->lecturer->created_by;
-        $this->created_at = $this->lecturer->created_at?->format('Y-m-d H:i:s');
-        $this->updated_at = $this->lecturer->updated_at?->format('Y-m-d H:i:s');
+        $this->created_at = $this->lecturer->created_at?->asDateTime();
+        $this->updated_at = $this->lecturer->updated_at?->asDateTime();
     }
 
     public function updateLecturer(): void

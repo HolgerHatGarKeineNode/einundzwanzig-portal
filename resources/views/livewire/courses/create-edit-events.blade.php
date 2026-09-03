@@ -5,8 +5,10 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Course;
 use App\Models\CourseEvent;
+use App\Models\Tag;
 use App\Services\Osm\NominatimClient;
 use App\Traits\SeoTrait;
+use Carbon\Carbon;
 use Flux\Flux;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
@@ -14,18 +16,23 @@ use Livewire\Component;
 
 new
 #[SeoDataAttribute(key: 'courses_edit_events')]
-class extends Component {
+class extends Component
+{
     use SeoTrait;
 
     public Course $course;
+
     public ?CourseEvent $event = null;
 
     #[Locked]
     public $country = 'de';
 
     public ?string $fromDate = null;
+
     public ?string $fromTime = null;
+
     public ?string $toDate = null;
+
     public ?string $toTime = null;
 
     /**
@@ -227,10 +234,10 @@ class extends Component {
         $timezone = auth()->user()->timezone ?? 'Europe/Berlin';
 
         // Combine date and time in user's timezone, then convert to UTC
-        $localFrom = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $this->fromDate.' '.$this->fromTime, $timezone);
+        $localFrom = Carbon::createFromFormat('Y-m-d H:i', $this->fromDate.' '.$this->fromTime, $timezone);
         $utcFrom = $localFrom->setTimezone('UTC');
 
-        $localTo = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $this->toDate.' '.$this->toTime, $timezone);
+        $localTo = Carbon::createFromFormat('Y-m-d H:i', $this->toDate.' '.$this->toTime, $timezone);
         $utcTo = $localTo->setTimezone('UTC');
 
         // Additional validation: to must be after from
@@ -303,7 +310,7 @@ class extends Component {
      */
     private function syncTags(CourseEvent $event): void
     {
-        $allowed = \App\Models\Tag::query()
+        $allowed = Tag::query()
             ->where('type', 'meetup_event')
             ->selectableBy(auth()->user())
             ->whereIn('id', $this->tagIds)
@@ -434,17 +441,33 @@ class extends Component {
         <flux:fieldset class="space-y-6">
             <flux:legend>{{ __('Event Details') }}</flux:legend>
 
+            {{-- The `locale` attribute is not decoration: without it Flux falls back to
+                 navigator.language, so these four pickers followed the BROWSER instead of
+                 the language the user picked in the portal — a German organiser on an
+                 English-language laptop got an English calendar here while the meetup form
+                 next door showed a German one. session('lang_country') is the portal's own
+                 selection and what meetups/create-edit-events.blade.php has always passed.
+
+                 Deliberately NOT pinned to an ISO locale. Issue #48 put the portal on ISO
+                 8601, but that rule governs data display, not an input widget — the picker
+                 is a control the organiser operates and its calendar may speak their
+                 language. The measurement behind that decision, and the one locale that
+                 would have produced an ISO date, are recorded at the matching block in
+                 meetups/create-edit-events.blade.php.
+
+                 Display only: wire:model carries Y-m-d and H:i, and save() converts those
+                 from the user's timezone to UTC. --}}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <flux:field>
                     <flux:label>{{ __('Startdatum') }} <span class="text-red-500">*</span></flux:label>
-                    <flux:date-picker wire:model="fromDate" required/>
+                    <flux:date-picker wire:model="fromDate" required locale="{{ session('lang_country', 'de-DE') }}"/>
                     <flux:description>{{ __('An welchem Tag beginnt das Event?') }}</flux:description>
                     <flux:error name="fromDate"/>
                 </flux:field>
 
                 <flux:field>
                     <flux:label>{{ __('Startzeit') }} <span class="text-red-500">*</span></flux:label>
-                    <flux:time-picker wire:model="fromTime" required/>
+                    <flux:time-picker wire:model="fromTime" required locale="{{ session('lang_country', 'de-DE') }}"/>
                     <flux:description>{{ __('Um wie viel Uhr beginnt das Event?') }} ({{ auth()->user()->timezone ?? 'Europe/Berlin' }})</flux:description>
                     <flux:error name="fromTime"/>
                 </flux:field>
@@ -453,14 +476,14 @@ class extends Component {
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <flux:field>
                     <flux:label>{{ __('Enddatum') }} <span class="text-red-500">*</span></flux:label>
-                    <flux:date-picker wire:model="toDate" required/>
+                    <flux:date-picker wire:model="toDate" required locale="{{ session('lang_country', 'de-DE') }}"/>
                     <flux:description>{{ __('An welchem Tag endet das Event?') }}</flux:description>
                     <flux:error name="toDate"/>
                 </flux:field>
 
                 <flux:field>
                     <flux:label>{{ __('Endzeit') }} <span class="text-red-500">*</span></flux:label>
-                    <flux:time-picker wire:model="toTime" required/>
+                    <flux:time-picker wire:model="toTime" required locale="{{ session('lang_country', 'de-DE') }}"/>
                     <flux:description>{{ __('Um wie viel Uhr endet das Event?') }} ({{ auth()->user()->timezone ?? 'Europe/Berlin' }})</flux:description>
                     <flux:error name="toTime"/>
                 </flux:field>
@@ -510,11 +533,14 @@ class extends Component {
                 wire:key="osm-picker-{{ $this->osmCountry ?? 'any' }}"
             />
 
+            {{-- Same pair, same fix as the meetup event form (issue #48). The reporter
+                 only saw that form, but leaving its twin with the old "Ort" next to an
+                 identically-hinted "Ort auf der Karte" would have been half a fix. --}}
             <flux:field>
-                <flux:label>{{ __('Ort') }} <span class="text-red-500">*</span></flux:label>
-                <flux:input wire:model="location" placeholder="{{ __('z.B. Café Mustermann, Hauptstr. 1') }}"
+                <flux:label>{{ __('Ort als Text') }} <span class="text-red-500">*</span></flux:label>
+                <flux:input wire:model="location" placeholder="{{ __('z.B. Hinterzimmer im Café Mustermann') }}"
                             required/>
-                <flux:description>{{ __('Wo findet das Event statt?') }}</flux:description>
+                <flux:description>{{ __('Freitext für Besucher. Auch Details, die ein Kartenpunkt nicht zeigt.') }}</flux:description>
                 <flux:error name="location"/>
             </flux:field>
 

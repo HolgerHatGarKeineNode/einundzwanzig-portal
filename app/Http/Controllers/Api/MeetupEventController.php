@@ -69,6 +69,18 @@ class MeetupEventController extends Controller
         return $events->map(fn ($event) => [
             'id' => $event->id,
             'title' => $event->title,
+            /*
+             * Deliberately NOT switched to the App\Support\Carbon formatters by the ISO
+             * 8601 work (issue #48): this is a published API contract with a live mobile
+             * consumer, and it is already ISO-shaped. `Y-m-d H:i` in UTC, with no zone
+             * marker and no seconds — a raw ->format() that skips the user-timezone
+             * conversion on purpose, because an API has no "current user's timezone".
+             *
+             * Changing it (adding a zone suffix, going full ISO 8601 with T and offset,
+             * or rendering in a requested zone) is a breaking change for that consumer
+             * and needs its own decision — not a side effect of a display-layer fix.
+             * MobileMeetupListController::__invoke() mirrors this format on purpose.
+             */
             'start' => $event->start->format('Y-m-d H:i'),
             'end' => $event->end?->format('Y-m-d H:i'),
             /*

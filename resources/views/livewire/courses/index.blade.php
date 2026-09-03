@@ -109,7 +109,7 @@ class extends Component {
                         @endphp
                         @if($nextEvent)
                             <flux:badge color="green" size="sm">
-                                {{ $nextEvent->from->format('d.m.Y H:i') }}
+                                {{ $nextEvent->from->asDateTime() }}
                             </flux:badge>
                         @endif
                     </flux:table.cell>

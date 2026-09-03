@@ -198,7 +198,7 @@ class extends Component {
             'name' => $u->name,
             'photo' => $u->profile_photo_url,
             'has_photo' => $u->profile_photo_path !== null,
-            'created_at' => optional($u->created_at)->format('d.m.Y'),
+            'created_at' => optional($u->created_at)->asDateTime(),
             'reputation' => (int) $u->reputation,
             /*
              * Nur noch `public_key` (P6). `lightning_address` und `lnurl` sind hier
