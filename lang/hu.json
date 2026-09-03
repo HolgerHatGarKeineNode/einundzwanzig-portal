@@ -635,7 +635,6 @@
     "URL (Onion/Tor)": "URL (Onion/Tor)",
     "URL (pkdns)": "URL (pkdns)",
     "URLs & Erreichbarkeit": "URL-ek & Elérhetőség",
-    "Uhr": "óra",
     "Uhrzeit": "Időpont",
     "Um wie viel Uhr beginnt das Event?": "Hány órakor kezdődik az esemény?",
     "Um wie viel Uhr endet das Event?": "Hány órakor ér véget az esemény?",
@@ -878,5 +877,7 @@
     "Suche deine Sprache...": "Nyelv keresése...",
     "Serie": "Sorozat",
     "Dieser Termin gehört zu einer wiederkehrenden Serie.": "Ez az esemény egy ismétlődő sorozat része.",
-    "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "Az ismétlődést a létrehozáskor állítod be, utólag már nem."
+    "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "Az ismétlődést a létrehozáskor állítod be, utólag már nem.",
+    ":time Uhr": ":time",
+    ":from - :to Uhr": ":from - :to"
 }

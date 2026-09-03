@@ -635,7 +635,6 @@
     "URL (Onion/Tor)": "",
     "URL (pkdns)": "",
     "URLs & Erreichbarkeit": "",
-    "Uhr": "",
     "Uhrzeit": "",
     "Um wie viel Uhr beginnt das Event?": "",
     "Um wie viel Uhr endet das Event?": "",
@@ -878,5 +877,7 @@
     "Suche deine Sprache...": "",
     "Serie": "",
     "Dieser Termin gehört zu einer wiederkehrenden Serie.": "",
-    "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": ""
+    "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "",
+    ":time Uhr": "",
+    ":from - :to Uhr": ""
 }

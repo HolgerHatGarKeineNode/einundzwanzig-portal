@@ -220,7 +220,7 @@ class extends Component {
                     <div class="flex items-center text-zinc-700 dark:text-zinc-300">
                         <flux:icon.clock class="w-5 h-5 mr-3"/>
                         <div>
-                            <div class="font-semibold">{{ $event->start->asTime() }} Uhr</div>
+                            <div class="font-semibold">{{ __(':time Uhr', ['time' => $event->start->asTime()]) }}</div>
                             <div
                                 class="text-sm text-zinc-600 dark:text-zinc-400">{{ $event->start->asDate() }}</div>
                         </div>

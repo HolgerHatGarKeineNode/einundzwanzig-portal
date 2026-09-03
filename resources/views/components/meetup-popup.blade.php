@@ -35,7 +35,7 @@
 
             <flux:text class="text-sm flex items-center gap-2">
                 <flux:icon.clock class="w-4 h-4"/>
-                {{ $meetup->nextEvent['start']->asTime() }} Uhr
+                {{ __(':time Uhr', ['time' => $meetup->nextEvent['start']->asTime()]) }}
             </flux:text>
 
             {{-- x-osm-place erwartet ein Objekt; nextEvent ist ein Array — der Cast

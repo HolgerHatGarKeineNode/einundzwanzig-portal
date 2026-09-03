@@ -635,7 +635,6 @@
     "URL (Onion/Tor)": "URL (Onion/Tor)",
     "URL (pkdns)": "URL (pkdns)",
     "URLs & Erreichbarkeit": "URLe & Dostępność",
-    "Uhr": "godz.",
     "Uhrzeit": "Godzina",
     "Um wie viel Uhr beginnt das Event?": "O której godzinie rozpoczyna się wydarzenie?",
     "Um wie viel Uhr endet das Event?": "O której godzinie kończy się wydarzenie?",
@@ -878,5 +877,7 @@
     "Suche deine Sprache...": "Szukaj języka...",
     "Serie": "Seria",
     "Dieser Termin gehört zu einer wiederkehrenden Serie.": "To wydarzenie jest częścią serii cyklicznej.",
-    "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "Cykliczność ustawiasz przy tworzeniu wydarzenia, później już nie."
+    "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "Cykliczność ustawiasz przy tworzeniu wydarzenia, później już nie.",
+    ":time Uhr": ":time",
+    ":from - :to Uhr": ":from - :to"
 }
