@@ -879,5 +879,6 @@
     "Dieser Termin gehört zu einer wiederkehrenden Serie.": "",
     "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "",
     ":time Uhr": "",
-    ":from - :to Uhr": ""
+    ":from - :to Uhr": "",
+    "Besucher sehen an dieser Stelle dasselbe.": ""
 }

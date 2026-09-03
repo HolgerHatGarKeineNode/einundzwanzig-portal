@@ -879,5 +879,6 @@
     "Dieser Termin gehört zu einer wiederkehrenden Serie.": "Ez az esemény egy ismétlődő sorozat része.",
     "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "Az ismétlődést a létrehozáskor állítod be, utólag már nem.",
     ":time Uhr": ":time",
-    ":from - :to Uhr": ":from - :to"
+    ":from - :to Uhr": ":from - :to",
+    "Besucher sehen an dieser Stelle dasselbe.": "A látogatók ugyanezt látják itt."
 }
