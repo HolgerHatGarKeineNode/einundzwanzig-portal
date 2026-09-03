@@ -1,9 +1,12 @@
 <?php
 
 use App\Jobs\DeliverWebhookJob;
+use App\Models\ApiChange;
+use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Models\WebhookDelivery;
 use App\Models\WebhookSubscription;
+use App\Support\Broadcasting\ChangeRecorder;
 use Illuminate\Support\Facades\Http;
 
 it('delivers with the documented headers and a verifiable HMAC signature', function () {
@@ -215,4 +218,184 @@ it('delivers a deletion after the source MeetupEvent row is gone', function () {
 
     $delivery = WebhookDelivery::query()->where('subscription_id', $subscription->id)->sole();
     expect($delivery->delivered_at)->not->toBeNull();
+});
+
+/*
+|--------------------------------------------------------------------------
+| Issue #36 gap closure — meetup CUD, not just meetup-event
+|--------------------------------------------------------------------------
+|
+| Every test above exercises `meetup-event` only. `meetup` is an independent
+| entry in ChangeRecorder::RESOURCES with its own resource class and payload
+| shape — a filter or envelope bug scoped to `meetup` would sail through
+| every test above unnoticed. These assert the POSTed body against the
+| stored api_changes row itself, not a hand-built expectation, so a payload
+| built from the wrong resource class or a stale attribute would show up as
+| a mismatch here.
+*/
+
+it('delivers a meetup creation with the envelope identical to the stored api_changes row', function () {
+    config()->set('einundzwanzig.change_log.enabled', true);
+    Http::fake(['*' => Http::response('', 200)]);
+
+    $subscription = WebhookSubscription::factory()->create(['resources' => ['meetup']]);
+
+    Meetup::factory()->create();
+
+    $change = ApiChange::query()->where('resource', 'meetup')->where('action', 'created')->sole();
+
+    Http::assertSent(function ($request) use ($change): bool {
+        return json_decode($request->body(), true) === $change->payload
+            && ($request->header('X-Portal-Event')[0] ?? null) === 'meetup.created';
+    });
+
+    $delivery = WebhookDelivery::query()->where('subscription_id', $subscription->id)->sole();
+    expect($delivery->delivered_at)->not->toBeNull();
+});
+
+it('delivers a meetup update with the envelope identical to the stored api_changes row', function () {
+    config()->set('einundzwanzig.change_log.enabled', true);
+    Http::fake(['*' => Http::response('', 200)]);
+
+    $subscription = WebhookSubscription::factory()->create(['resources' => ['meetup']]);
+    $meetup = Meetup::factory()->create();
+
+    // Re-fake to discard the "created" delivery above — this test is about
+    // the update only.
+    WebhookDelivery::query()->delete();
+    Http::fake(['*' => Http::response('', 200)]);
+
+    $meetup->update(['intro' => 'Neuer Einleitungstext.']);
+
+    $change = ApiChange::query()->where('resource', 'meetup')->where('action', 'updated')->sole();
+
+    Http::assertSent(function ($request) use ($change): bool {
+        return json_decode($request->body(), true) === $change->payload
+            && ($request->header('X-Portal-Event')[0] ?? null) === 'meetup.updated';
+    });
+
+    $delivery = WebhookDelivery::query()->where('subscription_id', $subscription->id)->sole();
+    expect($delivery->delivered_at)->not->toBeNull();
+});
+
+it('delivers a meetup deletion with the envelope identical to the stored api_changes row', function () {
+    config()->set('einundzwanzig.change_log.enabled', true);
+    Http::fake(['*' => Http::response('', 200)]);
+
+    $subscription = WebhookSubscription::factory()->create(['resources' => ['meetup']]);
+    $meetup = Meetup::factory()->create();
+
+    WebhookDelivery::query()->delete();
+    Http::fake(['*' => Http::response('', 200)]);
+
+    $meetup->delete();
+
+    $change = ApiChange::query()->where('resource', 'meetup')->where('action', 'deleted')->sole();
+
+    Http::assertSent(function ($request) use ($change): bool {
+        $payload = json_decode($request->body(), true);
+
+        return $payload === $change->payload
+            && $payload['action'] === 'deleted'
+            && $payload['data'] === null
+            && ($request->header('X-Portal-Event')[0] ?? null) === 'meetup.deleted';
+    });
+
+    $delivery = WebhookDelivery::query()->where('subscription_id', $subscription->id)->sole();
+    expect($delivery->delivered_at)->not->toBeNull();
+});
+
+/*
+|--------------------------------------------------------------------------
+| Issue #36 gap closure — resource filtering
+|--------------------------------------------------------------------------
+|
+| dispatchWebhooks() filters on `whereJsonContains('resources', $resource)`.
+| Every existing test uses a subscription whose `resources` already covers
+| whatever it creates, so a broken filter (e.g. matching on the wrong
+| column, or dropping the whereJsonContains clause entirely) would never
+| have shown up.
+*/
+
+it('delivers a meetup change to a meetup-only subscription but nothing for a meetup-event change', function () {
+    config()->set('einundzwanzig.change_log.enabled', true);
+    Http::fake(['*' => Http::response('', 200)]);
+
+    $subscription = WebhookSubscription::factory()->create(['resources' => ['meetup']]);
+
+    /*
+     * Fixed point for Meetup::recalculateActivity(): adding a single future
+     * MeetupEvent below recomputes is_active=true (hasFutureEvent) and
+     * last_event_at=null (no past event exists to set it). Starting the
+     * meetup at exactly that state means recalculateActivity finds nothing
+     * dirty and does NOT itself fire a manual "meetup updated" record — which
+     * would otherwise confound the "nothing for meetup-event" assertion below
+     * (recalculateActivity calls ChangeRecorder::record() directly, bypassing
+     * the observer, see Meetup::recalculateActivity()).
+     */
+    $meetup = Meetup::factory()->create(['is_active' => true, 'last_event_at' => null]);
+
+    Http::assertSentCount(1);
+    expect(WebhookDelivery::query()->where('subscription_id', $subscription->id)->count())->toBe(1);
+
+    WebhookDelivery::query()->delete();
+    Http::fake(['*' => Http::response('', 200)]);
+
+    // Explicit meetup_id (no nested Meetup::factory()), future start (matches
+    // the fixed point above), no recurrence — isolates this to a pure
+    // "meetup-event" change with no side effect on the parent meetup.
+    MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+        'start' => now()->addWeek(),
+        'recurrence_type' => null,
+        'recurrence_end_date' => null,
+    ]);
+
+    Http::assertNothingSent();
+    expect(WebhookDelivery::query()->where('subscription_id', $subscription->id)->count())->toBe(0);
+    // Sanity: recalculateActivity ran (observer always fires on save) and
+    // genuinely found no change, it was not skipped.
+    expect($meetup->fresh()->is_active)->toBeTrue()
+        ->and($meetup->fresh()->last_event_at)->toBeNull();
+});
+
+/*
+|--------------------------------------------------------------------------
+| Issue #36 gap closure — mute and kill-switch stop the webhook path itself
+|--------------------------------------------------------------------------
+|
+| ChangeRecorderTest and ResourceChangedTest already prove that no
+| api_changes row is written and no ResourceChanged broadcast fires under
+| muted() or with the kill switch off. Neither asserts anything about
+| WebhookDelivery/DeliverWebhookJob directly — dispatchWebhooks() is only
+| reached from inside record(), after the api_changes row exists, so those
+| tests establish this indirectly at best. These assert the webhook path
+| itself: an eligible subscription in place, Http::fake(), and a direct
+| check that no request went out and no delivery row was queued.
+*/
+
+it('dispatches no webhook while the kill switch is off, even with an eligible subscription in place', function () {
+    config()->set('einundzwanzig.change_log.enabled', false);
+    Http::fake(['*' => Http::response('', 200)]);
+
+    WebhookSubscription::factory()->create(['resources' => ['meetup']]);
+
+    Meetup::factory()->create();
+
+    Http::assertNothingSent();
+    expect(WebhookDelivery::query()->count())->toBe(0);
+});
+
+it('dispatches no webhook for changes made inside a muted block, even with an eligible subscription in place', function () {
+    config()->set('einundzwanzig.change_log.enabled', true);
+    Http::fake(['*' => Http::response('', 200)]);
+
+    WebhookSubscription::factory()->create(['resources' => ['meetup']]);
+
+    ChangeRecorder::muted(function (): void {
+        Meetup::factory()->create();
+    });
+
+    Http::assertNothingSent();
+    expect(WebhookDelivery::query()->count())->toBe(0);
 });

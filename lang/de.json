@@ -859,5 +859,20 @@
     "Freigeschaltet (:count)": "",
     "Noch keine Subscription freigeschaltet.": "",
     "Zurückziehen": "",
-    "Eine Webhook-Subscription sendet einen signierten HTTP-POST an deine URL, sobald sich eine der ausgewählten Ressourcen ändert. Neue Subscriptions müssen vom Vorstand des EINUNDZWANZIG e.V. freigeschaltet werden, bevor sie Zustellungen erhalten.": ""
+    "Eine Webhook-Subscription sendet einen signierten HTTP-POST an deine URL, sobald sich eine der ausgewählten Ressourcen ändert. Neue Subscriptions müssen vom Vorstand des EINUNDZWANZIG e.V. freigeschaltet werden, bevor sie Zustellungen erhalten.": "",
+    "Abgelehnt": "",
+    "Wird gespeichert…": "",
+    "Sprache": "",
+    "Kalender abonnieren": "",
+    "Kalenderlink kopieren (alle Länder)": "",
+    "Kalenderlink kopieren (nur :country)": "",
+    "Dieses Event gehört zu einer Serie": "",
+    "Die Serieneinstellungen lassen sich nach dem Anlegen nicht mehr ändern. Was du hier speicherst, gilt nur für diesen einen Termin — die übrigen Termine der Serie bleiben unverändert.": "",
+    "Webhook-Subscription abgelehnt.": "",
+    "Diese Anfrage ablehnen? Die Ablehnung lässt sich hier nicht wieder aufheben.": "",
+    "Meetup": "",
+    "Meetup-Termin": "",
+    "Vorstand": "",
+    "Meetup :name öffnen": "",
+    "Event am :date öffnen": ""
 }

@@ -71,6 +71,16 @@ return [
         names, the payload contract, a working TypeScript client and the gaps you have to plan
         around are documented at [/docs/websockets](/docs/websockets).
 
+        ## Webhooks
+
+        If you would rather not run a poller or a resident socket process at all, register a URL
+        under *Webhooks* below and we POST every matching change to it, signed and retried. The
+        body is the same envelope again, so one parser covers all three paths.
+
+        The delivery contract is not an operation in this reference either. The headers, the HMAC
+        verification (with a copy-paste TypeScript snippet), the retry schedule and auto-disable,
+        deduplication and gap recovery are documented at [/docs/webhooks](/docs/webhooks).
+
         ## Authentication
 
         Most **read endpoints** are public and require no token.

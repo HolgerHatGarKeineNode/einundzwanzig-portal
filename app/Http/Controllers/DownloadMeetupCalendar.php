@@ -176,8 +176,8 @@ class DownloadMeetupCalendar extends Controller
             $entry->endsAt($event->end->copy()->setTimezone($timezone));
         }
 
-        $location = collect([$event->osm_name, $event->osm_address])->filter()->implode(', ');
-        if ($location !== '') {
+        $location = $this->resolveLocation($event);
+        if ($location !== null) {
             $entry->address($location);
         }
 
@@ -203,10 +203,43 @@ class DownloadMeetupCalendar extends Controller
         return $entry;
     }
 
+    /**
+     * Venue for LOCATION, in the order the repo owner settled on: the OSM pair
+     * when the event has been matched to a map point, otherwise the free-text
+     * `location` column, otherwise no property at all.
+     *
+     * The fallback is not cosmetic. Most rows carry free text only and no OSM
+     * data (issue #36 sample: `location = "Schwabach"` with all six `osm_*`
+     * null), so an OSM-only rule ships those subscriptions without any venue —
+     * that was the regression 8e4f1be5 introduced when it replaced
+     * `->address($event->location ?? __('no location set'))`. Dropping the
+     * placeholder was right; dropping the column with it was not.
+     *
+     * OSM data does not get the free text appended: `osm_address` is the
+     * formatted address of the same venue, so the two would repeat the place
+     * (`"Café Central, Marktplatz 1, 99084 Erfurt, Schwabach"`).
+     */
+    private function resolveLocation(MeetupEvent $event): ?string
+    {
+        $osmLocation = collect([$event->osm_name, $event->osm_address])->filter()->implode(', ');
+
+        if ($osmLocation !== '') {
+            return $osmLocation;
+        }
+
+        $freeText = trim((string) $event->location);
+
+        return $freeText !== '' ? $freeText : null;
+    }
+
     private function buildDescription(MeetupEvent $event, ?string $language): ?string
     {
+        // One bracket pair per tag, space-separated (issue #41) — "[A] [B]", not
+        // "[A,B]". Beyond readability this keeps the separator out of RFC 5545's
+        // escape set: a comma reaches the wire as "\," (see TextProperty), a
+        // space reaches it verbatim.
         $tagLine = $event->tags->isNotEmpty()
-            ? '['.$event->tags->map(fn ($tag) => $tag->displayName($language))->implode(',').']'
+            ? $event->tags->map(fn ($tag) => '['.$tag->displayName($language).']')->implode(' ')
             : null;
 
         $body = $event->description !== null && trim($event->description) !== ''

@@ -4,7 +4,9 @@ use App\Attributes\SeoDataAttribute;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
+use App\Rules\UniqueMeetupName;
 use App\Traits\SeoTrait;
+use Flux\Flux;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -12,35 +14,48 @@ use Livewire\WithFileUploads;
 
 new
 #[SeoDataAttribute(key: 'meetups_create')]
-class extends Component {
-    use WithFileUploads;
+class extends Component
+{
     use SeoTrait;
+    use WithFileUploads;
 
     #[Validate('image|mimes:jpeg,png,webp,avif|max:5120|dimensions:max_width=4000,max_height=4000')]
     public $logo;
 
     // Basic Information
     public string $name = '';
+
     public ?int $city_id = null;
+
     public ?string $intro = null;
 
     // Links and Social Media
     public ?string $telegram_link = null;
+
     public ?string $webpage = null;
+
     public ?string $twitter_username = null;
+
     public ?string $matrix_group = null;
+
     public ?string $nostr = null;
+
     public ?string $simplex = null;
+
     public ?string $signal = null;
 
     // Additional Information
     public ?string $community = null;
+
     public bool $visible_on_map = true;
 
     // New City Modal
     public string $newCityName = '';
+
     public ?int $newCityCountryId = null;
+
     public ?float $newCityLatitude = null;
+
     public ?float $newCityLongitude = null;
 
     /**
@@ -56,7 +71,6 @@ class extends Component {
      * @var array<int, array{id: int, latitude: float, longitude: float}>
      */
     public array $duplicateCityCandidates = [];
-
 
     /**
      * Vorhandene Orte gleichen Namens im gewaehlten Land.
@@ -129,13 +143,13 @@ class extends Component {
         $this->city_id = $city->id;
         $this->reset(['newCityName', 'newCityCountryId', 'newCityLatitude', 'newCityLongitude', 'confirmDuplicateCity', 'duplicateCityCandidates']);
 
-        \Flux\Flux::modal('add-city')->close();
+        Flux::modal('add-city')->close();
     }
 
     public function createMeetup(): void
     {
         $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255', new \App\Rules\UniqueMeetupName],
+            'name' => ['required', 'string', 'max:255', new UniqueMeetupName],
             'city_id' => ['required', 'exists:cities,id'],
             'intro' => ['nullable', 'string'],
             'telegram_link' => ['nullable', 'url', 'max:255'],
@@ -143,7 +157,7 @@ class extends Component {
             'twitter_username' => ['nullable', 'string', 'max:255'],
             'matrix_group' => ['nullable', 'string', 'max:255'],
             'nostr' => ['nullable', 'string', 'max:255'],
-            'simplex' => ['nullable', 'string',],
+            'simplex' => ['nullable', 'string'],
             'signal' => ['nullable', 'string', 'max:510'],
             'community' => ['required', 'string', 'max:255'],
             'visible_on_map' => ['boolean'],
@@ -357,9 +371,24 @@ class extends Component {
                 {{ __('Abbrechen') }}
             </flux:button>
 
-            <flux:button class="cursor-pointer" variant="primary" type="submit">
-                {{ __('Meetup erstellen') }}
-            </flux:button>
+            <div class="flex items-center gap-4">
+                {{-- Visible acknowledgement only, no wire:loading.attr="disabled":
+                     the button is a button[type=submit] INSIDE this <form wire:submit>,
+                     and Livewire v4's supportDisablingFormsDuringRequest already
+                     disables every such button for the duration of the request
+                     (vendor/livewire/livewire/dist/livewire.esm.js, disableForm()/
+                     shouldMarkDisabled()), so the double-submit guard is covered.
+                     Plain span, not <flux:text> — Flux renders `wire:loading` as
+                     `wire:loading=""` instead of the bare attribute Livewire expects. --}}
+                <span wire:loading wire:target="createMeetup"
+                      class="text-sm text-zinc-500 dark:text-zinc-400">
+                    {{ __('Wird gespeichert…') }}
+                </span>
+
+                <flux:button class="cursor-pointer" variant="primary" type="submit">
+                    {{ __('Meetup erstellen') }}
+                </flux:button>
+            </div>
         </div>
     </form>
 

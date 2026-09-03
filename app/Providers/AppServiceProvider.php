@@ -45,7 +45,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('viewApiDocs', fn (?Authenticatable $user = null): bool => true);
 
-        $this->documentWebSocketChannels();
+        $this->documentRealtimeTransports();
 
         // OAuth-2.1-Flow des MCP-Servers (Claude.ai Web-Connector).
         Passport::authorizationView(fn ($parameters) => view('mcp.authorize', $parameters));
@@ -77,12 +77,22 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Traegt die WebSocket-Kanaele als eigenen Tag in die OpenAPI-Beschreibung ein.
+     * Verweist aus der OpenAPI-Beschreibung auf die zwei Konsumenten-Seiten, die
+     * Scramble nicht selbst erzeugen kann.
      *
-     * Die Kanaele sind keine Laravel-Routen, Scramble kann sie also nicht generieren —
-     * und ein `webhooks`-Objekt gibt der Generator nicht her ({@see OpenApi::toArray()}
-     * schreibt sechs feste Schluessel). Der Tag ist deshalb der einzige Weg, in der
-     * Referenz selbst auf /docs/websockets zu zeigen, statt nur in der Einleitung.
+     * ZWEI VERSCHIEDENE FAELLE, deshalb zwei verschiedene Wege im selben Transformer:
+     *
+     *  - WEBSOCKETS: die Kanaele sind keine Laravel-Routen, es gibt also keinen Tag,
+     *    den Scramble aus einer `#[Group]` bauen koennte — und ein `webhooks`-Objekt
+     *    gibt der Generator nicht her ({@see OpenApi::toArray()} schreibt sechs feste
+     *    Schluessel). Der Tag wird deshalb hier ANGEHAENGT.
+     *  - WEBHOOKS: die Abo-Endpunkte SIND Routen, `WebhookSubscriptionController`
+     *    traegt `#[Group(name: 'Webhooks')]`, und {@see AddDocumentTags} legt den Tag
+     *    bereits an — nur ohne Beschreibung. Der vorhandene Tag wird deshalb
+     *    ERGAENZT statt ein zweiter gleichen Namens angelegt (das Dokument haette
+     *    sonst zwei Reiter 'Webhooks'). Die Beschreibung steht hier und nicht als
+     *    `description:` am Attribut, damit beide Doku-Verweise an einer Stelle
+     *    stehen und nicht einer im Controller versteckt ist.
      *
      * BEWUSST ueber `afterOpenApiGenerated()` und NICHT ueber `Scramble::configure()`
      * mit `->expose(...)`: ein String-Argument an `expose()` ueberschreibt die
@@ -91,9 +101,10 @@ class AppServiceProvider extends ServiceProvider
      * baut. `afterOpenApiGenerated()` haengt lediglich einen Document-Transformer
      * hinten an die Liste — hinten, damit er nach {@see AddDocumentTags}
      * laeuft, das `$document->tags` komplett neu setzt und ein frueher angehaengtes
-     * Element wieder verwerfen wuerde.
+     * Element wieder verwerfen wuerde. Genau das ist auch die Bedingung dafuer, dass
+     * der Webhooks-Tag hier ueberhaupt schon existiert.
      */
-    protected function documentWebSocketChannels(): void
+    protected function documentRealtimeTransports(): void
     {
         Scramble::afterOpenApiGenerated(function (OpenApi $document): void {
             $document->tags[] = new Tag(
@@ -109,6 +120,24 @@ class AppServiceProvider extends ServiceProvider
                 [/docs/websockets](/docs/websockets).
                 MARKDOWN
             );
+
+            foreach ($document->tags as $tag) {
+                if ($tag->name === 'Webhooks' && $tag->description === null) {
+                    $tag->description = <<<'MARKDOWN'
+                    Register a URL here and every create, update and delete of a meetup or a
+                    meetup date arrives as a signed HTTP POST — the same envelope
+                    `GET /api/changes` returns, so one parser covers both.
+
+                    The endpoints below manage the subscription. The delivery contract is not an
+                    operation in this document and cannot be generated from one: the headers
+                    (`X-Portal-Event`, `X-Portal-Delivery`, `X-Portal-Timestamp`,
+                    `X-Portal-Signature`), the HMAC verification with a copy-paste TypeScript
+                    snippet, the retry schedule and auto-disable, at-least-once semantics with
+                    deduplication, gap recovery and the deletion `previous` semantics are
+                    documented at [/docs/webhooks](/docs/webhooks).
+                    MARKDOWN;
+                }
+            }
         });
     }
 

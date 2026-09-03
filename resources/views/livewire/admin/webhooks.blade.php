@@ -7,16 +7,20 @@ use Illuminate\Support\Collection;
 use Livewire\Component;
 
 /**
- * Board-only admin view to approve or revoke webhook subscriptions (Issue
- * #36's `webhooks.require_approval` gate had no UI to act on it — Issue #40).
+ * Board-only admin view to approve, reject or revoke webhook subscriptions
+ * (Issue #36's `webhooks.require_approval` gate had no UI to act on it —
+ * Issue #40).
  *
- * Two states only, per the issue's acceptance criteria: approve sets
- * `approved_at`; revoke clears it back to null. This branch was cut from
- * `buzz/master` before PR be709e1a (branch
- * issue/0945941d-webhook-subscriptions-can-be-gated-but-n, adding a separate
- * `rejected_at` column and webhook:approve/webhook:reject artisan commands)
- * had merged, so there is no `rejected_at` column here to reconcile with —
- * see this branch's PR body for the full reconciliation note.
+ * Three operator decisions, all of them expressed in the two columns the
+ * model already carries: approve sets `approved_at`; revoke clears it back to
+ * null; reject sets `rejected_at` and thereby takes the subscription out of
+ * {@see WebhookSubscription::scopePending()} for good — a declined request
+ * must not resurface as "not yet looked at".
+ *
+ * `rejected_at` and the webhook:approve/webhook:reject artisan commands
+ * merged into `master` after this view was first written; the earlier
+ * docblock here claimed the column did not exist on this branch, which has
+ * been untrue since that merge.
  */
 new class extends Component
 {
@@ -28,12 +32,15 @@ new class extends Component
     }
 
     /**
+     * Awaiting a decision — the model's own definition of "pending", which
+     * excludes a rejected subscription as well as an approved one.
+     *
      * @return Collection<int, WebhookSubscription>
      */
     public function getPendingProperty(): Collection
     {
         return WebhookSubscription::query()
-            ->whereNull('approved_at')
+            ->pending()
             ->with('user')
             ->oldest()
             ->get();
@@ -61,6 +68,41 @@ new class extends Component
         $subscription->save();
 
         session()->flash('status', __('Webhook-Subscription freigegeben.'));
+    }
+
+    /**
+     * The operator's decline path, same rule as the `webhook:reject` command
+     * in app/Console/Commands/RejectWebhookSubscription.php (referenced by
+     * path on purpose — a {@see} with the class name makes Pint add an
+     * otherwise unused import here): only a still pending subscription can be
+     * declined, and the decision is recorded in `rejected_at` alone —
+     * `approved_at`, the owner's `active` switch and the row itself stay
+     * untouched, exactly as in revoke().
+     *
+     * Gated through BoardGate instead of $this->authorize() because
+     * WebhookSubscriptionPolicy carries no `reject` ability and app/Policies
+     * is outside this change; mount() uses the same gate, and this check is
+     * the one that holds on a follow-up Livewire request, where mount() does
+     * not run again.
+     *
+     * An already decided subscription is a no-op rather than an error: the
+     * only way to get here is a second click on a stale render, and the row
+     * has left the pending list either way.
+     */
+    public function reject(int $id): void
+    {
+        abort_unless(BoardGate::allows(auth()->user()), 403);
+
+        $subscription = WebhookSubscription::findOrFail($id);
+
+        if ($subscription->approved_at !== null || $subscription->rejected_at !== null) {
+            return;
+        }
+
+        $subscription->rejected_at = now();
+        $subscription->save();
+
+        session()->flash('status', __('Webhook-Subscription abgelehnt.'));
     }
 
     /**
@@ -138,11 +180,27 @@ new class extends Component
                             </p>
                         </div>
 
-                        <flux:button variant="primary" size="sm"
-                                     wire:click="approve({{ $subscription->id }})"
-                                     data-testid="approve-{{ $subscription->id }}">
-                            {{ __('Freigeben') }}
-                        </flux:button>
+                        {{-- wire:loading.attr statt Flux' eigenem data-flux-loading: der
+                             Aufrufer gewinnt beim Attribut-Merge, dafuer ist der Knopf
+                             waehrend des Requests wirklich nicht mehr klickbar. Das
+                             wire:target dazu setzt Flux selbst aus dem wire:click, also
+                             greift es pro Zeile und nicht ueber die ganze Liste. --}}
+                        <div class="flex shrink-0 items-center gap-2">
+                            <flux:button variant="primary" size="sm"
+                                         wire:click="approve({{ $subscription->id }})"
+                                         wire:loading.attr="disabled"
+                                         data-testid="approve-{{ $subscription->id }}">
+                                {{ __('Freigeben') }}
+                            </flux:button>
+
+                            <flux:button variant="danger" size="sm"
+                                         wire:click="reject({{ $subscription->id }})"
+                                         wire:loading.attr="disabled"
+                                         wire:confirm="{{ __('Diese Anfrage ablehnen? Die Ablehnung lässt sich hier nicht wieder aufheben.') }}"
+                                         data-testid="reject-{{ $subscription->id }}">
+                                {{ __('Ablehnen') }}
+                            </flux:button>
+                        </div>
                     </div>
                 </div>
             @endforeach
@@ -181,6 +239,7 @@ new class extends Component
 
                         <flux:button variant="danger" size="sm"
                                      wire:click="revoke({{ $subscription->id }})"
+                                     wire:loading.attr="disabled"
                                      data-testid="revoke-{{ $subscription->id }}">
                             {{ __('Zurückziehen') }}
                         </flux:button>

@@ -5,6 +5,7 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\User;
+use App\Rules\UniqueMeetupName;
 use App\Rules\ValidNpub;
 use App\Support\NostrLogin;
 use App\Traits\SeoTrait;
@@ -106,7 +107,6 @@ class extends Component
      * @var array<int, array{id: int, latitude: float, longitude: float}>
      */
     public array $duplicateCityCandidates = [];
-
 
     /**
      * Vorhandene Orte gleichen Namens im gewaehlten Land.
@@ -313,7 +313,7 @@ class extends Component
         }
 
         $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255', new \App\Rules\UniqueMeetupName($this->meetup->id)],
+            'name' => ['required', 'string', 'max:255', new UniqueMeetupName($this->meetup->id)],
             'city_id' => ['nullable', 'exists:cities,id'],
             'intro' => ['nullable', 'string'],
             'telegram_link' => ['nullable', 'url', 'max:255'],
@@ -634,6 +634,19 @@ class extends Component
                         {{ $message }}
                     </flux:text>
                 @enderror
+
+                {{-- Visible acknowledgement only, no wire:loading.attr="disabled":
+                     the button is a button[type=submit] INSIDE this <form wire:submit>,
+                     and Livewire v4's supportDisablingFormsDuringRequest already
+                     disables every such button for the duration of the request
+                     (vendor/livewire/livewire/dist/livewire.esm.js, disableForm()/
+                     shouldMarkDisabled()), so the double-submit guard is covered.
+                     Plain span, not <flux:text> — Flux renders `wire:loading` as
+                     `wire:loading=""` instead of the bare attribute Livewire expects. --}}
+                <span wire:loading wire:target="updateMeetup"
+                      class="text-sm text-zinc-500 dark:text-zinc-400">
+                    {{ __('Wird gespeichert…') }}
+                </span>
 
                 <flux:button class="cursor-pointer" variant="primary" type="submit">
                     {{ __('Meetup aktualisieren') }}

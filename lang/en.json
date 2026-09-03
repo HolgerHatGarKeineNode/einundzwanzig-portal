@@ -859,5 +859,20 @@
     "Freigeschaltet (:count)": "Approved (:count)",
     "Noch keine Subscription freigeschaltet.": "No subscription has been approved yet.",
     "Zurückziehen": "Revoke",
-    "Eine Webhook-Subscription sendet einen signierten HTTP-POST an deine URL, sobald sich eine der ausgewählten Ressourcen ändert. Neue Subscriptions müssen vom Vorstand des EINUNDZWANZIG e.V. freigeschaltet werden, bevor sie Zustellungen erhalten.": "A webhook subscription sends a signed HTTP POST to your URL whenever one of the selected resources changes. New subscriptions must be approved by the EINUNDZWANZIG e.V. board before they receive deliveries."
+    "Eine Webhook-Subscription sendet einen signierten HTTP-POST an deine URL, sobald sich eine der ausgewählten Ressourcen ändert. Neue Subscriptions müssen vom Vorstand des EINUNDZWANZIG e.V. freigeschaltet werden, bevor sie Zustellungen erhalten.": "A webhook subscription sends a signed HTTP POST to your URL whenever one of the selected resources changes. New subscriptions must be approved by the EINUNDZWANZIG e.V. board before they receive deliveries.",
+    "Abgelehnt": "Rejected",
+    "Wird gespeichert…": "Saving…",
+    "Sprache": "Language",
+    "Kalender abonnieren": "Subscribe to calendar",
+    "Kalenderlink kopieren (alle Länder)": "Copy calendar link (all countries)",
+    "Kalenderlink kopieren (nur :country)": "Copy calendar link (:country only)",
+    "Dieses Event gehört zu einer Serie": "This event is part of a series",
+    "Die Serieneinstellungen lassen sich nach dem Anlegen nicht mehr ändern. Was du hier speicherst, gilt nur für diesen einen Termin — die übrigen Termine der Serie bleiben unverändert.": "Series settings can no longer be changed after creation. What you save here applies only to this one event — the other events in the series remain unchanged.",
+    "Webhook-Subscription abgelehnt.": "Webhook subscription rejected.",
+    "Diese Anfrage ablehnen? Die Ablehnung lässt sich hier nicht wieder aufheben.": "Reject this request? The rejection cannot be undone here.",
+    "Meetup": "Meetups",
+    "Meetup-Termin": "Meetup events",
+    "Vorstand": "Board",
+    "Meetup :name öffnen": "Open meetup :name",
+    "Event am :date öffnen": "Open event on :date"
 }
