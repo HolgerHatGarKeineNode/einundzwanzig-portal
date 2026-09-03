@@ -5,57 +5,68 @@ use App\Attributes\SeoDataAttribute;
 use App\Enums\RecurrenceType;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
+use App\Models\Tag;
+use App\Observers\MeetupEventObserver;
 use App\Traits\SeoTrait;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
 new
 #[SeoDataAttribute(key: 'meetups_create_edit_events')]
-class extends Component {
+class extends Component
+{
     use SeoTrait;
 
     public Meetup $meetup;
+
     public ?MeetupEvent $event = null;
 
     #[Locked]
     public $country = 'de';
 
     public ?string $startDate = null;
+
     public ?string $startTime = null;
 
     // Explicitly track timezone for reactivity
     public string $userTimezone = '';
 
     public bool $seriesMode = false;
+
     public ?string $endDate = null;
 
     public ?RecurrenceType $recurrenceType = null;
+
     public ?string $recurrenceDayOfWeek = null;
+
     public ?string $recurrenceDayPosition = null;
 
     public function getPreviewDatesProperty(): array
     {
-        if (!$this->seriesMode || !$this->startDate || !$this->endDate) {
+        if (! $this->seriesMode || ! $this->startDate || ! $this->endDate) {
             return [];
         }
 
         try {
             // Ensure timezone is always set - use fallback if not initialized yet
             $timezone = $this->userTimezone ?: (auth()->user()->timezone ?? 'Europe/Berlin');
-            $startDate = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $this->startDate . ' ' . $this->startTime, $timezone);
+            $startDate = Carbon::createFromFormat('Y-m-d H:i', $this->startDate.' '.$this->startTime, $timezone);
             // Enddatum kommt aus einem reinen Datums-Picker: bis zum Ende des
             // gewählten Tages (inklusiv). endOfDay() macht das deterministisch —
             // createFromFormat('Y-m-d', …) würde sonst die AKTUELLE Uhrzeit
             // einsetzen und das letzte Vorkommen je nach Laufzeit ein-/ausschließen.
-            $endDate = \Carbon\Carbon::createFromFormat('Y-m-d', $this->endDate, $timezone)->endOfDay();
+            $endDate = Carbon::createFromFormat('Y-m-d', $this->endDate, $timezone)->endOfDay();
 
-            return array_map(fn (\Carbon\Carbon $date): array => [
+            return array_map(fn (Carbon $date): array => [
                 'date' => $date,
                 'formatted' => $date->translatedFormat('l, d.m.Y'),
                 'time' => $date->format('H:i'),
             ], $this->generateEventDates($startDate, $endDate));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [];
         }
     }
@@ -260,7 +271,12 @@ class extends Component {
             'endTime' => 'nullable|date_format:H:i',
         ];
 
-        if ($this->seriesMode) {
+        // Only while a series is being laid out. On an existing event these two rules
+        // guarded nothing — createOrUpdateSingleEvent() writes no `recurrence_*` column —
+        // and blocked everything: mount() leaves $endDate as '' whenever the stored
+        // `recurrence_end_date` is null (it is nullable), so 'required' rejected even a
+        // plain description fix on an occurrence of a series.
+        if ($this->seriesMode && ! $this->event) {
             $validationRules['endDate'] = 'required|date|after:startDate';
             $validationRules['recurrenceType'] = 'required';
         }
@@ -277,7 +293,7 @@ class extends Component {
 
         $timezone = $this->userTimezone;
 
-        if ($this->seriesMode && !$this->event) {
+        if ($this->seriesMode && ! $this->event) {
             // Create series of events
             $this->createEventSeries($timezone);
         } else {
@@ -333,7 +349,7 @@ class extends Component {
      * A time earlier than or equal to the start means the event runs past midnight —
      * a 20:00 meetup ending at 01:00 ends the next day, not five minutes into the past.
      */
-    private function resolveEnd(\Carbon\Carbon $localStart): ?\Carbon\Carbon
+    private function resolveEnd(Carbon $localStart): ?Carbon
     {
         if (blank($this->endTime)) {
             return null;
@@ -355,9 +371,9 @@ class extends Component {
      * series shares the same selection (see {@see self::syncTags()}), so this must not
      * run again per occurrence — the query is otherwise identical every time.
      */
-    private function allowedTags(): \Illuminate\Support\Collection
+    private function allowedTags(): Collection
     {
-        return \App\Models\Tag::query()
+        return Tag::query()
             ->where('type', 'meetup_event')
             ->selectableBy(auth()->user())
             ->whereIn('id', $this->tagIds)
@@ -372,7 +388,7 @@ class extends Component {
      * $allowedTags when calling this in a loop (see {@see self::createEventSeries()});
      * without it, each call re-resolves the same list from scratch.
      */
-    private function syncTags(MeetupEvent $event, ?\Illuminate\Support\Collection $allowedTags = null): void
+    private function syncTags(MeetupEvent $event, ?Collection $allowedTags = null): void
     {
         $allowed = $allowedTags ?? $this->allowedTags();
 
@@ -382,7 +398,7 @@ class extends Component {
     private function createOrUpdateSingleEvent(string $timezone): void
     {
         // Combine date and time in user's timezone, then convert to UTC
-        $localDateTime = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $this->startDate . ' ' . $this->startTime, $timezone);
+        $localDateTime = Carbon::createFromFormat('Y-m-d H:i', $this->startDate.' '.$this->startTime, $timezone);
         // copy() matters: setTimezone() mutates in place, and resolveEnd() below needs
         // the start still expressed in the user's own timezone to compare against.
         $utcDateTime = $localDateTime->copy()->setTimezone('UTC');
@@ -417,10 +433,10 @@ class extends Component {
 
     private function createEventSeries(string $timezone): void
     {
-        $startDate = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $this->startDate . ' ' . $this->startTime, $timezone);
+        $startDate = Carbon::createFromFormat('Y-m-d H:i', $this->startDate.' '.$this->startTime, $timezone);
         // Inklusiv bis zum Ende des gewählten Tages, deterministisch (siehe
         // getPreviewDatesProperty) — Vorschau und Anlegen erzeugen so dieselbe Liste.
-        $endDate = \Carbon\Carbon::createFromFormat('Y-m-d', $this->endDate, $timezone)->endOfDay();
+        $endDate = Carbon::createFromFormat('Y-m-d', $this->endDate, $timezone)->endOfDay();
 
         $eventsCreated = 0;
 
@@ -446,11 +462,11 @@ class extends Component {
             'recurrence_day_position' => $this->recurrenceDayPosition ?: null,
             'recurrence_interval' => 1,
             'recurrence_end_date' => $endDate->copy()->setTimezone('UTC'),
-            'recurrence_group' => (string) \Illuminate\Support\Str::uuid(),
+            'recurrence_group' => (string) Str::uuid(),
         ];
 
         // Ein Nachlauf statt einer Neuberechnung je Termin, siehe MeetupEventObserver::batched().
-        \App\Observers\MeetupEventObserver::batched(function () use ($dates, $seriesFields, $allowedTags, &$eventsCreated): void {
+        MeetupEventObserver::batched(function () use ($dates, $seriesFields, $allowedTags, &$eventsCreated): void {
             foreach ($dates as $date) {
                 $utcDateTime = $date->copy()->setTimezone('UTC');
 
@@ -479,9 +495,9 @@ class extends Component {
     }
 
     /**
-     * @return array<int, \Carbon\Carbon>
+     * @return array<int, Carbon>
      */
-    private function generateEventDates(\Carbon\Carbon $startDate, \Carbon\Carbon $endDate): array
+    private function generateEventDates(Carbon $startDate, Carbon $endDate): array
     {
         return app(ExpandRecurrenceSeries::class)->handle(
             $startDate,
@@ -510,25 +526,15 @@ class extends Component {
 
     <form wire:submit="save" class="space-y-10">
 
-        <!-- Series Mode Toggle -->
-        @if(!$event)
-            <flux:field variant="inline">
-                <flux:label>{{ __('Serientermine erstellen') }}</flux:label>
-                <flux:switch wire:model.live="seriesMode" />
-                <flux:description>{{ __('Aktiviere diese Option, um mehrere Events mit regelmäßigen Abständen zu erstellen') }}</flux:description>
-                <flux:error name="seriesMode" />
-            </flux:field>
-        @endif
-
         <!-- Event Details -->
         <flux:fieldset class="space-y-6">
             <flux:legend>{{ __('Event Details') }}</flux:legend>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <flux:field>
-                    <flux:label>{{ $seriesMode ? __('Startdatum') : __('Datum') }} <span class="text-red-500">*</span></flux:label>
+                    <flux:label>{{ $seriesMode && !$event ? __('Startdatum') : __('Datum') }} <span class="text-red-500">*</span></flux:label>
                     <flux:date-picker :clearable="false" min="today" wire:model.live="startDate" required locale="{{ session('lang_country', 'de-DE') }}"/>
-                    <flux:description>{{ $seriesMode ? __('Datum des ersten Termins') : __('An welchem Tag findet das Event statt?') }}</flux:description>
+                    <flux:description>{{ $seriesMode && !$event ? __('Datum des ersten Termins') : __('An welchem Tag findet das Event statt?') }}</flux:description>
                     <flux:error name="startDate"/>
                 </flux:field>
 
@@ -540,7 +546,32 @@ class extends Component {
                 </flux:field>
             </div>
 
-            @if($seriesMode)
+            {{-- Recurrence is a creation-only setting: save() has always run
+                 createOrUpdateSingleEvent() for an existing event, so nothing below can
+                 change a series after it exists. In edit mode the switch and the series
+                 fields are therefore replaced by a note, and `recurrence_group` is what
+                 identifies a series — the 2026_08_25_194948 migration backfilled only
+                 that column, so pre-P5 series carry no `recurrence_type` at all. --}}
+            @if($event && $event->recurrence_group !== null)
+                <flux:callout icon="arrow-path" variant="secondary" data-testid="series-locked-note">
+                    <flux:callout.heading>{{ __('Dieses Event gehört zu einer Serie') }}</flux:callout.heading>
+                    <flux:callout.text>
+                        {{ __('Die Serieneinstellungen lassen sich nach dem Anlegen nicht mehr ändern. Was du hier speicherst, gilt nur für diesen einen Termin — die übrigen Termine der Serie bleiben unverändert.') }}
+                    </flux:callout.text>
+                </flux:callout>
+            @endif
+
+            <!-- Series Mode Toggle -->
+            @if(!$event)
+                <flux:field variant="inline">
+                    <flux:label>{{ __('Serientermine erstellen') }}</flux:label>
+                    <flux:switch wire:model.live="seriesMode" />
+                    <flux:description>{{ __('Aktiviere diese Option, um mehrere Events mit regelmäßigen Abständen zu erstellen') }}</flux:description>
+                    <flux:error name="seriesMode" />
+                </flux:field>
+            @endif
+
+            @if($seriesMode && !$event)
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <flux:field>
                         <flux:label>{{ __('Enddatum') }} <span class="text-red-500">*</span></flux:label>
@@ -654,7 +685,7 @@ class extends Component {
         </flux:fieldset>
 
         <!-- Series Preview -->
-        @if($seriesMode && count($this->previewDates) > 0)
+        @if($seriesMode && !$event && count($this->previewDates) > 0)
             <flux:card class="space-y-4">
                 <div class="flex items-center justify-between">
                     <flux:heading size="lg">{{ __('Vorschau der Termine') }}</flux:heading>
@@ -688,7 +719,7 @@ class extends Component {
         @endif
 
         <!-- Form Actions -->
-        <div class="flex items-center justify-between pt-8 border-t border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pt-8 border-t border-gray-200 dark:border-gray-700">
             <div class="flex items-center gap-4">
                 <flux:button variant="ghost" type="button"
                              :href="route_with_country('meetups.edit', ['meetup' => $meetup])">
@@ -718,7 +749,7 @@ class extends Component {
                     {{ __('Wird gespeichert…') }}
                 </span>
 
-                @if($seriesMode)
+                @if($seriesMode && !$event)
                     {{-- Disabled while save() is in flight: the confirm button below
                          sits after the form's closing tag, so Livewire's automatic
                          form-disabling (which only reaches elements inside the <form>)
@@ -740,29 +771,31 @@ class extends Component {
     </form>
 
     <!-- Confirmation Modal for Series -->
-    <flux:modal name="confirm-series" class="min-w-88">
-        <div class="space-y-6">
-            <div>
-                <flux:heading size="lg">{{ __('Serientermine erstellen?') }}</flux:heading>
+    @if($seriesMode && !$event)
+        <flux:modal name="confirm-series" class="min-w-88">
+            <div class="space-y-6">
+                <div>
+                    <flux:heading size="lg">{{ __('Serientermine erstellen?') }}</flux:heading>
 
-                <flux:text class="mt-2">
-                    {{ __('Du bist dabei, mehrere Events zu erstellen.') }}<br>
-                    {{ __('Falsch angelegte Termine müssen alle händisch wieder gelöscht werden.') }}<br><br>
-                    <strong>{{ __('Bist du sicher, dass die Einstellungen korrekt sind?') }}</strong>
-                </flux:text>
+                    <flux:text class="mt-2">
+                        {{ __('Du bist dabei, mehrere Events zu erstellen.') }}<br>
+                        {{ __('Falsch angelegte Termine müssen alle händisch wieder gelöscht werden.') }}<br><br>
+                        <strong>{{ __('Bist du sicher, dass die Einstellungen korrekt sind?') }}</strong>
+                    </flux:text>
+                </div>
+
+                <div class="flex gap-2">
+                    <flux:spacer />
+
+                    <flux:modal.close>
+                        <flux:button variant="ghost">{{ __('Abbrechen') }}</flux:button>
+                    </flux:modal.close>
+
+                    <flux:modal.close>
+                        <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="save" wire:click="save">{{ __('Jetzt erstellen') }}</flux:button>
+                    </flux:modal.close>
+                </div>
             </div>
-
-            <div class="flex gap-2">
-                <flux:spacer />
-
-                <flux:modal.close>
-                    <flux:button variant="ghost">{{ __('Abbrechen') }}</flux:button>
-                </flux:modal.close>
-
-                <flux:modal.close>
-                    <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="save" wire:click="save">{{ __('Jetzt erstellen') }}</flux:button>
-                </flux:modal.close>
-            </div>
-        </div>
-    </flux:modal>
+        </flux:modal>
+    @endif
 </div>
