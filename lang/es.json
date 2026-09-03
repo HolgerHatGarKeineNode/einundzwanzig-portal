@@ -875,5 +875,7 @@
     "Vorstand": "Board",
     "Meetup :name öffnen": "Open meetup :name",
     "Event am :date öffnen": "Open event on :date",
-    "Suche deine Sprache...": "Busca tu idioma..."
+    "Suche deine Sprache...": "Busca tu idioma...",
+    "Serie": "Serie",
+    "Dieser Termin gehört zu einer wiederkehrenden Serie.": "Este evento forma parte de una serie recurrente."
 }

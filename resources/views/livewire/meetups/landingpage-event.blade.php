@@ -197,6 +197,24 @@ class extends Component {
                     {{ $event->start->asDateTime() }}
                 </flux:heading>
 
+                {{-- Series marker (issue #43). `recurrence_group` is the only reliable
+                     series identity: the 2026_08_25_194948 migration backfilled that
+                     column alone, so events of pre-P5 series carry `recurrence_type = null`
+                     and would be missed by it.
+
+                     The note sits between the heading and the data list, pulled up by
+                     -mt-2 so it reads as a qualifier of the date rather than as a fourth
+                     data field beside Zeit/Ort/Beschreibung. It states the fact and
+                     nothing more: no series view exists and a series cannot be edited,
+                     so the wording promises neither. --}}
+                @if($event->recurrence_group !== null)
+                    <div class="-mt-2 mb-4 flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-400"
+                         data-testid="series-note">
+                        <flux:icon.arrow-path class="mt-0.5 size-4 shrink-0" aria-hidden="true"/>
+                        <span>{{ __('Dieser Termin gehört zu einer wiederkehrenden Serie.') }}</span>
+                    </div>
+                @endif
+
                 <div class="space-y-4">
                     <!-- Date and Time -->
                     <div class="flex items-center text-zinc-700 dark:text-zinc-300">

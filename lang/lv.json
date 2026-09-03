@@ -875,5 +875,7 @@
     "Vorstand": "Board",
     "Meetup :name öffnen": "Open meetup :name",
     "Event am :date öffnen": "Open event on :date",
-    "Suche deine Sprache...": "Meklēt valodu..."
+    "Suche deine Sprache...": "Meklēt valodu...",
+    "Serie": "Sērija",
+    "Dieser Termin gehört zu einer wiederkehrenden Serie.": "Šis pasākums ir daļa no atkārtojošās sērijas."
 }

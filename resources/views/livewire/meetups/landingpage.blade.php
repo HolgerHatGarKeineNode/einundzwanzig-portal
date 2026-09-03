@@ -272,6 +272,22 @@ class extends Component
                     <flux:card size="sm" class="h-full flex flex-col">
                         <flux:heading class="flex items-center gap-2">
                             {{ $event->start->asDate() }}
+                            {{-- Series marker (issue #43). `recurrence_group` is the only
+                                 reliable series identity: the 2026_08_25_194948 migration
+                                 backfilled that column alone, so events of pre-P5 series
+                                 carry `recurrence_type = null` and would be missed by it.
+
+                                 `inset="top bottom"` is Flux's own mechanism for an inline
+                                 badge: it cancels the badge's py-1 out of the layout box, so
+                                 a series card's heading stays exactly as tall as a
+                                 badge-free neighbour's and the grid row does not grow.
+                                 `shrink-0` keeps the badge from being squeezed by the date
+                                 beside it, since flux:badge is whitespace-nowrap. --}}
+                            @if($event->recurrence_group !== null)
+                                <flux:badge size="sm" color="zinc" icon="arrow-path"
+                                            inset="top bottom" class="shrink-0"
+                                            data-testid="series-badge">{{ __('Serie') }}</flux:badge>
+                            @endif
                         </flux:heading>
 
                         <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
