@@ -25,7 +25,8 @@ use Livewire\Component;
 new
 #[Layout('components.layouts.auth')]
 #[SeoDataAttribute(key: 'docs_websockets')]
-class extends Component {
+class extends Component
+{
     use SeoTrait;
 
     /**
@@ -607,8 +608,8 @@ class extends Component {
                 'body' => 'Within one connection events arrive in the order they were sent. Across a reconnect nothing is promised. `sequence` is strictly increasing and gap-free at the source, so a gap you can see is a gap you can fix — sort by it, deduplicate by it, and use it as the cursor.',
             ],
             [
-                'title' => 'No Pusher webhooks, and no HTTP webhooks either',
-                'body' => 'Reverb does not implement the Pusher webhook API (laravel/reverb#64 was closed without an implementation), and this portal does not POST to registered URLs with an HMAC and a retry schedule. If that is what you need, say so on the issue — the change log is the substrate a webhook fan-out would read, so it is buildable, it is just not built.',
+                'title' => 'No Pusher webhooks — but HTTP webhooks exist now',
+                'body' => 'Reverb does not implement the Pusher webhook API (laravel/reverb#64 was closed without an implementation), so nothing here notifies you about connections, subscriptions or channel occupancy. Outbound HTTP webhooks for resource changes are a different thing, and they are built: a signed POST to a URL you register, retried on a backoff schedule, carrying the same envelope this page describes. See /docs/webhooks. This gap is about Reverb\'s own connection lifecycle, not about resource changes.',
             ],
         ];
 
