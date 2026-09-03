@@ -34,6 +34,22 @@ it('is usable at 360px width with visible labels and 44px touch targets, in ligh
     $hasHorizontalOverflow = $page->script('document.documentElement.scrollWidth > document.documentElement.clientWidth + 1');
     expect($hasHorizontalOverflow)->toBeFalse();
 
+    // Issue febad80c: the "Nur Meetup Events des gewählten Landes kopieren" button's
+    // text forced Flux's default `whitespace-nowrap` single-line width past the
+    // popover's edge. A floating popover panel sits outside normal document flow, so
+    // that overflow never grew document.documentElement.scrollWidth above — the check
+    // needs to compare each button's own bounding box against its panel's.
+    $copyButtonOverflowsPanel = $page->script(<<<'JS'
+        (() => {
+            const panel = document.querySelector('[data-testid^="calendar-stream-"][data-testid$="-panel"]');
+            const panelRight = panel.getBoundingClientRect().right;
+            return Array.from(panel.querySelectorAll(
+                '[data-testid$="-copy-all"], [data-testid$="-copy-scoped"]'
+            )).some((el) => el.getBoundingClientRect().right > panelRight + 1);
+        })()
+    JS);
+    expect($copyButtonOverflowsPanel)->toBeFalse();
+
     $touchTargetHeights = $page->script(<<<'JS'
         Array.from(document.querySelectorAll(
             '[data-testid^="calendar-stream-"][data-testid$="-country"],'

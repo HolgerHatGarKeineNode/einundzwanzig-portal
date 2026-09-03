@@ -100,16 +100,30 @@
         <div class="flex flex-col gap-2 pt-1">
             {{-- Owner-Vorgabe (Issue-Kommentar): zwei Buttons statt einem — der
                  Country-Select filtert wahlweise den Inhalt mit, statt nur Sprache
-                 und Zeitzone zu setzen. --}}
+                 und Zeitzone zu setzen.
+
+                 Flux' Standardklassen fuer flux:button setzen `whitespace-nowrap`
+                 und eine feste `h-10` (button/index.blade.php:65,73) — bei jeder
+                 Uebersetzung, die laenger ist als die Popover-Breite, schiebt das
+                 den Button ueber den Rand statt umzubrechen. `w-full` plus die
+                 `!`-Overrides (bereits Konvention im Projekt, siehe
+                 layouts/app/header.blade.php:29) lassen den Text stattdessen auf
+                 zwei Zeilen umbrechen; `min-h-11`/`!h-auto` halten dabei sowohl
+                 das 44px-Touch-Target (einzeilig) als auch die noetige Hoehe fuer
+                 zwei Zeilen ein. `align="start"` haelt beide Buttons buendig am
+                 linken Rand, damit eine Liste mit unterschiedlich langen Labels
+                 nicht in der Mitte ausfranst. --}}
             <flux:button
-                class="cursor-pointer min-h-11"
+                align="start"
+                class="cursor-pointer min-h-11 !h-auto w-full !whitespace-normal py-2"
                 x-copy-to-clipboard="buildUrl(false)"
                 data-testid="{{ $testIdPrefix }}-copy-all"
             >
                 {{ __('Alle Meetup Events kopieren') }}
             </flux:button>
             <flux:button
-                class="cursor-pointer min-h-11"
+                align="start"
+                class="cursor-pointer min-h-11 !h-auto w-full !whitespace-normal py-2"
                 x-copy-to-clipboard="buildUrl(true)"
                 data-testid="{{ $testIdPrefix }}-copy-scoped"
             >
