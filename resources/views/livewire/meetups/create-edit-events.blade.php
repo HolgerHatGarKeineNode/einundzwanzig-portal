@@ -561,6 +561,27 @@ class extends Component
                 </flux:callout>
             @endif
 
+            {{-- The exact complement of the callout above, so no edit view is ever silent
+                 about recurrence: a series occurrence gets the callout, a standalone event
+                 gets this line, and create mode gets the switch instead of either. Before
+                 this, editing a standalone event just showed no switch at all, which is
+                 what issue #43 reported as "unclear whether recurrence is intentionally
+                 creation-only".
+
+                 It ranks below the callout on purpose, and structurally rather than by
+                 size: no border, no background, no heading, muted text. This is a passive
+                 fact on a form the user came to for something else, not a warning. It sits
+                 in the slot the switch occupies in create mode, so the empty spot explains
+                 itself, and it takes its 24px rhythm from the fieldset's space-y-6 instead
+                 of carrying a margin of its own. --}}
+            @if($event && $event->recurrence_group === null)
+                <div class="flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-400"
+                     data-testid="recurrence-creation-only-note">
+                    <flux:icon.arrow-path class="mt-0.5 size-4 shrink-0" aria-hidden="true"/>
+                    <span>{{ __('Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.') }}</span>
+                </div>
+            @endif
+
             <!-- Series Mode Toggle -->
             @if(!$event)
                 <flux:field variant="inline">

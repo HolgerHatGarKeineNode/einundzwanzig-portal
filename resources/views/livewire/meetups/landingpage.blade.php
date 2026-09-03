@@ -272,6 +272,22 @@ class extends Component
                     <flux:card size="sm" class="h-full flex flex-col">
                         <flux:heading class="flex items-center gap-2">
                             {{ $event->start->asDate() }}
+                            {{-- Series marker (issue #43). `recurrence_group` is the only
+                                 reliable series identity: the 2026_08_25_194948 migration
+                                 backfilled that column alone, so events of pre-P5 series
+                                 carry `recurrence_type = null` and would be missed by it.
+
+                                 `inset="top bottom"` is Flux's own mechanism for an inline
+                                 badge: it cancels the badge's py-1 out of the layout box, so
+                                 a series card's heading stays exactly as tall as a
+                                 badge-free neighbour's and the grid row does not grow.
+                                 `shrink-0` keeps the badge from being squeezed by the date
+                                 beside it, since flux:badge is whitespace-nowrap. --}}
+                            @if($event->recurrence_group !== null)
+                                <flux:badge size="sm" color="zinc" icon="arrow-path"
+                                            inset="top bottom" class="shrink-0"
+                                            data-testid="series-badge">{{ __('Serie') }}</flux:badge>
+                            @endif
                         </flux:heading>
 
                         <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
@@ -304,12 +320,22 @@ class extends Component
                             </flux:text>
                         @endif
 
-                        <div class="mt-auto pt-4 flex gap-2">
+                        {{-- `flex-wrap` alone would not have fixed the leader row: with
+                             `flex-1` the primary button has flex-basis 0, so it counts as
+                             zero when the browser decides where to break the line, all
+                             three buttons stay on one line, and `min-width: auto` then
+                             floors them back to 312px of content in a 254px box —
+                             "Entfernen" spilling into the neighbouring card. `basis-full`
+                             gives the primary a real basis so it claims the first line and
+                             the two leader actions wrap below it. The visitor view is
+                             unchanged: with a single child, basis-full renders exactly as
+                             flex-1 did. `gap-2` already supplies the 8px row gap. --}}
+                        <div class="mt-auto pt-4 flex flex-wrap gap-2">
                             <flux:button
                                 :href="route('meetups.landingpage-event', ['meetup' => $meetup->slug, 'event' => $event->id, 'country' => $country])"
                                 size="xs"
                                 variant="primary"
-                                class="flex-1"
+                                class="basis-full"
                             >
                                 {{ __('Öffnen/RSVP') }}
                             </flux:button>
