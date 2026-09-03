@@ -9,7 +9,8 @@ use Livewire\Component;
 
 new
 #[SeoDataAttribute(key: 'meetups_landingpage')]
-class extends Component {
+class extends Component
+{
     use SeoTrait;
 
     public Meetup $meetup;
@@ -67,6 +68,22 @@ class extends Component {
                         {{ $meetup->city->name }}, {{ $meetup->city->country->name }}
                     </flux:subheading>
                     <x-calendar-stream-picker :meetup-id="$meetup->id"/>
+                    @if(auth()->check())
+                        {{-- Identical condition to the list view's edit action
+                             (index.blade.php, "Bearbeiten"): the update ability —
+                             leader, creator, super-admin, meetup steward. Without
+                             this, editing a meetup was reachable only by going back
+                             to the list view. --}}
+                        @if($meetup->leadByMe || auth()->user()->can('update', $meetup))
+                            <div>
+                                <flux:button
+                                    :href="route_with_country('meetups.edit', ['meetup' => $meetup])"
+                                    size="sm" variant="filled" icon="pencil">
+                                    {{ __('Meetup bearbeiten') }}
+                                </flux:button>
+                            </div>
+                        @endif
+                    @endif
                 </div>
             </div>
 
@@ -160,9 +177,18 @@ class extends Component {
         <!-- Right Column: Map -->
         <div>
             <style>
+                /* Bounded instead of 70vh/500px: the map is the right column of the
+                   lg:grid-cols-2 grid above, and the event list only starts after
+                   BOTH columns, so a viewport-proportional map pushed
+                   "Kommende Veranstaltungen" out of the first viewport on a
+                   1080px-high desktop and put 500px of map in front of it on
+                   mobile (the map column comes first in the DOM there).
+                   min-height repeats the clamp floor on purpose: where clamp() is
+                   unsupported the whole height declaration is dropped, and 240px
+                   is then the only remaining size. */
                 #meetup-map {
-                    height: 70vh;
-                    min-height: 500px;
+                    height: clamp(240px, 34vh, 420px);
+                    min-height: 240px;
                     z-index: 0 !important;
                 }
 

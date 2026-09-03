@@ -9,12 +9,15 @@ use Livewire\WithPagination;
 
 new
 #[SeoDataAttribute(key: 'meetups_index')]
-class extends Component {
-    use WithPagination;
+class extends Component
+{
     use SeoTrait;
+    use WithPagination;
 
     public $country = 'de';
+
     public $search = '';
+
     public string $currentRouteName = '';
 
     /**
@@ -39,7 +42,7 @@ class extends Component {
         return [
             'meetups' => Meetup::with(['city.country', 'city.region', 'createdBy'])
                 ->withExists([
-                    'meetupEvents as has_future_events' => fn($query) => $query->where('start', '>=', now()),
+                    'meetupEvents as has_future_events' => fn ($query) => $query->where('start', '>=', now()),
                 ])
                 ->leftJoin('meetup_events', function ($join) {
                     $join
@@ -48,14 +51,11 @@ class extends Component {
                 })
                 ->selectRaw('meetups.*, MIN(meetup_events.start) as next_event_start')
                 ->groupBy('meetups.id')
-                ->when(in_array($this->currentRouteName, ['meetups.index', 'meetups.index-region'], true), fn($query) =>
-                    $query->whereHas('city.country', fn($query) => $query->where('countries.code', $this->country))
+                ->when(in_array($this->currentRouteName, ['meetups.index', 'meetups.index-region'], true), fn ($query) => $query->whereHas('city.country', fn ($query) => $query->where('countries.code', $this->country))
                 )
-                ->when($this->regionId, fn($query) =>
-                    $query->whereHas('city', fn($query) => $query->where('cities.region_id', $this->regionId))
+                ->when($this->regionId, fn ($query) => $query->whereHas('city', fn ($query) => $query->where('cities.region_id', $this->regionId))
                 )
-                ->when($this->search, fn($query)
-                    => $query->whereLike('meetups.name', '%'.$this->search.'%'),
+                ->when($this->search, fn ($query) => $query->whereLike('meetups.name', '%'.$this->search.'%'),
                 )
                 ->orderByDesc('has_future_events')
                 ->orderByRaw('next_event_start ASC NULLS LAST')
@@ -108,24 +108,36 @@ class extends Component {
                             src="{{ $meetup->getFirstMedia('logo') ? $meetup->getFirstMediaUrl('logo', 'thumb') : asset('android-chrome-512x512.png') }}"/>
                         <div>
                             @if($meetup->city)
-                                <a href="{{ route('meetups.landingpage', ['meetup' => $meetup, 'country' => $country]) }}">
-                                    <span>{{ $meetup->name }}</span>
-                                    {{-- zinc-600/300 statt zinc-500: letzteres misst auf dem
-                                         dunklen Body 3,19:1 und reisst damit WCAG 1.4.3.
-                                         Der Fehler ist Bestand, sitzt aber genau da, wo
-                                         jetzt Text dazukommt. --}}
-                                    <div class="text-xs text-zinc-600 dark:text-zinc-300 flex items-center space-x-2">
-                                        <div>{{ $meetup->city->name }}</div>
-                                        @if($meetup->city->country)
-                                            <flux:separator vertical/>
-                                            <div>{{ $meetup->city->country->name }}</div>
-                                        @endif
-                                        @if($meetup->city->region)
-                                            <flux:separator vertical/>
-                                            <div>{{ $meetup->city->region->name }}</div>
-                                        @endif
-                                    </div>
-                                </a>
+                                {{-- The NAME is the link, the location line is not.
+                                     A bare <a> around both was indistinguishable
+                                     from plain text (no underline, no accent colour)
+                                     while the event cell two columns over renders a
+                                     coloured badge — so the badge read as the only
+                                     link in the row and admins opened the event when
+                                     they wanted the meetup. It also swallowed
+                                     "City | Country | Region" into the link's own
+                                     accessible name; the aria-label now names the
+                                     meetup and says what opening it does. --}}
+                                <flux:link
+                                    :href="route('meetups.landingpage', ['meetup' => $meetup, 'country' => $country])"
+                                    :aria-label="__('Meetup :name öffnen', ['name' => $meetup->name])">
+                                    {{ $meetup->name }}
+                                </flux:link>
+                                {{-- zinc-600/300 statt zinc-500: letzteres misst auf dem
+                                     dunklen Body 3,19:1 und reisst damit WCAG 1.4.3.
+                                     Der Fehler ist Bestand, sitzt aber genau da, wo
+                                     jetzt Text dazukommt. --}}
+                                <div class="text-xs text-zinc-600 dark:text-zinc-300 flex items-center space-x-2">
+                                    <div>{{ $meetup->city->name }}</div>
+                                    @if($meetup->city->country)
+                                        <flux:separator vertical/>
+                                        <div>{{ $meetup->city->country->name }}</div>
+                                    @endif
+                                    @if($meetup->city->region)
+                                        <flux:separator vertical/>
+                                        <div>{{ $meetup->city->region->name }}</div>
+                                    @endif
+                                </div>
                             @endif
                         </div>
                     </flux:table.cell>
@@ -149,9 +161,15 @@ class extends Component {
 
                     <flux:table.cell>
                         @if($meetup->nextEvent && $meetup->nextEvent['start']->isFuture())
-                            <a href="{{ route('meetups.landingpage-event', ['meetup' => $meetup, 'event' => $meetup->nextEvent['id'], 'country' => $country]) }}">
+                            {{-- The calendar icon and the aria-label are what keep this
+                                 apart from the meetup link in the name column: the
+                                 badge's whole accessible name used to be a bare date
+                                 like "08.09.2026 19:00 (CEST)", which announces a
+                                 status, not a destination. --}}
+                            <a href="{{ route('meetups.landingpage-event', ['meetup' => $meetup, 'event' => $meetup->nextEvent['id'], 'country' => $country]) }}"
+                               aria-label="{{ __('Event am :date öffnen', ['date' => $meetup->nextEvent['start']->asDateTime()]) }}">
                                 <div class="flex flex-col gap-1">
-                                    <flux:badge color="green" size="sm">
+                                    <flux:badge color="green" size="sm" icon="calendar-days">
                                         {{ $meetup->nextEvent['start']->asDateTime() }}
                                     </flux:badge>
                                     <div class="text-xs text-zinc-500 flex items-center gap-2">
