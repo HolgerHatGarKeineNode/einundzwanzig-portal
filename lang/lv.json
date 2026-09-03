@@ -866,8 +866,8 @@
     "Kalender abonnieren": "Subscribe to calendar",
     "Kalenderlink kopieren (alle Länder)": "Copy calendar link (all countries)",
     "Kalenderlink kopieren (nur :country)": "Copy calendar link (:country only)",
-    "Dieses Event gehört zu einer Serie": "This event is part of a series",
-    "Die Serieneinstellungen lassen sich nach dem Anlegen nicht mehr ändern. Was du hier speicherst, gilt nur für diesen einen Termin — die übrigen Termine der Serie bleiben unverändert.": "Series settings can no longer be changed after creation. What you save here applies only to this one event — the other events in the series remain unchanged.",
+    "Dieses Event gehört zu einer Serie": "Šis pasākums ir daļa no sērijas",
+    "Die Serieneinstellungen lassen sich nach dem Anlegen nicht mehr ändern. Was du hier speicherst, gilt nur für diesen einen Termin — die übrigen Termine der Serie bleiben unverändert.": "Sērijas iestatījumus pēc izveides vairs nevar mainīt. Tas, ko šeit saglabā, attiecas tikai uz šo vienu pasākumu — pārējie sērijas pasākumi paliek nemainīgi.",
     "Webhook-Subscription abgelehnt.": "Webhook subscription rejected.",
     "Diese Anfrage ablehnen? Die Ablehnung lässt sich hier nicht wieder aufheben.": "Reject this request? The rejection cannot be undone here.",
     "Meetup": "Meetups",
@@ -877,5 +877,6 @@
     "Event am :date öffnen": "Open event on :date",
     "Suche deine Sprache...": "Meklēt valodu...",
     "Serie": "Sērija",
-    "Dieser Termin gehört zu einer wiederkehrenden Serie.": "Šis pasākums ir daļa no atkārtojošās sērijas."
+    "Dieser Termin gehört zu einer wiederkehrenden Serie.": "Šis pasākums ir daļa no atkārtojošās sērijas.",
+    "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "Atkārtošanos iestati, veidojot pasākumu, vēlāk vairs ne."
 }

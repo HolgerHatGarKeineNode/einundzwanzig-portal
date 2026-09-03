@@ -320,12 +320,22 @@ class extends Component
                             </flux:text>
                         @endif
 
-                        <div class="mt-auto pt-4 flex gap-2">
+                        {{-- `flex-wrap` alone would not have fixed the leader row: with
+                             `flex-1` the primary button has flex-basis 0, so it counts as
+                             zero when the browser decides where to break the line, all
+                             three buttons stay on one line, and `min-width: auto` then
+                             floors them back to 312px of content in a 254px box —
+                             "Entfernen" spilling into the neighbouring card. `basis-full`
+                             gives the primary a real basis so it claims the first line and
+                             the two leader actions wrap below it. The visitor view is
+                             unchanged: with a single child, basis-full renders exactly as
+                             flex-1 did. `gap-2` already supplies the 8px row gap. --}}
+                        <div class="mt-auto pt-4 flex flex-wrap gap-2">
                             <flux:button
                                 :href="route('meetups.landingpage-event', ['meetup' => $meetup->slug, 'event' => $event->id, 'country' => $country])"
                                 size="xs"
                                 variant="primary"
-                                class="flex-1"
+                                class="basis-full"
                             >
                                 {{ __('Öffnen/RSVP') }}
                             </flux:button>

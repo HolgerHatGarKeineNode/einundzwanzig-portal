@@ -118,6 +118,110 @@ it('shows no series note when editing a standalone event', function () {
         ->assertDontSeeHtml('data-testid="series-locked-note"');
 });
 
+/*
+ * The two edit-mode recurrence notes are COMPLEMENTS (#43).
+ *
+ * "It is unclear whether recurrence is intentionally creation-only" is the complaint the
+ * issue actually raises, and silence is what caused it: before the series callout, an
+ * edit form that simply omitted the series controls left the editor guessing whether the
+ * setting was missing, hidden or broken. Answering only half of it — telling occurrences
+ * of a series why they cannot change it, while a standalone event still says nothing —
+ * would leave exactly that gap open for every event that is NOT part of a series.
+ *
+ * So edit mode owes an answer in BOTH shapes:
+ *   `data-testid="series-locked-note"`             gated `$event && $event->recurrence_group !== null`
+ *   `data-testid="recurrence-creation-only-note"`  gated `$event && $event->recurrence_group === null`
+ *
+ * One condition, negated. Exactly one of the two must therefore render for any stored
+ * event — never both (contradictory advice), never neither (the silence that started
+ * this). The counting assertion below is what makes "neither" fail; a pair of
+ * assertDontSeeHtml() calls would pass happily on an edit form that says nothing at all.
+ */
+
+it('tells the editor that recurrence cannot be added afterwards when editing a standalone event', function () {
+    $meetup = meetupWithActingUserAsLeader();
+
+    $event = MeetupEvent::factory()->for($meetup)->create([
+        'recurrence_type' => null,
+        'recurrence_end_date' => null,
+        'recurrence_group' => null,
+    ]);
+
+    Livewire::test('meetups.create-edit-events', ['meetup' => $meetup, 'event' => $event])
+        ->assertSeeHtml('data-testid="recurrence-creation-only-note"')
+        ->assertDontSeeHtml('data-testid="series-locked-note"');
+});
+
+it('shows the series callout and not the creation-only note when editing a series occurrence', function () {
+    $meetup = meetupWithActingUserAsLeader();
+
+    $event = MeetupEvent::factory()->for($meetup)->create([
+        'recurrence_type' => RecurrenceType::Weekly->value,
+        'recurrence_end_date' => now()->addYear(),
+        'recurrence_group' => (string) Str::uuid(),
+    ]);
+
+    Livewire::test('meetups.create-edit-events', ['meetup' => $meetup, 'event' => $event])
+        ->assertSeeHtml('data-testid="series-locked-note"')
+        ->assertDontSeeHtml('data-testid="recurrence-creation-only-note"');
+});
+
+it('shows neither recurrence note when creating an event', function () {
+    $meetup = meetupWithActingUserAsLeader();
+
+    // Both notes speak about a setting that is already decided. While it is still open —
+    // the switch and the series fields are right there — neither has anything to say.
+    Livewire::test('meetups.create-edit-events', ['meetup' => $meetup])
+        ->assertDontSeeHtml('data-testid="series-locked-note"')
+        ->assertDontSeeHtml('data-testid="recurrence-creation-only-note"');
+});
+
+/**
+ * The complement itself, over the four shapes an edit form can be opened on.
+ *
+ * The two shapes in the middle are the ones that separate `recurrence_group` from
+ * `recurrence_type`, and they are why the count is asserted per shape rather than once:
+ *
+ *  - "pre-backfill series" carries a group and NO rule — the state
+ *    2026_08_25_194948_group_existing_meetup_event_series left behind on every series
+ *    that existed before P5. A gate keyed off `recurrence_type` would hand it the
+ *    creation-only note and tell the editor of a real series that it is not one; the
+ *    `$notes[$expected]` assertion falls with "Failed asserting that 0 is identical to 1".
+ *  - "rule without a group" is the mirror image, writable through
+ *    `POST/PATCH /api/meetup-events` since forever (see the third branch of
+ *    Meetup::recalculateActivity()). It is a single event: a gate on `recurrence_type`
+ *    would show it the series callout, and the same assertion falls on the other note.
+ *
+ * The `array_sum(...)` assertion is independent of both: it fails whenever an edit view
+ * stops answering the recurrence question at all, whichever column someone gates on.
+ */
+it('renders exactly one of the two recurrence notes in edit mode', function (?RecurrenceType $rule, bool $belongsToSeries, string $expectedNote) {
+    $meetup = meetupWithActingUserAsLeader();
+
+    $event = MeetupEvent::factory()->for($meetup)->create([
+        'recurrence_type' => $rule?->value,
+        'recurrence_end_date' => $rule !== null ? now()->addYear() : null,
+        'recurrence_group' => $belongsToSeries ? (string) Str::uuid() : null,
+    ]);
+
+    $html = Livewire::test('meetups.create-edit-events', ['meetup' => $meetup, 'event' => $event])->html();
+
+    $notes = [
+        'series-locked-note' => substr_count($html, 'data-testid="series-locked-note"'),
+        'recurrence-creation-only-note' => substr_count($html, 'data-testid="recurrence-creation-only-note"'),
+    ];
+
+    // Exactly one note, and it is the right one — together these also rule out a form
+    // that renders both, which would give contradictory advice about the same event.
+    expect(array_sum($notes))->toBe(1)
+        ->and($notes[$expectedNote])->toBe(1);
+})->with([
+    'standalone — neither rule nor group' => [null, false, 'recurrence-creation-only-note'],
+    'rule without a group — single event written through the REST path' => [RecurrenceType::Weekly, false, 'recurrence-creation-only-note'],
+    'series occurrence — rule and group' => [RecurrenceType::Weekly, true, 'series-locked-note'],
+    'pre-backfill series — group, no rule' => [null, true, 'series-locked-note'],
+]);
+
 it('still offers the switch, the series fields and the series button when creating', function () {
     $meetup = meetupWithActingUserAsLeader();
 

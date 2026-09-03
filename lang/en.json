@@ -877,5 +877,6 @@
     "Event am :date öffnen": "Open event on :date",
     "Suche deine Sprache...": "Search your language...",
     "Serie": "Series",
-    "Dieser Termin gehört zu einer wiederkehrenden Serie.": "This event is part of a recurring series."
+    "Dieser Termin gehört zu einer wiederkehrenden Serie.": "This event is part of a recurring series.",
+    "Serientermine bestimmst du beim Erstellen. Später geht das nicht mehr.": "You set recurring dates when you create the event, not afterwards."
 }
