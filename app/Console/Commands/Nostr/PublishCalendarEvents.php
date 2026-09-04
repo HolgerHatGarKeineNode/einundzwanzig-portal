@@ -40,18 +40,43 @@ class PublishCalendarEvents extends Command
 
         $modelName = $this->option('model');
 
+        /*
+         * The two orderings are deliberately DIFFERENT, because only one of the two
+         * queries has a deadline.
+         *
+         * MeetupEvent — `orderBy('start')`, and this one is correctness, not tuning.
+         * The query is gated on `start > now()`, so an event that does not reach the
+         * front of the queue before it begins is never published AT ALL; it silently
+         * leaves the result set. Because this command handles one record per run
+         * (below), the ordering decides which record that is. Until 2026-09-04 it was
+         * `created_at DESC`, i.e. newest-created first — an order uncorrelated with
+         * the deadline, which put a long-planned event starting tomorrow BEHIND one
+         * created this morning for next month. Deadline order makes the loss condition
+         * computable instead of arbitrary: an event is only at risk if more events
+         * start before it than the schedule can drain within its lead time (at the
+         * five-minute cadence in routes/console.php, 288 per day).
+         *
+         * Meetup — `orderBy('created_at')`, ascending. A calendar has no `start` and
+         * this query has no time gate, so no ordering here can lose a record; the
+         * choice is about starvation, not loss. `created_at DESC` has no bounded
+         * worst-case wait: every newly created meetup that opts in inserts itself
+         * AHEAD of an older one still waiting, so a long-standing meetup's position
+         * can get worse forever. Ascending is a plain FIFO — a record's position only
+         * ever improves. Not ascending for symmetry with the query above: the field
+         * differs because the reason differs, and `start` would be meaningless here.
+         */
         $query = match ($modelName) {
             'Meetup' => Meetup::query()
                 ->with('city.country')
                 ->whereNull('nostr_coordinate')
                 ->where('nostr_publishing_enabled', true)
-                ->orderByDesc('created_at'),
+                ->orderBy('created_at'),
             'MeetupEvent' => MeetupEvent::query()
                 ->with('meetup.city.country')
                 ->whereNull('nostr_coordinate')
                 ->where('start', '>', now())
                 ->whereHas('meetup', fn ($meetup) => $meetup->where('nostr_publishing_enabled', true))
-                ->orderByDesc('created_at'),
+                ->orderBy('start'),
             default => null,
         };
 

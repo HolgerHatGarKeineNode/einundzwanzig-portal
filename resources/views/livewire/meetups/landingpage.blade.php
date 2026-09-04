@@ -365,6 +365,15 @@ class extends Component
                                   class="cursor-pointer block p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs break-all">{{ $meetup->nostr }}</code>
                         </div>
                     @endif
+
+                    {{-- Issue #49: die NIP-52-Adresse des Gruppenkalenders (kind 31924)
+                         gehört genau hierher, in „Kontakt & Links" — das ist die Stelle,
+                         an der der Melder sie gesucht hat. Direkt unter dem npub des
+                         Meetups, weil beide dasselbe beantworten („wo finde ich euch auf
+                         Nostr"), aber Verschiedenes sind: oben die Identität, hier der
+                         Kalender. --}}
+                    <x-nostr-calendar-address :record="$meetup"
+                                              :publishing-enabled="(bool) $meetup->nostr_publishing_enabled"/>
                 </div>
 
                 @if($meetup->community)
