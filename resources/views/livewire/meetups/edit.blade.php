@@ -583,11 +583,24 @@ class extends Component
         <flux:fieldset class="space-y-6">
             <flux:legend>{{ __('Nostr-Veröffentlichung') }}</flux:legend>
 
-            <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
+            <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700 space-y-4">
                 <flux:switch
                     wire:model="nostr_publishing_enabled"
                     :label="__('Meetup und Termine auf Nostr veröffentlichen')"
-                    :description="__('Aus: Es werden keine Nostr-Kalender-Events für dieses Meetup gesendet. An: Meetup und kommende Termine werden automatisch als NIP-52-Kalender-Events an die konfigurierten Relays veröffentlicht — öffentlich und für jeden Nostr-Client sichtbar.')"/>
+                    :description="__('Aus: Es werden keine Nostr-Kalender-Events für dieses Meetup gesendet. An: Meetup und kommende Termine werden nach und nach als NIP-52-Kalender-Events an die konfigurierten Relays veröffentlicht — meist innerhalb weniger Minuten, öffentlich und für jeden Nostr-Client sichtbar.')"/>
+
+                {{-- Issue #49: Der Melder hat den Schalter eingeschaltet und danach auf
+                     fünf Relays vergeblich gesucht. Genau hier, unter dem Schalter, muss
+                     deshalb stehen, ob etwas gesendet wurde und wohin — sonst ist
+                     „nichts gefunden" nicht von „nichts gesendet" zu unterscheiden.
+
+                     Die Beschreibung oben sagt, was passieren SOLL; der Block hier sagt,
+                     was passiert IST. Die beiden bewusst getrennt: eine Absichtserklärung
+                     im Schalter-Text darf nie als Statusmeldung gelesen werden. --}}
+                <div class="grid grid-cols-1">
+                    <x-nostr-calendar-address :record="$meetup"
+                                              :publishing-enabled="(bool) $nostr_publishing_enabled"/>
+                </div>
             </div>
         </flux:fieldset>
 

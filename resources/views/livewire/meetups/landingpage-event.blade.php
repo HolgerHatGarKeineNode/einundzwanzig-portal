@@ -259,6 +259,15 @@ class extends Component {
                         </div>
                     @endif
 
+                    {{-- Issue #49: die NIP-52-Adresse des Termins (kind 31923) im
+                         Link-Bereich, wie im Report gefordert. Der Schalter kommt vom
+                         Meetup — ein Termin hat keinen eigenen (Migration
+                         2026_08_29_170904). --}}
+                    <div class="pt-4 grid grid-cols-1">
+                        <x-nostr-calendar-address :record="$event"
+                                                  :publishing-enabled="(bool) $event->meetup->nostr_publishing_enabled"/>
+                    </div>
+
                     <!-- RSVP Section -->
                     @if($rsvpEnabled)
                     <div class="pt-4 border-t border-zinc-200 dark:border-zinc-700">
