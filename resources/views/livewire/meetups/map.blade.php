@@ -5,15 +5,20 @@ use App\Models\Meetup;
 use App\Models\Region;
 use App\Traits\SeoTrait;
 use Livewire\Component;
+use Lwwcas\LaravelCountries\Models\Country;
 
 new
 #[SeoDataAttribute(key: 'meetups_map')]
-class extends Component {
+class extends Component
+{
     use SeoTrait;
 
     public string $country = 'de';
+
     public float $latitude = 0.0;
+
     public float $longitude = 0.0;
+
     public string $currentRouteName = '';
 
     /**
@@ -26,7 +31,7 @@ class extends Component {
         $this->currentRouteName = request()->route()->getName();
         $this->country = request()->route('country', config('app.domain_country'));
         $this->regionId = Region::fromRouteOrFail($this->country)?->id;
-        $geoCountry = \Lwwcas\LaravelCountries\Models\Country::query()
+        $geoCountry = Country::query()
             ->where('iso_alpha_2', str($this->country)->upper())
             ->first()
             ?->coordinates()
@@ -63,20 +68,19 @@ class extends Component {
                 ->with(['city:id,country_id,longitude,latitude', 'city.country'])
                 ->when(
                     in_array($this->currentRouteName, ['meetups.map', 'meetups.map-region'], true),
-                    fn($query)
-                        => $query
-                        ->whereHas('city.country', fn($query) => $query->where('code', $this->country))
+                    fn ($query) => $query
+                        ->whereHas('city.country', fn ($query) => $query->matchingCode($this->country))
                 )
                 ->when(
                     $this->regionId,
-                    fn($query) => $query->whereHas('city', fn($query) => $query->where('cities.region_id', $this->regionId))
+                    fn ($query) => $query->whereHas('city', fn ($query) => $query->where('cities.region_id', $this->regionId))
                 )
                 ->get()
                 ->map(function ($meetup) {
-                    $meetup->load(['meetupEvents' => function($query) {
+                    $meetup->load(['meetupEvents' => function ($query) {
                         $query->where('start', '>=', now())
-                              ->orderBy('start')
-                              ->limit(1);
+                            ->orderBy('start')
+                            ->limit(1);
                     }]);
 
                     $nextEvent = $meetup->meetupEvents->first();
@@ -86,7 +90,7 @@ class extends Component {
                         $eventUrl = route('meetups.landingpage-event', [
                             'country' => $meetup->city->country,
                             'meetup' => $meetup->slug,
-                            'event' => $nextEvent->id
+                            'event' => $nextEvent->id,
                         ]);
                     }
 
@@ -100,9 +104,9 @@ class extends Component {
                             'meetup' => $meetup,
                             'url' => route('meetups.landingpage', [
                                 'country' => $meetup->city->country,
-                                'meetup' => $meetup->slug
+                                'meetup' => $meetup->slug,
                             ]),
-                            'eventUrl' => $eventUrl
+                            'eventUrl' => $eventUrl,
                         ])->render(),
                     ];
                 }),

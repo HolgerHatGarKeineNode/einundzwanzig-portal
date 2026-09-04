@@ -8,11 +8,13 @@ use Livewire\WithPagination;
 
 new
 #[SeoDataAttribute(key: 'lecturers_index')]
-class extends Component {
-    use WithPagination;
+class extends Component
+{
     use SeoTrait;
+    use WithPagination;
 
     public $country = 'de';
+
     public $search = '';
 
     public function mount(): void
@@ -26,20 +28,19 @@ class extends Component {
             'lecturers' => Lecturer::query()
                 ->with([
                     'createdBy',
-                    'coursesEvents' => fn($query) => $query->where('from', '>=', now())->orderBy('from', 'asc'),
+                    'coursesEvents' => fn ($query) => $query->where('from', '>=', now())->orderBy('from', 'asc'),
                     'coursesEvents.course',
                 ])
                 ->withExists([
-                    'coursesEvents as has_future_events' => fn($query) => $query->where('from', '>=', now()),
+                    'coursesEvents as has_future_events' => fn ($query) => $query->where('from', '>=', now()),
                 ])
                 ->withCount([
-                    'coursesEvents as future_events_count' => fn($query) => $query->where('from', '>=', now()),
+                    'coursesEvents as future_events_count' => fn ($query) => $query->where('from', '>=', now()),
                 ])
                 ->whereHas('coursesEvents')
                 ->whereHas('coursesEvents.city.country',
-                    fn($query) => $query->where('countries.code', $this->country))
-                ->when($this->search, fn($query)
-                    => $query
+                    fn ($query) => $query->matchingCode($this->country))
+                ->when($this->search, fn ($query) => $query
                     ->whereLike('name', '%'.$this->search.'%')
                     ->orWhereLike('description', '%'.$this->search.'%')
                     ->orWhereLike('subtitle', '%'.$this->search.'%'),

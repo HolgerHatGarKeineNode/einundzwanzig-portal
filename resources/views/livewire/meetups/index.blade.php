@@ -51,7 +51,7 @@ class extends Component
                 })
                 ->selectRaw('meetups.*, MIN(meetup_events.start) as next_event_start')
                 ->groupBy('meetups.id')
-                ->when(in_array($this->currentRouteName, ['meetups.index', 'meetups.index-region'], true), fn ($query) => $query->whereHas('city.country', fn ($query) => $query->where('countries.code', $this->country))
+                ->when(in_array($this->currentRouteName, ['meetups.index', 'meetups.index-region'], true), fn ($query) => $query->whereHas('city.country', fn ($query) => $query->matchingCode($this->country))
                 )
                 ->when($this->regionId, fn ($query) => $query->whereHas('city', fn ($query) => $query->where('cities.region_id', $this->regionId))
                 )
