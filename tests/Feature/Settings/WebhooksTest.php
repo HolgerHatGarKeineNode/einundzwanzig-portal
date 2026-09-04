@@ -3,7 +3,6 @@
 use App\Models\User;
 use App\Models\WebhookSubscription;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Facades\Lang;
 use Livewire\Livewire;
 
 /*
@@ -191,12 +190,18 @@ it('labels the resource checkboxes with product wording, not the config slugs', 
     actingAsUser();
 
     $html = Livewire::test('settings.webhooks')
-        ->assertSee('Meetup-Termin')
         // The submitted value is still the API slug, not the label.
         ->assertSeeHtml('value="meetup-event"')
         ->html();
 
-    expect(visibleText($html))->not->toContain('meetup-event');
+    // Deliberately NOT assertSee('Meetup-Termin'): the page subheading says
+    // "sobald sich ein Meetup oder ein Meetup-Termin ändert", so the string
+    // occurs three times in this HTML and the assertion could not fail even if
+    // the checkbox were labelled with the raw slug (measured 2026-09-04). What
+    // this test claims is that THIS checkbox carries THAT label, so the
+    // assertion has to tie the two together on one element.
+    expect($html)->toMatch('/<ui-checkbox[^>]*value="meetup-event"[^>]*label="Meetup-Termin"/')
+        ->and(visibleText($html))->not->toContain('meetup-event');
 });
 
 it('labels the resources of an existing subscription with product wording', function () {
@@ -218,16 +223,19 @@ it('translates the resource labels instead of printing one string for all nine l
         'resources' => ['meetup-event'],
     ]);
 
-    // lang/*.json only gains the key in P6, so the label is injected here instead:
-    // a raw slug could not follow the locale at all, a translated label must.
+    // The injected label this test used to carry is gone: lang/en.json now holds
+    // the key for real ("Meetup events"), so Lang::addLines() no longer changed
+    // anything, and assertSee('Meetup event') passed on the plural regardless of
+    // whether the injection worked (measured 2026-09-04). The claim is that the
+    // label FOLLOWS the locale, so the German label has to be gone from the page.
     app()->setLocale('en');
-    Lang::addLines(['*.Meetup-Termin' => 'Meetup event'], 'en');
 
-    $html = Livewire::test('settings.webhooks')
-        ->assertSee('Meetup event')
-        ->html();
+    $html = Livewire::test('settings.webhooks')->html();
 
-    expect(visibleText($html))->not->toContain('meetup-event');
+    expect(visibleText($html))
+        ->toContain(__('Meetup-Termin'))
+        ->not->toContain('Meetup-Termin')
+        ->not->toContain('meetup-event');
 });
 
 it('falls back to the raw slug for a resource that has no label yet', function () {
@@ -235,4 +243,58 @@ it('falls back to the raw slug for a resource that has no label yet', function (
 
     expect(Livewire::test('settings.webhooks')->instance()->resourceLabel('brand-new-resource'))
         ->toBe('brand-new-resource');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Issue #54, item 1 — the "and then?" contact block
+|--------------------------------------------------------------------------
+|
+| The page named who approves but not what to do while nothing happens. It
+| now says so and hands over an address. Same shape as ServiceDisclaimerTest:
+| assert the njump link where it belongs, and its ABSENCE in the negative
+| case, because that is the half a rendering bug actually breaks.
+|
+| The npub lives in config/einundzwanzig.php (webhooks.contact_npub) so this
+| page and /docs/webhooks cannot drift apart; both tests read it from there
+| rather than hardcoding it, so a rotated key does not turn into a red suite.
+|
+*/
+
+it('shows the contact npub, its copy control and its njump link', function () {
+    actingAsUser();
+
+    $npub = config('einundzwanzig.webhooks.contact_npub');
+
+    // Guard on the fixture itself: with an empty key the assertions below would
+    // be measuring the negative case while claiming to measure the positive one.
+    expect($npub)->toBeString()->not->toBe('');
+
+    $html = Livewire::test('settings.webhooks')
+        ->assertSee('frag per Nostr-DM nach')
+        ->assertSee($npub)
+        ->assertSeeHtml('https://njump.me/'.$npub)
+        ->html();
+
+    // The address IS the copy control — clicking the npub copies the npub, which
+    // is why there is no separate copy button to look for.
+    expect($html)->toMatch('/<button[^>]*data-testid="webhook-contact-npub"[^>]*x-copy-to-clipboard/');
+});
+
+it('drops the whole ask-by-DM sentence when no contact npub is configured', function () {
+    actingAsUser();
+
+    config()->set('einundzwanzig.webhooks.contact_npub', '');
+
+    $html = Livewire::test('settings.webhooks')
+        // The sentence and the address stand or fall together: on its own the
+        // sentence ends in a colon and promises an address that never arrives,
+        // which is worse than the gap this issue started from.
+        ->assertDontSee('frag per Nostr-DM nach')
+        ->assertDontSee('njump.me')
+        ->html();
+
+    expect($html)->not->toContain('webhook-contact-npub')
+        // Nothing left over that ends in a dangling colon.
+        ->and(visibleText($html))->not->toContain('Nostr-DM');
 });

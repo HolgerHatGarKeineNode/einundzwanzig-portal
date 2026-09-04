@@ -212,3 +212,50 @@ it('links from the api reference to the webhook documentation', function () {
         ->toContain('## Webhooks')
         ->toContain('/docs/webhooks');
 });
+
+/*
+ * Issue #54, item 1 — the second of the two pages that answer "and then?".
+ *
+ * The npub comes from config/einundzwanzig.php (webhooks.contact_npub), which
+ * is the whole point of the key: this page and settings/webhooks must not drift
+ * apart, so both are asserted against the config value rather than a literal.
+ *
+ * Two DM clauses render it, in two independent conditionals (the stalled
+ * approval and the webhook:retry request), and each has to disappear when the
+ * key is empty: measured 2026-09-04, an unset key rendered
+ * href="https://njump.me/" — njump's front page, a link to nobody. Same rule as
+ * the settings page, which drops sentence and address together.
+ */
+it('points a waiting subscriber at the contact npub from config', function () {
+    $npub = config('einundzwanzig.webhooks.contact_npub');
+
+    // Guard on the fixture: with an empty key this would silently become the
+    // negative case while claiming to measure the positive one.
+    expect($npub)->toBeString()->not->toBe('');
+    expect(config('einundzwanzig.webhooks.require_approval'))->toBeTrue();
+
+    $content = $this->get(route('docs.webhooks'))
+        ->assertSuccessful()
+        ->assertSee('https://njump.me/'.$npub, false)
+        ->getContent();
+
+    // Both clauses, not just the first one to render.
+    expect(substr_count($content, 'https://njump.me/'.$npub))->toBeGreaterThanOrEqual(2);
+});
+
+it('drops every DM clause instead of linking to njumps front page when no contact npub is configured', function () {
+    config()->set('einundzwanzig.webhooks.contact_npub', '');
+
+    $content = $this->get(route('docs.webhooks'))
+        ->assertSuccessful()
+        ->assertDontSee('njump.me')
+        // The stalled-approval clause goes, the paragraph around it stays.
+        ->assertDontSee('We do not promise a turnaround')
+        ->assertSee('Run a catch-up over')
+        // The retry clause names a fallback rather than leaving the sentence
+        // half-built — the reader still learns whom to ask.
+        ->assertSee('Ask an operator for it')
+        ->getContent();
+
+    expect($content)->not->toMatch('#https://njump\.me/["\'\s>]#');
+});

@@ -891,5 +891,7 @@
     "Besucher sehen an dieser Stelle dasselbe.": "Los visitantes ven aquí lo mismo.",
     "Ort als Text": "Ubicación como texto",
     "z.B. Hinterzimmer im Café Mustermann": "p. ej. sala trasera del Café Mustermann",
-    "Freitext für Besucher. Auch Details, die ein Kartenpunkt nicht zeigt.": "Texto libre para los visitantes. También detalles que un punto en el mapa no muestra."
+    "Freitext für Besucher. Auch Details, die ein Kartenpunkt nicht zeigt.": "Texto libre para los visitantes. También detalles que un punto en el mapa no muestra.",
+    "Eine feste Bearbeitungszeit nennen wir nicht — wir könnten sie nicht zusagen. Wenn du nichts hörst, frag per Nostr-DM nach:": "No prometemos un plazo de respuesta: no podríamos cumplirlo. Si no recibes noticias, escríbenos por DM en Nostr:",
+    "Profil auf njump öffnen": "Abrir el perfil en njump"
 }

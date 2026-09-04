@@ -48,6 +48,16 @@ class WebhookSubscriptionPolicy
     }
 
     /**
+     * Board-only: records the decline in `rejected_at`, without touching
+     * `approved_at`, `active` or the subscription itself — the request leaves
+     * the pending queue for good (Issue #40).
+     */
+    public function reject(User $user, WebhookSubscription $subscription): bool
+    {
+        return BoardGate::allows($user);
+    }
+
+    /**
      * Board-only: clears `approved_at` again, without touching `active` or
      * the subscription itself.
      */

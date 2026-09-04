@@ -297,6 +297,28 @@ return [
     | that fails ten separate events in a row is disabled and stays disabled
     | until its owner re-enables it via PATCH.
     |
+    | `contact_npub` is where an owner asks after a subscription that is still
+    | waiting (Issue #54). No turnaround time is promised anywhere in the UI —
+    | nobody can hold one — so the address IS the whole answer to "and if
+    | nothing happens?" and has to be reachable, not decorative.
+    |
+    | Deliberately its own key rather than `board_members[0]`: that list is an
+    | authorisation allowlist whose order carries no meaning, and reading a
+    | contact out of it would silently reassign the mailbox the day someone
+    | re-sorts the array. Deliberately not hardcoded in a Blade view either.
+    | Counted 2026-09-04, this npub already stands in SIX places outside this
+    | key: README.md, CODE_OF_CONDUCT.md, config/horizon.php, twice in this
+    | file (`tag_editors` and `board_members`) and .github/ISSUE_TEMPLATE/
+    | config.yml. A seventh copy inside a template is the one that gets missed
+    | when the board hands the role over, and unlike the other six it would be
+    | the one users are told to write to. Both the settings page and the
+    | webhooks documentation derive their njump URL from this value, so there
+    | is exactly one string to change here — and both hide their contact block
+    | entirely when it is empty rather than rendering a link to nowhere.
+    |
+    | Today's value is also a board member, which is a coincidence of staffing,
+    | not a rule: any npub that a human actually reads DMs on belongs here.
+    |
     */
 
     'webhooks' => [
@@ -305,6 +327,7 @@ return [
         'timeout_seconds' => 10,
         'backoff_seconds' => [60, 300, 1800, 7200, 21600],
         'auto_disable_after' => 10,
+        'contact_npub' => 'npub1pt0kw36ue3w2g4haxq3wgm6a2fhtptmzsjlc2j2vphtcgle72qesgpjyc6',
     ],
 
     /*
