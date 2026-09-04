@@ -85,7 +85,13 @@ it('flips the owners settings page status from awaiting approval to active once 
     Livewire::test('admin.webhooks')->call('approve', $subscription->id);
 
     $this->actingAs($owner);
-    Livewire::test('settings.webhooks')->assertSee('Aktiv');
+    // assertSee('Aktiv') alone does not measure anything on this page: the
+    // reveal-secret hint above the list contains "Aktiviert, kannst du es …",
+    // so the substring is present even while the row still reads "Wartet auf
+    // Freigabe" (measured 2026-09-04). The status itself is what flipped.
+    Livewire::test('settings.webhooks')
+        ->assertSee('Aktiv')
+        ->assertDontSee('Wartet auf Freigabe');
 });
 
 it('refuses approval from a non-board user even by direct policy check', function () {
@@ -304,6 +310,46 @@ it('refuses a rejection from a non-board user', function () {
 });
 
 /*
+ * The mirror of the approve/revoke pair above, which reject() was missing. Its
+ * absence was not theoretical: with `WebhookSubscriptionPolicy::reject()`
+ * replaced by `return true`, or with the `$this->authorize('reject', …)` line
+ * deleted from the component, all 109 webhook tests stayed green — the test
+ * above only sees the mount() gate, which is a different mechanism.
+ */
+it('refuses a rejection from a non-board user even by direct policy check', function () {
+    $outsider = actingAsUser();
+    $subscription = WebhookSubscription::factory()->pending()->create();
+
+    expect($outsider->can('reject', $subscription))->toBeFalse();
+    expect($subscription->fresh()->rejected_at)->toBeNull();
+});
+
+/*
+ * And the path mount() structurally cannot cover: mount runs once, on the
+ * initial render. Every follow-up Livewire request hydrates the existing
+ * snapshot and goes straight to the action, so a request that arrives without
+ * board membership — a session that changed, or a hand-built update payload
+ * against a captured snapshot — never passes mount() again. Only the ability
+ * on the action stands between it and the write.
+ */
+it('refuses reject on an already mounted component once the caller is no longer on the board', function () {
+    $this->actingAs(boardMember());
+    $subscription = WebhookSubscription::factory()->pending()->create();
+
+    // Mounted while the caller was on the board — assertOk() so this test cannot
+    // pass by accident through a mount-time 403 instead of the action guard.
+    $mounted = Livewire::test('admin.webhooks')->assertOk();
+
+    $this->actingAs(User::factory()->create());
+
+    $mounted->call('reject', $subscription->id)->assertStatus(403);
+
+    expect($subscription->fresh()->rejected_at)->toBeNull()
+        // Still awaiting a real decision, not silently taken out of the queue.
+        ->and(WebhookSubscription::query()->pending()->whereKey($subscription->id)->exists())->toBeTrue();
+});
+
+/*
 |--------------------------------------------------------------------------
 | Click acknowledgement
 |--------------------------------------------------------------------------
@@ -347,4 +393,81 @@ it('disables approve, reject and revoke while their own request is in flight', f
             ->and($button)->toContain('wire:loading.attr="disabled"')
             ->and($button)->toContain('wire:target="'.$call.'"');
     }
+});
+
+/*
+|--------------------------------------------------------------------------
+| Issue #54 — approve() writes the operator's two columns, and only those
+|--------------------------------------------------------------------------
+|
+| The admin approve() and the webhook:approve command had drifted apart: the
+| command cleared `rejected_at`, `active` and `disabled_at`, this view wrote
+| only `approved_at`. Both now write `approved_at` + `rejected_at` and leave
+| the owner's pause switch and the system's auto-disable alone (the migration
+| docblock's "only the owner clears it again").
+|
+| Neither half was measured. Dropping `$subscription->rejected_at = null;`
+| from approve() left all 106 webhook tests green, which is why the first
+| test below exists; the second pins the half that must NOT be aligned, the
+| one a future "let's make approve fix everything" change would break.
+|
+*/
+
+it('clears an earlier rejection when approving a row that was rejected under a stale render', function () {
+    $owner = User::factory()->create();
+    $this->actingAs(boardMember());
+
+    $subscription = WebhookSubscription::factory()->pending()->create(['user_id' => $owner->id]);
+
+    // Nothing is crafted here: the pending queue excludes rejected rows, but this
+    // operator's queue was rendered while the row was still pending and a second
+    // operator rejected it in between. reject() already guards the mirror case.
+    $staleQueue = Livewire::test('admin.webhooks');
+    Livewire::test('admin.webhooks')->call('reject', $subscription->id);
+    expect($subscription->fresh()->rejected_at)->not->toBeNull();
+
+    $staleQueue->call('approve', $subscription->id);
+
+    $fresh = $subscription->fresh();
+
+    expect($fresh->approved_at)->not->toBeNull()
+        ->and($fresh->rejected_at)->toBeNull()
+        ->and(WebhookSubscription::query()->eligibleForDelivery()->whereKey($subscription->id)->exists())->toBeTrue();
+
+    // Without the cleared rejection the row carries both timestamps: statusFor()
+    // reads `rejected_at` first and tells the owner "Abgelehnt" about a
+    // subscription that scopeEligibleForDelivery() is happily delivering.
+    $this->actingAs($owner);
+    $settings = Livewire::test('settings.webhooks');
+
+    expect($settings->instance()->statusFor($fresh))->toBe('active');
+    $settings->assertDontSee('Abgelehnt');
+});
+
+it('leaves the owners pause switch and the systems auto-disable untouched when approving', function () {
+    $owner = User::factory()->create();
+    $this->actingAs(boardMember());
+
+    // Seeded AGAINST the factory default on both columns (default: active => true,
+    // disabled_at => null). On a default row the two assertions below would be
+    // satisfied by the seed no matter what approve() writes.
+    $subscription = WebhookSubscription::factory()->pending()->disabled()->create([
+        'user_id' => $owner->id,
+        'active' => false,
+    ]);
+
+    Livewire::test('admin.webhooks')->call('approve', $subscription->id);
+
+    $fresh = $subscription->fresh();
+
+    expect($fresh->approved_at)->not->toBeNull()
+        ->and($fresh->active)->toBeFalse()
+        ->and($fresh->disabled_at)->not->toBeNull()
+        // Releasing the brake while leaving the failure counter at 10 would disable
+        // the subscription again on the very next failure.
+        ->and($fresh->consecutive_failures)->toBe(10)
+        ->and(WebhookSubscription::query()->eligibleForDelivery()->whereKey($subscription->id)->exists())->toBeFalse();
+
+    $this->actingAs($owner);
+    expect(Livewire::test('settings.webhooks')->instance()->statusFor($fresh))->toBe('disabled');
 });

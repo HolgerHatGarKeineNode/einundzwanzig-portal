@@ -820,11 +820,40 @@ class extends Component
                         @endif
                     </flux:heading>
                 </div>
+                @php
+                    // Read once for the whole page: this box and the webhook:retry box below
+                    // both route "my thing is stuck" to the same address, and two config
+                    // lookups are two chances to mistype one.
+                    $contactNpub = config('einundzwanzig.webhooks.contact_npub');
+                @endphp
                 <p class="mt-3 text-pretty text-sm leading-relaxed text-zinc-700 dark:text-zinc-200">
+                    {{-- Issue #54: two questions, two channels, and they are deliberately not
+                         the same one. "My subscription is stuck" — including "please re-queue
+                         my deliveries" further down — is answered by a DM, because it is
+                         addressed to a person and the asker wants an answer about ONE record,
+                         not a ticket. "Please offer resource X" is answered by the issue
+                         tracker at the bottom of this page, because it is a change to the
+                         software and belongs where changes are argued. Do not merge them back
+                         together: the box below used to answer both with one link to issue
+                         #36, which has been closed since 2026-08-31 — so the person waiting
+                         was being sent to a closed issue, and one without a GitHub account
+                         nowhere at all.
+
+                         The DM clause is conditional for the same reason the settings page
+                         hides its whole block: with the key empty this used to render
+                         `href="https://njump.me/"` (measured 2026-09-04), a link to nothing.
+                         The npub comes from config so this page and the settings page cannot
+                         drift apart; see config/einundzwanzig.php, webhooks.contact_npub. --}}
                     @if ($this->requiresApproval)
                         A new subscription is <code>pending</code> and receives nothing until an
-                        operator approves it. Say hello on the issue below if nothing happens —
-                        and run a catch-up over <code>/api/changes</code> as your first act once
+                        operator approves it.
+                        @if ($contactNpub)
+                            We do not promise a turnaround — we could not keep one; if nothing
+                            happens, ask by
+                            <a href="https://njump.me/{{ $contactNpub }}"
+                               class="underline underline-offset-4" target="_blank" rel="noopener">Nostr DM</a>.
+                        @endif
+                        Run a catch-up over <code>/api/changes</code> as your first act once
                         it is live.
                     @else
                         Approval is switched off on this installation: the subscription is
@@ -990,8 +1019,24 @@ class extends Component
                         re-queues every delivery of one subscription that we gave up on. It
                         deliberately refuses while the subscription is pending, paused or
                         disabled — re-enabling is the owner's decision, and requeueing behind
-                        their back would defeat the auto-disable. Ask for it on the issue below if
-                        you need it; for a gap you can close yourself, <code>/api/changes</code> is
+                        their back would defeat the auto-disable.
+                        {{-- This one moved from the issue tracker to the DM on second reading,
+                             and it is the sharper test of the split: "run webhook:retry on
+                             subscription 41" names ONE record, asks an operator to act on it
+                             now, and produces nothing anyone else can read. That is the same
+                             shape as a stalled approval, not the shape of "please offer city
+                             webhooks" — which changes the software for everybody and belongs
+                             on the tracker. The rule is the OBJECT of the request, not who is
+                             asking: one record, one person's problem, a DM. --}}
+                        @if ($contactNpub)
+                            Ask for it by
+                            <a href="https://njump.me/{{ $contactNpub }}"
+                               class="underline underline-offset-4" target="_blank" rel="noopener">Nostr DM</a>
+                            if you need it;
+                        @else
+                            Ask an operator for it if you need it;
+                        @endif
+                        for a gap you can close yourself, <code>/api/changes</code> is
                         faster.
                     </p>
                 </div>
@@ -1169,13 +1214,27 @@ class extends Component
             <div class="flex items-start gap-4 rounded-2xl border border-zinc-200 bg-white/60 p-6 dark:border-white/10 dark:bg-white/[0.03]">
                 <flux:icon name="chat-bubble-left-right" class="mt-0.5 size-5 shrink-0 text-orange-500"/>
                 <div>
-                    <flux:heading size="lg" class="mb-2">Missing a resource, or waiting for approval?</flux:heading>
+                    <flux:heading size="lg" class="mb-2">Missing a resource?</flux:heading>
+                    {{-- The heading used to read "Missing a resource, or waiting for approval?"
+                         and answered both with the same link. A stalled approval is now answered
+                         where it is felt, in "Then it waits" above; this box keeps the question
+                         an issue tracker is actually good at. Issue #36 was the wrong target for
+                         either: it is the implementation issue and has been closed since
+                         2026-08-31, so a comment on it reaches its participants and nobody else.
+
+                         The old link was worse than stale, it was DEAD. Measured 2026-09-04
+                         with curl: einundzwanzig-app is a former repository name, and GitHub's
+                         rename redirect covers the repo root and /issues (both HTTP 301 with a
+                         Location header) but NOT a single-issue path — /einundzwanzig-app/
+                         issues/36 answers 404 with no Location at all. So this now points at
+                         the issue LIST, which redirects and stays live, and at the current
+                         repository name, which does not depend on a redirect surviving. --}}
                     <p class="text-pretty leading-relaxed text-zinc-600 dark:text-zinc-300">
                         Cities, courses, course events and lecturers are in the change log but not
                         on the webhook offer; widening it is a config change, not a feature. Say
                         so — with the resource you need by name — on
-                        <a href="https://github.com/HolgerHatGarKeineNode/einundzwanzig-app/issues/36"
-                           class="underline underline-offset-4" target="_blank" rel="noopener">issue #36</a>.
+                        <a href="https://github.com/HolgerHatGarKeineNode/einundzwanzig-portal/issues"
+                           class="underline underline-offset-4" target="_blank" rel="noopener">the issue tracker</a>.
                     </p>
                 </div>
             </div>

@@ -17,6 +17,17 @@ use Illuminate\Console\Command;
  * RetryWebhookDeliveries' "leave re-enabling to the owner". A previously
  * rejected subscription may still be approved — an operator reviewing again
  * and changing their mind is not a special case.
+ *
+ * Writes the two operator columns and nothing else, the same pair the admin
+ * UI's approve() writes (resources/views/livewire/admin/webhooks.blade.php).
+ * Until Issue #54 it also forced `active` to true and `disabled_at` to null,
+ * which contradicted the paragraph above as well as the migration's "only the
+ * owner clears it again (PATCH)": on a new subscription those two writes
+ * changed nothing (both start that way), and on the one row where they did —
+ * a subscription the owner paused, or one the system auto-disabled and an
+ * operator then revoked back into the pending queue — approving silently
+ * released the brake, while leaving `consecutive_failures` untouched so the
+ * next failure disabled it straight away.
  */
 class ApproveWebhookSubscription extends Command
 {
@@ -61,8 +72,6 @@ class ApproveWebhookSubscription extends Command
         $subscription->forceFill([
             'approved_at' => now(),
             'rejected_at' => null,
-            'active' => true,
-            'disabled_at' => null,
         ])->save();
 
         $this->info("Subscription #{$subscription->id} approved.");

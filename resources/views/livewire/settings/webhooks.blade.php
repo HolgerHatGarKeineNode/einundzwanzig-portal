@@ -247,9 +247,76 @@ class extends Component
                        :subheading="__('Erhalte eine HTTP-Benachrichtigung, sobald sich ein Meetup oder ein Meetup-Termin ändert.')">
 
         <div class="space-y-8">
-            <flux:text>
-                {{ __('Eine Webhook-Subscription sendet einen signierten HTTP-POST an deine URL, sobald sich eine der ausgewählten Ressourcen ändert. Neue Subscriptions müssen vom Vorstand des EINUNDZWANZIG e.V. freigeschaltet werden, bevor sie Zustellungen erhalten.') }}
-            </flux:text>
+            {{-- Issue #54: the paragraph named WHO approves but left "and then?"
+                 unanswered. Deliberately no turnaround time — nobody can hold one,
+                 and an invented "usually a few days" is a promise the reader would
+                 measure us against. What replaces it is an address, so the silence
+                 is a stated choice with a way out rather than a gap. --}}
+            <div class="space-y-3">
+                <flux:text>
+                    {{ __('Eine Webhook-Subscription sendet einen signierten HTTP-POST an deine URL, sobald sich eine der ausgewählten Ressourcen ändert. Neue Subscriptions müssen vom Vorstand des EINUNDZWANZIG e.V. freigeschaltet werden, bevor sie Zustellungen erhalten.') }}
+                </flux:text>
+
+                @php
+                    $contactNpub = config('einundzwanzig.webhooks.contact_npub');
+                @endphp
+
+                {{-- Sentence and address stand or fall TOGETHER. With the key empty, the
+                     sentence used to render on its own and end in a dangling colon —
+                     measured 2026-09-04, an unfulfilled promise, which is worse than the
+                     gap issue #54 started from. There is deliberately no fallback wording
+                     either: a sentence that announces "we promise no turnaround" and then
+                     offers no way to ask states the omission and leaves the reader exactly
+                     where they were. That is the same information as silence, with more
+                     noise. So an empty key means the paragraph above is the whole answer,
+                     as it was before this issue. --}}
+                @if ($contactNpub)
+                    <flux:text>
+                        {{ __('Eine feste Bearbeitungszeit nennen wir nicht — wir könnten sie nicht zusagen. Wenn du nichts hörst, frag per Nostr-DM nach:') }}
+                    </flux:text>
+
+                    {{-- The address is the control: clicking the npub copies the npub,
+                         so there is no separate copy button and no icon to explain.
+                         A real <button> rather than the <code role="button"> used by
+                         x-nostr-calendar-address — that Alpine directive binds `click`
+                         only, so on a non-button element Enter and Space do nothing
+                         (WCAG 2.1.1). A button gets both for free.
+
+                         `break-all` because an npub is 63 characters with no break
+                         opportunity. Measured 2026-09-04: unwrapped it is 555px wide,
+                         so in a 375px viewport it would set the page's minimum width
+                         and force horizontal scroll. With break-all it is 327px and the
+                         document stays at 375.
+
+                         The BORDER, not the fill, is what identifies this as a control
+                         (WCAG 1.4.11 wants 3:1 for that). A fill cannot do the job here:
+                         Flux's dark page background IS zinc-800 in this build — measured
+                         rgb(38,38,38) for both — so `dark:bg-zinc-800` rendered a panel
+                         with a contrast of 1.00:1 against its own page, i.e. no panel at
+                         all. zinc-500 measures 4.74:1 against the light page and 3.19:1
+                         against the dark one. The fill is kept for hover only, where it
+                         is feedback rather than identification. --}}
+                    <div x-data class="space-y-2">
+                        <button type="button"
+                                data-testid="webhook-contact-npub"
+                                x-copy-to-clipboard="'{{ $contactNpub }}'"
+                                title="{{ __('In die Zwischenablage kopieren') }}"
+                                class="block w-full break-all rounded-lg border border-zinc-500 p-3 text-left font-mono text-sm text-zinc-800 transition-colors hover:bg-zinc-100 dark:text-zinc-100 dark:hover:bg-zinc-700">{{ $contactNpub }}</button>
+
+                        {{-- `underline` and `py-1` are not decoration. Measured 2026-09-04:
+                             a flux:link renders with text-decoration `none` and no external
+                             icon, so on its own line it would be a link identified by colour
+                             alone (WCAG 1.4.1), and it measured 19px tall against the 24px
+                             floor of WCAG 2.5.8 — whose "inline" exception does not cover a
+                             link that is its own block. The underline matches the docs page,
+                             which underlines every outbound link. --}}
+                        <flux:link :href="'https://njump.me/'.$contactNpub" external variant="subtle"
+                                   class="inline-block py-1 text-sm underline underline-offset-4">
+                            {{ __('Profil auf njump öffnen') }}
+                        </flux:link>
+                    </div>
+                @endif
+            </div>
 
             @if (session('status'))
                 <flux:callout variant="success">{{ session('status') }}</flux:callout>

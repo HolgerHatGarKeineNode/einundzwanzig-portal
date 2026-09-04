@@ -26,6 +26,17 @@ new class extends Component
 {
     use SeoTrait;
 
+    /**
+     * Stays a BoardGate check rather than an $this->authorize() call, unlike
+     * the three actions below: this page's guard is about the whole pending
+     * queue — every owner's URL — and there is no subscription to pass to a
+     * policy ability here. WebhookSubscriptionPolicy::viewAny() could not
+     * carry the rule as it stands either: it returns true for every
+     * authenticated user, and nothing calls it — grepped 2026-09-04, the
+     * ability has no caller in app/, routes/ or resources/ — so wiring it up
+     * here without rewriting it would gate nothing. Both mechanisms ask
+     * BoardGate in the end (Issue #54).
+     */
     public function mount(): void
     {
         abort_unless(BoardGate::allows(auth()->user()), 403);
@@ -58,6 +69,22 @@ new class extends Component
             ->get();
     }
 
+    /**
+     * Unlocks delivery, and takes back a rejection while doing so: approving
+     * is a statement that overrides an earlier decline, the same rule the
+     * `webhook:approve` command follows. Without clearing `rejected_at` a row
+     * could end up carrying both timestamps, and settings/webhooks.blade.php's
+     * statusFor() reads `rejected_at` first — the owner would be shown
+     * "Abgelehnt" for a subscription that is delivering (Issue #54). The
+     * reachable route to that state is a stale render: the pending list
+     * excludes rejected rows, but a second operator can reject between this
+     * page's render and the click on its Freigeben button.
+     *
+     * `active` and `disabled_at` stay untouched here — the owner's pause
+     * switch and the system's auto-disable are not the board's to flip (see
+     * the migration's docblock); an approved-but-blocked subscription is
+     * flagged by stillBlocked() instead.
+     */
     public function approve(int $id): void
     {
         $subscription = WebhookSubscription::findOrFail($id);
@@ -65,6 +92,7 @@ new class extends Component
         $this->authorize('approve', $subscription);
 
         $subscription->approved_at = now();
+        $subscription->rejected_at = null;
         $subscription->save();
 
         session()->flash('status', __('Webhook-Subscription freigegeben.'));
@@ -79,21 +107,15 @@ new class extends Component
      * `approved_at`, the owner's `active` switch and the row itself stay
      * untouched, exactly as in revoke().
      *
-     * Gated through BoardGate instead of $this->authorize() because
-     * WebhookSubscriptionPolicy carries no `reject` ability and app/Policies
-     * is outside this change; mount() uses the same gate, and this check is
-     * the one that holds on a follow-up Livewire request, where mount() does
-     * not run again.
-     *
      * An already decided subscription is a no-op rather than an error: the
      * only way to get here is a second click on a stale render, and the row
      * has left the pending list either way.
      */
     public function reject(int $id): void
     {
-        abort_unless(BoardGate::allows(auth()->user()), 403);
-
         $subscription = WebhookSubscription::findOrFail($id);
+
+        $this->authorize('reject', $subscription);
 
         if ($subscription->approved_at !== null || $subscription->rejected_at !== null) {
             return;
