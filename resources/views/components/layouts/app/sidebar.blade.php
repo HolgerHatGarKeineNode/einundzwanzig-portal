@@ -43,6 +43,25 @@
             ->value('id');
 
         /*
+         * Die beiden Meetup-Zahlen — je EINMAL gezaehlt, obwohl vier Eintraege sie tragen.
+         *
+         * Liste und Karte dieses Landes zeigen dieselbe Menge: `meetups.index` und
+         * `meetups.map` filtern beide ausschliesslich ueber Land und Region
+         * (meetups/index.blade.php:54, meetups/map.blade.php:64). "Alle Meetups" und die
+         * Welt-Karte ebenso — beide ganz ohne Filter. Vier eigene count()-Abfragen waeren
+         * also viermal dieselbe Zahl; so kostet die neue Karten-Badge keine zusaetzliche.
+         *
+         * Bekommt eine der vier Seiten einmal einen eigenen Filter, gehoert die betroffene
+         * Zahl wieder getrennt — sonst verspricht die Badge etwas, das hinter dem Link
+         * nicht steht.
+         */
+        $navCountryMeetupCount = \App\Models\Meetup::query()
+            ->whereHas('city.country', fn ($query) => $query->matchingCode($navCountry))
+            ->when($navRegionId, fn ($query) => $query->whereHas('city', fn ($q) => $q->where('cities.region_id', $navRegionId)))
+            ->count();
+        $navAllMeetupCount = \App\Models\Meetup::query()->count();
+
+        /*
          * Die Meetups, die der angemeldete Nutzer als Leader fuehrt (Issue #45): ohne sie
          * kommt ein Organisator nur ueber die Laenderliste an sein eigenes Meetup.
          * Weil diese Sidebar auch die mobile Navigation ist (flux:sidebar.toggle unten),
@@ -95,10 +114,7 @@
             <flux:navlist.item icon="user-group" :href="country_or_region_route('meetups.index')"
                                :current="request()->routeIs('meetups.index', 'meetups.index-region')"
                                wire:navigate
-                               badge="{{ \App\Models\Meetup::query()
-                                   ->whereHas('city.country', fn($query) => $query->where('countries.code', $navCountry))
-                                   ->when($navRegionId, fn($query) => $query->whereHas('city', fn($q) => $q->where('cities.region_id', $navRegionId)))
-                                   ->count() }}">
+                               badge="{{ $navCountryMeetupCount }}">
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Meetups') }}</span>
                     <img alt="{{ request()->route('country') }}"
@@ -109,15 +125,20 @@
             <flux:navlist.item icon="user-group" :href="route_with_country('meetups.index-all')"
                                :current="request()->routeIs('meetups.index-all')"
                                wire:navigate
-                               badge="{{ \App\Models\Meetup::query()->count() }}">
+                               badge="{{ $navAllMeetupCount }}">
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Alle Meetups') }}</span>
                     <flux:icon name="globe-europe-africa"/>
                 </div>
             </flux:navlist.item>
+            {{-- Die Zahl ist hier die ganze Erklaerung (Issue #51): "Karte 🇨🇿 0" neben
+                 "Welt-Karte 🌐 307" beantwortet vor dem Klick, warum diese Karte leer ist.
+                 Beide Zahlen zaehlen dieselbe Sache — die Meetups, die die jeweilige Karte
+                 als Marker setzt — und unterscheiden sich nur im Zuschnitt. --}}
             <flux:navlist.item icon="map" :href="country_or_region_route('meetups.map')"
                                :current="request()->routeIs('meetups.map', 'meetups.map-region')"
-                               wire:navigate>
+                               wire:navigate
+                               badge="{{ $navCountryMeetupCount }}">
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Karte') }}</span>
                     <img alt="{{ request()->route('country') }}"
@@ -127,7 +148,7 @@
             </flux:navlist.item>
             <flux:navlist.item icon="map" :href="route_with_country('meetups.map-world')"
                                :current="request()->routeIs('meetups.map-world')"
-                               wire:navigate badge="{{ \App\Models\Meetup::query()->count() }}">
+                               wire:navigate badge="{{ $navAllMeetupCount }}">
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Welt-Karte') }}</span>
                     <flux:icon name="globe-europe-africa"/>
@@ -160,7 +181,7 @@
             <flux:navlist.item icon="academic-cap" :href="route_with_country('courses.index')"
                                :current="request()->routeIs('courses.index')"
                                wire:navigate
-                               badge="{{ \App\Models\Course::query()->whereHas('courseEvents.city.country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
+                               badge="{{ \App\Models\Course::query()->whereHas('courseEvents.city.country', fn($query) => $query->matchingCode($navCountry))->count() }}">
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Kurse') }}</span>
                     <img alt="{{ request()->route('country') }}"
@@ -171,7 +192,7 @@
             <flux:navlist.item icon="user" :href="route_with_country('lecturers.index')"
                                :current="request()->routeIs('lecturers.index')"
                                wire:navigate
-                               badge="{{ \App\Models\Lecturer::query()->whereHas('coursesEvents.city.country', fn($query) => $query->where('countries.code', request()->route('country')))->count() }}">
+                               badge="{{ \App\Models\Lecturer::query()->whereHas('coursesEvents.city.country', fn($query) => $query->matchingCode($navCountry))->count() }}">
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Dozenten') }}</span>
                     <img alt="{{ request()->route('country') }}"
@@ -188,7 +209,7 @@
                                :current="request()->routeIs('cities.index', 'cities.index-region')"
                                wire:navigate
                                badge="{{ \App\Models\City::query()
-                                   ->whereHas('country', fn($query) => $query->where('countries.code', $navCountry))
+                                   ->whereHas('country', fn($query) => $query->matchingCode($navCountry))
                                    ->when($navRegionId, fn($query) => $query->where('cities.region_id', $navRegionId))
                                    ->count() }}">
                 {{ __('Städte/Gebiete') }}

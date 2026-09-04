@@ -318,3 +318,43 @@ it('still stores a region through the listbox state', function () {
 
     expect($city->fresh()->region_id)->toBe($region->id);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Das Land aus der URL — mit gross gespeichertem Laendercode
+|--------------------------------------------------------------------------
+|
+| Jeder create-Fall oben faehrt `Livewire::test('cities.create')` und setzt
+| `country_id` gleich danach selbst. `mount()` laeuft dabei zwar, sein Ergebnis
+| wird aber sofort ueberschrieben — deshalb konnte keiner dieser Faelle rot
+| werden, als die Vorauswahl in `mount()` den Laendercode case-sensitiv verglich.
+| Mit gespeichertem 'DE' und der Route /de/city-create blieb `country_id` null,
+| und das Formular verlangte „Wähl zuerst ein Land." fuer ein Land, das in der
+| URL steht.
+|
+| Dieser Fall geht darum ueber die ROUTE statt ueber die Komponente und speichert
+| den Code so, wie CountryFactory ihn von sich aus schreibt: gross. `no-catalog`
+| ist der Beleg, dass das Land aufgeloest wurde — die Zeile begruendet sich dann
+| mit dem leeren Regionen-Katalog und nicht mehr mit einer fehlenden Landeswahl.
+|
+*/
+
+it('preselects the country from the url when its stored code is uppercase', function () {
+    Country::factory()->create(['code' => 'DE']);
+
+    $html = $this->actingAs(User::factory()->create())
+        ->get('/de/city-create')
+        ->assertOk()
+        ->getContent();
+
+    // Den Zustand als WERT lesen, nicht als Vorhandensein eines Teilstrings: ein
+    // `not->toContain(...)` auf dem ganzen Dokument meldet im Fehlerfall 26.000
+    // Zeilen HTML und nennt nicht, was statt dessen dasteht. So steht im roten
+    // Lauf `-'no-catalog' +'no-country'`, und das ist die ganze Diagnose.
+    preg_match('/data-region-row="([^"]*)"/', $html, $zustand);
+
+    expect(substr_count($html, 'data-region-row'))->toBe(1)
+        ->and($zustand[1] ?? null)->toBe('no-catalog')
+        // Und dasselbe noch einmal am sichtbaren Symptom, das der Melder gesehen hat.
+        ->and(regionRow($html))->not->toContain('Wähl zuerst ein Land.');
+});

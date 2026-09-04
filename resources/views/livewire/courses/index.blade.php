@@ -8,11 +8,13 @@ use Livewire\WithPagination;
 
 new
 #[SeoDataAttribute(key: 'courses_index')]
-class extends Component {
-    use WithPagination;
+class extends Component
+{
     use SeoTrait;
+    use WithPagination;
 
     public $country = 'de';
+
     public $search = '';
 
     public function mount(): void
@@ -25,14 +27,13 @@ class extends Component {
         return [
             'courses' => Course::with(['lecturer', 'createdBy'])
                 ->withExists([
-                    'courseEvents as has_future_events' => fn($query) => $query->where('from', '>=', now())
+                    'courseEvents as has_future_events' => fn ($query) => $query->where('from', '>=', now()),
                 ])
-                ->when($this->search, fn($query)
-                    => $query
+                ->when($this->search, fn ($query) => $query
                     ->whereLike('name', '%'.$this->search.'%')
                     ->orWhereLike('description', '%'.$this->search.'%'),
                 )
-                ->whereHas('courseEvents.city.country', fn($query) => $query->where('countries.code', $this->country))
+                ->whereHas('courseEvents.city.country', fn ($query) => $query->matchingCode($this->country))
                 ->orderByDesc('has_future_events')
                 ->paginate(15),
         ];

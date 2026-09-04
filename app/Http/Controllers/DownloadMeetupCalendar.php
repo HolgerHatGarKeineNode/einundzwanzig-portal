@@ -102,7 +102,7 @@ class DownloadMeetupCalendar extends Controller
 
     private function scopeToCountry(Builder $query, string $countryCode): Builder
     {
-        return $query->whereHas('meetup.city.country', fn ($query) => $query->where('countries.code', $countryCode));
+        return $query->whereHas('meetup.city.country', fn ($query) => $query->matchingCode($countryCode));
     }
 
     /**
@@ -126,7 +126,16 @@ class DownloadMeetupCalendar extends Controller
             return null;
         }
 
-        return Country::query()->where('code', $requested)->exists() ? $requested : null;
+        /*
+         * Dieser Vergleich ist das Tor, nicht scopeToCountry(): faellt er durch, wird
+         * `null` zurueckgegeben und der Filter unten gar nicht erst gesetzt. Er war
+         * case-sensitiv, waehrend `$requested` immer kleingeschrieben ankommt — mit
+         * gross gespeicherten Codes lieferte `?country=de` deshalb NICHT einen leeren
+         * Kalender, sondern den ganzen weltweiten Feed (gemessen: 5 statt 2 Termine).
+         * Von den beiden moeglichen Richtungen war das die falsche: ein Abo, das still
+         * mehr ausliefert als bestellt, faellt niemandem auf.
+         */
+        return Country::query()->matchingCode($requested)->exists() ? $requested : null;
     }
 
     /**

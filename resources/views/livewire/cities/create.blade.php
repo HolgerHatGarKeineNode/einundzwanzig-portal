@@ -10,12 +10,16 @@ use Livewire\Component;
 
 new
 #[SeoDataAttribute(key: 'cities_create')]
-class extends Component {
+class extends Component
+{
     use SeoTrait;
 
     public $country = 'de';
+
     public string $name = '';
+
     public ?int $country_id = null;
+
     public ?int $region_id = null;
 
     /**
@@ -28,9 +32,13 @@ class extends Component {
      * @var array<string, mixed>
      */
     public array $osmPlace = [];
+
     public ?float $latitude = null;
+
     public ?float $longitude = null;
+
     public ?int $population = null;
+
     public ?string $population_date = null;
 
     /**
@@ -60,7 +68,7 @@ class extends Component {
     {
         $this->country = request()->route('country', config('app.domain_country'));
         $this->country_id = Country::query()
-            ->where('code', $this->country)
+            ->matchingCode($this->country)
             ->value('id');
     }
 
@@ -174,7 +182,6 @@ class extends Component {
             navigate: true,
         );
     }
-
 
     /**
      * Die OSM-Spalten aus dem gewaehlten Ort, immer alle acht.

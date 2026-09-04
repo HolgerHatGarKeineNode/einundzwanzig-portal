@@ -9,11 +9,13 @@ use Livewire\WithPagination;
 
 new
 #[SeoDataAttribute(key: 'cities_index')]
-class extends Component {
-    use WithPagination;
+class extends Component
+{
     use SeoTrait;
+    use WithPagination;
 
     public $country = 'de';
+
     public $search = '';
 
     /**
@@ -37,11 +39,10 @@ class extends Component {
         return [
             'cities' => City::query()
                 ->with(['country', 'createdBy', 'region'])
-                ->when($this->search, fn($query)
-                    => $query->whereLike('name', '%'.$this->search.'%'),
+                ->when($this->search, fn ($query) => $query->whereLike('name', '%'.$this->search.'%'),
                 )
-                ->whereHas('country', fn($query) => $query->where('countries.code', $this->country))
-                ->when($this->regionId, fn($query) => $query->where('cities.region_id', $this->regionId))
+                ->whereHas('country', fn ($query) => $query->matchingCode($this->country))
+                ->when($this->regionId, fn ($query) => $query->where('cities.region_id', $this->regionId))
                 ->orderBy('name')
                 ->paginate(15),
         ];

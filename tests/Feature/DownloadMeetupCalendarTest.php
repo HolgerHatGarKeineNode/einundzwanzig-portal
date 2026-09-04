@@ -347,3 +347,43 @@ it('keeps the UID stable across a rename, bumps SEQUENCE, and drops the event on
 
     $this->travelBack();
 });
+
+/*
+|--------------------------------------------------------------------------
+| The gate in resolveCountryCode(), with the code stored the way it is stored
+|--------------------------------------------------------------------------
+|
+| Every country case above seeds its codes LOWERCASE (the shared beforeEach and
+| the three `?country=` cases). That is why none of them could fail while
+| DownloadMeetupCalendar::resolveCountryCode() compared case-sensitively: with
+| a lowercase row the broken gate happens to pass. CountryFactory's own default
+| is uppercase, and production holds both spellings side by side.
+|
+| The failure direction is the dangerous one. The gate is not a filter — when
+| it falls through it returns null and NO filter is applied at all, so a public
+| subscription URL that asked for one country silently ships the whole world.
+| A feed that delivers too much is the kind of defect nobody reports.
+|
+| Counting VEVENTs is therefore the load-bearing assertion: "one event too many"
+| is precisely the observable, and a SUMMARY substring proves nothing on its own
+| because a DESCRIPTION can carry the same text.
+|
+*/
+
+it('scopes the feed to the selected country when the stored country code is uppercase', function () {
+    // The beforeEach seeded this one lowercase; store it the way the database does.
+    Country::whereKey($this->city->country_id)->update(['code' => 'DE']);
+
+    $czechCountry = Country::factory()->create(['code' => 'CZ']);
+    $czechCity = City::factory()->create(['country_id' => $czechCountry->id]);
+
+    $germanMeetup = Meetup::factory()->create(['city_id' => $this->city->id, 'name' => 'German Meetup']);
+    $czechMeetup = Meetup::factory()->create(['city_id' => $czechCity->id, 'name' => 'Czech Meetup']);
+    MeetupEvent::factory()->create(['meetup_id' => $germanMeetup->id, 'title' => 'German Event', 'start' => now()->addWeek()]);
+    MeetupEvent::factory()->create(['meetup_id' => $czechMeetup->id, 'title' => 'Czech Event', 'start' => now()->addWeek()]);
+
+    $ics = unfoldIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar?country=de')->getContent());
+
+    expect(substr_count($ics, 'BEGIN:VEVENT'))->toBe(1)
+        ->and($ics)->toContain('SUMMARY:German Event');
+});
