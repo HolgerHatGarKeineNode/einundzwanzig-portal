@@ -6,6 +6,7 @@ use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Support\NostrCalendarEventFactory;
 use App\Support\NostrEventTransmitter;
+use App\Support\NostrPayloadFingerprint;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -29,18 +30,29 @@ use swentel\nostr\Sign\Sign;
  *
  * ## Answers to the three questions issue #92 left open
  *
- * WHICH RECORDS — every record that carries a coordinate, not only the ones whose
- * payload demonstrably changed. Deciding "changed" would mean storing the published
- * event and diffing it, i.e. a schema change and a second source of truth, to save a
- * re-send that is idempotent anyway. `--meetup` and `--limit` are how an operator
- * narrows it instead. Past events are included: their kind 31923 is still on the relays
- * and still reachable from the calendar, so it still carries the wrong zone.
+ * WHICH RECORDS — either, and the flag says which. Without `--changed` this is the
+ * operator's blunt instrument: every record that carries a coordinate, whether or not
+ * its payload moved, narrowed with `--meetup` and `--limit`. Past events are included —
+ * their kind 31923 is still on the relays and still reachable from the calendar, so it
+ * still carries whatever it was published with. With `--changed` only the records whose
+ * payload the current code no longer builds the same way are re-sent, compared through
+ * {@see NostrPayloadFingerprint} against `nostr_payload_hash`.
  *
- * WHO DECIDES — an operator, deliberately. This command is NOT scheduled, and
- * `routes/console.php` is deliberately left alone. A bulk re-send is a burst against
- * every relay in the list, and it re-sends payloads nobody complained about. The
- * automatic half of the problem is solved where it belongs and incrementally: publishing
- * an event refreshes its calendar (see {@see PublishCalendarEvents}).
+ * An earlier version of this docblock argued that deciding "changed" was not worth "a
+ * schema change and a second source of truth, to save a re-send that is idempotent
+ * anyway". That reasoning holds for a command a human runs and stops being true the
+ * moment the trigger is automatic, which is what the issue actually asked for: without
+ * the comparison the automatic form is a blanket re-send of ~400 signed events to every
+ * relay on a timer, and an error in the payload would be re-broadcast on that timer for
+ * ever. The fingerprint is what makes the automatic path self-terminating — it is
+ * written on success, so every record is re-sent once per real change and then stops.
+ *
+ * WHO DECIDES — both, in their own mode, and they do not collide. `--changed` is
+ * scheduled (see `routes/console.php`) and is the automatic half. The default mode is
+ * still an operator decision and is still not scheduled: a re-send of payloads nobody
+ * complained about is a burst against every relay in the list and belongs to a human.
+ * A forced run in EITHER mode records the fingerprint of what it sent, so a manual
+ * repair is not immediately re-done by the scheduled one.
  *
  * WHAT THROTTLES IT — a pause between records, `--sleep`, default 2 seconds. The
  * numbers it is set against, read from the public API on 2026-09-04: 307 meetups and
@@ -62,10 +74,12 @@ use swentel\nostr\Sign\Sign;
  * opt-in the same slip would cost hundreds of writes to public relays that cannot be
  * taken back. Add `-v` to dump the full unsigned event JSON per record.
  *
- * IDEMPOTENT. Running it twice re-sends the same payload under the same `d` tag; the
- * relay replaces the event in place, and no column here is written, so there is no
- * local state to corrupt. The only visible difference between two runs is
- * `created_at`, `id` and `sig`.
+ * IDEMPOTENT, in both senses. On the wire, running it twice re-sends the same payload
+ * under the same `d` tag and the relay replaces the event in place; the only difference
+ * between two runs is `created_at`, `id` and `sig`. Locally, a successful send writes
+ * exactly one column, `nostr_payload_hash`, and writes the same value for the same
+ * payload — so `--changed` sends on the first run and nothing at all on the second.
+ * `nostr_coordinate` is never written here; the address does not move.
  *
  * KEY MISMATCH IS A SKIP, NOT A SILENT REWRITE. The coordinate is recomputed from the
  * configured key and compared with the stored one. If they differ, the configured key
@@ -78,6 +92,7 @@ class RepublishCalendarEvents extends Command
     protected $signature = 'nostr:republish-calendar
         {--model= : Meetup or MeetupEvent — omit to do both}
         {--meetup= : Restrict to one meetup, by id or slug}
+        {--changed : Only records whose payload the current code no longer builds the same way}
         {--limit=0 : Stop after this many records; 0 means no limit}
         {--sleep=2 : Seconds to wait between records; see the class docblock}
         {--force : Actually transmit. Without it this command is a dry run}';
@@ -121,6 +136,25 @@ class RepublishCalendarEvents extends Command
 
                 return self::FAILURE;
             }
+
+            /*
+             * The same gate for the fingerprint column, but against the OPPOSITE
+             * failure. A missing `nostr_coordinate` makes this command do nothing; a
+             * missing `nostr_payload_hash` makes `--changed` do everything, because
+             * every record then reads back a null fingerprint, counts as stale and is
+             * re-sent — on every scheduled run, for ever. That is the burst this whole
+             * mechanism exists to prevent, so an unmigrated database must stop the
+             * command rather than be absorbed by it.
+             */
+            if ($this->option('changed') && ! Schema::hasColumn($table, NostrPayloadFingerprint::COLUMN)) {
+                $this->error(sprintf(
+                    'Missing column: %s.%s — run php artisan migrate. Without it --changed considers every published record stale and would re-send the whole catalogue on every run.',
+                    $table,
+                    NostrPayloadFingerprint::COLUMN,
+                ));
+
+                return self::FAILURE;
+            }
         }
 
         $meetupFilter = $this->option('meetup');
@@ -144,6 +178,32 @@ class RepublishCalendarEvents extends Command
         $pubkeyHex = $key->getPublicKey($hexKey);
 
         $records = $this->records($modelName, $meetup);
+        $skipped = 0;
+
+        /*
+         * THE FILTER RUNS BEFORE `--limit`, not after, and that ordering is the
+         * difference between a mechanism that drains and one that stalls. A limit
+         * applied first would hand the batch ten records that may all be up to date,
+         * send nothing, and pick the same ten on the next run — for ever. Filtering
+         * first makes the limit a cap on WORK DONE rather than on rows looked at, so
+         * every scheduled run makes progress while there is progress to make.
+         *
+         * Key mismatches are dropped here too, for the same reason: a record published
+         * under a rotated key can never be re-sent, and leaving it in the candidate set
+         * would let a handful of them occupy the batch on every run and starve the
+         * records that can actually be repaired.
+         */
+        if ($this->option('changed')) {
+            $candidates = $records->count();
+            [$records, $skipped] = $this->onlyStale($records, $pubkeyHex);
+
+            $this->line(sprintf(
+                'Checked %d published record(s): %d carry a payload this code no longer builds.',
+                $candidates,
+                $records->count(),
+            ));
+        }
+
         $limit = max(0, (int) $this->option('limit'));
 
         if ($limit > 0) {
@@ -152,6 +212,10 @@ class RepublishCalendarEvents extends Command
 
         if ($records->isEmpty()) {
             $this->info('Nothing to republish.');
+
+            if ($skipped > 0) {
+                $this->warn("Skipped {$skipped} record(s) published under another key.");
+            }
 
             return self::SUCCESS;
         }
@@ -168,25 +232,16 @@ class RepublishCalendarEvents extends Command
 
         $sent = 0;
         $failed = 0;
-        $skipped = 0;
         $first = true;
 
         foreach ($records as $record) {
             $event = $this->eventFor($record, $pubkeyHex);
-            $coordinate = NostrCalendarEventFactory::coordinate(
-                $event->getKind(),
-                $pubkeyHex,
-                $this->dTagFor($record),
-            );
+            $coordinate = $this->coordinateFor($record, $event, $pubkeyHex);
 
-            if ($coordinate !== $record->nostr_coordinate) {
-                $this->warn(sprintf(
-                    'Skipped %s #%d: stored as %s but the configured key would publish it as %s.',
-                    class_basename($record),
-                    $record->id,
-                    (string) $record->nostr_coordinate,
-                    $coordinate,
-                ));
+            // In `--changed` mode these were already dropped during the scan, so this
+            // check never fires twice for the same record. It stays because the default
+            // mode does not scan at all.
+            if (! $this->publishedUnderConfiguredKey($record, $coordinate)) {
                 $skipped++;
 
                 continue;
@@ -214,6 +269,20 @@ class RepublishCalendarEvents extends Command
             $signer->signEvent($event, $hexKey);
 
             if ($this->transmitter->transmit($event, config('services.nostr.relays', []))) {
+                /*
+                 * The fingerprint of the event that was ACTUALLY signed and sent, not
+                 * of the one built during the `--changed` scan a moment earlier. The
+                 * two are the same payload in every realistic case, but the invariant
+                 * that matters is "this column names what the relays hold", and only
+                 * the event that left the process can make that true.
+                 *
+                 * Recorded in both modes on purpose. A forced default-mode repair that
+                 * left the column alone would leave every record it just fixed looking
+                 * stale, and the scheduled `--changed` run would re-send the entire
+                 * catalogue again within the hour — the manual and the automatic path
+                 * would keep undoing each other's reason to exist.
+                 */
+                NostrPayloadFingerprint::remember($record, $event);
                 $sent++;
 
                 continue;
@@ -279,6 +348,73 @@ class RepublishCalendarEvents extends Command
                 ->get();
 
         return $events->values()->concat($meetups->values());
+    }
+
+    /**
+     * The records whose payload the relays no longer hold, and how many were dropped
+     * because they were published under a different key.
+     *
+     * ONE EVENT IS BUILT PER CANDIDATE HERE, and the winners are built a second time in
+     * the send loop. That is deliberate rather than sloppy: `created_at` is stamped at
+     * build time, so an event carried over from this scan would go out with a timestamp
+     * up to `--sleep × batch size` seconds older than its own transmission. Harmless for
+     * NIP-01 — it is still far newer than the event it replaces — but the second build
+     * is a hash and a handful of already-loaded relations, and it keeps the timestamp
+     * honest. The relations are eager-loaded by {@see self::records()}, so the scan does
+     * not go back to the database per record; the kind 31924 arm is the exception, since
+     * a calendar's `a` tags are a query by construction.
+     *
+     * @param  Collection<int, Meetup|MeetupEvent>  $records
+     * @return array{Collection<int, Meetup|MeetupEvent>, int}
+     */
+    private function onlyStale(Collection $records, string $pubkeyHex): array
+    {
+        $skipped = 0;
+
+        $stale = $records->filter(function (Model $record) use ($pubkeyHex, &$skipped): bool {
+            $event = $this->eventFor($record, $pubkeyHex);
+
+            if (! $this->publishedUnderConfiguredKey($record, $this->coordinateFor($record, $event, $pubkeyHex))) {
+                $skipped++;
+
+                return false;
+            }
+
+            return NostrPayloadFingerprint::isStale($record, $event);
+        })->values();
+
+        return [$stale, $skipped];
+    }
+
+    /**
+     * Whether the configured key is the key this record was published under, warning
+     * once if it is not.
+     *
+     * Re-sending under a different key would create a SECOND event at a new address
+     * while the old one stays on the relays unchanged, so the answer is a skip and a
+     * report. A key rotation is an operational decision, not something a repair command
+     * gets to make on the operator's behalf.
+     */
+    private function publishedUnderConfiguredKey(Model $record, string $coordinate): bool
+    {
+        if ($coordinate === $record->nostr_coordinate) {
+            return true;
+        }
+
+        $this->warn(sprintf(
+            'Skipped %s #%d: stored as %s but the configured key would publish it as %s.',
+            class_basename($record),
+            $record->id,
+            (string) $record->nostr_coordinate,
+            $coordinate,
+        ));
+
+        return false;
+    }
+
+    private function coordinateFor(Model $record, Event $event, string $pubkeyHex): string
+    {
+        return NostrCalendarEventFactory::coordinate($event->getKind(), $pubkeyHex, $this->dTagFor($record));
     }
 
     private function eventFor(Model $record, string $pubkeyHex): Event

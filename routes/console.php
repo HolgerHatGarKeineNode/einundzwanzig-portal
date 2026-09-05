@@ -5,6 +5,7 @@ use App\Console\Commands\Database\PruneApiChanges;
 use App\Console\Commands\Database\UpdateMeetupActivity;
 use App\Console\Commands\Nostr\PublishCalendarEvents;
 use App\Console\Commands\Nostr\PublishUnpublishedItems;
+use App\Console\Commands\Nostr\RepublishCalendarEvents;
 
 Schedule::command(CleanupLoginKeys::class)->everyFifteenMinutes();
 
@@ -95,10 +96,12 @@ Schedule::command(PublishUnpublishedItems::class, [
 | Idle cost is one indexed query per run: with nothing to publish the command
 | prints "No unpublished items" and exits 0 without opening a socket.
 |
-| `nostr:republish-calendar` is deliberately NOT scheduled. It re-sends the
-| whole back catalogue, which is a burst against every relay in the list and a
-| decision for an operator, not for cron; its own docblock carries the
-| reasoning and its default is a dry run.
+| `nostr:republish-calendar` WITHOUT `--changed` is deliberately NOT scheduled.
+| It re-sends the whole back catalogue, which is a burst against every relay in
+| the list and a decision for an operator, not for cron; its own docblock
+| carries the reasoning and its default is a dry run. The `--changed` half of
+| it IS scheduled, below, and the difference between the two is the whole of
+| issue #92 — see there.
 |
 | NO `withoutOverlapping()` / `onOneServer()` — MATCHING THE HOUSE PATTERN
 |
@@ -139,6 +142,85 @@ Schedule::command(PublishCalendarEvents::class, [
 Schedule::command(PublishCalendarEvents::class, [
     '--model' => 'Meetup',
 ])->everyFiveMinutes();
+
+/*
+|--------------------------------------------------------------------------
+| NIP-52 payload repair (issue #92)
+|--------------------------------------------------------------------------
+|
+| The trigger #92 was missing. The two entries above are one-way doors: they
+| gate on `nostr_coordinate IS NULL`, so a record they have published keeps the
+| payload it went out with for good, and every later change to what the portal
+| publishes — the geography `t` tags of #69, the `start_tzid` repair of #104 —
+| reached only the records published after it. This entry closes that door from
+| the other side.
+|
+| WHY `--changed` AND NOT A NIGHTLY BLANKET REPUBLISH. A timer that re-sends
+| everything ships ~400 signed events to every relay for nothing, and a bad
+| payload would be re-broadcast on that timer for ever instead of once.
+| `--changed` compares a fingerprint of the payload the current code builds
+| against `nostr_payload_hash`, the fingerprint of what was last successfully
+| sent (App\Support\NostrPayloadFingerprint). The fingerprint is written on
+| success, so the mechanism is self-terminating: one re-send per real change,
+| then silence. It is NOT keyed on `updated_at` — the #104 case changed the
+| payload of every published event with no database write at all, and an
+| `updated_at` check would have missed exactly the records the issue is about.
+|
+| WORST CASE ON THE WIRE, per relay:
+|
+|   peak       1 event / 2 s = 0.5 events/s, for 18 s (10 records, `--sleep=2`
+|              pauses between them, 9 pauses)
+|   sustained  10 events/h = 0.0028 events/s
+|   idle       0 events. With nothing stale the run opens no socket.
+|
+| That peak is the same as a manual `nostr:republish-calendar --force`; what
+| the batch cap buys is the sustained figure, which is ~1/40 of the manual
+| command's 0.5 events/s held for 13 minutes.
+|
+| WHY hourly WITH `--limit=10` AND NOT everyFiveMinutes WITH ONE RECORD.
+|
+| Unlike the publisher above, this command cannot pick its work with an indexed
+| WHERE: "has the payload changed" is only answerable by BUILDING the payload,
+| so every run costs one event build per already-published record whether or
+| not anything is stale. Measured 2026-09-05 on a synthetic catalogue of the
+| size production would reach if every meetup opted in — 307 meetups plus 76
+| upcoming events, the public-API figures of 2026-09-04:
+|
+|   383 published records, nothing stale
+|   -> 72 ms and 322 queries per idle scan (three runs: 75/71/72 ms, 322 each)
+|
+| 307 of those queries are one per meetup, because a calendar's `a` tags are a
+| query by construction (NostrCalendarEventFactory::publishedEventCoordinates).
+| SO THE SCAN IS NOT A BOTTLENECK AT EITHER CADENCE, and pretending otherwise
+| would be dressing a preference up as a constraint: 24 runs a day is 7.7k
+| queries, 288 runs a day is 93k. What decides it is that the twelvefold cost
+| buys nothing — the records already sit on the relays with a readable, merely
+| older payload, so nobody is waiting the way the reporter of #49 was waiting
+| for a first publish.
+|
+| The batch cap is what buys the drain rate back, and that is the figure that
+| actually matters: a code change that moves every payload at once clears the
+| 383-record catalogue in 39 runs — under two days — against 383 runs, 16 days,
+| at one record per run. A single stale record, the steady-state case when an
+| organiser edits a description, goes out within the hour. An operator who
+| wants a repair faster than that runs the command by hand, which is exactly
+| what the unflagged form is for.
+|
+| WHY `--force` IS ON THE SCHEDULER AND NOT THE DEFAULT. The command's default
+| is a dry run because forgetting a flag must cost a printed plan rather than
+| hundreds of unrecallable writes to public relays. That protects a human at a
+| shell; a scheduler entry is written once and read by everyone, so the flag is
+| the sentence that says out loud that this line transmits.
+|
+| `nostr_publishing_enabled` is honoured here as everywhere: a re-send is a new
+| signed event, i.e. a publishing act, so a meetup that has opted out is not in
+| the candidate set at all.
+*/
+Schedule::command(RepublishCalendarEvents::class, [
+    '--changed',
+    '--force',
+    '--limit' => 10,
+])->hourly();
 
 Schedule::command(UpdateMeetupActivity::class)->dailyAt('03:30');
 

@@ -6,6 +6,7 @@ use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Support\NostrCalendarEventFactory;
 use App\Support\NostrEventTransmitter;
+use App\Support\NostrPayloadFingerprint;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
 use swentel\nostr\Key\Key;
@@ -133,6 +134,17 @@ class PublishCalendarEvents extends Command
         $model->nostr_coordinate = NostrCalendarEventFactory::coordinate($event->getKind(), $pubkeyHex, $dTag);
         $model->save();
 
+        /*
+         * Record WHAT went out, next to the `nostr_coordinate` that records where it
+         * went (issue #92). The coordinate alone cannot answer whether the relays still
+         * hold what this portal would publish today, which is the question
+         * `nostr:republish-calendar --changed` exists to answer. Written after the
+         * transmission succeeded and never before it: a fingerprint stored for an event
+         * no relay accepted would declare a record up to date that was never published
+         * with that payload at all.
+         */
+        NostrPayloadFingerprint::remember($model, $event);
+
         $this->info("Published calendar event for {$modelName} #{$model->id}");
 
         if ($model instanceof MeetupEvent) {
@@ -166,6 +178,13 @@ class PublishCalendarEvents extends Command
      * meetup and by `nostr:republish-calendar`, so the damage of a warning is bounded
      * to a stale calendar, while the damage of a false failure is an operator chasing
      * a publish that succeeded.
+     *
+     * SINCE ISSUE #92 THAT RETRY IS AUTOMATIC. The fingerprint below is only written
+     * when the send succeeded, so a warned-about calendar keeps the fingerprint of the
+     * payload it last really carried — which no longer matches the one the factory
+     * builds now that this event exists. `nostr:republish-calendar --changed` therefore
+     * picks it up on its next scheduled run, without waiting for the meetup's next
+     * event or for an operator.
      */
     private function refreshCalendarFor(MeetupEvent $meetupEvent, string $hexKey): void
     {
@@ -191,6 +210,8 @@ class PublishCalendarEvents extends Command
 
             return;
         }
+
+        NostrPayloadFingerprint::remember($meetup, $calendar);
 
         $this->info("Refreshed calendar for Meetup #{$meetup->id}");
     }
