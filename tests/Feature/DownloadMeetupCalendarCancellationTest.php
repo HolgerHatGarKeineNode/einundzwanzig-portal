@@ -277,6 +277,26 @@ it('refuses to open the event editor for someone who may not manage the meetup',
  * as well; a Livewire action is a request of its own, not a continuation of the
  * one that rendered the page.
  */
+it('refuses to delete when the caller lost the right to manage after mounting', function () {
+    // Issue #96. mount() guards the page, but a Livewire action is a request of
+    // its own -- a component left open across a role change still dispatches
+    // delete(), and deletion is the least reversible action on this form.
+    $organiser = actingAsUser();
+    $meetup = Meetup::factory()->create(['city_id' => $this->city->id, 'created_by' => $organiser->id]);
+    $event = MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+        'start' => now()->addWeek(),
+    ]);
+
+    $component = Livewire::test('meetups.create-edit-events', ['meetup' => $meetup, 'event' => $event]);
+
+    actingAsUser();
+
+    $component->call('delete')->assertStatus(403);
+
+    expect(MeetupEvent::query()->find($event->id))->not->toBeNull();
+});
+
 it('refuses to cancel when the caller lost the right to manage after mounting', function () {
     $organiser = actingAsUser();
     $meetup = Meetup::factory()->create(['city_id' => $this->city->id, 'created_by' => $organiser->id]);
