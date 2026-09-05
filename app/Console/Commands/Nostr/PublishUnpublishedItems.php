@@ -129,15 +129,28 @@ class PublishUnpublishedItems extends Command
         return self::SUCCESS;
     }
 
+    /**
+     * Issue #76: the stored code is lowercased HERE, where it enters the command,
+     * because every use below needs the same lowercase form and a PHP array lookup is
+     * case-sensitive — DOMAIN_MAP and TZ_MAP are keyed lowercase, `app.locale` has to
+     * be 'nl' to resolve lang/nl.json, and the code is also the `{country:code}`
+     * segment of the URL that goes into the published note. The case-insensitive
+     * Country::matchingCode() scope added for #58 compares in SQL and reaches none of
+     * them. CountryFactory writes uppercase codes, so with a stored 'NL' the note went
+     * out with the German domain, Europe/Berlin, and `nostr.meetup_event_text` as its
+     * text — the untranslated key, because lang/NL.json does not exist.
+     */
     private function getCountryCode(Model $model): string
     {
-        return match (true) {
+        $countryCode = match (true) {
             $model instanceof Meetup => $model->city?->country?->code ?? 'de',
             $model instanceof MeetupEvent => $model->meetup?->city?->country?->code ?? 'de',
             $model instanceof Course => $model->lecturer?->country?->code ?? 'de',
             $model instanceof CourseEvent => $model->course?->lecturer?->country?->code ?? 'de',
             default => 'de', // Default fallback
         };
+
+        return mb_strtolower($countryCode);
     }
 
     private function configureForCountry(string $countryCode): void

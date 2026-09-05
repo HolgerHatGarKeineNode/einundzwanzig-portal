@@ -27,6 +27,13 @@ class CountryTimezone
     {
         // PHP 8.5 deprecates null as an array offset — the empty string never
         // matches a key, so this stays a one-liner without triggering it.
-        return self::MAP[$countryCode ?? ''] ?? 'Europe/Berlin';
+        //
+        // Lowercased here, at the point of use (issue #76): the keys above are
+        // lowercase, a PHP array lookup is case-sensitive, and the stored
+        // `countries.code` carries whichever case its writer used — CountryFactory
+        // writes 'ES'. The case-insensitive Country::matchingCode() scope added for
+        // #58 compares in SQL and therefore never reaches this lookup, so without
+        // the normalisation a Spanish meetup is published with Europe/Berlin.
+        return self::MAP[mb_strtolower($countryCode ?? '')] ?? 'Europe/Berlin';
     }
 }
