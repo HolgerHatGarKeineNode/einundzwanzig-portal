@@ -76,15 +76,34 @@ class MobileMeetupListController extends Controller
                 // app should show the initials avatar, so null instead of a placeholder URL.
                 'logo' => $meetup->getFirstMedia('logo')?->getUrl(),
                 /*
-                 * Same format as GET /api/meetup-events (see MeetupEventController),
-                 * and deliberately left alone by the ISO 8601 work (issue #48):
-                 * `Y-m-d H:i` in UTC, no zone marker, no user-timezone conversion.
-                 * A published API contract with a live mobile consumer — changing its
-                 * shape is a breaking change that needs its own decision, and it has to
-                 * be taken for both endpoints at once.
+                 * DEPRECATED (issue #71), and kept anyway: `Y-m-d H:i` in UTC with no zone
+                 * marker, same format as `start` on GET /api/meetup-events.
+                 *
+                 * Replaced by `next_event_start_iso` below. This one stays unchanged, byte
+                 * for byte, until the live mobile client has moved over; dropping it is a
+                 * breaking change and belongs to a coordinated client release. Both fields
+                 * describe the same instant, so the client can switch when it is ready.
                  */
                 'next_event_start' => $meetup->next_event_start
                     ? Carbon::parse($meetup->next_event_start)->format('Y-m-d H:i')
+                    : null,
+                /*
+                 * The zone-marked replacement (issue #71): `2026-09-16T17:00:00+00:00` —
+                 * ISO 8601 with a numeric OFFSET rather than the `Z` shorthand, because
+                 * that is what `toIso8601String()` emits and what the rest of this API
+                 * already sends. Identical field naming (`<field>_iso`) and identical
+                 * format to `start_iso` / `end_iso` on GET /api/meetup-events: issue #71
+                 * requires both endpoints to move together.
+                 *
+                 * The subquery hands us a bare `Y-m-d H:i:s` string carrying no zone of its
+                 * own, so the zone goes INTO parse() rather than onto the result:
+                 * `parse($v, 'UTC')` reads the value as UTC, which is how the column is
+                 * stored, whereas a trailing ->setTimezone('UTC') would convert it and,
+                 * under a non-UTC PHP default, shift it away from the deprecated field
+                 * above. Same instant, two spellings — that is the whole migration path.
+                 */
+                'next_event_start_iso' => $meetup->next_event_start
+                    ? Carbon::parse($meetup->next_event_start, 'UTC')->toIso8601String()
                     : null,
             ]);
     }
