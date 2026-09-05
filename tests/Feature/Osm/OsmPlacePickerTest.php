@@ -122,7 +122,7 @@ it('saves the place onto a new meetup event', function () {
         ->set('startTime', '19:00')
         ->set('location', 'Café Test')
         ->set('description', 'Ein Test-Event')
-        ->set('link', 'https://example.com')
+        ->set('links', [['url' => 'https://example.com', 'label' => null]])
         ->set('osmPlace', [
             'osm_type' => 'node', 'osm_id' => 4711, 'osm_name' => 'Bitcoin Bar',
             'osm_address' => 'Hauptstraße 1', 'osm_lat' => 49.4521, 'osm_lon' => 11.0767,
@@ -161,7 +161,7 @@ it('clears the columns when the place is removed', function () {
         ->set('osmPlace', [])
         ->set('location', 'Nur noch Text')
         ->set('description', 'Beschreibung')
-        ->set('link', 'https://example.com')
+        ->set('links', [['url' => 'https://example.com', 'label' => null]])
         ->call('save')
         ->assertHasNoErrors();
 
@@ -175,7 +175,7 @@ it('gives every occurrence of a series the same place', function () {
         ->set('startTime', '19:00')
         ->set('location', 'Café Test')
         ->set('description', 'Ein Test-Event')
-        ->set('link', 'https://example.com')
+        ->set('links', [['url' => 'https://example.com', 'label' => null]])
         ->set('seriesMode', true)
         ->set('endDate', now()->addWeeks(4)->format('Y-m-d'))
         ->set('recurrenceType', RecurrenceType::Weekly->value)

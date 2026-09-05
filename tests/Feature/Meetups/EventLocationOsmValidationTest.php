@@ -68,7 +68,7 @@ it('still accepts a plain text location without any OSM place', function () {
         ->set('startTime', '19:00')
         ->set('location', 'Café Test')
         ->set('description', 'Ein Test-Event')
-        ->set('link', 'https://example.com')
+        ->set('links', [['url' => 'https://example.com', 'label' => null]])
         ->call('save')
         ->assertHasNoErrors();
 

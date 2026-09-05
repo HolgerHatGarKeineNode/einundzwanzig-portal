@@ -136,6 +136,26 @@ class NostrCalendarEventFactory
             $event->addTag(['t', $topic]);
         }
 
+        /*
+         * The event's own links (issue #70), one `r` tag each, in the organiser's order.
+         *
+         * `r` is the tag NIP-52 names for this: "references / links to web pages,
+         * documents, video calls, recorded videos, etc.", listed among the tags common
+         * to both calendar event kinds. It is also what forMeetup() above already emits
+         * for a meetup's social links, so both kinds speak one vocabulary.
+         *
+         * THE LABEL IS NOT PUBLISHED, deliberately. NIP-52 gives `r` no label position,
+         * and the third element of an `r` tag is not free: NIP-65 puts `read`/`write`
+         * there and NIP-34 puts `euc`, i.e. it is a MARKER slot with a per-kind
+         * vocabulary. Writing "Meetup.com" into it would hand a client a marker it has
+         * to guess at, so a label stays where it is understood — the portal's own page
+         * and the API. Reference for both: github.com/nostr-protocol/nips (52.md, 65.md,
+         * 34.md), read 2026-09-05.
+         */
+        foreach ($meetupEvent->linkList() as $link) {
+            $event->addTag(['r', $link['url']]);
+        }
+
         $event->addTag(['a', self::coordinate(
             self::KIND_CALENDAR,
             $pubkeyHex,

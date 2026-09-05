@@ -16,13 +16,14 @@ it('creates an event without a link via the web editor', function () {
         ->set('startTime', '19:00')
         ->set('location', 'Marktplatz')
         ->set('description', 'Ein Test-Event')
-        ->set('link', '')
+        ->set('links', [])
         ->call('save')
         ->assertHasNoErrors();
 
     $event = MeetupEvent::query()->latest('id')->first();
 
-    expect($event->link)->toBeNull();
+    expect($event->link)->toBeNull()
+        ->and($event->linkList())->toBe([]);
 });
 
 it('clears an existing link when editing an event via the web editor', function () {
@@ -33,12 +34,13 @@ it('clears an existing link when editing an event via the web editor', function 
     ]);
 
     Livewire::test('meetups.create-edit-events', ['meetup' => $meetup, 'event' => $event])
-        ->assertSet('link', 'https://example.com')
-        ->set('link', '')
+        ->assertSet('links', [['url' => 'https://example.com', 'label' => null]])
+        ->set('links', [])
         ->call('save')
         ->assertHasNoErrors();
 
-    expect($event->refresh()->link)->toBeNull();
+    expect($event->refresh()->link)->toBeNull()
+        ->and($event->links)->toBe([]);
 });
 
 it('still rejects a malformed link in the web editor', function () {
@@ -49,9 +51,9 @@ it('still rejects a malformed link in the web editor', function () {
         ->set('startTime', '19:00')
         ->set('location', 'Marktplatz')
         ->set('description', 'Ein Test-Event')
-        ->set('link', 'not-a-url')
+        ->set('links', [['url' => 'not-a-url', 'label' => null]])
         ->call('save')
-        ->assertHasErrors(['link' => 'url']);
+        ->assertHasErrors(['links.0.url' => 'url']);
 });
 
 it('creates a recurring series without a link', function () {
@@ -65,7 +67,7 @@ it('creates a recurring series without a link', function () {
         ->set('recurrenceType', RecurrenceType::Weekly->value)
         ->set('location', 'Marktplatz')
         ->set('description', 'Wöchentlicher Stammtisch')
-        ->set('link', '')
+        ->set('links', [])
         ->call('save')
         ->assertHasNoErrors();
 

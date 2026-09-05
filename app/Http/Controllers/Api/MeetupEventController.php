@@ -131,7 +131,17 @@ class MeetupEventController extends Controller
             'osm_lat' => $event->osm_lat,
             'osm_lon' => $event->osm_lon,
             'description' => $event->description,
+            /*
+             * DEPRECATED (issue #70) and kept for the same reason `start` above is: the
+             * first of `links`, and the only one this field can ever show. Removing it
+             * is a breaking change for the live mobile client, so both ship side by
+             * side until that client has moved to `links`.
+             */
             'link' => $event->link,
+            // Every link of this event, in the organiser's order, each with an optional
+            // `label` (null when there is none). Same shape and same key as
+            // MeetupEventResource, so one client type covers both endpoints.
+            'links' => $event->linkList(),
             // Names resolved through the display chain for the requested locale, so a
             // tag that exists only in German still reads as something rather than as
             // an empty string when the client asked for e.g. Czech.

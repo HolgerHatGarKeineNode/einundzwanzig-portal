@@ -77,7 +77,11 @@ it('answers the bare list path with the unchanged payload of the dated one', fun
             'osm_lat',
             'osm_lon',
             'description',
+            // `link` is the deprecated single link and `links` the list that replaced
+            // it (issue #70). Both are part of the contract until the mobile client
+            // has moved over — see the controller's comment on the pair.
             'link',
+            'links',
             'tags',
             'attendees',
             'might_attendees',
