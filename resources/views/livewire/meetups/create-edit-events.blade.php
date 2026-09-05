@@ -588,8 +588,20 @@ class extends Component
         );
     }
 
+    /**
+     * Authorised here as well as in mount(), and that is not belt-and-braces
+     * (issue #96).
+     *
+     * A Livewire action is a request of its own. mount() guards the page at the
+     * moment it is opened; a component left open across a role change still
+     * dispatches this method, and deletion is the least reversible thing on this
+     * form -- exactly the one that most needs the check save() and cancel()
+     * already make.
+     */
     public function delete(): void
     {
+        $this->authorizeManage();
+
         if ($this->event) {
             $this->event->delete();
             session()->flash('status', __('Event erfolgreich gelöscht!'));
