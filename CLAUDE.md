@@ -83,13 +83,6 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 - Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
 - Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test --compact` with a specific filename or filter.
-- **Never run the full suite unfiltered in an automated context.** `php artisan test --compact` includes the `Browser` testsuite, which starts a Playwright server; where none can start it hangs with no output until something kills it. Measured 2026-09-01: 25+ minutes of silence, twice, on a change that touched only `lang/en.json`. Scope it instead:
-
-  ```
-  timeout 900 php artisan test --compact --exclude-testsuite=Browser
-  ```
-
-  Browser assertions stay available on purpose — run them deliberately through `vendor/bin/pest --testsuite=Browser`, never as a side effect of a full run.
 
 === laravel/core rules ===
 
@@ -199,3 +192,30 @@ vendor/bin/pest --agent='visit("/")->on()->mobile()->screenshot(fullPage: false,
 For full usage — backend examples, browser testing, screenshots, responsive checks, combining frontend and backend assertions, RefreshDatabase guidance, and pitfalls — load the **`pest-plugin-agent` skill**.
 
 </laravel-boost-guidelines>
+
+# Project guidelines — deliberately OUTSIDE the Boost block
+
+**Do not move anything below this line back into `<laravel-boost-guidelines>`, and do
+not add hand-written guidance inside that block.** The position is load-bearing, not
+cosmetic: `php artisan boost:install` does not append to this file, it regenerates the
+whole `<laravel-boost-guidelines>` … `</laravel-boost-guidelines>` block from the Blade
+templates under `vendor/laravel/boost/.ai/`. Everything inside the block is therefore
+Boost's to overwrite — hand-written text there is deleted at the next install, and the
+command reports success while doing it. Everything below the closing tag is untouched.
+
+Measured 2026-09-05 for issue #83: the composed Boost output for this project
+(`GuidelineComposer::compose()`) matched the block byte for byte except for the Test
+Enforcement passage below, which was the only hand-written text left inside it.
+
+`tests/Feature/BoostGuidelinesOutsideBlockTest.php` guards both failure modes — the
+passage disappearing, and the passage reappearing inside the block.
+
+## Test Enforcement
+
+- **Never run the full suite unfiltered in an automated context.** `php artisan test --compact` includes the `Browser` testsuite, which starts a Playwright server; where none can start it hangs with no output until something kills it. Measured 2026-09-01: 25+ minutes of silence, twice, on a change that touched only `lang/en.json`. Scope it instead:
+
+  ```
+  timeout 900 php artisan test --compact --exclude-testsuite=Browser
+  ```
+
+  Browser assertions stay available on purpose — run them deliberately through `vendor/bin/pest --testsuite=Browser`, never as a side effect of a full run.
