@@ -96,3 +96,72 @@ it('does not report a command that is not scheduled', function () {
     // real absence rather than a broken lookup.
     expect(scheduledMatching('nostr:publish '))->not->toBeEmpty();
 });
+
+/*
+|--------------------------------------------------------------------------
+| nostr:republish-calendar --changed must be registered too (issue #92)
+|--------------------------------------------------------------------------
+|
+| Same guard, same reason, one issue later. The two publisher entries above
+| gate on `nostr_coordinate IS NULL`, so a record they published keeps its
+| payload for good; #92 is that nothing ever re-sends it. The command that
+| does exists and is tested, and — exactly as in #49 — being complete and
+| correct is not the same as running.
+*/
+it('schedules the payload repair for already-published records', function () {
+    $entries = scheduledMatching('nostr:republish-calendar');
+
+    expect($entries)->toHaveCount(1, 'nostr:republish-calendar is not scheduled at all');
+});
+
+/*
+ * THE FLAGS ARE THE DECISION, not decoration on it.
+ *
+ * `--changed` is what separates this entry from the thing the repo owner
+ * rejected: a nightly blanket republish ships ~400 signed events to every
+ * relay for nothing, and a bad payload is then re-broadcast on a timer instead
+ * of once. Dropping the flag leaves a line that still runs, still exits 0 and
+ * quietly becomes that blanket republish — so the flag is asserted, not just
+ * the command name.
+ *
+ * `--force` is what makes it transmit at all; without it the command is a dry
+ * run by default and the schedule entry would print a plan into a log nobody
+ * reads, while the back catalogue stayed exactly as broken as #92 found it.
+ *
+ * `--limit` is the batch cap the pacing arithmetic in routes/console.php is
+ * computed against: 10 records, `--sleep=2` between them, i.e. a peak of 0.5
+ * events/s per relay for 18 s and a sustained 10 events/h.
+ */
+it('repairs only changed payloads, transmits, and caps the batch', function () {
+    $command = (string) scheduledMatching('nostr:republish-calendar')[0]->command;
+
+    // NOT `toContain($needle, $message)`: Pest's toContain is VARIADIC, so a second
+    // argument is read as a second needle and the assertion then demands the whole
+    // sentence appear in the command string. Measured here — it failed on the first
+    // run, which is the only reason this note exists rather than a silent green.
+    expect(str_contains($command, '--changed'))
+        ->toBeTrue('the repair entry lost --changed and is now a blanket republish')
+        ->and(str_contains($command, '--force'))
+        ->toBeTrue('the repair entry is a dry run and repairs nothing')
+        ->and(str_contains($command, '--limit=10'))
+        ->toBeTrue('the repair entry lost its batch cap');
+});
+
+/*
+ * Hourly, and the interval is a trade rather than a taste.
+ *
+ * Unlike the publisher above, this command cannot pick its work with an
+ * indexed WHERE — "has the payload changed" is only answerable by BUILDING the
+ * payload, so every run costs one event build per already-published record
+ * whether or not anything is stale. Measured 2026-09-05 on 383 published
+ * records, the size production reaches if every meetup opts in: 72 ms and 322
+ * queries per idle scan. That is cheap at either cadence, which is the honest
+ * reading — every five minutes would simply pay it twelve times over for a
+ * repair nobody is waiting on. The batch cap is what carries the drain rate:
+ * a code change that moves every payload clears 383 records in 39 runs, under
+ * two days, instead of 383 runs.
+ */
+it('repairs hourly, the cadence its scan cost and batch size were chosen for', function () {
+    expect(scheduledMatching('nostr:republish-calendar')[0]->expression)
+        ->toBe('0 * * * *', 'the payload repair is no longer hourly');
+});
