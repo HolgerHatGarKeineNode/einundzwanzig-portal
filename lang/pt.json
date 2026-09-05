@@ -901,5 +901,10 @@
     "Event absagen": "Cancelar evento",
     "Abgesagt": "Cancelado",
     "Dieses Event wirklich absagen? Kalender-Abonnenten erhalten die Absage.": "Cancelar mesmo este evento? Os subscritores do calendário recebem o cancelamento.",
-    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Evento cancelado. Os subscritores do calendário serão notificados."
+    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Evento cancelado. Os subscritores do calendário serão notificados.",
+    "Name (:lang)": "Nome (:lang)",
+    "Leer lassen heißt: in dieser Sprache nicht vorhanden.": "Deixar vazio significa: não existe nesse idioma.",
+    "Fehlt in: :langs": "Falta em: :langs",
+    "Mindestens eine Sprache muss einen Namen tragen.": "Pelo menos um idioma tem de ter um nome.",
+    "Alle Sprachen tragen denselben Namen — vermutlich vom alten Picker kopiert. Lösche die Sprachen, in denen er nicht steht.": "Todos os idiomas têm o mesmo nome — provavelmente copiado pelo seletor antigo. Apaga os idiomas em que não se escreve assim."
 }

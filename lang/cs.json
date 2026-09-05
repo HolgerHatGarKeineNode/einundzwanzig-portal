@@ -901,5 +901,10 @@
     "Event absagen": "Zrušit událost",
     "Abgesagt": "Zrušeno",
     "Dieses Event wirklich absagen? Kalender-Abonnenten erhalten die Absage.": "Opravdu zrušit tuto událost? Odběratelé kalendáře dostanou informaci o zrušení.",
-    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Událost zrušena. Odběratelé kalendáře budou informováni."
+    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Událost zrušena. Odběratelé kalendáře budou informováni.",
+    "Name (:lang)": "Název (:lang)",
+    "Leer lassen heißt: in dieser Sprache nicht vorhanden.": "Prázdné pole znamená: v tomto jazyce název neexistuje.",
+    "Fehlt in: :langs": "Chybí v: :langs",
+    "Mindestens eine Sprache muss einen Namen tragen.": "Alespoň jeden jazyk musí mít název.",
+    "Alle Sprachen tragen denselben Namen — vermutlich vom alten Picker kopiert. Lösche die Sprachen, in denen er nicht steht.": "Všechny jazyky mají stejný název — pravděpodobně jej zkopíroval starý výběr. Smaž jazyky, ve kterých takto nezní."
 }

@@ -188,17 +188,66 @@ it('stores a non-editors tag as an unapproved suggestion but selects it anyway',
     $component->assertSet('tagIds', [$tag->id]);
 });
 
-it('names a new tag in every locale so the other eight can find it', function () {
+it('names a new tag only in the language it was typed in', function () {
+    /*
+     * Replaces "names a new tag in every locale so the other eight can find it".
+     * That copy was not a translation, and it was what made the picker's
+     * "only available in :lang" line unreachable — see the case below and the
+     * createTag() docblock.
+     */
     $this->actingAs(editorUserForPicker());
+    app()->setLocale('cs');
 
-    Livewire::test('tags.picker', ['type' => 'meetup_event'])->call('createTag', 'Lagerfeuerrunde');
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])->call('createTag', 'Rodiny s dětmi');
 
     $tag = Tag::query()->where('type', 'meetup_event')->get()
-        ->first(fn (Tag $t): bool => $t->getTranslation('name', 'de') === 'Lagerfeuerrunde');
+        ->first(fn (Tag $t): bool => $t->getTranslation('name', 'cs', false) === 'Rodiny s dětmi');
 
-    foreach (config('einundzwanzig.tag_locales') as $locale) {
-        expect($tag->getTranslation('name', $locale, false))->toBe('Lagerfeuerrunde');
+    expect($tag)->not->toBeNull()
+        ->and($tag->source_locale)->toBe('cs')
+        ->and($tag->getTranslations('name'))->toBe(['cs' => 'Rodiny s dětmi']);
+
+    foreach (['de', 'en', 'es', 'hu', 'lv', 'nl', 'pl', 'pt'] as $untouched) {
+        expect($tag->getTranslation('name', $untouched, false))->toBe('');
     }
+});
+
+it('marks a tag created in another language as a foreign-language label', function () {
+    /*
+     * The defect this whole change exists for: the warning at picker.blade.php could
+     * never fire for a tag the picker itself had created, because the typed name was
+     * written into all nine locales. Reverting createTag() to that write reddens the
+     * assertSee AND both expectations below.
+     */
+    $this->actingAs(editorUserForPicker());
+    app()->setLocale('cs');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])->call('createTag', 'Rodiny s dětmi');
+
+    $tag = Tag::query()->where('type', 'meetup_event')->get()
+        ->first(fn (Tag $t): bool => $t->getTranslation('name', 'cs', false) === 'Rodiny s dětmi');
+
+    app()->setLocale('nl');
+
+    // What the Dutch organiser actually reads in the option row. Asserted before the
+    // model expectations on purpose, so a red run proves THIS line can fail.
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->assertSee('Rodiny s dětmi')
+        ->assertSee('alleen beschikbaar in CS');
+
+    expect($tag->displayLocale('nl'))->toBe('cs')
+        ->and($tag->isDisplayNameSubstituted('nl'))->toBeTrue();
+});
+
+it('does not mark a seeded tag that carries all nine translations', function () {
+    // The other side of the same coin: the marker must stay off where the tag really
+    // does have a name in the reader's language, or it becomes noise on every row.
+    $this->actingAs(editorUserForPicker());
+    app()->setLocale('nl');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->assertSee('Lezing')                        // "Vortrag" in Dutch, from the seeder
+        ->assertDontSee('alleen beschikbaar in');
 });
 
 it('selects the existing tag instead of creating a duplicate', function () {
@@ -226,6 +275,30 @@ it('catches a duplicate that exists only in another language', function () {
         ->assertSet('tagIds', [$talk->id]);
 
     expect(Tag::query()->where('type', 'meetup_event')->count())->toBe($before);
+});
+
+it('catches a duplicate of a tag that carries only one language', function () {
+    /*
+     * The duplicate guard walks all nine locales and a single-locale tag answers ''
+     * for eight of them. Since a tag created through the picker now has exactly one
+     * name, this is the shape the guard meets most often.
+     */
+    $this->actingAs(editorUserForPicker());
+    app()->setLocale('cs');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])->call('createTag', 'Rodiny s dětmi');
+
+    $created = Tag::query()->where('type', 'meetup_event')->get()
+        ->first(fn (Tag $t): bool => $t->getTranslation('name', 'cs', false) === 'Rodiny s dětmi');
+    $countBefore = Tag::query()->where('type', 'meetup_event')->count();
+
+    app()->setLocale('nl');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->call('createTag', '  rodiny s DĚTMI ')   // different case and padding
+        ->assertSet('tagIds', [$created->id]);
+
+    expect(Tag::query()->where('type', 'meetup_event')->count())->toBe($countBefore);
 });
 
 it('ignores names that are too short or too long', function () {

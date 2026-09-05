@@ -901,5 +901,10 @@
     "Event absagen": "Esemény lemondása",
     "Abgesagt": "Lemondva",
     "Dieses Event wirklich absagen? Kalender-Abonnenten erhalten die Absage.": "Biztosan lemondod ezt az eseményt? A naptárra feliratkozók megkapják a lemondást.",
-    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Esemény lemondva. A naptár feliratkozói értesítést kapnak."
+    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Esemény lemondva. A naptár feliratkozói értesítést kapnak.",
+    "Name (:lang)": "Név (:lang)",
+    "Leer lassen heißt: in dieser Sprache nicht vorhanden.": "Az üresen hagyott mező azt jelenti: ezen a nyelven nincs név.",
+    "Fehlt in: :langs": "Hiányzik: :langs",
+    "Mindestens eine Sprache muss einen Namen tragen.": "Legalább egy nyelven meg kell adni a nevet.",
+    "Alle Sprachen tragen denselben Namen — vermutlich vom alten Picker kopiert. Lösche die Sprachen, in denen er nicht steht.": "Minden nyelven ugyanaz a név szerepel — valószínűleg a régi választó másolta be. Töröld azokat a nyelveket, amelyeken nem így hangzik."
 }

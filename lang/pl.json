@@ -901,5 +901,10 @@
     "Event absagen": "Odwołaj wydarzenie",
     "Abgesagt": "Odwołane",
     "Dieses Event wirklich absagen? Kalender-Abonnenten erhalten die Absage.": "Na pewno odwołać to wydarzenie? Subskrybenci kalendarza otrzymają informację o odwołaniu.",
-    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Wydarzenie odwołane. Subskrybenci kalendarza zostaną poinformowani."
+    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Wydarzenie odwołane. Subskrybenci kalendarza zostaną poinformowani.",
+    "Name (:lang)": "Nazwa (:lang)",
+    "Leer lassen heißt: in dieser Sprache nicht vorhanden.": "Puste pole oznacza: w tym języku nazwa nie istnieje.",
+    "Fehlt in: :langs": "Brakuje w: :langs",
+    "Mindestens eine Sprache muss einen Namen tragen.": "Przynajmniej jeden język musi mieć nazwę.",
+    "Alle Sprachen tragen denselben Namen — vermutlich vom alten Picker kopiert. Lösche die Sprachen, in denen er nicht steht.": "Wszystkie języki mają tę samą nazwę — prawdopodobnie skopiował ją stary selektor. Usuń języki, w których tak nie brzmi."
 }
