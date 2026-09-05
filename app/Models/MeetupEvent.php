@@ -112,6 +112,9 @@ class MeetupEvent extends Model
         // The event's links (issue #70), a list of ['url' => …, 'label' => …] entries.
         // NULL and [] are not the same thing here — see self::linkList().
         'links' => 'array',
+        // How often the organiser has changed this event's calendar STATUS (issue #97).
+        // Added to the SEQUENCE the feed emits — see self::calendarSequenceOffset().
+        'calendar_sequence_offset' => 'integer',
     ];
 
     /**
@@ -202,6 +205,69 @@ class MeetupEvent extends Model
                 $meetupEvent->setAttribute('link', $entries[0]['url'] ?? null);
             }
         });
+
+        /*
+         * Count the calendar STATUS revisions (issue #97).
+         *
+         * A SECOND registration rather than another branch in the listener above,
+         * and that is not style: the `links` branch returns early, so anything
+         * appended to that closure would be skipped on every save that writes
+         * `links` — including the one save that matters here, an organiser who
+         * calls an event off while editing its links. Two listeners on the same
+         * event both run.
+         *
+         * A MODEL HOOK for the reason the links docblock gives one door up: an
+         * event is written through four paths, and a rule about what an attribute
+         * MEANS belongs to the attribute. Today only the organiser's editor writes
+         * `cancelled_at`, but the day the API or an MCP tool does, the offset it
+         * needs is already here.
+         *
+         * ONLY A TRANSITION COUNTS, in either direction. RFC 5546 §2.1.4 lists
+         * "STATUS" among the properties whose change by the organizer MUST
+         * increment SEQUENCE, and it names no direction — a reinstatement is as
+         * much a revision as a cancellation. What is NOT a revision is a save that
+         * merely rewrites `cancelled_at` with another timestamp while the event
+         * stays cancelled: the STATUS the feed emits is unchanged, so raising the
+         * number would tell every subscriber to re-process an entry that did not
+         * change. Ordinary edits do not touch the offset at all; they move
+         * `updated_at`, which is the base the feed adds this to.
+         */
+        static::saving(function (self $meetupEvent): void {
+            if (! $meetupEvent->isDirty('cancelled_at')) {
+                return;
+            }
+
+            $wasCancelled = $meetupEvent->getOriginal('cancelled_at') !== null;
+
+            if ($wasCancelled === $meetupEvent->isCancelled()) {
+                return;
+            }
+
+            $meetupEvent->setAttribute(
+                'calendar_sequence_offset',
+                $meetupEvent->calendarSequenceOffset() + 1,
+            );
+        });
+    }
+
+    /**
+     * What the calendar feed adds to this event's SEQUENCE base (issue #97).
+     *
+     * The number of times the organiser has changed the event's calendar STATUS,
+     * so it grows by one on every cancellation and by one on every reinstatement.
+     * DownloadMeetupCalendar::resolveSequence() adds it to `updated_at` — that
+     * file explains why the base is a timestamp and why this may not replace it.
+     *
+     * Reads through a method rather than off the attribute because the column is
+     * only ever absent in one place and it is exactly the place that matters: a
+     * model that has just been created in memory carries no value for it until it
+     * is refreshed from the database, where the default 0 lives. A null there
+     * would make `null + 1` the first cancellation's offset by accident rather
+     * than by rule.
+     */
+    public function calendarSequenceOffset(): int
+    {
+        return (int) ($this->calendar_sequence_offset ?? 0);
     }
 
     /**

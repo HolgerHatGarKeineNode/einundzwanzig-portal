@@ -640,6 +640,42 @@ class extends Component
             session()->flash('status', __('Event abgesagt. Abonnenten des Kalenders werden informiert.'));
         }
     }
+
+    /**
+     * Take a cancellation back (issue #97).
+     *
+     * The mis-click cancel() protects against with a confirm dialog was, until
+     * now, undoable only by editing the database row — while every calendar
+     * subscriber had already been told the event was off.
+     *
+     * This is NOT a database-only reversal, and that distinction is the whole
+     * feature. Writing `cancelled_at = null` puts the portal back but leaves every
+     * subscriber on the cancelled copy for good, which is worse than no reversal
+     * at all: the two would then disagree silently. The save raises
+     * `calendar_sequence_offset` (see MeetupEvent::booted()), so the feed emits
+     * the same UID again as STATUS:CONFIRMED with a SEQUENCE above the
+     * cancellation's — the only form a subscriber's client is obliged to accept
+     * over the copy it holds (RFC 5546 §2.1.5).
+     *
+     * ONE CASE IT CANNOT REACH, stated because it is invisible from here: an event
+     * whose start is already past leaves the feed the moment it is un-cancelled
+     * (MeetupEvent::scopeVisibleInCalendarFeed keeps a past event only while it is
+     * cancelled), so its subscribers keep the cancellation. Reinstating an event
+     * that has already been and gone is a different operation from the mis-click
+     * this issue is about, and the organiser's answer for it is a new event.
+     *
+     * Stays on the form for the same reason cancel() does.
+     */
+    public function uncancel(): void
+    {
+        $this->authorizeManage();
+
+        if ($this->event && $this->event->isCancelled()) {
+            $this->event->update(['cancelled_at' => null]);
+
+            session()->flash('status', __('Absage zurückgenommen. Abonnenten des Kalenders werden informiert.'));
+        }
+    }
 }; ?>
 
 <div class="max-w-4xl mx-auto p-6">
@@ -973,7 +1009,15 @@ class extends Component
 
         <!-- Form Actions -->
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pt-8 border-t border-gray-200 dark:border-gray-700">
-            <div class="flex items-center gap-4">
+            {{-- `flex-wrap` because this group does not fit a phone in one line, and what
+                 it does when it does not fit is disappear: measured at 375px, the row is
+                 279px wide and the buttons run to 622px, while documentElement.scrollWidth
+                 stays 375 — so there is no scrollbar to reach them with. The delete button
+                 was already 37px past the edge before #97 added a fourth control; with the
+                 un-cancel button it would sit entirely off-screen, which is the same as not
+                 shipping it (issue #97, DoD "reachable"). Wrapping changes nothing above
+                 sm: the group needs 574px of the 848px the form is capped at. --}}
+            <div class="flex flex-wrap items-center gap-4">
                 <flux:button variant="ghost" type="button"
                              :href="route_with_country('meetups.edit', ['meetup' => $meetup])">
                     {{ __('Abbrechen') }}
@@ -987,7 +1031,16 @@ class extends Component
                          to the irreversible one, and two red buttons next to each other would
                          say the choice does not matter. --}}
                     @if($event->isCancelled())
+                        {{-- The badge says what the state is, the button next to it is the
+                             way out of it (issue #97). Not styled `danger` either: taking a
+                             cancellation back is the reversible half of this pair, and the
+                             loud variant stays with deletion. --}}
                         <flux:badge color="amber">{{ __('Abgesagt') }}</flux:badge>
+
+                        <flux:button type="button" wire:click="uncancel"
+                                     wire:confirm="{{ __('Absage dieses Events wirklich zurücknehmen? Kalender-Abonnenten erhalten die Wiederaufnahme.') }}">
+                            {{ __('Absage zurücknehmen') }}
+                        </flux:button>
                     @else
                         <flux:button type="button" wire:click="cancel"
                                      wire:confirm="{{ __('Dieses Event wirklich absagen? Kalender-Abonnenten erhalten die Absage.') }}">
