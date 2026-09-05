@@ -42,6 +42,35 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Agent Guideline Destinations
+    |--------------------------------------------------------------------------
+    |
+    | Every agent decides for itself which file boost:install writes its
+    | guidelines to. Only Claude Code defaults to CLAUDE.md; OpenCode and Junie
+    | (PhpStorm) both default to AGENTS.md, which produced a second, unmaintained
+    | copy of the whole <laravel-boost-guidelines> block in this repository.
+    |
+    | Pinned to CLAUDE.md on purpose (see issue #120). Two copies only stay in
+    | step while someone remembers both, and the one nobody regenerated kept the
+    | .ai/rules paragraph that issue #60 removed months after the fact. One file
+    | is the truth; the guards on CLAUDE.md then cover every agent at once.
+    |
+    | The agent keys are the ones BoostManager registers, not the labels shown
+    | during the install: PhpStorm is registered as "junie".
+    |
+    */
+
+    'agents' => [
+        'opencode' => [
+            'guidelines_path' => env('BOOST_OPENCODE_GUIDELINES_PATH', 'CLAUDE.md'),
+        ],
+        'junie' => [
+            'guidelines_path' => env('BOOST_JUNIE_GUIDELINES_PATH', 'CLAUDE.md'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Excluded Guidelines
     |--------------------------------------------------------------------------
     |
