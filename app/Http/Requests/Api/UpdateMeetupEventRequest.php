@@ -85,9 +85,13 @@ class UpdateMeetupEventRequest extends FormRequest
             /**
              * Where to read more or sign up.
              *
-             * DEPRECATED (issue #70): use `links`. Still accepted and stored as a
-             * one-entry list, which REPLACES whatever list the event had. When both are
-             * sent, `links` wins and this value is dropped.
+             * DEPRECATED (issue #70): use `links`. Still accepted, and it addresses the
+             * FIRST entry of the list only (issue #108): a URL replaces that entry,
+             * `null` removes it, and every further entry keeps its place and its label.
+             * The answer's `link` is the first entry of the resulting list, which after
+             * a `null` is the entry that moved up. Replacing the whole list is what
+             * `links` is for; when both are sent, `links` wins and this value is
+             * dropped.
              *
              * @example https://example.com/meetup
              */

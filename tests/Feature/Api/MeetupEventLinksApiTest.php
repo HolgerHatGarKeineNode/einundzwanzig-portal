@@ -162,15 +162,24 @@ it('clears the list when links is sent as an empty array', function () {
     expect(json_decode(DB::table('meetup_events')->where('id', $event->id)->value('links'), true))->toBe([]);
 });
 
-it('keeps the deprecated single link working as an explicit replacement of the list', function () {
+it('keeps the deprecated single link working, on the first entry of the list', function () {
     $meetup = meetupEventLinksApiMeetup();
     $event = meetupEventWithFiveLinks($meetup);
 
     // `link` sent, `links` sent as null: the legacy field is the only thing the client
-    // said anything about, so it wins — one entry, and no leftovers of the old list.
+    // said anything about, so it is applied — to entry one. Until #108 it replaced the
+    // whole list here, and the four labelled entries below were the data loss that
+    // issue reported. The shapes of `link` itself have their own file,
+    // tests/Feature/Api/MeetupEventDeprecatedLinkApiTest.php.
     $this->patchJson("/api/meetup-events/{$event->id}", ['links' => null, 'link' => 'https://example.com/only'])
         ->assertSuccessful()
-        ->assertJsonPath('data.links', [['url' => 'https://example.com/only', 'label' => null]])
+        ->assertJsonPath('data.links', [
+            ['url' => 'https://example.com/only', 'label' => null],
+            ['url' => 'https://luma.com/berlin', 'label' => 'Luma'],
+            ['url' => 'https://t.me/berlin_btc', 'label' => 'Telegram'],
+            ['url' => 'https://x.com/btc_berlin', 'label' => 'X'],
+            ['url' => 'https://berlin.einundzwanzig.space', 'label' => null],
+        ])
         ->assertJsonPath('data.link', 'https://example.com/only');
 });
 
