@@ -9,6 +9,7 @@ use App\Models\MeetupEvent;
 use App\Traits\NostrTrait;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 
 class PublishUnpublishedItems extends Command
@@ -42,7 +43,16 @@ class PublishUnpublishedItems extends Command
         'default' => 'portal.einundzwanzig.space',
     ];
 
-    public function handle(): void
+    /**
+     * Only the schema gate below returns a non-zero exit code.
+     *
+     * The other error branches (unsupported model, no text, a rejected publish) kept
+     * the exit code 0 they have always had; changing them would change what the
+     * scheduler sees for failures this issue never measured. Issue #72 is about the
+     * one branch that reports SUCCESS while hiding that it could not even ask the
+     * question.
+     */
+    public function handle(): int
     {
         $modelName = $this->option('model');
         $modelClass = '\\App\\Models\\'.$modelName;
@@ -67,7 +77,23 @@ class PublishUnpublishedItems extends Command
         if (! $query) {
             $this->error("Unsupported model: {$modelName}");
 
-            return;
+            return self::SUCCESS;
+        }
+
+        /*
+         * Issue #72: SQLite degrades a double-quoted identifier that matches no column
+         * into a STRING LITERAL instead of raising an error, and Laravel quotes
+         * identifiers with double quotes. Without `nostr_status` the gate above reads
+         * `where 'nostr_status' is null` — never true — so every branch below reports
+         * "No unpublished items" and exits 0, indistinguishable from a caught-up
+         * system. Ask the schema before asking the data.
+         */
+        $table = $query->getModel()->getTable();
+
+        if (! Schema::hasColumn($table, 'nostr_status')) {
+            $this->error("Missing column: {$table}.nostr_status — run php artisan migrate. Without it this command finds nothing to publish and would exit 0 as if everything were up to date.");
+
+            return self::FAILURE;
         }
 
         $model = $query->first();
@@ -75,7 +101,7 @@ class PublishUnpublishedItems extends Command
         if (! $model) {
             $this->info("No unpublished items for model: {$modelName}");
 
-            return;
+            return self::SUCCESS;
         }
 
         // Get country code
@@ -99,6 +125,8 @@ class PublishUnpublishedItems extends Command
         } else {
             $this->error("No text generated for {$modelName}");
         }
+
+        return self::SUCCESS;
     }
 
     private function getCountryCode(Model $model): string
