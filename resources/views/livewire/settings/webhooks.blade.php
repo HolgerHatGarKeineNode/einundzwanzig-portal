@@ -433,6 +433,37 @@ class extends Component
                                             </p>
                                         </div>
 
+                                        {{-- Issue #98. "Awaiting approval" was amber, and a `size="sm"`
+                                             flux:badge sets 12px at weight 500 — not large text, so WCAG
+                                             1.4.3 wants 4.5:1. Read off the rendered pixels of this very
+                                             badge (Playwright screenshot, decoded twice — GD's
+                                             imagecolorat and a canvas getImageData readback in the page,
+                                             agreeing to three decimals), amber measured amber-700
+                                             #BB4D00 on amber-400/25 over the light page = 4.340:1. Dark
+                                             mode was never the problem: #FEE685 on #7C6016 = 4.764:1.
+                                             The pair is not computable from the Tailwind tokens, because
+                                             the fill carries alpha and only the compositor knows the
+                                             ground it lands on.
+
+                                             Blue, measured the same way: 7.347:1 light (#193CB8 on
+                                             #DCECFF), 5.234:1 dark (#BEDBFF on #36577E).
+
+                                             Why blue and not a darker amber: this state has to stay
+                                             legible NEXT TO the other three on the same page. Amber's
+                                             separation from lime — "awaiting approval" versus "active",
+                                             the one pair a reader must never merge — is ΔE00 0.2 in
+                                             light and 0.8 in dark once a deuteranope's vision is
+                                             simulated (Viénot/Brettel/Mollon 1999), i.e. the same
+                                             colour. Blue's worst separation against lime, zinc and red,
+                                             over normal, protanope and deuteranope vision, is ΔE00 9.1
+                                             (light) / 14.5 (dark), and against lime specifically it
+                                             GROWS under red-green deficiency (28.5 → 29.9/30.4) instead
+                                             of collapsing. Blue is also already this portal's
+                                             informational badge (dashboard/activities.blade.php:105),
+                                             so no new hue enters the palette.
+
+                                             Pinned by tests/Browser/Settings/WebhookStatusBadgeContrastTest.php,
+                                             which measures the pixels again rather than asserting a class. --}}
                                         @php
                                             $status = $this->statusFor($subscription);
                                             $statusColor = match ($status) {
@@ -440,7 +471,7 @@ class extends Component
                                                 'paused' => 'zinc',
                                                 'disabled' => 'red',
                                                 'rejected' => 'red',
-                                                default => 'amber',
+                                                default => 'blue',
                                             };
                                             $statusLabel = match ($status) {
                                                 'active' => __('Aktiv'),
@@ -450,7 +481,9 @@ class extends Component
                                                 default => __('Wartet auf Freigabe'),
                                             };
                                         @endphp
-                                        <flux:badge size="sm" :color="$statusColor">{{ $statusLabel }}</flux:badge>
+                                        <flux:badge size="sm" :color="$statusColor"
+                                                    data-testid="webhook-status-badge"
+                                                    data-status="{{ $status }}">{{ $statusLabel }}</flux:badge>
                                     </div>
 
                                     @if ($subscription->reveal_secret)
