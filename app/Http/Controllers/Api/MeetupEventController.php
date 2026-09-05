@@ -70,19 +70,41 @@ class MeetupEventController extends Controller
             'id' => $event->id,
             'title' => $event->title,
             /*
-             * Deliberately NOT switched to the App\Support\Carbon formatters by the ISO
-             * 8601 work (issue #48): this is a published API contract with a live mobile
-             * consumer, and it is already ISO-shaped. `Y-m-d H:i` in UTC, with no zone
-             * marker and no seconds — a raw ->format() that skips the user-timezone
-             * conversion on purpose, because an API has no "current user's timezone".
+             * DEPRECATED (issue #71), and kept anyway: `Y-m-d H:i` in UTC with no zone
+             * marker and no seconds. A consumer reading `2026-09-16 17:00` cannot tell
+             * UTC from the organiser's zone from its own.
              *
-             * Changing it (adding a zone suffix, going full ISO 8601 with T and offset,
-             * or rendering in a requested zone) is a breaking change for that consumer
-             * and needs its own decision — not a side effect of a display-layer fix.
+             * Replaced by `start_iso` / `end_iso` below. These two stay unchanged, byte
+             * for byte, until the live mobile client has moved over — removing them is a
+             * breaking change and belongs to a coordinated client release, not here.
+             * Until then both pairs describe the SAME instant, so a client can migrate
+             * one field at a time without any shift in what it renders.
+             *
+             * Still a raw ->format() that skips the App\Support\Carbon user-timezone
+             * conversion on purpose, because an API has no "current user's timezone".
              * MobileMeetupListController::__invoke() mirrors this format on purpose.
              */
             'start' => $event->start->format('Y-m-d H:i'),
             'end' => $event->end?->format('Y-m-d H:i'),
+            /*
+             * The zone-marked replacement for `start` / `end` (issue #71):
+             * `2026-09-16T17:00:00+00:00` — ISO 8601 with a numeric OFFSET, not the `Z`
+             * shorthand, because that is what `toIso8601String()` emits and what this
+             * codebase already puts on the wire elsewhere (WebhookSubscriptionResource).
+             * One spelling across the API beats picking the prettier one here.
+             *
+             * ->setTimezone('UTC') is explicit rather than incidental. The datetime cast
+             * already yields UTC on this route (config('app.timezone') is 'UTC', and
+             * SetTimezone runs on the web middleware group only — never on an API
+             * request), so both fields name the same wall clock. Spelling the conversion
+             * out makes the +00:00 offset a promise of this endpoint instead of a side
+             * effect of that configuration.
+             *
+             * MobileMeetupListController::__invoke() emits the same format under the same
+             * `_iso` naming — both endpoints move together, per issue #71.
+             */
+            'start_iso' => $event->start->setTimezone('UTC')->toIso8601String(),
+            'end_iso' => $event->end?->setTimezone('UTC')->toIso8601String(),
             /*
              * The venue in up to two layers, and the six osm_* keys are ALWAYS present
              * — null when no map place was picked, never absent (Issue #37 follow-up).
