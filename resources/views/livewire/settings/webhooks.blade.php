@@ -278,9 +278,12 @@ class extends Component
                     {{-- The address is the control: clicking the npub copies the npub,
                          so there is no separate copy button and no icon to explain.
                          A real <button> rather than the <code role="button"> used by
-                         x-nostr-calendar-address — that Alpine directive binds `click`
-                         only, so on a non-button element Enter and Space do nothing
-                         (WCAG 2.1.1). A button gets both for free.
+                         x-nostr-calendar-address. When this was written, that Alpine
+                         directive bound `click` only, so on a non-button element Enter
+                         and Space did nothing (WCAG 2.1.1). #80 has since given the
+                         directive keyboard handling, so that is no longer the reason —
+                         a button still gets focus, role and keyboard semantics for free
+                         rather than by declaration, which is why this one stays a button.
 
                          `break-all` because an npub is 63 characters with no break
                          opportunity. Measured 2026-09-04: unwrapped it is 555px wide,

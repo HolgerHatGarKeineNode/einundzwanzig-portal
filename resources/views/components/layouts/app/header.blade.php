@@ -136,24 +136,8 @@
     if (!localStorage.getItem('flux.appearance')) {
         localStorage.setItem('flux.appearance', 'dark');
     }
-    document.addEventListener('alpine:init', () => {
-        Alpine.directive('copy-to-clipboard', (el, {expression}, {evaluate}) => {
-            el.addEventListener('click', () => {
-                const text = evaluate(expression);
-                console.log(text);
-
-                navigator.clipboard.writeText(text).then(() => {
-                    Flux.toast({
-                        heading: '{{ __('Success!') }}',
-                        text: '{{ __('Copied into clipboard') }}',
-                        variant: 'success',
-                        duration: 3000
-                    });
-                }).catch(err => console.error(err));
-            });
-        });
-    });
 </script>
+@include('partials.clipboard-toast-messages')
 <script>
     window.wnjParams = {
         position: 'bottom',
