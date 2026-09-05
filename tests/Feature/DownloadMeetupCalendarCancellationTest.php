@@ -313,3 +313,204 @@ it('refuses to cancel when the caller lost the right to manage after mounting', 
 
     expect(MeetupEvent::query()->find($event->id)->isCancelled())->toBeFalse();
 });
+
+/*
+|--------------------------------------------------------------------------
+| Issue #97 — the reversal, and what a subscriber who already holds the
+| cancellation actually sees
+|--------------------------------------------------------------------------
+|
+| The organiser can put `cancelled_at` back to null, and the point of the
+| operation is NOT the database row: it is the second re-emission on the same
+| UID. RFC 5546 §2.1.4 names "STATUS" among the properties whose change by the
+| organizer MUST increment SEQUENCE, and it does not name a direction —
+| CONFIRMED → CANCELLED and CANCELLED → CONFIRMED are both revisions.
+|
+| What the subscriber's client does with the second one is decided by the same
+| rule that made the cancellation land, RFC 5546 §2.1.5: "the component with
+| the highest numeric value for the SEQUENCE property obsoletes all other
+| revisions of the component with lower values". A reinstatement that repeats
+| the cancellation's number is therefore NOT a revision of it — §2.1.5 falls
+| back to "the component with the latest DTSTAMP", and this feed's DTSTAMP is
+| stamped at render time (see DownloadMeetupCalendar::resolveSequence), so it
+| differs on every fetch of an entry nobody touched and cannot carry that
+| decision. Hence the numbers are pinned here, not merely ordered: n for the
+| confirmed entry, n+1 for the cancellation, n+2 for the reversal.
+|
+| Time is frozen in these tests on purpose. SEQUENCE is `updated_at` plus the
+| stored offset, so a real clock would let a second tick between two saves and
+| make the assertion "n+1" accidentally true for the wrong reason. Frozen, the
+| only thing that can move the number is the offset this issue adds.
+|
+*/
+
+/**
+ * The VEVENT for $uid in the feed as it stands at this moment, unfolded.
+ *
+ * Every assertion below is a before/after on one UID across several fetches,
+ * which is three lines of setup each time; the helper keeps the tests about the
+ * numbers rather than about fetching.
+ */
+function cancellationFeedEntryFor(string $uid): ?string
+{
+    return veventFor(
+        unfoldCancellationIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar')->getContent()),
+        $uid,
+    );
+}
+
+/**
+ * The SEQUENCE of a VEVENT block, as an integer.
+ */
+function sequenceIn(string $vevent): int
+{
+    preg_match('/SEQUENCE:(?<sequence>\d+)/', $vevent, $matches);
+
+    return (int) ($matches['sequence'] ?? -1);
+}
+
+it('re-delivers an un-cancelled UID as STATUS:CONFIRMED with a SEQUENCE above the cancellation', function () {
+    $this->freezeTime();
+
+    $organiser = actingAsUser();
+    $meetup = Meetup::factory()->create(['city_id' => $this->city->id, 'created_by' => $organiser->id]);
+    $event = MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+        'title' => 'Stammtisch',
+        'start' => now()->addWeek()->setTime(19, 0),
+    ]);
+
+    $uid = 'meetup-event-'.$event->id.'@einundzwanzig.space';
+    $component = Livewire::test('meetups.create-edit-events', ['meetup' => $meetup, 'event' => $event]);
+
+    $announced = cancellationFeedEntryFor($uid);
+    expect($announced)->not->toBeNull()
+        ->and($announced)->toContain('STATUS:CONFIRMED');
+
+    $base = sequenceIn($announced);
+
+    $component->call('cancel')->assertOk();
+
+    $cancelled = cancellationFeedEntryFor($uid);
+    expect($cancelled)->not->toBeNull()
+        ->and($cancelled)->toContain('STATUS:CANCELLED')
+        ->and(sequenceIn($cancelled))->toBe($base + 1);
+
+    $component->call('uncancel')->assertOk();
+
+    $reinstated = cancellationFeedEntryFor($uid);
+    expect($reinstated)->not->toBeNull()
+        ->and($reinstated)->toContain('STATUS:CONFIRMED')
+        ->and($reinstated)->not->toContain('STATUS:CANCELLED')
+        // The failure mode this issue is about: a reversal carrying the
+        // cancellation's own number, which §2.1.5 does not oblige any client to
+        // accept over the cancelled copy it already holds.
+        ->and(sequenceIn($reinstated))->toBe($base + 2)
+        ->and(sequenceIn($reinstated))->toBeGreaterThan(sequenceIn($cancelled));
+
+    expect(MeetupEvent::query()->find($event->id)->isCancelled())->toBeFalse();
+});
+
+/*
+ * The offset counts STATUS revisions, not saves. If an ordinary edit bumped it
+ * too, the number would drift away from `updated_at` for reasons no subscriber
+ * can see, and the pinned n+1/n+2 above would only hold for an event nobody
+ * edits.
+ */
+it('leaves SEQUENCE at the updated_at base for edits and for an un-cancel that reverses nothing', function () {
+    $this->freezeTime();
+
+    $organiser = actingAsUser();
+    $meetup = Meetup::factory()->create(['city_id' => $this->city->id, 'created_by' => $organiser->id]);
+    $event = MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+        'start' => now()->addWeek()->setTime(19, 0),
+    ]);
+
+    $uid = 'meetup-event-'.$event->id.'@einundzwanzig.space';
+    $base = sequenceIn(cancellationFeedEntryFor($uid));
+
+    expect($base)->toBe($event->updated_at->getTimestamp());
+
+    $event->update(['description' => 'Neuer Text']);
+    expect(sequenceIn(cancellationFeedEntryFor($uid)))->toBe($base);
+
+    // Never cancelled, so there is nothing to reverse and nothing to announce.
+    Livewire::test('meetups.create-edit-events', ['meetup' => $meetup, 'event' => $event])
+        ->call('uncancel')
+        ->assertOk();
+
+    expect(sequenceIn(cancellationFeedEntryFor($uid)))->toBe($base);
+});
+
+/*
+ * A cancelled event keeps the exact number #56 emitted for it — `updated_at`
+ * plus one. This is what makes the stored offset a continuation of the old
+ * hard-wired `+1` rather than a new counter: every subscriber out there already
+ * holds that number, and an offset starting from zero on already-cancelled rows
+ * would have made the next revision look OLDER than the copy they hold.
+ */
+it('keeps a cancellation at exactly the updated_at base plus one', function () {
+    $this->freezeTime();
+
+    $organiser = actingAsUser();
+    $meetup = Meetup::factory()->create(['city_id' => $this->city->id, 'created_by' => $organiser->id]);
+    $event = MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+        'start' => now()->addWeek()->setTime(19, 0),
+    ]);
+
+    Livewire::test('meetups.create-edit-events', ['meetup' => $meetup, 'event' => $event])->call('cancel');
+
+    $event->refresh();
+    $entry = cancellationFeedEntryFor('meetup-event-'.$event->id.'@einundzwanzig.space');
+
+    expect(sequenceIn($entry))->toBe($event->updated_at->getTimestamp() + 1);
+});
+
+/*
+ * DoD 4 — the reversal has to be reachable where the cancellation is. The
+ * cancel path is one button on the organiser's own event form, so the un-cancel
+ * is the same button in the other state; nothing else in the application writes
+ * `cancelled_at` (checked: the REST API's UpdateMeetupEventRequest and the MCP
+ * tools do not expose the column at all).
+ */
+it('offers the reversal on the editor where it offers the cancellation', function () {
+    $organiser = actingAsUser();
+    $meetup = Meetup::factory()->create(['city_id' => $this->city->id, 'created_by' => $organiser->id]);
+    $event = MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+        'start' => now()->addWeek(),
+    ]);
+
+    Livewire::test('meetups.create-edit-events', ['meetup' => $meetup, 'event' => $event])
+        ->assertSee(__('Event absagen'))
+        ->assertDontSee(__('Absage zurücknehmen'))
+        ->call('cancel')
+        ->assertSee(__('Absage zurücknehmen'))
+        ->assertDontSee(__('Event absagen'));
+});
+
+/*
+ * Same reasoning as for cancel() and delete(): a Livewire action is a request of
+ * its own, so the component being open is not authorisation. Un-cancelling
+ * re-announces an event to every subscriber, which is not something a former
+ * organiser gets to do.
+ */
+it('refuses to un-cancel when the caller lost the right to manage after mounting', function () {
+    $organiser = actingAsUser();
+    $meetup = Meetup::factory()->create(['city_id' => $this->city->id, 'created_by' => $organiser->id]);
+    $event = MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+        'start' => now()->addWeek(),
+    ]);
+    $event->update(['cancelled_at' => now()]);
+
+    $component = Livewire::test('meetups.create-edit-events', ['meetup' => $meetup, 'event' => $event]);
+
+    actingAsUser();
+
+    $component->call('uncancel')->assertStatus(403);
+
+    expect(MeetupEvent::query()->find($event->id)->isCancelled())->toBeTrue();
+});

@@ -312,34 +312,51 @@ class DownloadMeetupCalendar extends Controller
      * would then look OLDER than the confirmed copy every subscriber holds. That
      * part is unchanged by #56; it has been the source since #41.
      *
-     * What #56 adds is the +1 on a cancelled event, and it is not decoration.
-     * `updated_at` has one-second resolution, so an organiser who saves a change
-     * and calls the event off inside the same second produces the identical
-     * number twice — and a subscriber who fetched in between would keep the
-     * CONFIRMED copy, which is precisely the failure this issue is about. The
-     * offset makes the bump unconditional instead of probable: a cancelled entry
-     * is always strictly above the confirmed entry generated from the same
+     * What #56 added on top of it was a +1 while the event is cancelled, and it is
+     * not decoration. `updated_at` has one-second resolution, so an organiser who
+     * saves a change and calls the event off inside the same second produces the
+     * identical number twice — and a subscriber who fetched in between would keep
+     * the CONFIRMED copy, which is precisely the failure that issue was about.
+     * The offset makes the bump unconditional instead of probable: a cancelled
+     * entry is always strictly above the confirmed entry generated from the same
      * `updated_at`.
      *
      * DTSTAMP cannot cover that gap, which is the obvious objection to the
-     * offset. iTIP breaks an equal SEQUENCE by the later DTSTAMP, but the
-     * generator sets DTSTAMP from `new DateTimeImmutable()` at build time
-     * (Components\Event::__construct) — it is the moment this response was
-     * rendered, not the moment the event was revised, and it therefore differs on
-     * every fetch of an entry nobody touched. A field that changes when nothing
+     * offset. iTIP breaks an equal SEQUENCE by the later DTSTAMP (RFC 5546
+     * §2.1.5), but the generator sets DTSTAMP from `new DateTimeImmutable()` at
+     * build time (Components\Event::__construct) — it is the moment this response
+     * was rendered, not the moment the event was revised, and it therefore differs
+     * on every fetch of an entry nobody touched. A field that changes when nothing
      * changed cannot tell a client that something did.
      *
-     * The cost of the offset, written down because it is invisible otherwise:
-     * there is no un-cancel today (the organiser UI offers cancel and delete, and
-     * nothing puts `cancelled_at` back to null). If one is ever added, un-cancelling
-     * inside the same second as the cancellation would produce an EQUAL sequence,
-     * not a higher one, and the client would ignore the reinstatement. Whoever
-     * adds it replaces this offset with a real revision column rather than
-     * widening it.
+     * ## #97 replaces the hard-wired +1 with the counter #56 asked for
+     *
+     * That +1 could only ever say two things, so it had exactly one more state
+     * than it needed and one fewer than an un-cancel requires: reinstating an
+     * event returned the number to the base, i.e. BELOW the cancellation every
+     * subscriber holds, and RFC 5546 §2.1.5 makes the highest SEQUENCE the winner
+     * ("the component with the highest numeric value for the SEQUENCE property
+     * obsoletes all other revisions of the component with lower values"). The
+     * reinstatement would have been discarded, and #56's own docblock said so
+     * before it was possible to trigger.
+     *
+     * `MeetupEvent::calendar_sequence_offset` is that counter: it grows by one on
+     * every STATUS revision the organiser makes, in either direction, so one event
+     * walks n → n+1 (cancelled) → n+2 (confirmed again) on an unchanged base.
+     * RFC 5546 §2.1.4 requires the increment for a STATUS change and names no
+     * direction; RFC 5545 §3.8.7.4 requires only that the number be
+     * "monotonically incremented ... each time the 'Organizer' makes a significant
+     * revision", which the sum of a monotone timestamp and a monotone counter is.
+     *
+     * The base stays `updated_at` rather than becoming the counter alone, and that
+     * is the same argument the first paragraph makes: a bare counter starting at 0
+     * would emit numbers far below the ~1.7 billion every subscriber already has
+     * stored, and by §2.1.5 every future revision of every event would then be
+     * ignored for good.
      */
     private function resolveSequence(MeetupEvent $event): int
     {
-        return ($event->updated_at?->getTimestamp() ?? 0) + ($event->isCancelled() ? 1 : 0);
+        return ($event->updated_at?->getTimestamp() ?? 0) + $event->calendarSequenceOffset();
     }
 
     /**
