@@ -197,3 +197,38 @@ it('offers the sixteen names in use at rest and the rest on typing', function ()
 
     expect($found)->toContain('wallet');
 });
+
+it('lays the nine name fields out in one column on a narrow screen', function () {
+    /*
+     * The fifth question only a browser answers: nine inputs in one editor panel are
+     * a grid, and a grid is CSS. A server-side test sees nine fields either way — it
+     * cannot see whether they fall out of the viewport on a phone.
+     *
+     * Measured through resize() rather than device emulation: no Livewire round trip
+     * survives the plugin's mobile emulation on this page (measured 2026-09-05,
+     * $wire.set() does not even stick), and the wrap itself is pure CSS. Reading a
+     * rect straight after resize() catches the reflow, hence the wait.
+     */
+    $tag = Tag::query()->approved()->where('type', 'meetup_event')->firstOrFail();
+
+    $page = visit('/de/tags/moderation');
+    $page->wait(1);
+    $page->click('[data-testid=edit-'.$tag->id.']');
+    $page->wait(0.8);
+
+    $rowsOf = "new Set([...document.querySelectorAll('[data-testid^=name-input-]')]
+        .map(i => Math.round(i.getBoundingClientRect().y))).size";
+
+    expect($page->script("document.querySelectorAll('[data-testid^=name-input-]').length"))->toBe(9)
+        ->and($page->script($rowsOf))->toBe(3);
+
+    $page->resize(375, 900);
+    $page->wait(1);
+
+    $page->assertNoJavaScriptErrors();
+
+    expect($page->script($rowsOf))->toBe(9)
+        // Nothing pushed past the viewport edge: the panel wraps instead of scrolling.
+        ->and($page->script('document.documentElement.scrollWidth'))
+        ->toBe($page->script('document.documentElement.clientWidth'));
+});

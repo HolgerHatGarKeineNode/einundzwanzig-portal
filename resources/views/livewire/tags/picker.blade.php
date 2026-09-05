@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Tag;
+use App\Support\TagLocales;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Modelable;
@@ -17,7 +18,8 @@ use Livewire\Component;
  * The visible label is set through `selected-label`; without it Flux would put all
  * nine translations into the chip.
  */
-new class extends Component {
+new class extends Component
+{
     /**
      * Selected tag ids, bound to the parent form via wire:model.
      *
@@ -66,7 +68,6 @@ new class extends Component {
             ->all();
     }
 
-
     /**
      * Everything selectable: approved tags plus the current user's own pending
      * suggestions, so a suggester can re-select what they just proposed.
@@ -112,10 +113,23 @@ new class extends Component {
      * still selected here and now — otherwise a mandatory-tag country would be a dead
      * end for them.
      *
-     * The name is written to every locale rather than only the current one. A tag that
-     * exists in one language is invisible to the other eight, and an unfindable tag is
-     * the very thing that produced the duplicate sprawl in the existing data. An editor
-     * can refine the translations afterwards.
+     * ONE LOCALE, NOT NINE. This used to copy the typed name into all nine tag locales
+     * so the other eight could find it. The copy was not a translation, and it disabled
+     * the very mechanism built to make that visible: with a name present in every
+     * language, `Tag::isDisplayNameSubstituted()` is false for every reader, so the
+     * picker's "only available in :lang" line could never fire. Measured on production
+     * on 2026-09-05: three tags in that state, among them the Czech `Rodiny s dětmi`
+     * stored as the German, English, Spanish, Hungarian, Latvian, Dutch, Polish and
+     * Portuguese name.
+     *
+     * `source_locale` records what is actually known — the tag locale in force while the
+     * name was typed. It is a statement about the interface the author was using, not a
+     * detected language of the string; nothing here inspects the text.
+     *
+     * Cross-language findability is unchanged for tags that carry real translations
+     * (aliasesFor() still feeds every locale to Flux's matcher), and a moderator fills
+     * the remaining eight in tags.moderation. Until then the tag reads as what it is: a
+     * label in one language, marked as such.
      */
     public function createTag(?string $name = null): void
     {
@@ -144,11 +158,11 @@ new class extends Component {
             return;
         }
 
-        $tag = new Tag(['type' => $this->type]);
+        $locale = TagLocales::current();
 
-        foreach (config('einundzwanzig.tag_locales') as $locale) {
-            $tag->setTranslation('name', $locale, $name);
-        }
+        $tag = new Tag(['type' => $this->type]);
+        $tag->source_locale = $locale;
+        $tag->setTranslation('name', $locale, $name);
 
         $tag->icon = 'tag';
         $tag->featured = false;

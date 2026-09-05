@@ -31,7 +31,10 @@ class ShowMyMeetupEventTool extends Tool
             return Response::error('Nur der Ersteller oder ein Super-Admin darf diesen Meetup-Termin sehen.');
         }
 
-        return Response::json(MeetupEventResource::make($meetupEvent)->resolve());
+        // load('tags') is what makes the tags appear at all (issue #117):
+        // MeetupEventResource emits them under whenLoaded(), so without it the key is
+        // absent rather than empty, and a caller cannot tell "no tags" from "not fetched".
+        return Response::json(MeetupEventResource::make($meetupEvent->load('tags'))->resolve());
     }
 
     /**

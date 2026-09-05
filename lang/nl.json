@@ -901,5 +901,10 @@
     "Event absagen": "Evenement annuleren",
     "Abgesagt": "Geannuleerd",
     "Dieses Event wirklich absagen? Kalender-Abonnenten erhalten die Absage.": "Dit evenement echt annuleren? Agenda-abonnees ontvangen de annulering.",
-    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Evenement geannuleerd. Abonnees van de agenda worden geïnformeerd."
+    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Evenement geannuleerd. Abonnees van de agenda worden geïnformeerd.",
+    "Name (:lang)": "Naam (:lang)",
+    "Leer lassen heißt: in dieser Sprache nicht vorhanden.": "Leeg laten betekent: niet aanwezig in die taal.",
+    "Fehlt in: :langs": "Ontbreekt in: :langs",
+    "Mindestens eine Sprache muss einen Namen tragen.": "Minstens één taal moet een naam hebben.",
+    "Alle Sprachen tragen denselben Namen — vermutlich vom alten Picker kopiert. Lösche die Sprachen, in denen er nicht steht.": "Alle talen dragen dezelfde naam — waarschijnlijk gekopieerd door de oude kiezer. Verwijder de talen waarin hij niet zo luidt."
 }

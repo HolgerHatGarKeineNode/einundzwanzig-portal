@@ -3,6 +3,7 @@
 use App\Mcp\Servers\EinundzwanzigServer;
 use App\Mcp\Tools\CourseEvent\UpdateCourseEventTool;
 use App\Mcp\Tools\Meetup\CreateMeetupTool;
+use App\Mcp\Tools\Search\ListEventTagsTool;
 use App\Mcp\Tools\Search\SearchCitiesTool;
 
 it('rejects unauthenticated requests to the mcp endpoint', function () {
@@ -18,11 +19,16 @@ it('registers every domain tool on the server', function () {
     $tools = $property->getDefaultValue();
 
     // 38 until the venue was removed, which took four venue tools and SearchVenuesTool
-    // with it. The exact count is the point: a tool dropped by accident shows up here.
-    expect($tools)->toHaveCount(33)
+    // with it; 34 since list-event-tags joined for #117. The exact count is the point:
+    // a tool dropped by accident shows up here.
+    expect($tools)->toHaveCount(34)
         ->and($tools)->toContain(CreateMeetupTool::class)
         ->and($tools)->toContain(UpdateCourseEventTool::class)
-        ->and($tools)->toContain(SearchCitiesTool::class);
+        ->and($tools)->toContain(SearchCitiesTool::class)
+        // A tool a test drives directly is still invisible to a client until it is
+        // registered here, and the count above would happily stay at 34 if a different
+        // tool were dropped in its place.
+        ->and($tools)->toContain(ListEventTagsTool::class);
 });
 
 it('serves every tool on a single tools/list page', function () {

@@ -901,5 +901,10 @@
     "Event absagen": "Atcelt pasākumu",
     "Abgesagt": "Atcelts",
     "Dieses Event wirklich absagen? Kalender-Abonnenten erhalten die Absage.": "Tiešām atcelt šo pasākumu? Kalendāra abonenti saņems atcelšanas paziņojumu.",
-    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Pasākums atcelts. Kalendāra abonenti tiks informēti."
+    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Pasākums atcelts. Kalendāra abonenti tiks informēti.",
+    "Name (:lang)": "Nosaukums (:lang)",
+    "Leer lassen heißt: in dieser Sprache nicht vorhanden.": "Tukšs lauks nozīmē: šajā valodā nosaukuma nav.",
+    "Fehlt in: :langs": "Trūkst: :langs",
+    "Mindestens eine Sprache muss einen Namen tragen.": "Vismaz vienā valodā jābūt nosaukumam.",
+    "Alle Sprachen tragen denselben Namen — vermutlich vom alten Picker kopiert. Lösche die Sprachen, in denen er nicht steht.": "Visās valodās ir viens un tas pats nosaukums — visticamāk, to nokopēja vecais atlasītājs. Dzēs valodas, kurās tas tā neskan."
 }

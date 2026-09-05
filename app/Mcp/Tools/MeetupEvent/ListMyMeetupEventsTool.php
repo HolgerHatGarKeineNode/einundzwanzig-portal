@@ -23,7 +23,15 @@ class ListMyMeetupEventsTool extends Tool
             return Response::error('Nicht authentifiziert.');
         }
 
+        /*
+         * `with('tags')` is what makes the tags appear at all (issue #117).
+         * MeetupEventResource emits them under whenLoaded(), so an unloaded relation
+         * is not an empty list on the wire -- the key is absent entirely, and a caller
+         * cannot tell "no tags" from "tags were never fetched". Eager-loading here also
+         * keeps this a two-query read instead of one per event.
+         */
         $meetupEvents = MeetupEvent::query()
+            ->with('tags')
             ->editableBy((int) $user->getAuthIdentifier())
             ->orderByDesc('start')
             ->get();

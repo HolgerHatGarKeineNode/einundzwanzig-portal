@@ -368,3 +368,251 @@ it('keeps a non-editor out of every ordering action', function () {
     expect($outsider->can('update', $tag))->toBeFalse()
         ->and($tag->fresh()->order_column)->toBe($orderBefore);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Names, in all nine languages
+|--------------------------------------------------------------------------
+|
+| The screen could edit a tag's icon, its description, its featured flag and
+| its position — everything except the one field a picker actually matches on.
+| The owner's requirement ("Übersetzungen sollen ausfüllbar sein, für all
+| unsere Sprachen") was not reachable through any interface, and neither were
+| the three production rows the old picker left with one word in nine
+| languages.
+|
+*/
+
+it('loads every locale of the name into the editor', function () {
+    $this->actingAs(moderator());
+
+    $tag = Tag::factory()->named(['de' => 'Selbstverwahrung', 'en' => 'Self-custody'])
+        ->create(['type' => 'meetup_event']);
+
+    Livewire::test('tags.moderation')
+        ->call('edit', $tag->id)
+        ->assertSet('editNames.de', 'Selbstverwahrung')
+        ->assertSet('editNames.en', 'Self-custody')
+        ->assertSet('editNames.cs', '')
+        ->assertSet('editNames.pt', '');
+});
+
+it('fills in a translation the tag did not have', function () {
+    $this->actingAs(moderator());
+
+    $tag = Tag::factory()->named(['de' => 'Selbstverwahrung'])->create(['type' => 'meetup_event']);
+
+    Livewire::test('tags.moderation')
+        ->call('edit', $tag->id)
+        ->set('editNames.cs', 'Samospráva')
+        ->set('editNames.pl', 'Samodzielne przechowywanie')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $fresh = $tag->fresh();
+
+    expect($fresh->getTranslation('name', 'cs', false))->toBe('Samospráva')
+        ->and($fresh->getTranslation('name', 'pl', false))->toBe('Samodzielne przechowywanie')
+        ->and($fresh->getTranslation('name', 'de', false))->toBe('Selbstverwahrung')
+        // And the Czech reader is no longer told this is a German label.
+        ->and($fresh->isDisplayNameSubstituted('cs'))->toBeFalse();
+});
+
+it('names the languages that are still missing', function () {
+    $this->actingAs(moderator());
+
+    $tag = Tag::factory()->named(['de' => 'Selbstverwahrung', 'en' => 'Self-custody'])
+        ->create(['type' => 'meetup_event']);
+
+    $component = Livewire::test('tags.moderation')->call('edit', $tag->id);
+
+    expect($component->instance()->missingNameLocales)
+        ->toBe(['cs', 'es', 'hu', 'lv', 'nl', 'pl', 'pt']);
+
+    $component->assertSee('Fehlt in: CS, ES, HU, LV, NL, PL, PT');
+});
+
+it('drops a language again when its name is emptied', function () {
+    // The repair path for the three rows the old picker filled with one word in nine
+    // languages: delete the eight it is not written in.
+    $this->actingAs(moderator());
+
+    $tag = Tag::factory()
+        ->named(array_fill_keys(config('einundzwanzig.tag_locales'), 'Rodiny s dětmi'))
+        ->create(['type' => 'meetup_event']);
+
+    $component = Livewire::test('tags.moderation')->call('edit', $tag->id);
+
+    foreach (['de', 'en', 'es', 'hu', 'lv', 'nl', 'pl', 'pt'] as $wrong) {
+        $component->set('editNames.'.$wrong, '');
+    }
+
+    $component->call('save')->assertHasNoErrors();
+
+    $fresh = $tag->fresh();
+
+    expect($fresh->getTranslations('name'))->toBe(['cs' => 'Rodiny s dětmi'])
+        ->and($fresh->displayLocale('nl'))->toBe('cs')
+        ->and($fresh->isDisplayNameSubstituted('nl'))->toBeTrue()
+        // The language is gone from the stored column, not stored as "". Spatie's
+        // readers filter an empty value out either way (measured 2026-09-05), so only
+        // the raw attribute can tell the two apart — and only this keeps the column
+        // from collecting a dead entry per cleared language.
+        ->and(json_decode($fresh->getAttributes()['name'], true))->toBe(['cs' => 'Rodiny s dětmi']);
+});
+
+it('refuses to leave a tag without any name', function () {
+    // A nameless tag cannot be persisted at all (tags.slug is NOT NULL, and a slug
+    // comes from a name), and it would render as a blank row in every picker.
+    $this->actingAs(moderator());
+
+    $tag = Tag::factory()->named(['de' => 'Selbstverwahrung'])->create(['type' => 'meetup_event']);
+
+    $component = Livewire::test('tags.moderation')->call('edit', $tag->id);
+
+    foreach (config('einundzwanzig.tag_locales') as $locale) {
+        $component->set('editNames.'.$locale, '');
+    }
+
+    $component->call('save')->assertHasErrors('editNames');
+
+    expect($tag->fresh()->getTranslation('name', 'de', false))->toBe('Selbstverwahrung');
+});
+
+it('refuses a name that is too short or too long', function () {
+    $this->actingAs(moderator());
+
+    $tag = Tag::factory()->named(['de' => 'Selbstverwahrung'])->create(['type' => 'meetup_event']);
+
+    Livewire::test('tags.moderation')
+        ->call('edit', $tag->id)
+        ->set('editNames.cs', 'x')
+        ->call('save')
+        ->assertHasErrors('editNames.cs');
+
+    Livewire::test('tags.moderation')
+        ->call('edit', $tag->id)
+        ->set('editNames.cs', str_repeat('a', 61))
+        ->call('save')
+        ->assertHasErrors('editNames.cs');
+
+    expect($tag->fresh()->getTranslation('name', 'cs', false))->toBe('');
+});
+
+it('keeps the slug of a renamed language and of every other one', function () {
+    /*
+     * Tag::bootHasSlug() exists so a public URL is never rewritten by a later edit
+     * (commit fd48fa7: an API patch turned "nuernberg" into "nurnberg"). Editing names
+     * on this screen is exactly the kind of unrelated save that used to do it.
+     */
+    $this->actingAs(moderator());
+
+    $tag = Tag::factory()->named(['de' => 'Nürnberg Treff', 'en' => 'Nuremberg Meetup'])
+        ->create(['type' => 'meetup_event']);
+
+    // The tag slugger is Str::slug without a language option, so this is
+    // "nurnberg-treff" and not the "nuernberg-treff" that Meetup and City produce.
+    // What is being pinned here is that the value does not MOVE, whatever it is.
+    $slugsBefore = $tag->getTranslations('slug');
+    expect($slugsBefore['de'])->toBe('nurnberg-treff');
+
+    Livewire::test('tags.moderation')
+        ->call('edit', $tag->id)
+        ->set('editNames.de', 'Nürnberger Stammtisch')
+        ->set('editNames.cs', 'Norimberské setkání')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $fresh = $tag->fresh();
+
+    expect($fresh->getTranslation('slug', 'de'))->toBe($slugsBefore['de'])
+        ->and($fresh->getTranslation('slug', 'en'))->toBe($slugsBefore['en'])
+        // A language that had no name gets a slug now, which is the only new one.
+        ->and($fresh->getTranslation('slug', 'cs'))->toBe('norimberske-setkani')
+        ->and($fresh->getTranslation('name', 'de', false))->toBe('Nürnberger Stammtisch');
+});
+
+it('keeps the slug of a language whose name was removed', function () {
+    // Deliberate: the slug outlives the name it came from, so a different name in
+    // that language later cannot take over a URL that is already in the wild.
+    $this->actingAs(moderator());
+
+    $tag = Tag::factory()->named(['de' => 'Nürnberg Treff', 'en' => 'Nuremberg Meetup'])
+        ->create(['type' => 'meetup_event']);
+
+    $slugsBefore = $tag->getTranslations('slug');
+
+    Livewire::test('tags.moderation')
+        ->call('edit', $tag->id)
+        ->set('editNames.en', '')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $fresh = $tag->fresh();
+
+    expect($fresh->getTranslation('name', 'en', false))->toBe('')
+        ->and($fresh->getTranslations('slug'))->toBe($slugsBefore);
+});
+
+it('normalises whitespace in a name, as the picker does', function () {
+    $this->actingAs(moderator());
+
+    $tag = Tag::factory()->named(['de' => 'Selbstverwahrung'])->create(['type' => 'meetup_event']);
+
+    Livewire::test('tags.moderation')
+        ->call('edit', $tag->id)
+        ->set('editNames.en', "  Self   custody \n")
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($tag->fresh()->getTranslation('name', 'en', false))->toBe('Self custody');
+});
+
+it('flags a tag whose nine names were copied by the old picker', function () {
+    /*
+     * The three production rows of 2026-09-05 (Poker, Pubkvíz, Rodiny s dětmi): one
+     * typed word in all nine languages, no source language recorded. No migration
+     * repairs them, because which of the nine is the original exists nowhere in the
+     * data — so the screen says so where the person who can read the word works.
+     */
+    $this->actingAs(moderator());
+
+    $copied = Tag::factory()
+        ->pending(User::factory()->create())
+        ->named(array_fill_keys(config('einundzwanzig.tag_locales'), 'Rodiny s dětmi'))
+        ->create(['type' => 'meetup_event']);
+
+    Livewire::test('tags.moderation')
+        ->call('edit', $copied->id)
+        ->assertSee('vermutlich vom alten Picker kopiert');
+});
+
+it('does not flag a seeded proper noun that is the same word everywhere', function () {
+    // Bitcoin, Nostr, Lightning: nine identical names on purpose. `created_by` is what
+    // separates them from the picker's copies.
+    $this->actingAs(moderator());
+
+    $seeded = Tag::factory()
+        ->named(array_fill_keys(config('einundzwanzig.tag_locales'), 'Bitcoin'))
+        ->create(['type' => 'meetup_event']);
+
+    // SetsCreatedBy stamps the acting user on anything created inside a request; a
+    // seeder runs on the console, where there is none. Reproduce that here.
+    $seeded->newQuery()->whereKey($seeded->id)->update(['created_by' => null]);
+
+    Livewire::test('tags.moderation')
+        ->call('edit', $seeded->id)
+        ->assertDontSee('vermutlich vom alten Picker kopiert');
+});
+
+it('keeps a non-editor out of the name editor', function () {
+    $outsider = User::factory()->create(['nostr' => null]);
+    $tag = Tag::factory()->named(['de' => 'Selbstverwahrung'])->create(['type' => 'meetup_event']);
+
+    $this->actingAs($outsider);
+
+    Livewire::test('tags.moderation')->assertStatus(403);
+
+    expect($outsider->can('update', $tag))->toBeFalse()
+        ->and($tag->fresh()->getTranslation('name', 'de', false))->toBe('Selbstverwahrung');
+});

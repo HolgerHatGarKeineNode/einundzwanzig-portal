@@ -6,6 +6,7 @@ use App\Actions\MeetupEvents\CreateMeetupEventSeries;
 use App\Http\Requests\Api\StoreMeetupEventRequest;
 use App\Http\Resources\MeetupEventResource;
 use App\Mcp\Tools\Concerns\ResolvesEntities;
+use App\Mcp\Tools\Concerns\ResolvesEventTags;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -20,6 +21,7 @@ use Laravel\Mcp\Server\Tool;
 class CreateMeetupEventTool extends Tool
 {
     use ResolvesEntities;
+    use ResolvesEventTags;
 
     public function __construct(private readonly CreateMeetupEventSeries $createSeries) {}
 
@@ -63,6 +65,25 @@ class CreateMeetupEventTool extends Tool
         );
 
         /*
+         * Tags are resolved BEFORE anything is written, and they are resolved in the
+         * tool rather than in StoreMeetupEventRequest (issue #117).
+         *
+         * The request object is shared with the public REST API, so a `tags` rule there
+         * would hand that API a new write capability as a side effect of an MCP ticket.
+         * Keeping it out also means `tags` never appears in $validated — Validator only
+         * returns keys it has a rule for — and that is what keeps the name list away
+         * from MeetupEvent::create() below. It matters: HasTags::setTagsAttribute()
+         * would queue the raw strings and the `created` hook would push them through
+         * Tag::findOrCreate() with a null type, inventing a tag per unknown name. This
+         * feature must never create a tag.
+         */
+        $tags = $this->resolveTagArgument($request);
+
+        if ($tags instanceof Response) {
+            return $tags;
+        }
+
+        /*
          * Serie oder Einzeltermin — dieselbe Weiche wie in
          * {@see \App\Http\Controllers\Api\MeetupEventController::store()}.
          *
@@ -78,12 +99,30 @@ class CreateMeetupEventTool extends Tool
         if (! empty($validated['recurrence_type']) && ! empty($validated['recurrence_end_date'])) {
             $events = $this->createSeries->handle($validated);
 
+            // Every occurrence of a series carries the same tags — the same rule the
+            // Livewire editor follows, where one selection is applied to the whole
+            // series rather than to its first date only.
+            $events->each(function (MeetupEvent $event) use ($tags): void {
+                if ($tags !== null) {
+                    $event->syncTagsWithType($tags->all(), self::EVENT_TAG_TYPE);
+                }
+
+                $event->load('tags');
+            });
+
             return Response::json(MeetupEventResource::collection($events)->resolve());
         }
 
         $meetupEvent = MeetupEvent::create($validated);
 
-        return Response::json(MeetupEventResource::make($meetupEvent->fresh())->resolve());
+        if ($tags !== null) {
+            $meetupEvent->syncTagsWithType($tags->all(), self::EVENT_TAG_TYPE);
+        }
+
+        // load('tags') so the answer shows what was actually attached: the resource
+        // emits tags under whenLoaded(), so without it the key would be absent and the
+        // caller could not tell "no tags" from "this tool does not do tags".
+        return Response::json(MeetupEventResource::make($meetupEvent->fresh()->load('tags'))->resolve());
     }
 
     /**
@@ -100,6 +139,7 @@ class CreateMeetupEventTool extends Tool
             'location' => $schema->string()->description('Veranstaltungsort.'),
             'description' => $schema->string()->description('Beschreibung des Termins.'),
             'link' => $schema->string()->description('Link zum Termin (URL).'),
+            'tags' => $schema->array()->items($schema->string())->description('Themen-Tags dieses Termins, als NAMEN (z. B. ["Vortrag", "Einsteiger"]). Zulässig sind ausschließlich die Namen aus list-event-tags; erkannt wird jede der neun Sprachen, Groß-/Kleinschreibung egal. Ein unbekannter oder mehrdeutiger Name wird abgelehnt und es wird NIE ein Tag neu angelegt — dann bricht der ganze Aufruf ab, es entsteht kein Termin. Bei einer Serie erhalten alle Vorkommen dieselben Tags.'),
             'recurrence_type' => $schema->string()->description('Wiederholungstyp.'),
             'recurrence_day_of_week' => $schema->string()->description('Wochentag der Wiederholung.'),
             'recurrence_day_position' => $schema->string()->description('Position des Wochentags im Monat.'),

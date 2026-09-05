@@ -2,6 +2,7 @@
 
 use App\Models\Tag;
 use App\Support\TagEditorGate;
+use App\Support\TagLocales;
 use App\Traits\SeoTrait;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
@@ -65,6 +66,22 @@ new class extends Component
     public string $editIcon = 'tag';
 
     public string $editDescription = '';
+
+    /**
+     * locale => name, one entry per tag locale, empty where the tag has no name.
+     *
+     * All nine at once, unlike `editDescription`, which edits only the request's
+     * language. A description is prose somebody has to write; a name is the thing the
+     * picker matches on in every language, and filling the eight missing ones is the
+     * job this screen exists for — the owner's "Übersetzungen sollen ausfüllbar sein,
+     * für all unsere Sprachen".
+     *
+     * Not #[Locked]: the inputs write to it. Only keys from TagLocales::all() are ever
+     * read back out, so an extra key in a crafted snapshot reaches no translation.
+     *
+     * @var array<string, string>
+     */
+    public array $editNames = [];
 
     /**
      * What just happened to the order, announced politely.
@@ -172,16 +189,47 @@ new class extends Component
      */
     public function getEditLocaleProperty(): string
     {
-        $locales = (array) config('einundzwanzig.tag_locales', []);
-        $current = app()->getLocale();
+        return TagLocales::current();
+    }
 
-        if (in_array($current, $locales, true)) {
-            return $current;
+    /**
+     * The languages the open editor has no name for — what is left to fill.
+     *
+     * Read from the form, not from the stored tag, so it answers for what the
+     * moderator is looking at right now.
+     *
+     * @return array<int, string>
+     */
+    public function getMissingNameLocalesProperty(): array
+    {
+        return collect(TagLocales::all())
+            ->filter(fn (string $locale): bool => trim((string) ($this->editNames[$locale] ?? '')) === '')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Whether the open editor shows the fingerprint of the old picker: one string
+     * copied into every language, and no source language recorded.
+     *
+     * Three production rows were in that state on 2026-09-05 (`Poker`, `Pubkvíz`,
+     * `Rodiny s dětmi`). No migration repairs them, because which of the nine
+     * identical strings is the original is recorded nowhere — the missing fact lives
+     * with the person reading the word, and this is where that person works. Seeded
+     * tags are excluded by `created_by`: their nine identical names are a deliberate
+     * proper noun (Bitcoin, Nostr, Lightning), not damage.
+     */
+    public function looksLikeCopiedNames(Tag $tag): bool
+    {
+        if ($tag->created_by === null || $tag->source_locale !== null) {
+            return false;
         }
 
-        $fallback = (string) config('app.fallback_locale');
+        $names = collect(TagLocales::all())
+            ->map(fn (string $locale): string => (string) $tag->getTranslation('name', $locale, false))
+            ->filter();
 
-        return in_array($fallback, $locales, true) ? $fallback : (string) ($locales[0] ?? 'de');
+        return $names->count() === count(TagLocales::all()) && $names->unique()->count() === 1;
     }
 
     /**
@@ -269,6 +317,12 @@ new class extends Component
 
         $this->editDescription = (string) $tag->getTranslation('description', $this->editLocale, false);
 
+        $this->editNames = collect(TagLocales::all())
+            ->mapWithKeys(fn (string $locale): array => [
+                $locale => (string) $tag->getTranslation('name', $locale, false),
+            ])
+            ->all();
+
         $this->resetValidation();
     }
 
@@ -277,7 +331,24 @@ new class extends Component
         $this->editingId = null;
         $this->editIcon = 'tag';
         $this->editDescription = '';
+        $this->editNames = [];
         $this->resetValidation();
+    }
+
+    /**
+     * Collapse runs of whitespace and trim, exactly as the picker does before it
+     * stores a typed name. Without it "Vortrag " and "Vortrag" are two different
+     * names to every comparison in the codebase, including the duplicate guard.
+     *
+     * @return array<string, string>
+     */
+    private function normalisedEditNames(): array
+    {
+        return collect(TagLocales::all())
+            ->mapWithKeys(fn (string $locale): array => [
+                $locale => trim(preg_replace('/\s+/u', ' ', (string) ($this->editNames[$locale] ?? '')) ?? ''),
+            ])
+            ->all();
     }
 
     public function save(): void
@@ -286,10 +357,49 @@ new class extends Component
 
         $this->authorize('update', $tag);
 
+        $names = $this->normalisedEditNames();
+        $this->editNames = $names;
+
         $this->validate([
             'editIcon' => ['required', 'string', Rule::in((array) config('einundzwanzig.tag_icons', []))],
             'editDescription' => ['nullable', 'string', 'max:280'],
+            /*
+             * A tag with no name at all cannot be saved — `tags.slug` is NOT NULL and
+             * a slug is derived from a name — and it would read as a blank row in every
+             * picker. The bound rule is on the array rather than the fields, because the
+             * requirement is about the set: any one of the nine will do.
+             */
+            'editNames' => ['array', function (string $attribute, mixed $value, Closure $fail) use ($names): void {
+                if (collect($names)->filter()->isEmpty()) {
+                    $fail(__('Mindestens eine Sprache muss einen Namen tragen.'));
+                }
+            }],
+            'editNames.*' => ['nullable', 'string', 'min:2', 'max:60'],
         ]);
+
+        /*
+         * One locale at a time, and an emptied field forgets that language rather than
+         * storing "" — the same rule the description follows. Measured 2026-09-05:
+         * Spatie's readers (getTranslations, getTranslatedLocales, hasTranslation, and
+         * therefore displayLocale) already filter an empty value out, so this is about
+         * the stored row, not about behaviour: without it the JSON column collects a
+         * dead `"en":""` for every language a moderator ever cleared.
+         *
+         * The SLUG is deliberately untouched here. Tag::bootHasSlug() adds one for a
+         * locale that has a name and no slug yet and never rewrites an existing one
+         * (commit fd48fa7), so renaming keeps the public URL and a forgotten name
+         * leaves its slug behind. Dropping that slug would let a later, different name
+         * in the same language take over a URL that is already in the wild.
+         */
+        foreach ($names as $locale => $name) {
+            if ($name === '') {
+                $tag->forgetTranslation('name', $locale);
+
+                continue;
+            }
+
+            $tag->setTranslation('name', $locale, $name);
+        }
 
         $tag->icon = $this->editIcon;
 

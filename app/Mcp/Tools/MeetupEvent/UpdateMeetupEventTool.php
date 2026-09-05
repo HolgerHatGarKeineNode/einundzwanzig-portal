@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\MeetupEvent;
 use App\Http\Requests\Api\UpdateMeetupEventRequest;
 use App\Http\Resources\MeetupEventResource;
 use App\Mcp\Tools\Concerns\ResolvesEntities;
+use App\Mcp\Tools\Concerns\ResolvesEventTags;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -19,6 +20,7 @@ use Laravel\Mcp\Server\Tool;
 class UpdateMeetupEventTool extends Tool
 {
     use ResolvesEntities;
+    use ResolvesEventTags;
 
     public function handle(Request $request): Response
     {
@@ -40,9 +42,36 @@ class UpdateMeetupEventTool extends Tool
 
         $validated = $request->validate((new UpdateMeetupEventRequest)->rules());
 
+        /*
+         * Resolved BEFORE the update, so a name that cannot be resolved leaves the
+         * event exactly as it was — a half-applied tag list is worse than a rejected
+         * one, and so is an event whose other fields moved while its tags did not.
+         *
+         * Resolution lives here and not in UpdateMeetupEventRequest because that
+         * request is shared with the public REST API: a `tags` rule there would give
+         * that API a new write capability as a side effect of an MCP ticket. The REST
+         * API therefore still cannot write tags.
+         *
+         * null means "leave the tags alone" — both when the key is missing and when it
+         * is explicitly null. See {@see ResolvesEventTags::resolveTagArgument()} for
+         * why the null case is spelled out rather than left to `sometimes` (issue #70).
+         */
+        $tags = $this->resolveTagArgument($request);
+
+        if ($tags instanceof Response) {
+            return $tags;
+        }
+
         $meetupEvent->update($validated);
 
-        return Response::json(MeetupEventResource::make($meetupEvent->fresh())->resolve());
+        if ($tags !== null) {
+            // Replaces the whole set in one step, scoped to the event tag group so
+            // tags of any other type on this event stay untouched. An empty collection
+            // is therefore "remove every tag", not "do nothing".
+            $meetupEvent->syncTagsWithType($tags->all(), self::EVENT_TAG_TYPE);
+        }
+
+        return Response::json(MeetupEventResource::make($meetupEvent->fresh()->load('tags'))->resolve());
     }
 
     /**
@@ -60,6 +89,7 @@ class UpdateMeetupEventTool extends Tool
             'location' => $schema->string()->description('Veranstaltungsort.'),
             'description' => $schema->string()->description('Beschreibung des Termins.'),
             'link' => $schema->string()->description('Link zum Termin (URL).'),
+            'tags' => $schema->array()->items($schema->string())->description('Ersetzt die Themen-Tags des Termins VOLLSTÄNDIG, als NAMEN (z. B. ["Vortrag", "Einsteiger"]). Weglassen lässt die bestehenden Tags unverändert; [] entfernt alle. Zulässig sind ausschließlich die Namen aus list-event-tags; erkannt wird jede der neun Sprachen, Groß-/Kleinschreibung egal. Ein unbekannter oder mehrdeutiger Name wird abgelehnt, der Termin bleibt dabei unverändert, und es wird NIE ein Tag neu angelegt.'),
             'recurrence_type' => $schema->string()->description('Wiederholungstyp.'),
             'recurrence_day_of_week' => $schema->string()->description('Wochentag der Wiederholung.'),
             'recurrence_day_position' => $schema->string()->description('Position des Wochentags im Monat.'),

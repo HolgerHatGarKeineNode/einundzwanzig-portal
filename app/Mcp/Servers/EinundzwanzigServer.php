@@ -25,6 +25,7 @@ use App\Mcp\Tools\MeetupEvent\ListMyMeetupEventsTool;
 use App\Mcp\Tools\MeetupEvent\ShowMyMeetupEventTool;
 use App\Mcp\Tools\MeetupEvent\UpdateMeetupEventTool;
 use App\Mcp\Tools\Search\ListCountriesTool;
+use App\Mcp\Tools\Search\ListEventTagsTool;
 use App\Mcp\Tools\Search\SearchCitiesTool;
 use App\Mcp\Tools\Search\SearchCoursesTool;
 use App\Mcp\Tools\Search\SearchLecturersTool;
@@ -151,6 +152,7 @@ class EinundzwanzigServer extends Server
         SearchLecturersTool::class,
         SearchCoursesTool::class,
         ListCountriesTool::class,
+        ListEventTagsTool::class,
 
         // Super-Admin: generische Tools für ALLE Models (nur für Super-Admins sichtbar,
         // via shouldRegister; created_by/Ownership-Beschränkungen entfallen hier bewusst).
