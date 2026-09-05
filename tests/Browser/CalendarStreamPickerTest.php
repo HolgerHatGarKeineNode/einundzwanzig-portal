@@ -147,3 +147,154 @@ it('keeps the calendar trigger on one line at every width', function () {
         expect($measured)->toBeLessThanOrEqual(56, "trigger wrapped at {$width}px: {$measured}px");
     }
 });
+
+/*
+ * Issue #55, item 1: 419 timezone identifiers behind a plain <select> inside a
+ * 320px popover. The component now uses the repo's own house pattern for these
+ * lists (`variant="listbox" searchable` with a search slot — same as
+ * livewire/timezone/chooser.blade.php and livewire/country/chooser.blade.php).
+ *
+ * "Searchable" is a claim about a rendered layer, not about markup: the option
+ * list is a separate `popover="manual"` element (flux-pro
+ * select/options.blade.php), positioned outside the picker's own panel, so it
+ * can sit off-screen while every CSS assertion on the page still passes. This
+ * measures it on the narrowest phone width the project cares about.
+ */
+it('keeps the 419-entry timezone list searchable and inside its container at 375px', function () {
+    $page = visit('/de/meetups');
+
+    // resize() returns before the layout has reflowed; measuring straight after
+    // it reads mid-reflow geometry (see EventHeaderFitsColumnTest).
+    $page->resize(375, 812)->wait(1.2);
+
+    $page->click('[data-testid^="calendar-stream-"][data-testid$="-trigger"]')
+        ->assertVisible('[data-testid^="calendar-stream-"][data-testid$="-panel"]')
+        ->wait(0.5);
+
+    $page->click('[data-testid^="calendar-stream-"][data-testid$="-timezone"]')->wait(0.8);
+
+    $measured = $page->script(<<<'JS'
+        (() => {
+            const round = (n) => Math.round(n * 100) / 100;
+            const box = (el) => {
+                const r = el.getBoundingClientRect();
+                return { left: round(r.left), right: round(r.right), top: round(r.top), bottom: round(r.bottom), width: round(r.width), height: round(r.height) };
+            };
+
+            const panel = document.querySelector('[data-testid^="calendar-stream-"][data-testid$="-panel"]');
+            const select = document.querySelector('[data-testid^="calendar-stream-"][data-testid$="-timezone"]');
+            const options = select.querySelector('[data-flux-options]');
+            const search = options ? options.querySelector('[data-flux-select-search] input') : null;
+            const list = options ? options.querySelector('ui-options') : null;
+            const all = list ? Array.from(list.querySelectorAll('ui-option')) : [];
+            const visible = all.filter((el) => el.getBoundingClientRect().height > 0);
+
+            const widest = visible.reduce((max, el) => Math.max(max, el.getBoundingClientRect().right), 0);
+
+            return {
+                panel: box(panel),
+                options: options ? box(options) : null,
+                optionsOpen: options ? options.matches(':popover-open') : false,
+                search: search ? box(search) : null,
+                searchVisible: search ? search.checkVisibility({ checkVisibilityCSS: true }) : false,
+                list: list ? box(list) : null,
+                listScrollHeight: list ? list.scrollHeight : null,
+                optionCountTotal: all.length,
+                optionCountVisible: visible.length,
+                widestOptionRight: round(widest),
+                optionOverflowPastList: list ? round(widest - list.getBoundingClientRect().right) : null,
+                viewport: { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight },
+                documentOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+            };
+        })()
+    JS);
+
+    // The 419 identifiers really are all in the DOM — otherwise "searchable"
+    // would be measuring an empty list.
+    expect($measured['optionCountTotal'])->toBe(count(DateTimeZone::listIdentifiers()));
+
+    // The search field is the whole point of item 1: it has to be on screen.
+    expect($measured['searchVisible'])->toBeTrue();
+    expect($measured['search']['left'])->toBeGreaterThanOrEqual(0);
+    expect($measured['search']['right'])->toBeLessThanOrEqual($measured['viewport']['width']);
+    expect($measured['search']['top'])->toBeGreaterThanOrEqual(0);
+    expect($measured['search']['bottom'])->toBeLessThanOrEqual($measured['viewport']['height']);
+
+    // The list itself must not run past its own popover, and the popover must
+    // not run past the viewport — a floating layer does not grow scrollWidth,
+    // so document overflow cannot stand in for this.
+    expect($measured['optionOverflowPastList'])->toBeLessThanOrEqual(1);
+    expect($measured['options']['left'])->toBeGreaterThanOrEqual(0);
+    expect($measured['options']['right'])->toBeLessThanOrEqual($measured['viewport']['width']);
+    expect($measured['documentOverflow'])->toBe(0);
+
+    // And it filters: typing has to cut the list down, otherwise the search box
+    // is decoration.
+    $page->type('[data-testid$="-timezone"] [data-flux-select-search] input', 'Berlin')->wait(0.6);
+
+    $filtered = $page->script(<<<'JS'
+        (() => {
+            const select = document.querySelector('[data-testid^="calendar-stream-"][data-testid$="-timezone"]');
+            const list = select.querySelector('[data-flux-options] ui-options');
+            const visible = Array.from(list.querySelectorAll('ui-option'))
+                .filter((el) => el.getBoundingClientRect().height > 0);
+
+            return {
+                visibleCount: visible.length,
+                labels: visible.slice(0, 5).map((el) => el.textContent.trim()),
+            };
+        })()
+    JS);
+
+    expect($filtered['visibleCount'])->toBeGreaterThan(0)
+        ->and($filtered['visibleCount'])->toBeLessThan(10)
+        ->and($filtered['labels'])->toContain('Europe/Berlin');
+});
+
+/*
+ * Issue #55, item 4: the component used to build its `data-testid` values from
+ * Str::random(8). On /{country}/meetups it sits next to `wire:model.live="search"`
+ * (meetups/index.blade.php:76-81), so every keystroke re-rendered the component
+ * with fresh ids and every selector-based measurement of it silently addressed a
+ * node that no longer existed.
+ *
+ * Reading the Blade cannot prove the fix — a per-request counter, a component id
+ * and a random string all look equally stable in source. This renders the
+ * component twice, with a real Livewire round trip in between, and compares.
+ */
+it('keeps its test ids across a Livewire re-render of the meetups search field', function () {
+    Meetup::factory()->create([
+        'city_id' => City::query()->firstOrFail()->id,
+        'name' => 'Issue 55 Stable Ids Meetup',
+        'visible_on_map' => true,
+    ]);
+
+    $page = visit('/de/meetups');
+    $page->resize(1280, 900)->wait(1.2);
+
+    $collectIds = <<<'JS'
+        Array.from(document.querySelectorAll('[data-testid^="calendar-stream-"]'))
+            .map((el) => el.getAttribute('data-testid'))
+            .sort()
+    JS;
+
+    $before = $page->script($collectIds);
+
+    // The component ships six ids per instance (trigger, panel, the three
+    // selects, the two copy buttons); asserting on an empty array would pass
+    // vacuously.
+    expect($before)->not->toBeEmpty();
+
+    $page->type('input[placeholder^="Suche nach Meetups"]', 'Zzz')->wait(1.5);
+
+    // Positive control: the round trip really happened. Without this the
+    // comparison below could be comparing a page that never re-rendered.
+    $reRendered = $page->script(
+        "document.body.innerText.includes('Issue 55 Stable Ids Meetup') === false"
+    );
+    expect($reRendered)->toBeTrue();
+
+    $after = $page->script($collectIds);
+
+    expect($after)->toBe($before);
+});
