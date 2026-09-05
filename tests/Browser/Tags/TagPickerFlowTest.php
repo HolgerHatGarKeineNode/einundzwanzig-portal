@@ -35,8 +35,8 @@ it('shows only featured tags in the resting state and reveals the rest on typing
 
     $page->assertNoJavaScriptErrors();
 
-    // 15 event tags are rendered, only the 7 featured ones are visible at rest.
-    expect($total)->toBe(15)
+    // 16 event tags are rendered, only the 7 featured ones are visible at rest.
+    expect($total)->toBe(16)
         ->and($visible)->toBe(7);
 });
 
@@ -65,7 +65,7 @@ it('opens the panel and keeps the search working across languages', function () 
 it('returns to the resting state after a selection', function () {
     // The assumption under test: Flux clears its own input on select (clear="… select")
     // WITHOUT firing an input event. If our x-on:change reset does not compensate, the
-    // panel stays stuck in search mode and every later visit shows all 15 tags.
+    // panel stays stuck in search mode and every later visit shows all 16 tags.
     $page = visit("/de/meetup/{$this->meetup->id}/events/create");
     $page->wait(1);
 

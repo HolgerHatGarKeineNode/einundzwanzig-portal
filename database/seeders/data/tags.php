@@ -73,6 +73,12 @@ return [
             'de' => 'Einsteiger', 'en' => 'Beginners', 'cs' => 'Začátečníci', 'es' => 'Principiantes',
             'hu' => 'Kezdők', 'lv' => 'Iesācēji', 'nl' => 'Beginners', 'pl' => 'Początkujący', 'pt' => 'Iniciantes',
         ]],
+        // Between the two ends of the scale on purpose: the position in this file is
+        // the seeded `order_column`, and that column is what the picker sorts by.
+        ['icon' => 'book-open', 'featured' => false, 'name' => [
+            'de' => 'Mittelstufe', 'en' => 'Moderate', 'cs' => 'Mírně pokročilí', 'es' => 'Intermedio',
+            'hu' => 'Középhaladók', 'lv' => 'Vidēji pieredzējušiem', 'nl' => 'Halfgevorderden', 'pl' => 'Średniozaawansowani', 'pt' => 'Intermédio',
+        ]],
         ['icon' => 'academic-cap', 'featured' => false, 'name' => [
             'de' => 'Fortgeschrittene', 'en' => 'Advanced', 'cs' => 'Pokročilí', 'es' => 'Avanzado',
             'hu' => 'Haladók', 'lv' => 'Pieredzējušiem', 'nl' => 'Gevorderden', 'pl' => 'Zaawansowani', 'pt' => 'Avançado',

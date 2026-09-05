@@ -41,7 +41,7 @@ it('offers only event tags, not the library vocabulary', function () {
     $options = Livewire::test('tags.picker', ['type' => 'meetup_event'])
         ->instance()->options;
 
-    expect($options)->toHaveCount(15)
+    expect($options)->toHaveCount(16)
         ->and($options->pluck('type')->unique()->all())->toBe(['meetup_event']);
 });
 

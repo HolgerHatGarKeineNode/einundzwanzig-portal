@@ -178,7 +178,7 @@ it('reduces the real production set from 89 to 75 and leaves it seedable', funct
 
     $this->seed(TagSeeder::class);
 
-    // The seeder adds the 15 event tags on top; nothing gets duplicated.
-    expect(Tag::query()->where('type', 'meetup_event')->count())->toBe(15)
+    // The seeder adds the 16 event tags on top; nothing gets duplicated.
+    expect(Tag::query()->where('type', 'meetup_event')->count())->toBe(16)
         ->and(Tag::query()->where('type', 'library_item')->count())->toBe(74);
 });
