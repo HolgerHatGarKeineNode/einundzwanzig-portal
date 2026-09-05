@@ -2,17 +2,60 @@
 
 use Livewire\Component;
 
-new class extends Component {
+new class extends Component
+{
     public $langCountry;
 
-    public function mount() {
-        $this->langCountry = session('lang_country', config('lang-country.fallback'));
+    public function mount()
+    {
+        $this->langCountry = $this->offeredLangCountry(
+            (string) session('lang_country', config('lang-country.fallback'))
+        );
     }
 
-    public function getLanguagesProperty() {
+    /**
+     * Map the session locale onto the option set this select actually renders.
+     *
+     * The two sides are deliberately NOT the same set. `config('lang-country.allowed')`
+     * lists 33 locales that may legitimately sit in `session('lang_country')` — the
+     * Accept-Language guess in DomainMiddleware and the package's own login listener both
+     * produce them — while the options below are limited to languages that have a
+     * `lang/*.json` file, 17 today. The other 16 (fr-*, it-*, ru-RU, da-DA, ...) are
+     * locales the portal cannot switch its interface to, so widening the options would
+     * offer translations that do not exist. Narrowing `allowed` would take away locale
+     * formats that do work.
+     *
+     * So this side gives way: a value with no matching <ui-option> is never bound. Flux'
+     * `ui-selected` element throws `Could not find option for value "…"` while rendering
+     * one (issue #73), and because the select sits in the sidebar that hits every page —
+     * measured on the meetup list, the meetup page and the event page, one uncaught error
+     * per page load.
+     *
+     * The match is case-insensitive and answers with the OFFERED spelling, which is the
+     * half of #73 that was actually reported: a session still carrying `de-de` now selects
+     * `de-DE` instead of throwing. Casing is the one difference that names the same locale,
+     * so correcting it is not a guess.
+     *
+     * No match at all means no selection: the placeholder is the honest answer for a
+     * locale this portal cannot offer, and `updatedLangCountry()` already treats an empty
+     * selection as "nothing chosen", so nothing redirects off the back of it.
+     */
+    private function offeredLangCountry(string $langCountry): ?string
+    {
+        foreach ($this->languages as $option) {
+            if (mb_strtolower($option['value']) === mb_strtolower($langCountry)) {
+                return $option['value'];
+            }
+        }
+
+        return null;
+    }
+
+    public function getLanguagesProperty()
+    {
         // Scan lang folder for available languages
         $availableLanguages = collect(glob(base_path('lang/*.json')))
-            ->map(fn($file) => pathinfo($file, PATHINFO_FILENAME))
+            ->map(fn ($file) => pathinfo($file, PATHINFO_FILENAME))
             ->toArray();
 
         $allLanguages = config('lang-country.languages');
@@ -30,7 +73,7 @@ new class extends Component {
                 [$lang, $countryCode] = explode('-', $langCountry);
                 $options[] = [
                     'value' => $langCountry,
-                    'label' => $langData['name'] . ' (' . strtoupper($countryCode) . ')',
+                    'label' => $langData['name'].' ('.strtoupper($countryCode).')',
                 ];
             }
         }
