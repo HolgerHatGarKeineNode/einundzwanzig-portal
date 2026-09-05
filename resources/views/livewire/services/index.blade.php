@@ -27,6 +27,33 @@ class extends Component {
         $this->resetPage();
     }
 
+    /**
+     * Badge colours whose Flux text token misses WCAG 1.4.3 on the light page,
+     * mapped to the shade that clears it.
+     *
+     * Flux paints its soft badge with `text-<hue>-700` for amber and orange and
+     * `text-<hue>-800` for most of the rest. On the light page that leaves those
+     * two short of the 4.5:1 a 14px/500 chip needs: measured at the pixel,
+     * amber-700 #BB4D00 on #FFEEBF is 4.368:1 and orange-700 #CA3500 on #FFE7CD
+     * is 4.369:1 — the same amber issue #98 took off the webhook badge. One
+     * shade darker fixes both without touching the fill, so the chip keeps the
+     * colour that identifies the service type.
+     *
+     * Dark mode is not affected (4.694:1 and 5.162:1 measured), but the dark
+     * token has to be restated: the override is `!` so that it beats Flux'
+     * unconditional `text-<hue>-700`, and an unqualified `!` would otherwise
+     * outrank `dark:text-<hue>-200` as well.
+     *
+     * @return array<string, string>
+     */
+    private function textContrastOverrides(): array
+    {
+        return [
+            'amber' => 'text-amber-800! dark:text-amber-200!',
+            'orange' => 'text-orange-800! dark:text-orange-200!',
+        ];
+    }
+
     public function with(): array
     {
         return [
@@ -37,6 +64,7 @@ class extends Component {
                 ->orderBy('name')
                 ->paginate(15),
             'types' => \App\Enums\SelfHostedServiceType::cases(),
+            'textContrastOverrides' => $this->textContrastOverrides(),
         ];
     }
 }; ?>
@@ -57,14 +85,36 @@ class extends Component {
         </div>
     </div>
 
-    <!-- Type Filter Cloud -->
+    {{--
+        Type filter cloud. The selected/unselected difference is carried by an
+        edge and a glyph, never by `opacity` and never by a second fill.
+
+        `opacity` fades the text and the fill by the same factor, so the ratio
+        between them collapses with it: `opacity-70` measured 2.756–4.050:1 on
+        the light page and 3.505–4.093:1 on the dark one, i.e. all ten service
+        colours below the 4.5:1 that 14px/500 demands (WCAG 1.4.3, issue #114).
+        Flux' own pair — text-<hue>-700/800 on bg-<hue>-400/20 light,
+        text-<hue>-200 on bg-<hue>-400/40 dark — clears 4.5:1 on its own, so
+        both states keep it untouched and nothing here is per-hue.
+
+        `inset-ring-current` is the badge's own text colour, which means the
+        indicator inherits whatever contrast the text already has (>= 4.5:1,
+        well past the 3:1 that 1.4.11 asks of a state indicator) for all ten
+        hues at once, and the check glyph keeps the state off colour alone
+        (1.4.1). Inset rather than outset: it stays inside the border box, so
+        selecting a chip does not move its neighbours.
+    --}}
     <div class="flex flex-wrap gap-2 mb-6">
         @foreach($types as $type)
             <flux:badge
                 wire:click="filterByType('{{ $type->value }}')"
                 size="lg"
                 color="{{ $type->color() }}"
-                class="cursor-pointer transition-opacity {{ $typeFilter === $type->value ? 'ring-2 ring-offset-2' : 'opacity-70 hover:opacity-100' }}"
+                :icon="$typeFilter === $type->value ? 'check' : null"
+                data-testid="service-type-chip"
+                data-type="{{ $type->value }}"
+                data-selected="{{ $typeFilter === $type->value ? 'true' : 'false' }}"
+                class="cursor-pointer transition-shadow duration-150 ease-out {{ $textContrastOverrides[$type->color()] ?? '' }} {{ $typeFilter === $type->value ? 'inset-ring-2 inset-ring-current' : 'hover:inset-ring-1 hover:inset-ring-current' }}"
             >
                 {{ $type->label() }}
             </flux:badge>
