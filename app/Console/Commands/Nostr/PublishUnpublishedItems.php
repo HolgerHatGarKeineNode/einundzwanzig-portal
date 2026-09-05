@@ -44,13 +44,32 @@ class PublishUnpublishedItems extends Command
     ];
 
     /**
-     * Only the schema gate below returns a non-zero exit code.
+     * Issue #84: every branch that prints an error now ends the run non-zero.
      *
-     * The other error branches (unsupported model, no text, a rejected publish) kept
-     * the exit code 0 they have always had; changing them would change what the
-     * scheduler sees for failures this issue never measured. Issue #72 is about the
-     * one branch that reports SUCCESS while hiding that it could not even ask the
-     * question.
+     * Until #84 only the schema gate from #72 did, so a publish that failed on every
+     * single run was invisible: routes/console.php schedules this hourly (MeetupEvent)
+     * and daily at 18:00 (Meetup), and ScheduleRunCommand::runEvent judges a run by its
+     * exit code alone — at 0 it raises nothing, dispatches no ScheduledTaskFailed and
+     * reports nothing, so the scheduler recorded a failing publisher as a success.
+     *
+     * TWO codes, not three, because a code only earns its place if a caller would act
+     * differently on it:
+     *
+     * - INVALID (2) — the invocation is wrong: `--model` names something this command
+     *   cannot query. No retry helps; a human has to fix the caller (routes/console.php
+     *   or the command line). This is what Symfony reserves 2 for, and it is the one
+     *   distinction worth making here: a configuration error, not a run failure.
+     * - FAILURE (1) — the invocation was right and the run did not publish: the schema
+     *   gate below, a record that yielded no text, or a publish that was refused. The
+     *   next scheduled run may well succeed, and #72's gate already uses this code.
+     *
+     * "No text generated" shares FAILURE with a refused publish instead of getting a
+     * third code, because the operator's next step is identical for both — read the
+     * error line, which names the model. A code nobody branches on is decoration.
+     *
+     * SUCCESS (0) still means "nothing to do": an empty queue is the normal state of an
+     * hourly run, and alarming on a healthy idle run would be worse than the defect
+     * this fixes.
      */
     public function handle(): int
     {
@@ -77,7 +96,7 @@ class PublishUnpublishedItems extends Command
         if (! $query) {
             $this->error("Unsupported model: {$modelName}");
 
-            return self::SUCCESS;
+            return self::INVALID;
         }
 
         /*
@@ -121,9 +140,13 @@ class PublishUnpublishedItems extends Command
                 $this->info("Published successfully for {$modelName}");
             } else {
                 $this->error("Failed to publish for {$modelName}: ".$result['errorOutput']);
+
+                return self::FAILURE;
             }
         } else {
             $this->error("No text generated for {$modelName}");
+
+            return self::FAILURE;
         }
 
         return self::SUCCESS;
