@@ -130,9 +130,9 @@ it('never returns an empty tag name, even for a german-only tag', function () {
 | Accept-Language — so the authenticated endpoints, the write responses and the
 | change-log/webhook envelope all answered in German no matter what was asked.
 |
-| Note the field name difference, and that it is deliberate: the hand-built array
-| above calls it `locale`, TagResource calls it `name_locale`. Renaming either
-| would break existing parsers, so both stay.
+| Note the field name difference: the hand-built array above calls it `locale`,
+| TagResource historically called it `name_locale`. Resolved in #57 by emitting both
+| from TagResource — see the "Issue #57" section below.
 |
 */
 it('returns the tag name in the requested locale on my-meetup-events', function () {
@@ -212,6 +212,63 @@ it('keeps answering in the display-chain default when nothing was requested', fu
 
     expect($row['tags'][0]['name'])->toBe('Vortrag')
         ->and($row['tags'][0]['name_locale'])->toBe('de');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Issue #57 — `locale` and `name_locale` are the same field under two names
+|--------------------------------------------------------------------------
+|
+| The decision on the naming split was additive, not a rename: `GET /api/meetup-events`
+| has always called the field `locale` and TagResource has always called it
+| `name_locale`, so TagResource now emits BOTH from the same resolved value. Renaming
+| would have broken every existing parser, webhook receivers included.
+|
+| These two tests are what keeps the pair honest: they must both be present and they
+| must never disagree — including when a fallback kicked in and the answer is not the
+| language that was asked for.
+|
+*/
+it('emits locale and name_locale with the same value', function () {
+    Sanctum::actingAs($user = User::factory()->create());
+
+    $event = MeetupEvent::factory()->create([
+        'meetup_id' => $this->meetup->id,
+        'created_by' => $user->id,
+    ]);
+    $event->attachTag(anEventTag('Vortrag'));
+
+    $tag = collect(
+        $this->getJson('/api/my-meetup-events?locale=cs')->assertOk()->json('data'),
+    )->firstWhere('id', $event->id)['tags'][0];
+
+    // array_key_exists, not the value: a key that silently disappeared would otherwise
+    // read as "both are null" and pass.
+    expect($tag)->toHaveKeys(['locale', 'name_locale'])
+        ->and($tag['locale'])->toBe('cs')
+        ->and($tag['name_locale'])->toBe($tag['locale']);
+});
+
+it('keeps locale and name_locale equal when a fallback answered instead', function () {
+    Sanctum::actingAs($user = User::factory()->create());
+
+    $event = MeetupEvent::factory()->create([
+        'meetup_id' => $this->meetup->id,
+        'created_by' => $user->id,
+    ]);
+    $event->attachTag(anEventTag('Vortrag'));
+
+    // `zz` is in no tag_locales list, so the display chain falls through to
+    // app.fallback_locale — the case where the answer is NOT what was asked for, and
+    // the one where a second, separately computed key would drift apart from the first.
+    $tag = collect(
+        $this->getJson('/api/my-meetup-events?locale=zz')->assertOk()->json('data'),
+    )->firstWhere('id', $event->id)['tags'][0];
+
+    expect($tag)->toHaveKeys(['locale', 'name_locale'])
+        ->and($tag['locale'])->toBe('en')
+        ->and($tag['name_locale'])->toBe($tag['locale'])
+        ->and($tag['name'])->toBe('Talk');
 });
 
 /*

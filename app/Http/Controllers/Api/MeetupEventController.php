@@ -29,6 +29,16 @@ use Symfony\Component\HttpFoundation\Response;
 class MeetupEventController extends Controller
 {
     /**
+     * The one description behind every `locale` query parameter of this controller.
+     *
+     * Five endpoints honour the parameter — the public list, `store`, `update`, `mine`
+     * and `mineShow` — and the API reference used to advertise it on the list alone
+     * (issue #57). Held as a constant rather than copied five times so the reference
+     * cannot start describing the same parameter in five slightly different ways.
+     */
+    private const LOCALE_PARAMETER_DESCRIPTION = 'Requested language for tag names (ISO 639-1, e.g. "cs"). Falls back to the Accept-Language header, then to the existing display-chain default. The language you actually get is in each tag\'s `locale` field, which can differ when the tag has no name in the requested language.';
+
+    /**
      * List meetup events
      *
      * Returns upcoming/past meetup events. With an optional date, the result is filtered
@@ -37,7 +47,7 @@ class MeetupEventController extends Controller
      * @return Collection<int, array<string, mixed>>
      */
     #[PathParameter(name: 'date', description: 'Optional date (Y-m-d); filters to the month of that date.', required: false, type: 'string')]
-    #[QueryParameter(name: 'locale', description: 'Requested language for tag names (ISO 639-1, e.g. "cs"). Falls back to the Accept-Language header, then to the existing display-chain default.', required: false, type: 'string')]
+    #[QueryParameter(name: 'locale', description: self::LOCALE_PARAMETER_DESCRIPTION, required: false, type: 'string')]
     #[ResponseAttribute(status: 400, description: 'The given date cannot be parsed (Y-m-d is expected).')]
     public function __invoke(Request $request, ?string $date = null): Collection
     {
@@ -157,6 +167,32 @@ class MeetupEventController extends Controller
     }
 
     /**
+     * List meetup events
+     *
+     * Returns every upcoming/past meetup event, unfiltered. The same list
+     * `GET /meetup-events/{date}` returns when no date is given.
+     *
+     * EXISTS FOR THE API REFERENCE, NOT FOR THE BEHAVIOUR (issue #57). The route used
+     * to be `meetup-events/{date?}` alone, and Scramble collapses an optional path
+     * parameter — it rewrites the URI with `Str::replace('?}', '}', …)` before building
+     * the operation, so the document held `/meetup-events/{date}` and nothing at all
+     * for the path consumers actually call. A route of its own is the only way to get
+     * that path generated rather than synthesised into the document afterwards.
+     *
+     * A SEPARATE METHOD rather than a second route onto `__invoke()`: the attributes
+     * are per method, so sharing one would put `#[PathParameter(name: 'date')]` on a
+     * path that has no `{date}` placeholder — invalid OpenAPI, measured. The body
+     * delegates, so there is exactly one implementation and the two paths cannot drift.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    #[QueryParameter(name: 'locale', description: self::LOCALE_PARAMETER_DESCRIPTION, required: false, type: 'string')]
+    public function index(Request $request): Collection
+    {
+        return $this->__invoke($request);
+    }
+
+    /**
      * Create meetup event
      *
      * Allows an authenticated user to create a meetup event programmatically.
@@ -167,6 +203,7 @@ class MeetupEventController extends Controller
      * upper limit of 100 meetup events), and the response contains the list of all created events.
      * Without these fields, a single meetup event is created.
      */
+    #[QueryParameter(name: 'locale', description: self::LOCALE_PARAMETER_DESCRIPTION, required: false, type: 'string')]
     #[ResponseAttribute(status: 401, description: 'Not authenticated.')]
     #[ResponseAttribute(status: 422, description: 'Validation error.')]
     public function store(StoreMeetupEventRequest $request, CreateMeetupEventSeries $createSeries): JsonResponse
@@ -193,6 +230,7 @@ class MeetupEventController extends Controller
      *
      * Updates a meetup event; only for the creator or a super admin.
      */
+    #[QueryParameter(name: 'locale', description: self::LOCALE_PARAMETER_DESCRIPTION, required: false, type: 'string')]
     #[ResponseAttribute(status: 403, description: 'Only the creator or a super admin may change the meetup event.')]
     #[ResponseAttribute(status: 422, description: 'Validation error.')]
     public function update(UpdateMeetupEventRequest $request, MeetupEvent $meetupEvent): MeetupEventResource
@@ -208,6 +246,7 @@ class MeetupEventController extends Controller
      * Returns all meetup events the authenticated user may edit
      * (created by themselves OR leader of the associated meetup), sorted by start time descending.
      */
+    #[QueryParameter(name: 'locale', description: self::LOCALE_PARAMETER_DESCRIPTION, required: false, type: 'string')]
     public function mine(Request $request): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', MeetupEvent::class);
@@ -226,6 +265,7 @@ class MeetupEventController extends Controller
      *
      * Shows a single meetup event created by the authenticated user.
      */
+    #[QueryParameter(name: 'locale', description: self::LOCALE_PARAMETER_DESCRIPTION, required: false, type: 'string')]
     #[ResponseAttribute(status: 403, description: 'Only the creator or a super admin may view the meetup event.')]
     public function mineShow(MeetupEvent $meetupEvent): MeetupEventResource
     {
