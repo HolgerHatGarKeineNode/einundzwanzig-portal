@@ -135,7 +135,64 @@ class PublishCalendarEvents extends Command
 
         $this->info("Published calendar event for {$modelName} #{$model->id}");
 
+        if ($model instanceof MeetupEvent) {
+            $this->refreshCalendarFor($model, $hexKey);
+        }
+
         return self::SUCCESS;
+    }
+
+    /**
+     * Re-send the meetup's kind 31924 calendar so that it lists the event just
+     * published (issue #104).
+     *
+     * WHY THIS IS NEEDED AT ALL. `NostrCalendarEventFactory::forMeetup()` builds the
+     * `a` tags from the events that already carry an `nostr_coordinate`, so a calendar
+     * is only ever right at the moment it is built. This command's Meetup arm is gated
+     * on `nostr_coordinate IS NULL` and never re-sends, so a calendar published before
+     * its events would stay empty for good — which is exactly what the reporter of #104
+     * saw. Kind 31924 is parameterized-replaceable, so re-sending under the same `d`
+     * tag with a newer `created_at` replaces it in place on every conforming relay.
+     *
+     * The order runs both ways round without a special case: an event published BEFORE
+     * its calendar is picked up when the Meetup arm finally builds that calendar, and
+     * an event published AFTER it is picked up here. `$model->save()` above has already
+     * committed the new coordinate, so the query behind the `a` tags sees it.
+     *
+     * A FAILED CALENDAR SEND DOES NOT FAIL THE RUN. The event itself is published and
+     * its coordinate is stored; reporting failure now would tell the scheduler that a
+     * completed piece of work did not happen, and there is no way to un-publish the
+     * event to make that true. The calendar is retried by the next event of the same
+     * meetup and by `nostr:republish-calendar`, so the damage of a warning is bounded
+     * to a stale calendar, while the damage of a false failure is an operator chasing
+     * a publish that succeeded.
+     */
+    private function refreshCalendarFor(MeetupEvent $meetupEvent, string $hexKey): void
+    {
+        $meetup = $meetupEvent->meetup;
+
+        if (! $meetup) {
+            return;
+        }
+
+        if ($meetup->nostr_coordinate === null) {
+            $this->info("Calendar for Meetup #{$meetup->id} is not published yet — it will include this event when it is.");
+
+            return;
+        }
+
+        $calendar = NostrCalendarEventFactory::forMeetup($meetup);
+
+        $signer = new Sign;
+        $signer->signEvent($calendar, $hexKey);
+
+        if (! $this->transmitter->transmit($calendar, config('services.nostr.relays', []))) {
+            $this->warn("Published the event but could not refresh the calendar for Meetup #{$meetup->id}; it will be retried.");
+
+            return;
+        }
+
+        $this->info("Refreshed calendar for Meetup #{$meetup->id}");
     }
 
     /**

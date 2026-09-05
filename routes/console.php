@@ -38,8 +38,9 @@ Schedule::command(PublishUnpublishedItems::class, [
 | 2026-09-04: 307 meetups and 76 upcoming events portal-wide. Those are the
 | upper bounds of the backlog, reached only if every meetup opted in.
 |
-|   Meetup, worst case 307 records (a ONE-TIME drain; a published calendar is
-|   never re-sent, the query is gated on `nostr_coordinate IS NULL`)
+|   Meetup, worst case 307 records (a ONE-TIME drain for THIS queue: the query
+|   is gated on `nostr_coordinate IS NULL`, so a calendar leaves it for good
+|   once published)
 |     dailyAt             307 days
 |     hourly               12.8 days
 |     everyFiveMinutes     25.6 h
@@ -82,8 +83,22 @@ Schedule::command(PublishUnpublishedItems::class, [
 | follows the tag finds nothing. Keeping the calendars close behind their
 | events keeps that window short.
 |
+| Since #104 the MeetupEvent entry also re-sends its meetup's calendar after a
+| successful publish (PublishCalendarEvents::refreshCalendarFor), because the
+| calendar's `a` tags are built from the events published so far and a kind
+| 31924 that never goes out again would stay empty for good. So a run of the
+| MeetupEvent entry costs up to TWO relay round trips, not one — the arithmetic
+| above is unaffected, since it counts records drained per run and the refresh
+| drains none. Re-sending is safe at any rate: both kinds are parameterized-
+| replaceable, so the relay replaces in place under the same `d` tag.
+|
 | Idle cost is one indexed query per run: with nothing to publish the command
 | prints "No unpublished items" and exits 0 without opening a socket.
+|
+| `nostr:republish-calendar` is deliberately NOT scheduled. It re-sends the
+| whole back catalogue, which is a burst against every relay in the list and a
+| decision for an operator, not for cron; its own docblock carries the
+| reasoning and its default is a dry run.
 |
 | NO `withoutOverlapping()` / `onOneServer()` — MATCHING THE HOUSE PATTERN
 |
