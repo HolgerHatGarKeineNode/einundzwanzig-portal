@@ -35,15 +35,34 @@
     $baseUrl = route('ics', $meetupId ? ['meetup' => $meetupId] : []);
 
     /*
-     * Eindeutig je Instanz, aber STABIL ueber Re-Renders: landingpage.blade.php
-     * rendert die Komponente zweimal auf derselben Seite, ein statisches
-     * data-testid waere dort mehrdeutig. Vorher stand hier Str::random(8) — auf
-     * meetups/index.blade.php sitzt die Komponente neben wire:model.live="search",
-     * also erzeugte jeder Tastendruck neue Test-IDs und jede selektor-basierte
-     * Messung lief ins Leere. Ein Zaehler pro Request leistet dasselbe und bleibt.
+     * Two properties at once, and they pull against each other.
+     *
+     * STABLE across renders: on meetups/index.blade.php the component sits next
+     * to wire:model.live="search", so every keystroke re-renders it. With the
+     * Str::random(8) that used to stand here, every keystroke produced new ids
+     * and every selector-based measurement of this component addressed a node
+     * that no longer existed.
+     *
+     * UNIQUE within one page: meetups/landingpage.blade.php renders the
+     * component twice (lines 69 and 122), so a fixed literal would make every
+     * selector on that page ambiguous.
+     *
+     * A `static` in this block satisfies neither, and looks like it satisfies
+     * both — which is why it is worth naming: Laravel evaluates a view inside a
+     * closure literal that is re-created on every single render
+     * (Filesystem::getRequire(), framework/src/Illuminate/Filesystem/Filesystem.php:120),
+     * so the static is re-initialised each time and the counter never leaves 1.
+     * Measured on the landing page before this change: 14 data-testid values,
+     * 7 distinct — both instances answered to `calendar-stream-1`.
+     *
+     * The request is the object with exactly the right lifetime. It is one per
+     * render pass, and a Livewire round trip is its own request, so the
+     * numbering restarts at the same place and yields the same ids.
      */
-    static $calendarStreamPickerInstance = 0;
-    $testIdPrefix = 'calendar-stream-'.(++$calendarStreamPickerInstance);
+    $calendarStreamPickerInstance = (int) request()->attributes->get('calendar-stream-picker-count', 0) + 1;
+    request()->attributes->set('calendar-stream-picker-count', $calendarStreamPickerInstance);
+
+    $testIdPrefix = 'calendar-stream-'.$calendarStreamPickerInstance;
 @endphp
 
 {{-- `triggerLabel` carries the language and the timezone, deliberately NOT the

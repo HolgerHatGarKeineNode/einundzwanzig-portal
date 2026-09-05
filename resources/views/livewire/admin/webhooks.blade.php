@@ -149,15 +149,40 @@ new class extends Component
      * Whether an approved subscription would actually deliver right now —
      * an operator approving one the owner has paused, or the system has
      * auto-disabled, should not be told that flipped a switch it did not.
+     *
+     * The state comes back as a scannable label AND the sentence that
+     * explains it, split on purpose (Issue #55). The two used to be one
+     * string rendered inside a `flux:badge`, and a badge carries
+     * `whitespace-nowrap` (flux/badge/index.blade.php:32), so that sentence
+     * could not wrap at any width. Measured at a 375px viewport: the badge
+     * ran to x=541.02 while its own card ended at x=335 — 206.02px of the
+     * sentence outside the card and past the viewport, with
+     * `documentElement.scrollWidth` still at 375, so nothing scrolled and
+     * the text was simply gone.
+     *
+     * Label and colour are the ones settings/webhooks.blade.php shows the
+     * subscription's owner for the same two states (statusFor(): 'paused',
+     * 'disabled'), so the board and the owner read the same word for the
+     * same condition.
+     *
+     * @return array{label: string, explanation: string, color: string}|null
      */
-    public function stillBlocked(WebhookSubscription $subscription): ?string
+    public function stillBlocked(WebhookSubscription $subscription): ?array
     {
         if (! $subscription->active) {
-            return __('Vom Besitzer pausiert — erhält trotz Freigabe keine Zustellungen.');
+            return [
+                'label' => __('Pausiert'),
+                'explanation' => __('Vom Besitzer pausiert — erhält trotz Freigabe keine Zustellungen.'),
+                'color' => 'zinc',
+            ];
         }
 
         if ($subscription->disabled_at !== null) {
-            return __('Automatisch deaktiviert nach wiederholten Zustellungsfehlern.');
+            return [
+                'label' => __('Deaktiviert'),
+                'explanation' => __('Automatisch deaktiviert nach wiederholten Zustellungsfehlern.'),
+                'color' => 'red',
+            ];
         }
 
         return null;
@@ -179,10 +204,17 @@ new class extends Component
         {{ __('Wartet auf Freigabe (:count)', ['count' => $this->pending->count()]) }}
     </flux:heading>
 
+    {{-- Both empty states on this page are the same kind of message and now use
+         the same component (Issue #55). This one was a `flux:callout`, which is
+         an attention device — a bordered, iconised block that says "look here".
+         An empty approval queue is the good outcome, not an alert, and the
+         approved list two headings down already stated it as quiet `flux:text`.
+         The callout stays where it belongs: the flash above, which reports what
+         just changed. --}}
     @if ($this->pending->isEmpty())
-        <flux:callout data-testid="admin-webhooks-pending-empty">
+        <flux:text class="text-zinc-500 dark:text-zinc-400" data-testid="admin-webhooks-pending-empty">
             {{ __('Keine offenen Anfragen.') }}
-        </flux:callout>
+        </flux:text>
     @else
         <div class="flex flex-col gap-4" data-testid="admin-webhooks-pending-list">
             @foreach ($this->pending as $subscription)
@@ -245,7 +277,7 @@ new class extends Component
                 <div wire:key="approved-{{ $subscription->id }}"
                      class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
                     <div class="flex items-start justify-between gap-4">
-                        <div class="min-w-0">
+                        <div class="min-w-0" data-testid="admin-webhooks-approved-info-{{ $subscription->id }}">
                             <p class="truncate font-mono text-sm">{{ $subscription->url }}</p>
                             <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                                 {{ __('Besitzer') }}: {{ $subscription->user?->name ?? '#'.$subscription->user_id }}
@@ -254,8 +286,21 @@ new class extends Component
                                 {{ implode(', ', $subscription->resources) }}
                             </p>
 
+                            {{-- One word in the badge, the sentence beside it. The badge
+                                 is what an operator scans a list for; the sentence is
+                                 what they read once they have found it, and only the
+                                 second one may wrap. `flex-wrap` lets the sentence drop
+                                 under the badge when the column gets narrow instead of
+                                 pushing it sideways; `items-baseline` sits the badge on
+                                 the sentence's first line. --}}
                             @if ($blocked = $this->stillBlocked($subscription))
-                                <flux:badge size="sm" color="amber" class="mt-2">{{ $blocked }}</flux:badge>
+                                <div class="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1"
+                                     data-testid="admin-webhooks-blocked-{{ $subscription->id }}">
+                                    <flux:badge size="sm" :color="$blocked['color']">{{ $blocked['label'] }}</flux:badge>
+                                    <flux:text class="min-w-0 text-zinc-600 dark:text-zinc-300">
+                                        {{ $blocked['explanation'] }}
+                                    </flux:text>
+                                </div>
                             @endif
                         </div>
 
