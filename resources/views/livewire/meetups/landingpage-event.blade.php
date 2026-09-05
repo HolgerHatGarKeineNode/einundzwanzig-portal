@@ -395,11 +395,57 @@ class extends Component {
         </div>
 
         <div class="md:w-1/3">
-            <div class="flex flex-col sm:flex-row items-center space-x-0 sm:space-x-4 space-y-4 sm:space-y-0 mb-8">
-                <flux:avatar class="[:where(&)]:size-32 [:where(&)]:text-base" size="xl"
+            {{-- Issue #66: this header used to overflow its own column silently.
+                 Measured at a 1280px viewport before the fix: the column ended at
+                 x=1232 while its contents ran to x=1290.95 — 58.95px past the column,
+                 10.95px past the viewport, with `documentElement.scrollWidth` still
+                 at 1280, so no scrollbar ever appeared and the name, the city line
+                 and the "Kalender abonnieren" button were cut off.
+
+                 Cause, measured: the text block's min-content width was 213.61px,
+                 dictated by the calendar-stream trigger, which carries Flux' default
+                 `whitespace-nowrap` (button/index.blade.php:65). Beside the 128px
+                 avatar plus a 16px gap that demands 357.61px of column; the column
+                 measured 298.66px at 1280. A flex item cannot shrink below its
+                 min-content, so the surplus left the column instead.
+
+                 Three changes, all of them making the content shrinkable. The column
+                 keeps its `md:w-1/3` and nothing here widens anything:
+
+                 - The trigger overrides `!whitespace-normal` + `!h-auto` + `min-h-11`
+                   let the label wrap instead of forcing one line, which drops the
+                   text block's min-content from 213.61px to 138px. Measured height
+                   stays 44px at every width, wrapped or not, so the touch target
+                   holds (WCAG 2.5.8 / Apple HIG). This is verbatim the pattern the
+                   picker already uses on its own copy buttons.
+                 - `flex-wrap` plus `sm:basis-56 sm:grow` decide WHERE the row breaks
+                   instead of leaving it to the name's max-content: the text block
+                   asks for 224px, so avatar + gap + text need 368px of column. Above
+                   that the two stay side by side, below it the text block moves under
+                   the avatar. Measured: side by side at 1920 (column 490.67px) and
+                   1536 (373.33px) — the two widths the issue reports as sound, so
+                   they are left exactly as they were — wrapped at 1440 (341.33px),
+                   1280 (288px), 1024 (202.67px) and 768 (218.67px), where the row
+                   did not fit. Below `sm` the container is `flex-col` anyway.
+                 - `wrap-anywhere` on the name: a one-word meetup name is one word,
+                   and `overflow-wrap: anywhere` is the only value that lowers the
+                   min-content width (`break-words` does not). Measured with the name
+                   "Bitcoinmeetupfrankfurtammainundumgebung": without it the header
+                   runs 262.95px past the column at 1280 and 266.61px at 375 — the
+                   mobile width the original defect spared — with it, 0 at both.
+
+                 `space-x-*`/`space-y-*` become `gap-4`: identical 16px spacing, but
+                 `space-*` sets margins per sibling and leaves a wrapped row without
+                 vertical spacing.
+
+                 Pinned by tests/Browser/Meetups/EventHeaderFitsColumnTest.php, whose
+                 negative control strips these utilities back off the live DOM and
+                 reproduces the reported 58.95px to the pixel. --}}
+            <div class="flex flex-col sm:flex-row flex-wrap items-center gap-4 mb-8">
+                <flux:avatar class="[:where(&)]:size-32 [:where(&)]:text-base shrink-0" size="xl"
                              src="{{ $event->meetup->getFirstMediaUrl('logo') }}"/>
-                <div class="space-y-2">
-                    <flux:heading size="xl" class="mb-4">{{ $event->meetup->name }}</flux:heading>
+                <div class="space-y-2 sm:basis-56 sm:grow [&_[data-testid$='-trigger']]:!whitespace-normal [&_[data-testid$='-trigger']]:!h-auto [&_[data-testid$='-trigger']]:min-h-11 [&_[data-testid$='-trigger']]:w-full [&_[data-testid$='-trigger']]:text-left">
+                    <flux:heading size="xl" class="mb-4 wrap-anywhere">{{ $event->meetup->name }}</flux:heading>
                     <flux:subheading class="text-gray-600 dark:text-gray-400">
                         {{ $event->meetup->city->name }}, {{ $event->meetup->city->country->name }}
                     </flux:subheading>
