@@ -10,7 +10,7 @@ it('seeds the full curated vocabulary', function () {
     $expected = collect($vocabulary)->flatten(1)->count();
 
     expect(Tag::count())->toBe($expected)
-        ->and(Tag::query()->where('type', 'meetup_event')->count())->toBe(15)
+        ->and(Tag::query()->where('type', 'meetup_event')->count())->toBe(16)
         ->and(Tag::query()->where('type', 'library_item')->count())->toBe(74)
         ->and(Tag::query()->where('type', 'course')->count())->toBe(1);
 });
