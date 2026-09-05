@@ -93,6 +93,7 @@
          * auf /ch/meetup/... landen. `countries.code` steht gross in der Datenbank ('DE'),
          * die URLs des Portals sind klein.
          */
+        /* `static` here only unbinds the closure from $this — no static state, so #99 does not apply. */
         $navMeetupCountry = static fn (\App\Models\Meetup $meetup): ?string => ($code = $meetup->city?->country?->code) === null
             ? null
             : mb_strtolower($code);
