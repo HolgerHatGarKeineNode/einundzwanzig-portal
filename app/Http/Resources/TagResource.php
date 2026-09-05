@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Controllers\Api\MeetupEventController;
 use App\Jobs\DeliverWebhookJob;
 use App\Models\Tag;
 use App\Support\Broadcasting\ChangeRecorder;
@@ -9,6 +10,24 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
+ * TWO KEYS, ONE VALUE: `locale` AND `name_locale` (issue #57).
+ *
+ * The hand-built tag array of `GET /api/meetup-events`
+ * ({@see MeetupEventController::__invoke()}) has always called
+ * this field `locale`; every response that goes through this resource — the
+ * authenticated read endpoints, the write responses, the webhook and change-log
+ * envelope, the course events — has always called it `name_locale`. Since PR #52 both
+ * carry the same information, so only the names differed.
+ *
+ * The decision was ADDITIVE, not a rename: `name_locale` stays for as long as consumers
+ * need it, because renaming it would break every existing parser at once — including the
+ * webhook receivers, which cannot ask for a locale and read `name_locale` and
+ * `translations` precisely because of that. `locale` is the name new consumers should
+ * read; it is the one the public list endpoint already uses.
+ *
+ * Both keys are filled from the same `$displayLocale` and can never disagree. Dropping
+ * `name_locale` is a separate, announced breaking change, not a cleanup.
+ *
  * @mixin Tag
  */
 class TagResource extends JsonResource
@@ -18,8 +37,9 @@ class TagResource extends JsonResource
      *
      * Tags are multilingual: one tag carries a name in each of the nine portal languages.
      * Which one you get depends on what the request asked for — `?locale=`, then
-     * `Accept-Language`, see {@see self::requestedLocale()} — and `name_locale` always
-     * tells you which one you actually got, which is not always the one you asked for.
+     * `Accept-Language`, see {@see self::requestedLocale()} — and `locale` (as well as
+     * its older twin `name_locale`) always tells you which one you actually got, which
+     * is not always the one you asked for.
      *
      * @return array<string, mixed>
      */
@@ -27,8 +47,8 @@ class TagResource extends JsonResource
     {
         $requestedLocale = self::requestedLocale($request);
         // Resolved once: displayLocale() walks the whole candidate chain and hits
-        // getTranslation() per candidate, and `name`, `name_locale` and `slug` must
-        // agree on the answer anyway.
+        // getTranslation() per candidate, and `name`, `locale`/`name_locale` and `slug`
+        // must agree on the answer anyway.
         $displayLocale = $this->displayLocale($requestedLocale);
 
         return [
@@ -42,8 +62,8 @@ class TagResource extends JsonResource
              * The name in the requested language, with a fallback.
              *
              * Never empty: when a tag has no name in the requested language, the portal
-             * language is used, then English, then whatever exists. Check `name_locale`
-             * to find out which one you are looking at.
+             * language is used, then English, then whatever exists. Check `locale` to
+             * find out which one you are looking at.
              */
             // Resolved through the display chain for the language the client asked
             // for, so a consumer asking in Czech gets the German name rather than an
@@ -53,9 +73,19 @@ class TagResource extends JsonResource
              * The language `name` and `slug` are actually in — an ISO 639-1 code such as
              * `de` or `cs`. Differs from the requested language whenever a fallback kicked
              * in, which is your cue to show the name as a foreign-language label.
+             *
+             * Read this one. It is the same name `GET /api/meetup-events` uses, and the
+             * same value as `name_locale`, which is kept only for existing parsers.
+             */
+            'locale' => $displayLocale,
+            /**
+             * The same value as `locale`, under the older name.
+             *
+             * Kept because every existing parser of this resource reads it — see the
+             * class docblock. New consumers should read `locale`.
              */
             'name_locale' => $displayLocale,
-            /** URL-safe form of `name`, in the language given by `name_locale`. */
+            /** URL-safe form of `name`, in the language given by `locale`. */
             'slug' => $this->getTranslation('slug', $displayLocale ?? app()->getLocale(), false),
             /**
              * Whether the tag is one of the curated suggestions offered before the user
@@ -100,8 +130,8 @@ class TagResource extends JsonResource
      * `api_changes.payload` — and from there into every webhook delivery of it,
      * because {@see DeliverWebhookJob} re-sends the stored bytes and never
      * re-renders the resource. A queue worker has no request and cannot resolve a
-     * locale; `name_locale` and `translations` travel with each tag precisely so a
-     * receiver never has to guess which language it got.
+     * locale; `locale` (with its older twin `name_locale`) and `translations` travel
+     * with each tag precisely so a receiver never has to guess which language it got.
      */
     public static function requestedLocale(Request $request): ?string
     {

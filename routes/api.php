@@ -42,7 +42,12 @@ Route::middleware([SetApiLocale::class, 'throttle:60,1'])
         // Bewusst NICHT in der API-Referenz (ExcludeRouteFromDocs) — erreichbar,
         // aber nicht beworben, solange die Form sich noch setzen kann.
         Route::get('meetup-leaders', PublicMeetupLeaderController::class);
-        Route::get('meetup-events/{date?}', MeetupEventController::class);
+        // Zwei Routen statt `meetup-events/{date?}`, damit der nackte Pfad in der
+        // API-Referenz ueberhaupt auftaucht: Scramble kollabiert einen optionalen
+        // Pfad-Parameter und dokumentiert nur die Variante MIT ihm (Issue #57).
+        // Gleiches Verhalten wie vorher — index() delegiert an __invoke().
+        Route::get('meetup-events', [MeetupEventController::class, 'index']);
+        Route::get('meetup-events/{date}', MeetupEventController::class);
         Route::get('btc-map-communities', BtcMapCommunityController::class);
         // Der Resync-Weg fuer Konsumenten (Issue #29): alle Aenderungen ab einem
         // Cursor, inklusive der Loeschungen, die sonst nirgends sichtbar sind.

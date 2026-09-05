@@ -283,7 +283,8 @@ class extends Component
      * Ein echtes Beispiel je Aktion.
      *
      * Die Feldmenge ist die, die `MeetupEventResource` wirklich erzeugt — inklusive
-     * der sechs `osm_*`-Felder und der Tag-Gestalt mit `name_locale`. Nur die Werte
+     * der sechs `osm_*`-Felder und der Tag-Gestalt mit `locale` und dessen aelterem
+     * Zwilling `name_locale` (gleicher Wert, Issue #57). Nur die Werte
      * (Ids, Namen, Zeiten) sind auf etwas Lesbares gesetzt.
      *
      * @return list<array{title:string, note:HtmlString, json:string}>
@@ -323,6 +324,7 @@ class extends Component
                         "id": 5,
                         "type": "meetup_event",
                         "name": "Vortrag",
+                        "locale": "de",
                         "name_locale": "de",
                         "slug": "vortrag",
                         "featured": true,
@@ -1104,9 +1106,14 @@ class extends Component
                     Tags are multilingual and the envelope is written once, at the moment of the
                     change — so <code>name</code> is in the language of the request that CAUSED
                     the change, not in one you can ask for. You never have to guess which:
-                    <code>name_locale</code> names it, and <code>translations</code> carries every
+                    <code>locale</code> names it, and <code>translations</code> carries every
                     other language of the same tag. Pick from there instead of trusting
                     <code>name</code>.
+                </p>
+                <p class="mt-3 text-pretty leading-relaxed text-zinc-600 dark:text-zinc-300">
+                    Every tag also carries <code>name_locale</code> with exactly the same value.
+                    It is the older name of the same field and stays for parsers that already
+                    read it; new receivers should read <code>locale</code>.
                 </p>
             </div>
         </div>
