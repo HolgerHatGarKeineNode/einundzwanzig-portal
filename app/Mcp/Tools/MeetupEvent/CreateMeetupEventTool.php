@@ -138,7 +138,11 @@ class CreateMeetupEventTool extends Tool
             'end' => $schema->string()->description('Optionales Ende DIESES Termins als Datum/Uhrzeit. Nicht zu verwechseln mit recurrence_end_date, das die Serie beendet.'),
             'location' => $schema->string()->description('Veranstaltungsort.'),
             'description' => $schema->string()->description('Beschreibung des Termins.'),
-            'link' => $schema->string()->description('Link zum Termin (URL).'),
+            'link' => $schema->string()->description('VERALTET, bitte "links" verwenden. Wird als erster Eintrag der Link-Liste gespeichert. Werden beide angegeben, gewinnt "links".'),
+            'links' => $schema->array()->items($schema->object([
+                'url' => $schema->string()->description('Die URL selbst.')->required(),
+                'label' => $schema->string()->description('Optionale Bezeichnung, z. B. "Meetup.com". Ohne Bezeichnung wird die blanke URL angezeigt.'),
+            ]))->max(MeetupEvent::MAX_LINKS)->description('Alle Orte, an denen der Termin angekündigt ist — Meetup.com, Luma, eigene Website, Telegram, Nostr. Höchstens '.MeetupEvent::MAX_LINKS.' Einträge in der gewünschten Reihenfolge; weglassen oder [] bedeutet keine Links. Ein sechster Eintrag wird abgelehnt, nichts wird still verworfen. Bei einer Serie erhalten alle Vorkommen dieselbe Liste.'),
             'tags' => $schema->array()->items($schema->string())->description('Themen-Tags dieses Termins, als NAMEN (z. B. ["Vortrag", "Einsteiger"]). Zulässig sind ausschließlich die Namen aus list-event-tags; erkannt wird jede der neun Sprachen, Groß-/Kleinschreibung egal. Ein unbekannter oder mehrdeutiger Name wird abgelehnt und es wird NIE ein Tag neu angelegt — dann bricht der ganze Aufruf ab, es entsteht kein Termin. Bei einer Serie erhalten alle Vorkommen dieselben Tags.'),
             'recurrence_type' => $schema->string()->description('Wiederholungstyp.'),
             'recurrence_day_of_week' => $schema->string()->description('Wochentag der Wiederholung.'),

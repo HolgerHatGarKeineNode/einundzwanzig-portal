@@ -88,7 +88,11 @@ class UpdateMeetupEventTool extends Tool
             'end' => $schema->string()->description('Optionales Ende DIESES Termins. Nicht recurrence_end_date, das die Serie beendet.'),
             'location' => $schema->string()->description('Veranstaltungsort.'),
             'description' => $schema->string()->description('Beschreibung des Termins.'),
-            'link' => $schema->string()->description('Link zum Termin (URL).'),
+            'link' => $schema->string()->description('VERALTET, bitte "links" verwenden. Betrifft NUR den ERSTEN Eintrag der Link-Liste: eine URL ersetzt ihn, weglassen lässt alles unverändert. Alle weiteren Einträge bleiben samt Bezeichnung stehen. Wer die ganze Liste setzen will, nimmt "links".'),
+            'links' => $schema->array()->items($schema->object([
+                'url' => $schema->string()->description('Die URL selbst.')->required(),
+                'label' => $schema->string()->description('Optionale Bezeichnung, z. B. "Meetup.com". Ohne Bezeichnung wird die blanke URL angezeigt.'),
+            ]))->max(MeetupEvent::MAX_LINKS)->description('Ersetzt die Link-Liste des Termins VOLLSTÄNDIG, höchstens '.MeetupEvent::MAX_LINKS.' Einträge in der gewünschten Reihenfolge. Weglassen lässt die bestehenden Links unverändert; [] entfernt alle. Ein sechster Eintrag wird abgelehnt, nichts wird still verworfen.'),
             'tags' => $schema->array()->items($schema->string())->description('Ersetzt die Themen-Tags des Termins VOLLSTÄNDIG, als NAMEN (z. B. ["Vortrag", "Einsteiger"]). Weglassen lässt die bestehenden Tags unverändert; [] entfernt alle. Zulässig sind ausschließlich die Namen aus list-event-tags; erkannt wird jede der neun Sprachen, Groß-/Kleinschreibung egal. Ein unbekannter oder mehrdeutiger Name wird abgelehnt, der Termin bleibt dabei unverändert, und es wird NIE ein Tag neu angelegt.'),
             'recurrence_type' => $schema->string()->description('Wiederholungstyp.'),
             'recurrence_day_of_week' => $schema->string()->description('Wochentag der Wiederholung.'),

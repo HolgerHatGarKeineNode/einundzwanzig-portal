@@ -96,8 +96,9 @@ class MeetupEventResource extends JsonResource
              * DEPRECATED (issue #70): the FIRST of `links` below, or null. An event can
              * carry up to five links since #70, and this field only ever shows one of
              * them. It is kept, unchanged, so existing clients do not break; read
-             * `links` instead. It is also still accepted on write, where it is taken as
-             * a one-entry list.
+             * `links` instead. It is also still accepted on write, where it addresses
+             * the first entry of the list only — see the `link` field of the create and
+             * update requests (issue #108).
              */
             'link' => $this->link,
             /**

@@ -239,7 +239,12 @@ it('still clears the list on update when it is given as an empty array', functio
         ->and($event->fresh()->link)->toBeNull();
 });
 
-it('replaces the list with the legacy field when only that one is given', function () {
+/*
+ * Until #108 this expected ONE entry: the legacy field replaced the whole list, which
+ * is exactly how an event with five links came back with one. `link` addresses entry
+ * one, so the second entry is none of its business and stays.
+ */
+it('replaces only the first entry when the legacy field is the only one given', function () {
     $meetup = Meetup::factory()->create(['created_by' => actingAsUser()->id]);
     $event = MeetupEvent::factory()->for($meetup)->create([
         'links' => [
@@ -250,7 +255,10 @@ it('replaces the list with the legacy field when only that one is given', functi
 
     $event->update(['links' => null, 'link' => 'https://example.com/legacy']);
 
-    expect($event->fresh()->linkList())->toBe([['url' => 'https://example.com/legacy', 'label' => null]]);
+    expect($event->fresh()->linkList())->toBe([
+        ['url' => 'https://example.com/legacy', 'label' => null],
+        ['url' => 'https://t.me/berlin_btc', 'label' => null],
+    ]);
 });
 
 /*

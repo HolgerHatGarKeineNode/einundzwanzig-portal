@@ -156,6 +156,28 @@ class MeetupEvent extends Model
      * cast would re-encode the JSON, and "unchanged" has to mean the bytes in the column,
      * not a value that merely decodes the same. Restoring the raw string also makes the
      * attribute clean again, so the UPDATE statement does not carry the column at all.
+     *
+     * ## Writing `link` moves ONE entry, not the whole list (issue #108)
+     *
+     * The last branch used to build the list from the deprecated field alone, so
+     * `PATCH {"link": null}` left an event that had five labelled links with none —
+     * the same harm #70 closed one field over, and not hypothetical: the MCP update
+     * tool exposed `link` and nothing else, so an agent that did not re-send a URL
+     * wiped a list it had no way of knowing about.
+     *
+     * `link` is a view of ENTRY ONE, so writing it replaces entry one and clearing it
+     * removes entry one; entries two to five keep their order and their labels either
+     * way. The replacement carries no label, because a label describes the URL it was
+     * written for and not the one that took its place. On an empty list there is no
+     * entry one, so clearing is a no-op; on a one-entry list — every pre-#70 row and
+     * every event a legacy client ever created — entry one IS the list, so the field
+     * behaves exactly as it always did. Replacing the WHOLE list is what `links` is
+     * for, and the two must not be conflated.
+     *
+     * The mirror is re-derived afterwards rather than left at what the caller sent:
+     * `link` is documented as the first of `links`, and a null next to four surviving
+     * entries would tell a client that reads only the legacy field that this event has
+     * no link at all.
      */
     protected static function booted(): void
     {
@@ -174,9 +196,38 @@ class MeetupEvent extends Model
             }
 
             if ($meetupEvent->isDirty('link')) {
-                $meetupEvent->setAttribute('links', self::normaliseLinks([$meetupEvent->link]));
+                $entries = self::withFirstLink($meetupEvent->links, $meetupEvent->link);
+
+                $meetupEvent->setAttribute('links', $entries);
+                $meetupEvent->setAttribute('link', $entries[0]['url'] ?? null);
             }
         });
+    }
+
+    /**
+     * The list that results from writing the deprecated `link` on it (issue #108).
+     *
+     * Entry one is replaced by the given URL, or removed when there is none — a blank
+     * string counts as none, because a URL that is only whitespace is not a link. The
+     * splice does both in one step: with an empty replacement it deletes, with a
+     * one-entry replacement it substitutes, and on an empty list it appends the only
+     * entry there can be.
+     *
+     * A NULL `links` is the pre-#70 row {@see self::linkList()} describes. Its list is
+     * whatever the deprecated column held, which is entry one and nothing else — so
+     * treating it as empty here and writing the result back is the same answer, and it
+     * leaves the row in the one shape the column is supposed to have.
+     *
+     * @param  mixed  $links  The list as it stands, in any shape a writer may have left.
+     * @return list<array{url: string, label?: string}>
+     */
+    private static function withFirstLink(mixed $links, ?string $url): array
+    {
+        $entries = self::normaliseLinks($links);
+
+        array_splice($entries, 0, 1, self::normaliseLinks([$url]));
+
+        return $entries;
     }
 
     /**
