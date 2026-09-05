@@ -893,5 +893,9 @@
     "z.B. Hinterzimmer im Café Mustermann": "piem., aizmugurējā telpa Café Mustermann",
     "Freitext für Besucher. Auch Details, die ein Kartenpunkt nicht zeigt.": "Brīvs teksts apmeklētājiem. Arī detaļas, ko kartes punkts neparāda.",
     "Eine feste Bearbeitungszeit nennen wir nicht — wir könnten sie nicht zusagen. Wenn du nichts hörst, frag per Nostr-DM nach:": "Mēs nesolām apstrādes termiņu — mēs to nevarētu ievērot. Ja atbildes nav, raksti mums Nostr ziņā:",
-    "Profil auf njump öffnen": "Atvērt profilu vietnē njump"
+    "Profil auf njump öffnen": "Atvērt profilu vietnē njump",
+    "Event absagen": "Atcelt pasākumu",
+    "Abgesagt": "Atcelts",
+    "Dieses Event wirklich absagen? Kalender-Abonnenten erhalten die Absage.": "Tiešām atcelt šo pasākumu? Kalendāra abonenti saņems atcelšanas paziņojumu.",
+    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Pasākums atcelts. Kalendāra abonenti tiks informēti."
 }

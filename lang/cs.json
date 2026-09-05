@@ -893,5 +893,9 @@
     "z.B. Hinterzimmer im Café Mustermann": "např. zadní místnost v Café Mustermann",
     "Freitext für Besucher. Auch Details, die ein Kartenpunkt nicht zeigt.": "Volný text pro návštěvníky. I detaily, které bod na mapě neukáže.",
     "Eine feste Bearbeitungszeit nennen wir nicht — wir könnten sie nicht zusagen. Wenn du nichts hörst, frag per Nostr-DM nach:": "Neslibujeme žádnou lhůtu na vyřízení — nedokázali bychom ji dodržet. Pokud se nikdo neozve, napiš nám přes Nostr DM:",
-    "Profil auf njump öffnen": "Otevřít profil na njump"
+    "Profil auf njump öffnen": "Otevřít profil na njump",
+    "Event absagen": "Zrušit událost",
+    "Abgesagt": "Zrušeno",
+    "Dieses Event wirklich absagen? Kalender-Abonnenten erhalten die Absage.": "Opravdu zrušit tuto událost? Odběratelé kalendáře dostanou informaci o zrušení.",
+    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Událost zrušena. Odběratelé kalendáře budou informováni."
 }

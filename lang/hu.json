@@ -893,5 +893,9 @@
     "z.B. Hinterzimmer im Café Mustermann": "pl. hátsó terem a Café Mustermannban",
     "Freitext für Besucher. Auch Details, die ein Kartenpunkt nicht zeigt.": "Szabad szöveg a látogatóknak. Olyan részletek is, amelyeket a térképpont nem mutat.",
     "Eine feste Bearbeitungszeit nennen wir nicht — wir könnten sie nicht zusagen. Wenn du nichts hörst, frag per Nostr-DM nach:": "Nem ígérünk átfutási időt — nem tudnánk betartani. Ha nem kapsz választ, írj nekünk Nostr DM-ben:",
-    "Profil auf njump öffnen": "Profil megnyitása a njumpon"
+    "Profil auf njump öffnen": "Profil megnyitása a njumpon",
+    "Event absagen": "Esemény lemondása",
+    "Abgesagt": "Lemondva",
+    "Dieses Event wirklich absagen? Kalender-Abonnenten erhalten die Absage.": "Biztosan lemondod ezt az eseményt? A naptárra feliratkozók megkapják a lemondást.",
+    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Esemény lemondva. A naptár feliratkozói értesítést kapnak."
 }

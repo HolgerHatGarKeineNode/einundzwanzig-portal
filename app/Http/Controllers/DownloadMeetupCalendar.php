@@ -14,6 +14,30 @@ use Spatie\IcalendarGenerator\Components\Event;
 use Spatie\IcalendarGenerator\Enums\Display;
 use Spatie\IcalendarGenerator\Enums\EventStatus;
 
+/**
+ * The subscribable .ics feed.
+ *
+ * No METHOD property is emitted, and METHOD:CANCEL in particular is NOT the
+ * mechanism for issue #56 — checked before adding it, because "cancel" appears
+ * in both mechanisms and they are not the same one:
+ *
+ * - METHOD is a property of the CALENDAR object and may appear exactly once in
+ *   it (RFC 5545 §3.7.2). This feed carries every upcoming event of a country in
+ *   one object, so a METHOD:CANCEL on it would declare the whole calendar
+ *   cancelled, not the single event that was called off. There is no per-VEVENT
+ *   METHOD to fall back to.
+ * - A calendar object that carries METHOD is an iTIP message (RFC 5546) — the
+ *   thing an organiser mails to named ATTENDEEs, transported once, per
+ *   recipient. A subscription URL polled by a client is the other case: a
+ *   calendar store, published as-is, whose current contents ARE the statement.
+ *   That is why the generator has no METHOD support at all (grepped: zero
+ *   references in spatie/icalendar-generator).
+ *
+ * STATUS:CANCELLED is the per-component mechanism and the correct one here: it
+ * says this one VEVENT is off, it travels in a PUBLISH-shaped feed without
+ * turning it into an iTIP message, and — unlike a disappearing entry — it
+ * reaches the client on its normal fetch.
+ */
 class DownloadMeetupCalendar extends Controller
 {
     /**
@@ -49,7 +73,7 @@ class DownloadMeetupCalendar extends Controller
                 ->findOrFail($validated['meetup']);
             $events = $meetup->meetupEvents()
                 ->with(['meetup', 'tags'])
-                ->where('start', '>=', now())
+                ->visibleInCalendarFeed()
                 ->when($countryCode, fn (Builder $query) => $this->scopeToCountry($query, $countryCode))
                 ->get();
             $fallbackImageUrl = $meetup->getFirstMediaUrl('logo') ?: null;
@@ -71,7 +95,7 @@ class DownloadMeetupCalendar extends Controller
                     'meetup',
                     'tags',
                 ])
-                ->where('start', '>=', now())
+                ->visibleInCalendarFeed()
                 ->whereHas('meetup', fn ($query) => $query->whereIn('meetups.id', $ids))
                 ->when($countryCode, fn (Builder $query) => $this->scopeToCountry($query, $countryCode))
                 ->get();
@@ -83,7 +107,7 @@ class DownloadMeetupCalendar extends Controller
                     'meetup',
                     'tags',
                 ])
-                ->where('start', '>=', now())
+                ->visibleInCalendarFeed()
                 ->when($countryCode, fn (Builder $query) => $this->scopeToCountry($query, $countryCode))
                 ->get();
             $fallbackImageUrl = asset('img/einundzwanzig-horizontal.png');
@@ -238,11 +262,10 @@ class DownloadMeetupCalendar extends Controller
             // vorher, wo der Meetup-Name Teil der UID war und ein abonnierter Client
             // nach jeder Umbenennung ein Duplikat statt eines Updates saehe.
             ->uniqueIdentifier('meetup-event-'.$event->id.'@einundzwanzig.space')
-            // Es gibt keine eigene Revisionsspalte; updated_at waechst bei jedem
-            // Speichern monoton, was fuer SEQUENCE (RFC 5545) genau die geforderte
-            // Eigenschaft ist — Clients vergleichen nur, ob der Wert gestiegen ist.
-            ->sequence($event->updated_at?->getTimestamp() ?? 0)
-            ->status(EventStatus::Confirmed)
+            ->sequence($this->resolveSequence($event))
+            // The one line issue #56 is about: until now every entry was hard-wired
+            // CONFIRMED, so a called-off event could only leave the feed silently.
+            ->status($event->isCancelled() ? EventStatus::Cancelled : EventStatus::Confirmed)
             ->startsAt($event->start->copy()->setTimezone($timezone));
 
         if ($event->end) {
@@ -274,6 +297,49 @@ class DownloadMeetupCalendar extends Controller
         }
 
         return $entry;
+    }
+
+    /**
+     * SEQUENCE (RFC 5545 §3.8.7.4) — the revision counter a client compares to
+     * decide whether an incoming VEVENT supersedes the copy it already holds.
+     *
+     * Where it comes from: `updated_at`. There is no revision column, and this
+     * needs none — `updated_at` grows monotonically with every save, which is the
+     * only property RFC 5545 demands (clients compare, they do not count), and it
+     * survives a redeploy for the reason that matters here: it is a value on the
+     * row, not process or cache state. A counter kept anywhere else would restart
+     * at zero on the first deploy after a cancellation and the cancelled entry
+     * would then look OLDER than the confirmed copy every subscriber holds. That
+     * part is unchanged by #56; it has been the source since #41.
+     *
+     * What #56 adds is the +1 on a cancelled event, and it is not decoration.
+     * `updated_at` has one-second resolution, so an organiser who saves a change
+     * and calls the event off inside the same second produces the identical
+     * number twice — and a subscriber who fetched in between would keep the
+     * CONFIRMED copy, which is precisely the failure this issue is about. The
+     * offset makes the bump unconditional instead of probable: a cancelled entry
+     * is always strictly above the confirmed entry generated from the same
+     * `updated_at`.
+     *
+     * DTSTAMP cannot cover that gap, which is the obvious objection to the
+     * offset. iTIP breaks an equal SEQUENCE by the later DTSTAMP, but the
+     * generator sets DTSTAMP from `new DateTimeImmutable()` at build time
+     * (Components\Event::__construct) — it is the moment this response was
+     * rendered, not the moment the event was revised, and it therefore differs on
+     * every fetch of an entry nobody touched. A field that changes when nothing
+     * changed cannot tell a client that something did.
+     *
+     * The cost of the offset, written down because it is invisible otherwise:
+     * there is no un-cancel today (the organiser UI offers cancel and delete, and
+     * nothing puts `cancelled_at` back to null). If one is ever added, un-cancelling
+     * inside the same second as the cancellation would produce an EQUAL sequence,
+     * not a higher one, and the client would ignore the reinstatement. Whoever
+     * adds it replaces this offset with a real revision column rather than
+     * widening it.
+     */
+    private function resolveSequence(MeetupEvent $event): int
+    {
+        return ($event->updated_at?->getTimestamp() ?? 0) + ($event->isCancelled() ? 1 : 0);
     }
 
     /**

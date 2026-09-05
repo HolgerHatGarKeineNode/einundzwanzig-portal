@@ -893,5 +893,9 @@
     "z.B. Hinterzimmer im Café Mustermann": "np. zaplecze w Café Mustermann",
     "Freitext für Besucher. Auch Details, die ein Kartenpunkt nicht zeigt.": "Wolny tekst dla odwiedzających. Także szczegóły, których nie pokaże punkt na mapie.",
     "Eine feste Bearbeitungszeit nennen wir nicht — wir könnten sie nicht zusagen. Wenn du nichts hörst, frag per Nostr-DM nach:": "Nie obiecujemy czasu rozpatrzenia — nie moglibyśmy go dotrzymać. Jeśli nie dostaniesz odpowiedzi, napisz do nas przez DM na Nostr:",
-    "Profil auf njump öffnen": "Otwórz profil na njump"
+    "Profil auf njump öffnen": "Otwórz profil na njump",
+    "Event absagen": "Odwołaj wydarzenie",
+    "Abgesagt": "Odwołane",
+    "Dieses Event wirklich absagen? Kalender-Abonnenten erhalten die Absage.": "Na pewno odwołać to wydarzenie? Subskrybenci kalendarza otrzymają informację o odwołaniu.",
+    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Wydarzenie odwołane. Subskrybenci kalendarza zostaną poinformowani."
 }
