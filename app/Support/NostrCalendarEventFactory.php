@@ -182,13 +182,20 @@ class NostrCalendarEventFactory
      * agree the duplicate is dropped.
      *
      * The fold is {@see Str::ascii()} with its DEFAULT language, deliberately not the
-     * request locale: `app.locale` is not a constant in this codebase — the sibling
-     * publisher rewrites it per country
-     * (`App\Console\Commands\Nostr\PublishUnpublishedItems::configureForCountry()`)
-     * and {@see City::getSlugOptions()} already documents 37 slugs shifting with it. A
-     * locale-dependent fold would emit `muenchen` in one run and `munchen` in the next
-     * for the same city. These events are replaceable and get re-published, so their tags
-     * must not depend on which record happened to go out before them.
+     * request locale, so that the tag is a property of the city rather than of whoever
+     * happened to trigger the publish. `Str::ascii($value, 'de')` returns `muenchen`
+     * where the default returns `munchen`; these events are replaceable and get
+     * re-published, so a tag that moves with the caller's language would split one city
+     * across two hashtags over time.
+     *
+     * A CORRECTION to what stood here first, because the reasoning was wrong even though
+     * the code is right: this docblock claimed `app.locale` is mutated under this path,
+     * citing PublishUnpublishedItems::configureForCountry(). That command is
+     * `nostr:publish` — a different scheduler entry, and therefore a different process,
+     * from the `nostr:publish-calendar` command that reaches this method. A config()
+     * mutation lives in one process's memory and cannot leak into a later independent
+     * run (there is no Octane here), so app()->getLocale() is in fact CONSTANT on this
+     * path. The decision stands on the paragraph above, not on that claim.
      *
      * @return list<string>
      */
