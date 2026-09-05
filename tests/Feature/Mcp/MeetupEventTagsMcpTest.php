@@ -343,6 +343,34 @@ it('matches a tag name in any of the nine locales, case-insensitively', function
     expect(tagIdsOf($event))->toBe([$tag->id]);
 });
 
+it('matches a name the tag carries in a locale other than the active one', function () {
+    /*
+     * The counter-example the gate on #117 constructed, which the implementation's own
+     * report said it could not build. It is not exotic: it needs no single-locale tag,
+     * only an app locale that differs from the locale of the name being looked up.
+     *
+     * With app.locale = 'de', Tag::displayName() answers 'Vortrag'. A resolver written
+     * against displayName() would therefore NOT match 'Talk', even though the tag plainly
+     * carries it. ResolvesEventTags compares every locale value directly, so it does.
+     *
+     * This pins the choice rather than the outcome: swap the resolver to displayName()
+     * and this test is the one that notices.
+     */
+    app()->setLocale('de');
+
+    $user = User::factory()->create();
+    $event = mcpEventFor($user);
+    $tag = mcpEventTag(['de' => 'Vortrag', 'en' => 'Talk']);
+
+    expect($tag->displayName())->toBe('Vortrag');
+
+    EinundzwanzigServer::actingAs($user)
+        ->tool(UpdateMeetupEventTool::class, ['id' => $event->id, 'tags' => ['Talk']])
+        ->assertOk();
+
+    expect(tagIdsOf($event))->toBe([$tag->id]);
+});
+
 it('does not match a tag of another type', function () {
     // Every lookup is scoped to the meetup_event group. The curated vocabulary has 35
     // name collisions and every one of them is across types -- "Einsteiger" exists in
