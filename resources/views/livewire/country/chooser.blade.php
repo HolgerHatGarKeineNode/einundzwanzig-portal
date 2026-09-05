@@ -1,16 +1,72 @@
 <?php
 
 use App\Support\RegionRoutes;
+use Illuminate\Support\Collection;
 use Livewire\Component;
+use WW\Countries\Models\Country;
 
-new class extends Component {
+new class extends Component
+{
     public $currentRouteName;
+
     public $currentRouteParams;
-    public string $currentCountry = 'de';
+
+    public ?string $currentCountry = null;
+
+    /**
+     * The option values this select offers — lowercased ISO codes, in the order the
+     * list renders.
+     *
+     * Read by BOTH mount() and the view, deliberately. Issue #105 was the two sides
+     * disagreeing: the options were lowercased here while the bound value came raw
+     * off the route segment, so `/DE/meetups` bound `DE` against a list holding only
+     * `de` and Flux threw `Could not find option for value "DE"` while rendering.
+     * One source cannot drift from itself.
+     *
+     * @return Collection<int, Country>
+     */
+    public function getCountryOptionsProperty(): Collection
+    {
+        return Country::all();
+    }
+
+    /**
+     * The offered spelling of a route segment, or null when nothing is offered.
+     *
+     * Normalised on the VALUE side rather than by widening the options, for the same
+     * reason #73 chose that side: the option list is the canonical set — it is what
+     * every link this component builds points at — while the route segment is
+     * whatever a visitor typed or a link happened to carry. Since #78 made country
+     * codes case-insensitive, an uppercase segment resolves instead of 404ing, so
+     * this is now reachable rather than theoretical.
+     *
+     * null renders Flux's placeholder. updatedCurrentCountry() only fires on a real
+     * selection, so it can never redirect on the null.
+     */
+    private function offeredCountry(mixed $segment): ?string
+    {
+        if (! is_string($segment) || $segment === '') {
+            return null;
+        }
+
+        $wanted = mb_strtolower($segment);
+
+        foreach ($this->countryOptions as $country) {
+            $value = mb_strtolower((string) $country->iso_code);
+
+            if ($value === $wanted) {
+                return $value;
+            }
+        }
+
+        return null;
+    }
 
     public function mount(): void
     {
-        $this->currentCountry = request()->route('country', config('app.domain_country'));
+        $this->currentCountry = $this->offeredCountry(
+            request()->route('country', config('app.domain_country'))
+        );
         $this->currentRouteName = request()->route()->getName();
         $this->currentRouteParams = request()->route()->parameters();
     }
@@ -55,7 +111,7 @@ new class extends Component {
         <x-slot name="search">
             <flux:select.search class="px-4" placeholder="{{ __('Suche dein Land...') }}"/>
         </x-slot>
-        @foreach(\WW\Countries\Models\Country::all() as $country)
+        @foreach($this->countryOptions as $country)
             <flux:select.option value="{{ str($country->iso_code)->lower() }}">
                 <div class="flex items-center space-x-2">
                     <img alt="{{ str($country->iso_code)->lower() }}"
