@@ -11,16 +11,27 @@ use swentel\nostr\Event\Event;
 /**
  * Baut unsignierte NIP-52-Kalender-Events aus Meetups und MeetupEvents.
  *
- * Rein und ohne I/O — keine Signatur, keine Relay-Uebertragung, kein Speichern. Das
- * macht die Tag-Logik ohne Netzwerk oder Schluessel testbar; Signieren und Versenden
- * uebernimmt der Command (`nostr:publish-calendar`) mit {@see NostrEventTransmitter}.
+ * Kein Netzwerk und kein Schluessel: keine Signatur, keine Relay-Uebertragung, kein
+ * Schreiben in die Datenbank. Das macht die Tag-Logik ohne beides testbar; Signieren
+ * und Versenden uebernehmen die Commands (`nostr:publish-calendar`,
+ * `nostr:republish-calendar`) mit {@see NostrEventTransmitter}.
+ *
+ * NOT free of database READS, and one of them is load-bearing rather than incidental:
+ * `forMeetup()` queries the meetup's published events to build its `a` tags (see
+ * below). The city/country relations these methods walk were always lazy loads too;
+ * the earlier "rein und ohne I/O" here was about writes and sockets, and is stated
+ * that way now so nobody removes the query believing it to be an accident.
  *
  * Kinds nach NIP-52 (github.com/nostr-protocol/nips/blob/master/52.md):
- *  - 31924 Calendar: einzige Pflicht-Tags sind `d` und `title`; `location`/`g`/`r`
- *    sind hier eine bewusste Erweiterung nach Issue #34 (kein Verstoss gegen die
- *    Spec — unbekannte Tags werden von Clients ignoriert).
+ *  - 31924 Calendar: Pflicht-Tags sind `d` und `title`, dazu ein wiederholtes `a` je
+ *    enthaltenem Kalender-Event — das ist es, was einen Kalender zur Sammlung macht.
+ *    Es fehlte bis Issue #104, weshalb jeder publizierte Kalender leer war.
+ *    `location`/`g`/`r` sind hier eine bewusste Erweiterung nach Issue #34 (kein
+ *    Verstoss gegen die Spec — unbekannte Tags werden von Clients ignoriert).
  *  - 31923 Time-Based Calendar Event: `d`, `title`, `start` Pflicht; `D` (Tages-
- *    Granularitaet, floor(start / 86400)) ebenfalls Pflicht.
+ *    Granularitaet, floor(start / 86400)) ebenfalls Pflicht. `start_tzid` ist
+ *    OPTIONAL und wird weggelassen, wenn die Zone nicht bestimmbar ist —
+ *    {@see LocationTimezone}.
  *
  * The `t` topic tags added for issue #69 sit on both kinds, but they are spec'd on only
  * one of them: NIP-52 lists `t` ("hashtag to categorize calendar event") among the
@@ -45,6 +56,34 @@ class NostrCalendarEventFactory
      */
     private const STATIC_TOPICS = ['bitcoin', 'meetup'];
 
+    /**
+     * A blank event of the given kind, stamped from the APPLICATION clock.
+     *
+     * swentel\nostr\Event\Event::__construct() already stamps `created_at` with PHP's
+     * `time()`. It is overwritten here for two reasons. First, `created_at` is not
+     * decoration on these kinds: NIP-01 replaces a parameterized-replaceable event only
+     * when the newcomer is NEWER, so this field is the mechanism by which
+     * `nostr:republish-calendar` repairs anything at all — it belongs in this file
+     * where that is visible, not in a vendor constructor. Second, `time()` ignores
+     * Carbon's test clock, so without this the "the republish carries a newer
+     * created_at" assertion could not be written at all: both events would land in the
+     * same second and compare equal.
+     *
+     * The same-second case is real, not hypothetical, and NIP-01 resolves it by
+     * keeping the event with the lowest id — i.e. a republish inside the same second
+     * as the original publish can be silently discarded by the relay. In practice the
+     * two are minutes to months apart, and the republish command paces itself
+     * (`--sleep`, default 2 s), so no record is re-sent twice within one second.
+     */
+    private static function newEvent(int $kind): Event
+    {
+        $event = new Event;
+        $event->setKind($kind);
+        $event->setCreatedAt(now()->getTimestamp());
+
+        return $event;
+    }
+
     public static function calendarDTag(Meetup $meetup): string
     {
         return "meetup-{$meetup->id}";
@@ -66,8 +105,7 @@ class NostrCalendarEventFactory
 
     public static function forMeetup(Meetup $meetup): Event
     {
-        $event = new Event;
-        $event->setKind(self::KIND_CALENDAR);
+        $event = self::newEvent(self::KIND_CALENDAR);
         $event->setContent((string) ($meetup->intro ?? ''));
         $event->addTag(['d', self::calendarDTag($meetup)]);
         $event->addTag(['title', $meetup->name]);
@@ -94,13 +132,93 @@ class NostrCalendarEventFactory
             $event->addTag(['r', $url]);
         }
 
+        /*
+         * The `a` tags that make this a calendar rather than a headline (issue #104).
+         *
+         * NIP-52: "A calendar is a collection of calendar events, represented as a
+         * custom addressable list event using kind 31924", whose `a` tag is
+         * `["a", "<31922 or 31923>:<calendar event author pubkey>:<d-identifier of
+         * calendar event>", "<optional relay url>"]`. Until this change the portal
+         * emitted `d`, `title`, `location`, `g`, `t` and `r` and no `a` at all, so
+         * every published calendar was empty — the reporter's included. The kind 31923
+         * side already pointed AT the calendar; NIP-52 calls that "a request for
+         * inclusion", and the request was never granted.
+         *
+         * NO RELAY HINT in the third position, although the spec allows one. The
+         * portal's relay set is configuration that changes independently of the events
+         * it has already published, so a hint written today is a claim about a
+         * deployment detail tomorrow; a stale hint sends a reader to a relay that never
+         * had the event, which is worse than no hint, because with no hint the reader
+         * uses the relay it found the calendar on — and that relay has the events too,
+         * since both kinds go out over the same list. The `a` tag on the event side
+         * omits it for the same reason.
+         *
+         * ORDER IS `start` THEN `id`, deliberately deterministic. A parameterized-
+         * replaceable event gets re-sent (see `nostr:republish-calendar`), and a tag
+         * list that reshuffles between runs changes the event id for no reason.
+         *
+         * SIZE. One tag is roughly 90 bytes, the set grows only by events this portal
+         * published, and publishing requires `start > now()`, so a weekly meetup adds
+         * about 5 KB per year — far below any relay's event size limit. Worth
+         * revisiting past roughly a thousand events on one meetup.
+         */
+        foreach (self::publishedEventCoordinates($meetup) as $coordinate) {
+            $event->addTag(['a', $coordinate]);
+        }
+
         return $event;
+    }
+
+    /**
+     * The coordinates of this meetup's already-published kind 31923 events.
+     *
+     * The STORED coordinate is used verbatim rather than recomputed from the current
+     * publisher key: the `a` tag has to name where the event actually is on the relays,
+     * and NIP-52 spells that position "<calendar event author pubkey>". After a key
+     * rotation a recomputed address would point at an event that was never published
+     * under it. The `31923:` prefix check is the same "no tag beats a wrong tag" rule
+     * the rest of this class follows — a row holding anything else contributes nothing.
+     *
+     * @return list<string>
+     */
+    private static function publishedEventCoordinates(Meetup $meetup): array
+    {
+        $prefix = self::KIND_TIME_BASED_EVENT.':';
+
+        return $meetup->meetupEvents()
+            ->whereNotNull('nostr_coordinate')
+            ->orderBy('start')
+            ->orderBy('id')
+            ->pluck('nostr_coordinate')
+            ->filter(fn (mixed $coordinate): bool => is_string($coordinate) && str_starts_with($coordinate, $prefix))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * The coordinate pair to resolve the time zone from: the event's own Nominatim
+     * match when it has a complete one, otherwise the meetup city's.
+     *
+     * @return array{float|null, float|null}
+     */
+    private static function positionFor(MeetupEvent $meetupEvent): array
+    {
+        if ($meetupEvent->osm_lat !== null && $meetupEvent->osm_lon !== null) {
+            return [(float) $meetupEvent->osm_lat, (float) $meetupEvent->osm_lon];
+        }
+
+        $city = $meetupEvent->meetup->city;
+
+        if ($city?->latitude === null || $city?->longitude === null) {
+            return [null, null];
+        }
+
+        return [(float) $city->latitude, (float) $city->longitude];
     }
 
     public static function forMeetupEvent(MeetupEvent $meetupEvent, string $pubkeyHex): Event
     {
-        $event = new Event;
-        $event->setKind(self::KIND_TIME_BASED_EVENT);
+        $event = self::newEvent(self::KIND_TIME_BASED_EVENT);
         $event->setContent((string) ($meetupEvent->description ?? ''));
         $event->addTag(['d', self::eventDTag($meetupEvent)]);
         $event->addTag(['title', $meetupEvent->title ?: $meetupEvent->meetup->name]);
@@ -113,7 +231,39 @@ class NostrCalendarEventFactory
             $event->addTag(['end', (string) $meetupEvent->end->getTimestamp()]);
         }
 
-        $event->addTag(['start_tzid', CountryTimezone::forCountryCode($meetupEvent->meetup->city?->country?->code)]);
+        /*
+         * `start_tzid` from the event's LOCATION, not from its country (issue #104).
+         *
+         * The `start` tag above is already right — it is an absolute Unix timestamp —
+         * but a client renders the wall clock from `start_tzid`, so a wrong identifier
+         * moves the event to another day. See {@see LocationTimezone} for why a
+         * country-keyed map cannot be made right and what replaced it.
+         *
+         * THE EVENT'S OWN OSM COORDINATE WINS over the meetup city's, and both halves
+         * come from the same source or neither: a latitude from the venue paired with a
+         * longitude from the city names a point that is in neither place. The venue is
+         * preferred because a time zone boundary can run between a city record's centre
+         * and the venue — that is not exotic, it is the Indiana case in the issue, where
+         * neighbouring counties sit in different zones. Where no Nominatim match exists
+         * the city coordinate carries it, and `cities.latitude`/`longitude` are NOT
+         * nullable, so a meetup with a city always has a position.
+         *
+         * A null result means "cannot be determined", and then NO TAG IS EMITTED. The
+         * tag is optional in NIP-52, and issue #104 is the demonstration that a
+         * plausible default is worse than nothing: Europe/Berlin on an Indianapolis
+         * meetup was believed by every client that read it.
+         */
+        [$timezoneLatitude, $timezoneLongitude] = self::positionFor($meetupEvent);
+
+        $timezone = LocationTimezone::forLocation(
+            $meetupEvent->meetup->city?->country?->code,
+            $timezoneLatitude,
+            $timezoneLongitude,
+        );
+
+        if ($timezone !== null) {
+            $event->addTag(['start_tzid', $timezone]);
+        }
 
         $location = $meetupEvent->location ?: $meetupEvent->osm_name;
         if ($location) {
