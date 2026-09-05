@@ -17,6 +17,14 @@ use Spatie\IcalendarGenerator\Enums\EventStatus;
 class DownloadMeetupCalendar extends Controller
 {
     /**
+     * Longest requested country code X-WR-CALNAME will repeat back. Two octets
+     * for ISO 3166-1 alpha-2, three for alpha-3, five for a locale-shaped
+     * "de-DE" — eight leaves headroom for all of them while keeping an
+     * arbitrarily long query string out of the property.
+     */
+    private const UNKNOWN_COUNTRY_LABEL_LIMIT = 8;
+
+    /**
      * Handle the incoming request.
      */
     public function __invoke(Request $request): Response
@@ -89,17 +97,22 @@ class DownloadMeetupCalendar extends Controller
             $entries[] = $this->buildEntry($event, $timezone, $fallbackImageUrl, $fallbackImageMime, $language);
         }
 
-        $calendarName = $language !== null
-            ? (config("lang-country.languages.{$language}.calendar_name") ?? config('app.name'))
-            : config('app.name');
-
-        $calendar = Calendar::create($calendarName)
+        $calendar = Calendar::create($this->resolveCalendarName($language, $countryCode))
             ->event($entries);
 
         return response($calendar->get())
             ->header('Content-Type', 'text/calendar; charset=utf-8');
     }
 
+    /**
+     * The case-insensitive comparison in `matchingCode()` stays load-bearing
+     * after #77; only the direction in which it fails changed. While it was
+     * case-sensitive, `?country=de` against an uppercase stored `DE` missed,
+     * `resolveCountryCode()` returned null and NO filter was applied at all —
+     * the whole world instead of one country (measured then: 5 events instead
+     * of 2, fixed in #78). Today the same miss would deliver an empty feed
+     * instead. Still wrong, but reported instead of silent.
+     */
     private function scopeToCountry(Builder $query, string $countryCode): Builder
     {
         return $query->whereHas('meetup.city.country', fn ($query) => $query->matchingCode($countryCode));
@@ -107,35 +120,86 @@ class DownloadMeetupCalendar extends Controller
 
     /**
      * `country` only ever scopes the feed CONTENT (the "all events" vs. "this
-     * country only" button pair) — never the calendar name or timezone of the
-     * output, unlike `language`/`timezone` below. That is why an unknown or
-     * malformed value resolves to null (no filter) here instead of falling
-     * back to the domain's own country: unlike language/timezone, where a
-     * fallback only changes display, defaulting country to the domain would
-     * silently narrow an existing subscription's content on a typo'd or
-     * stale URL — the exact regression the "no `country` param" case is
-     * required to avoid. No filter is the behavior every URL had before this
-     * feature existed, so it is also the safe default for a value we can't
-     * make sense of.
+     * country only" button pair) — never the timezone of the output, unlike
+     * `language`/`timezone` below; it reaches the calendar NAME only to report
+     * itself back (see `resolveCalendarName()`).
+     *
+     * A value that matches no country has three possible answers, and two of
+     * them fail open. Both were considered; this is what #77 settled:
+     *
+     * - Fall back to the domain's own country — rejected. Unlike language and
+     *   timezone, where a fallback only changes display, defaulting country to
+     *   the domain would silently NARROW an existing subscription's content on
+     *   a typo'd or stale URL, answering it with some other country's
+     *   calendar. That is the regression the "no `country` param" case is
+     *   required to avoid.
+     * - Ignore the unusable parameter and return every country — this was the
+     *   behavior until #77, and it is rejected too. A `country=` that is
+     *   present states the intent to narrow, so returning the whole world
+     *   delivers MORE than was asked for. It is the same shape of fail-open
+     *   the casing bug had (#78): the gate misses, the filter is never set. A
+     *   calendar subscription is set up once and then never looked at again,
+     *   which is exactly why over-delivery goes unnoticed while an empty feed
+     *   is reported within a day. Of the two failure directions, the reported
+     *   one is the one to take.
+     * - Pass the requested code through and let it match nothing — chosen. The
+     *   subscriber gets what an unmatched filter means, no events, and
+     *   X-WR-CALNAME names the code that matched nothing, so the empty feed
+     *   reads as "this portal does not know 'zz'" rather than "this portal is
+     *   broken". That is the answer to the objection in favor of ignoring it:
+     *   hand-typed and pasted feed URLs are exactly why the code has to be
+     *   visible in the client, not why the parameter should be dropped.
+     *
+     * Recognition itself therefore no longer happens here — an unrecognized
+     * code is not filtered out, it is a filter that matches no row.
      */
     private function resolveCountryCode(Request $request): ?string
     {
         $requested = mb_strtolower(trim((string) $request->query('country', '')));
 
-        if ($requested === '') {
-            return null;
+        return $requested !== '' ? $requested : null;
+    }
+
+    /**
+     * X-WR-CALNAME is the only line a subscriber's client still shows once the
+     * feed is empty, so an unrecognized `country=` is named there:
+     * "EINUNDZWANZIG Portal (unknown country: zz)". Without it, "no events
+     * matched your country" and "the portal is broken" are the same file. A
+     * recognized code is NOT repeated back — an empty feed for a code this
+     * portal knows really does mean "nothing coming up there", and renaming
+     * every working subscription is not this issue's business.
+     *
+     * The requested value is user input reaching an output property, so it is
+     * sanitized before it gets there rather than relying on the generator's
+     * escaping (TextProperty escapes `\`, `"`, `,`, `;` and newlines — a
+     * second line of defense, not the first): everything outside [a-z0-9-] is
+     * dropped, which also removes any CR/LF that could split or extend the
+     * property line, and the remainder is capped at
+     * self::UNKNOWN_COUNTRY_LABEL_LIMIT so an arbitrarily long query string
+     * cannot inflate the header field. The pattern runs WITHOUT `/u` on
+     * purpose: on invalid UTF-8 a unicode pattern would return null instead of
+     * stripping, and since only ASCII survives, no partial multibyte sequence
+     * can. If nothing survives, the marker is emitted without a code.
+     */
+    private function resolveCalendarName(?string $language, ?string $countryCode): string
+    {
+        $name = $language !== null
+            ? (config("lang-country.languages.{$language}.calendar_name") ?? config('app.name'))
+            : config('app.name');
+
+        if ($countryCode === null || Country::query()->matchingCode($countryCode)->exists()) {
+            return $name;
         }
 
-        /*
-         * Dieser Vergleich ist das Tor, nicht scopeToCountry(): faellt er durch, wird
-         * `null` zurueckgegeben und der Filter unten gar nicht erst gesetzt. Er war
-         * case-sensitiv, waehrend `$requested` immer kleingeschrieben ankommt — mit
-         * gross gespeicherten Codes lieferte `?country=de` deshalb NICHT einen leeren
-         * Kalender, sondern den ganzen weltweiten Feed (gemessen: 5 statt 2 Termine).
-         * Von den beiden moeglichen Richtungen war das die falsche: ein Abo, das still
-         * mehr ausliefert als bestellt, faellt niemandem auf.
-         */
-        return Country::query()->matchingCode($requested)->exists() ? $requested : null;
+        $label = mb_substr(
+            (string) preg_replace('/[^a-z0-9-]/', '', $countryCode),
+            0,
+            self::UNKNOWN_COUNTRY_LABEL_LIMIT
+        );
+
+        return $label === ''
+            ? $name.' (unknown country)'
+            : $name.' (unknown country: '.$label.')';
     }
 
     /**

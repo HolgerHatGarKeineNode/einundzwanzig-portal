@@ -281,7 +281,10 @@ it('falls back to the domain default instead of erroring on an unknown or malfor
         'start' => now()->addWeek()->setTime(19, 0),
     ]);
 
-    $response = test()->get('http://portal.einundzwanzig.space/stream-calendar?country=zz&language=xx&timezone=Not%2FARealZone');
+    // No `country` here on purpose: since #77 an unrecognized country is not a fallback
+    // case at all — it empties the feed and renames the calendar, which would drown out
+    // what this test is about. That case has its own two tests below.
+    $response = test()->get('http://portal.einundzwanzig.space/stream-calendar?language=xx&timezone=Not%2FARealZone');
 
     $response->assertSuccessful();
 
@@ -293,23 +296,104 @@ it('falls back to the domain default instead of erroring on an unknown or malfor
         ->toContain('DTSTART;TZID=Europe/Berlin:');
 });
 
-it('leaves the feed content unfiltered — not scoped to the domain default — for an unknown or malformed country value', function () {
+it('matches nothing — not every country — for an unknown or malformed country value', function () {
     $czechCountry = Country::factory()->create(['code' => 'cz']);
     $czechCity = City::factory()->create(['country_id' => $czechCountry->id]);
+    $austrianCountry = Country::factory()->create(['code' => 'at']);
+    $austrianCity = City::factory()->create(['country_id' => $austrianCountry->id]);
 
     $germanMeetup = Meetup::factory()->create(['city_id' => $this->city->id, 'name' => 'German Meetup']);
     $czechMeetup = Meetup::factory()->create(['city_id' => $czechCity->id, 'name' => 'Czech Meetup']);
-    MeetupEvent::factory()->create(['meetup_id' => $germanMeetup->id, 'title' => 'German Event', 'start' => now()->addWeek()]);
+    $austrianMeetup = Meetup::factory()->create(['city_id' => $austrianCity->id, 'name' => 'Austrian Meetup']);
+
+    // Two German events among five — the sample issue #77 measured the old behavior
+    // against (?country=zz -> 5, ?country=d -> 5, ?country=de -> 2).
+    MeetupEvent::factory()->count(2)->create(['meetup_id' => $germanMeetup->id, 'start' => now()->addWeek()]);
+    MeetupEvent::factory()->count(2)->create(['meetup_id' => $czechMeetup->id, 'start' => now()->addWeek()]);
+    MeetupEvent::factory()->create(['meetup_id' => $austrianMeetup->id, 'start' => now()->addWeek()]);
+
+    $countEvents = fn (string $query): int => substr_count(
+        unfoldIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar'.$query)->getContent()),
+        'BEGIN:VEVENT'
+    );
+
+    /*
+     * The premise this file carried until #77 was that "an unrecognized value is the
+     * same as no country parameter at all", and that was the defect: a `country=` that
+     * is present states the intent to narrow, so answering it with the whole world
+     * delivers MORE than was asked for — and nobody re-reads a calendar subscription,
+     * so over-delivery is never reported. "zz" matches no Country row and "d" is a
+     * prefix of "de" that matches none either; both now match nothing.
+     *
+     * What has NOT changed is the other direction: an unrecognized value must still not
+     * fall back to the domain default. The domain serving this request
+     * (portal.einundzwanzig.space) defaults to "de" — a fallback would answer
+     * `?country=zz` with the two German events, i.e. silently serve a stale or typo'd
+     * URL some other country's calendar. Counting is the load-bearing assertion here:
+     * "0 vs. 2 vs. 5" is precisely the observable, and the unfiltered count guards that
+     * an empty feed really is the filter's doing and not an empty database.
+     */
+    expect([
+        'country=zz' => $countEvents('?country=zz'),
+        'country=d' => $countEvents('?country=d'),
+        'country=de' => $countEvents('?country=de'),
+        'no country' => $countEvents(''),
+    ])->toBe([
+        'country=zz' => 0,
+        'country=d' => 0,
+        'country=de' => 2,
+        'no country' => 5,
+    ]);
+});
+
+it('names the unrecognized country in X-WR-CALNAME so an empty feed is not mistaken for a broken portal', function () {
+    $czechCountry = Country::factory()->create(['code' => 'cz']);
+    $czechCity = City::factory()->create(['country_id' => $czechCountry->id]);
+    $czechMeetup = Meetup::factory()->create(['city_id' => $czechCity->id, 'name' => 'Czech Meetup']);
     MeetupEvent::factory()->create(['meetup_id' => $czechMeetup->id, 'title' => 'Czech Event', 'start' => now()->addWeek()]);
 
-    // "zz" matches no Country row. The domain serving this request (portal.einundzwanzig.space)
-    // defaults to "de" — if resolveCountryCode() fell back to that domain default instead of
-    // null, this would silently drop the Czech event, exactly like an explicit ?country=de
-    // would. It must not: an unrecognized value is not a request for "my own country", it is
-    // the same as no country parameter at all.
-    $ics = unfoldIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar?country=zz')->getContent());
+    $unknown = unfoldIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar?country=zz')->getContent());
+    $knownButEmpty = unfoldIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar?country=de')->getContent());
 
-    expect($ics)->toContain('SUMMARY:German Event')->toContain('SUMMARY:Czech Event');
+    /*
+     * Both feeds are empty, and X-WR-CALNAME is the only line a subscriber's client
+     * shows for an empty calendar — so it has to carry the difference between "the
+     * portal did not know the code you typed" and "your country simply has no upcoming
+     * events". Without the marker the two are the same file, and either one reads like
+     * a broken portal.
+     */
+    expect(substr_count($unknown, 'BEGIN:VEVENT'))->toBe(0)
+        ->and(substr_count($knownButEmpty, 'BEGIN:VEVENT'))->toBe(0)
+        ->and($unknown)->toContain('X-WR-CALNAME:EINUNDZWANZIG Portal (unknown country: zz)')
+        ->and($knownButEmpty)->toContain('X-WR-CALNAME:EINUNDZWANZIG Portal')
+        ->and($knownButEmpty)->not->toContain('unknown country');
+});
+
+it('cannot be made to inject or inflate an iCalendar line through the country parameter', function () {
+    $injection = urlencode("zz\r\nSUMMARY:injected;,\\".str_repeat('x', 200));
+
+    $ics = test()->get('http://portal.einundzwanzig.space/stream-calendar?country='.$injection)->getContent();
+    $unfolded = unfoldIcs($ics);
+
+    /*
+     * `country` is user input that now reaches an output property, so it is stripped to
+     * [a-z0-9-] and capped before it gets there — the escaping of the iCalendar
+     * generator is a second line of defense, not the first. Asserting on the RAW ics as
+     * well is deliberate: unfolding would hide a CRLF the value smuggled in, which is
+     * exactly the injection this guards against.
+     */
+    expect($unfolded)->toContain('X-WR-CALNAME:EINUNDZWANZIG Portal (unknown country: zzsummar)')
+        ->and($unfolded)->not->toContain('SUMMARY:injected')
+        ->and(substr_count($ics, 'X-WR-CALNAME'))->toBe(1)
+        ->and(substr_count($ics, 'SUMMARY'))->toBe(0);
+
+    // Nothing survives the strip: the marker still has to say that a country was
+    // requested and not recognized, otherwise this value alone would look like a feed
+    // that was never scoped at all.
+    $stripped = unfoldIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar?country='.urlencode('/// '))->getContent());
+
+    expect($stripped)->toContain('X-WR-CALNAME:EINUNDZWANZIG Portal (unknown country)')
+        ->and(substr_count($stripped, 'BEGIN:VEVENT'))->toBe(0);
 });
 
 it('keeps the UID stable across a rename, bumps SEQUENCE, and drops the event once it is cancelled (D-update/D-cancel)', function () {
