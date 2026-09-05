@@ -47,7 +47,22 @@ class MeetupEventResource extends JsonResource
             /** Longitude in decimal degrees, 7 decimals. Serialised as a string to keep the precision. */
             'osm_lon' => $this->osm_lon,
             'description' => $this->description,
+            /**
+             * DEPRECATED (issue #70): the FIRST of `links` below, or null. An event can
+             * carry up to five links since #70, and this field only ever shows one of
+             * them. It is kept, unchanged, so existing clients do not break; read
+             * `links` instead. It is also still accepted on write, where it is taken as
+             * a one-entry list.
+             */
             'link' => $this->link,
+            /**
+             * Every link the organiser attached, in their order, each with an optional
+             * `label` — "Meetup.com", "Telegram", … The label is null when there is
+             * none, never an empty string, and the list is `[]` when there are no links.
+             *
+             * @var list<array{url: string, label: string|null}>
+             */
+            'links' => $this->linkList(),
             /** Topic tags. Only present when the relation was loaded; see the Tag schema for the translated names. */
             'tags' => TagResource::collection($this->whenLoaded('tags')),
             'recurrence_type' => $this->recurrence_type,

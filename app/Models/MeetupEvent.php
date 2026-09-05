@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Actions\MeetupEvents\CreateMeetupEventSeries;
 use App\Enums\RecurrenceType;
 use App\Enums\RsvpStatus;
+use App\Http\Requests\Api\UpdateMeetupEventRequest;
 use App\Models\Concerns\NormalizesText;
 use App\Models\Concerns\SetsCreatedBy;
 use App\Observers\ApiChangeObserver;
@@ -38,6 +40,17 @@ class MeetupEvent extends Model
      * itself is a month past, an entry nobody attended has nothing left to say.
      */
     public const CANCELLED_FEED_WINDOW_DAYS = 30;
+
+    /**
+     * How many links one event may carry (issue #70).
+     *
+     * The number the reporter asked for ("allow three to five values"), taken at its
+     * upper end. It is a validation limit, not a truncation: a sixth entry is refused
+     * with a message wherever it is submitted, and {@see self::normaliseLinks()}
+     * deliberately does NOT cap the list — a model that silently threw the sixth link
+     * away would turn a rejected request into a half-accepted one.
+     */
+    public const MAX_LINKS = 5;
 
     /** @var list<string> */
     protected array $normalizedLabels = ['title', 'location'];
@@ -96,7 +109,131 @@ class MeetupEvent extends Model
         'recurrence_type' => RecurrenceType::class,
         'attendees' => 'array',
         'might_attendees' => 'array',
+        // The event's links (issue #70), a list of ['url' => …, 'label' => …] entries.
+        // NULL and [] are not the same thing here — see self::linkList().
+        'links' => 'array',
     ];
+
+    /**
+     * Keeps `links` and the deprecated `link` column saying the same thing (issue #70).
+     *
+     * A model hook rather than something in the write paths, for the reason
+     * {@see NormalizesText} gives one door up: an event is created
+     * and changed through FOUR of them — the Livewire editor, the REST API, the MCP
+     * tools and {@see CreateMeetupEventSeries} — and only two
+     * of them know about `links` at all. The other two write `link`, and their rows must
+     * still come out with a usable list.
+     *
+     * The precedence when BOTH are dirty in one save is `links`: it is the richer field
+     * and the one this issue introduced, so a payload carrying both is taken to mean the
+     * list, and `link` is overwritten with its first URL rather than fighting it.
+     *
+     * With ONE exception, and it is the reason `null` and `[]` mean different things on
+     * this attribute: a `links` of null is "not given", not "no links". Otherwise a
+     * writer that fills every column it knows about would wipe the legacy field it just
+     * set — {@see CreateMeetupEventSeries} does exactly that,
+     * writing `links => null` alongside a `link` for a series created through the old
+     * API field, and every occurrence would have come out linkless. Removing every link
+     * is `[]`, which is what the editor and the API document.
+     *
+     * ## Why the null is undone HERE and not in the API request
+     *
+     * The first version of this hook only declined to DERIVE from a null; the null itself
+     * still reached the column, and `PATCH {"links": null}` therefore blanked a stored
+     * list — five labelled entries collapsed to the single URL the `link` mirror holds,
+     * silently and irreversibly. Laravel's `sometimes` does not help: an explicitly sent
+     * null counts as PRESENT, so the key is validated, survives into validated() and
+     * lands in update().
+     *
+     * Stripping the key in {@see UpdateMeetupEventRequest} would
+     * have fixed that one caller and left the trap armed for the other three: the MCP
+     * tools, the editor, and any internal `$event->update(['links' => null])` — which is
+     * the exact shape a writer produces when it maps a nullable DTO onto columns. The
+     * rule is a property of the ATTRIBUTE ("null means: I am not talking about the
+     * links"), so it belongs where the attribute is, next to the mirror it protects.
+     *
+     * The raw original is put back rather than the decoded one: assigning through the
+     * cast would re-encode the JSON, and "unchanged" has to mean the bytes in the column,
+     * not a value that merely decodes the same. Restoring the raw string also makes the
+     * attribute clean again, so the UPDATE statement does not carry the column at all.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (self $meetupEvent): void {
+            if ($meetupEvent->isDirty('links') && $meetupEvent->links === null) {
+                $meetupEvent->attributes['links'] = $meetupEvent->getRawOriginal('links');
+            }
+
+            if ($meetupEvent->isDirty('links') && $meetupEvent->links !== null) {
+                $normalised = self::normaliseLinks($meetupEvent->links);
+
+                $meetupEvent->setAttribute('links', $normalised);
+                $meetupEvent->setAttribute('link', $normalised[0]['url'] ?? null);
+
+                return;
+            }
+
+            if ($meetupEvent->isDirty('link')) {
+                $meetupEvent->setAttribute('links', self::normaliseLinks([$meetupEvent->link]));
+            }
+        });
+    }
+
+    /**
+     * The links of this event, in the organiser's order, in ONE shape (issue #70).
+     *
+     * Every entry has a `url` and a `label`, and the label is null when there is none —
+     * so a consumer never has to ask whether the key is there. That is the counterpart
+     * of the storage rule in {@see self::normaliseLinks()}, which omits an empty label
+     * instead of storing `"label": ""`.
+     *
+     * A NULL `links` column falls back to the deprecated `link`. NULL means "never
+     * written in the new shape" — a row the backfill did not reach, or one a writer
+     * outside the model produced — while an empty array means the organiser removed
+     * every link. Without this distinction the fallback would resurrect links somebody
+     * deleted on purpose.
+     *
+     * @return list<array{url: string, label: string|null}>
+     */
+    public function linkList(): array
+    {
+        $links = $this->links ?? ($this->link === null ? [] : [$this->link]);
+
+        return array_map(
+            fn (array $entry): array => ['url' => $entry['url'], 'label' => $entry['label'] ?? null],
+            self::normaliseLinks($links),
+        );
+    }
+
+    /**
+     * The stored form of a link list: trimmed, without blank entries, without empty
+     * labels (issue #70).
+     *
+     * Accepts what the four write paths actually hand over — a list of arrays from the
+     * API and the editor, a bare string from a `link`-only writer — and answers with the
+     * one shape the column holds.
+     *
+     * An entry whose URL is blank is NOT an entry and disappears, label or no label:
+     * the URL is the link, the label only says what it is. A label that is blank or
+     * whitespace disappears from its entry, so the column never carries `"label": ""` —
+     * two spellings of "no label" would mean every reader has to handle both.
+     *
+     * @param  mixed  $links  Anything a writer may have put on the attribute.
+     * @return list<array{url: string, label?: string}>
+     */
+    public static function normaliseLinks(mixed $links): array
+    {
+        return collect(is_array($links) ? $links : [])
+            ->map(function ($entry): array {
+                $url = trim((string) (is_array($entry) ? ($entry['url'] ?? '') : $entry));
+                $label = trim((string) (is_array($entry) ? ($entry['label'] ?? '') : ''));
+
+                return $label === '' ? ['url' => $url] : ['url' => $url, 'label' => $label];
+            })
+            ->filter(fn (array $entry): bool => $entry['url'] !== '')
+            ->values()
+            ->all();
+    }
 
     /**
      * Termine, die der Nutzer bearbeiten darf: selbst angelegt ODER Leader des

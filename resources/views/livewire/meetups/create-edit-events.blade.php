@@ -116,8 +116,22 @@ class extends Component
     #[Validate('required|string')]
     public ?string $description = null;
 
-    #[Validate('nullable|url|max:255')]
-    public ?string $link = null;
+    /**
+     * The event's links, in the organiser's order (issue #70).
+     *
+     * A repeatable list rather than the meetup's named-field shape ("Website",
+     * "Telegram", "Twitter", …): this form is already long, and the places organisers
+     * cross-post to are not a closed set — Meetup.com, Luma, X, a Nostr note. Each row
+     * is `['url' => …, 'label' => …]`, and the label is what a named field would have
+     * been, written by the organiser instead of chosen from a list.
+     *
+     * Rows are kept as a list with consecutive keys, never with holes: removeLink()
+     * re-indexes, because `wire:model="links.3.url"` addresses a POSITION, and a gap
+     * would leave an input bound to a key nobody can reach.
+     *
+     * @var array<int, array{url: ?string, label: ?string}>
+     */
+    public array $links = [];
 
     public ?string $title = null;
 
@@ -228,7 +242,13 @@ class extends Component
             $this->startTime = $localStart->format('H:i');
             $this->location = $this->event->location;
             $this->description = $this->event->description;
-            $this->link = $this->event->link;
+            // Every link the event carries, including the one it had before #70 — the
+            // migration made that link the first entry, and linkList() falls back to the
+            // old column for a row the backfill never reached.
+            $this->links = array_map(
+                fn (array $link): array => ['url' => $link['url'], 'label' => $link['label']],
+                $this->event->linkList(),
+            );
             $this->title = $this->event->title;
             $this->endTime = $this->event->end?->setTimezone($timezone)->format('H:i');
             $this->tagIds = $this->event->tags->pluck('id')->all();
@@ -256,6 +276,45 @@ class extends Component
             $this->endDate = $defaultStart->copy()->addMonths(6)->format('Y-m-d');
             $this->recurrenceType = RecurrenceType::Weekly;
         }
+
+        // One empty row to start from: most events have exactly one link, and without
+        // it the field would be a button the organiser has to find first. Only here —
+        // an organiser who removes the last row has answered the question, so
+        // removeLink() does not put one back.
+        if ($this->links === []) {
+            $this->links[] = ['url' => null, 'label' => null];
+        }
+    }
+
+    /**
+     * The upper limit, for the template — a Blade view does not see the `use` imports
+     * of this component's PHP block, so the constant is handed over rather than named
+     * again as a literal that could drift from the model and the validation rule.
+     */
+    public function getMaxLinksProperty(): int
+    {
+        return MeetupEvent::MAX_LINKS;
+    }
+
+    public function addLink(): void
+    {
+        // The button is hidden at the limit; this is the second lock, for a crafted
+        // request. Adding is not an error worth a message — it is a UI affordance that
+        // is simply not available any more.
+        if (count($this->links) >= MeetupEvent::MAX_LINKS) {
+            return;
+        }
+
+        $this->links[] = ['url' => null, 'label' => null];
+    }
+
+    public function removeLink(int $index): void
+    {
+        unset($this->links[$index]);
+
+        // Re-indexed, see the property docblock: the template addresses rows by
+        // position, so the list must not keep a hole where the removed row was.
+        $this->links = array_values($this->links);
     }
 
     public function save(): void
@@ -269,7 +328,13 @@ class extends Component
             // when the event has neither a text location nor a picked map place.
             'location' => ['nullable', 'string', 'max:255', 'required_without:osmPlace.osm_id'],
             'description' => 'required|string',
-            'link' => 'nullable|url|max:255',
+            // The link list (issue #70). A row's URL is `nullable` on purpose: an empty
+            // row is not an error but nothing entered, and normalizedLinks() drops it.
+            // The COUNT is where the limit bites, and it bites with a message — a sixth
+            // link must not be swallowed quietly.
+            'links' => ['array', 'max:'.MeetupEvent::MAX_LINKS],
+            'links.*.url' => ['nullable', 'url', 'max:255'],
+            'links.*.label' => ['nullable', 'string', 'max:100'],
             // Both optional: existing events have neither, and a meetup event without
             // its own title simply carries the meetup's name.
             'title' => 'nullable|string|max:255',
@@ -323,12 +388,22 @@ class extends Component
     }
 
     /**
-     * Same reasoning as {@see self::normalizedLocation()}: the empty string Livewire
-     * binds from a cleared input should not linger in the column as a fake value.
+     * The link rows as they are stored (issue #70).
+     *
+     * Same reasoning as {@see self::normalizedLocation()}, one level up: the empty
+     * strings Livewire binds from cleared inputs should not linger in the column as fake
+     * entries. A row whose URL is blank is dropped whether or not it carries a label —
+     * the URL is the link, the label only names it — and a blank label drops out of its
+     * row, so the column never holds `"label": ""`.
+     *
+     * The rule itself lives on the model ({@see MeetupEvent::normaliseLinks()}), shared
+     * with the API and the MCP tools, so all four write paths store one shape.
+     *
+     * @return list<array{url: string, label?: string}>
      */
-    private function normalizedLink(): ?string
+    private function normalizedLinks(): array
     {
-        return blank($this->link) ? null : $this->link;
+        return MeetupEvent::normaliseLinks($this->links);
     }
 
     /**
@@ -414,7 +489,7 @@ class extends Component
             'title' => $this->title,
             'location' => $this->normalizedLocation(),
             'description' => $this->description,
-            'link' => $this->normalizedLink(),
+            'links' => $this->normalizedLinks(),
             ...$this->osmFields(),
         ];
 
@@ -481,7 +556,7 @@ class extends Component
                     'title' => $this->title,
                     'location' => $this->normalizedLocation(),
                     'description' => $this->description,
-                    'link' => $this->normalizedLink(),
+                    'links' => $this->normalizedLinks(),
                     'created_by' => auth()->id(),
                     'attendees' => [],
                     'might_attendees' => [],
@@ -797,11 +872,56 @@ class extends Component
                 <flux:error name="description"/>
             </flux:field>
 
+            {{-- Issue #70: one anonymous link became a short repeatable list, because
+                 organisers cross-post the same date to Meetup.com, Luma, their own
+                 site, X, Telegram and Nostr, and the form could carry exactly one of
+                 them. NOT the meetup's "Links & Social Media" shape with a named field
+                 per platform: that is a closed set, and this form is long already.
+
+                 The label is the organiser's own word for the link ("Meetup.com"), and
+                 it is optional — an entry without one is published and shown as the
+                 bare URL. A row with a label but no URL is not a link and is dropped on
+                 save; see normalizedLinks(). --}}
             <flux:field>
-                <flux:label>{{ __('Link') }}</flux:label>
-                <flux:input wire:model="link" type="url" placeholder="https://example.com"/>
-                <flux:description>{{ __('Link zu weiteren Informationen') }}</flux:description>
-                <flux:error name="link"/>
+                <flux:label>{{ __('Event-Link(s)') }}</flux:label>
+                <flux:description>{{ __('Höchstens :count Links, z. B. Meetup.com, Luma, eigene Website, Telegram.', ['count' => $this->maxLinks]) }}</flux:description>
+
+                <div class="space-y-3">
+                    @foreach(array_keys($links) as $index)
+                        {{-- Keyed by POSITION, matching wire:model below: removeLink()
+                             re-indexes the list, so row 2 really becomes row 1 rather
+                             than Livewire keeping the removed row's DOM in place. --}}
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start" wire:key="event-link-{{ $index }}">
+                            <div class="flex-1">
+                                <flux:input wire:model="links.{{ $index }}.url" type="url"
+                                            placeholder="https://example.com"/>
+                                <flux:error name="links.{{ $index }}.url"/>
+                            </div>
+
+                            <div class="sm:w-56">
+                                <flux:input wire:model="links.{{ $index }}.label"
+                                            placeholder="{{ __('Bezeichnung (optional)') }}"/>
+                                <flux:error name="links.{{ $index }}.label"/>
+                            </div>
+
+                            <flux:button type="button" variant="subtle" icon="trash" class="cursor-pointer"
+                                         wire:click="removeLink({{ $index }})"
+                                         :aria-label="__('Entfernen')"
+                                         data-testid="remove-link-{{ $index }}"/>
+                        </div>
+                    @endforeach
+                </div>
+
+                @if(count($links) < $this->maxLinks)
+                    <div>
+                        <flux:button type="button" size="sm" variant="ghost" icon="plus" class="cursor-pointer"
+                                     wire:click="addLink" data-testid="add-link">
+                            {{ __('Link hinzufügen') }}
+                        </flux:button>
+                    </div>
+                @endif
+
+                <flux:error name="links"/>
             </flux:field>
         </flux:fieldset>
 

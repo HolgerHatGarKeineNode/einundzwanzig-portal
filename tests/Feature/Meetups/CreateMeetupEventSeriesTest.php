@@ -20,7 +20,7 @@ it('creates a weekly series via the web editor using the shared action', functio
         ->set('recurrenceType', RecurrenceType::Weekly->value)
         ->set('location', 'Marktplatz')
         ->set('description', 'Wöchentlicher Stammtisch')
-        ->set('link', 'https://einundzwanzig.space')
+        ->set('links', [['url' => 'https://einundzwanzig.space', 'label' => null]])
         ->call('save')
         ->assertHasNoErrors()
         ->assertRedirect();
@@ -56,7 +56,7 @@ it('gives every occurrence created in the editor the same series identity', func
         ->set('recurrenceDayOfWeek', 'wednesday')
         ->set('location', 'Marktplatz')
         ->set('description', 'Wöchentlicher Stammtisch')
-        ->set('link', 'https://einundzwanzig.space')
+        ->set('links', [['url' => 'https://einundzwanzig.space', 'label' => null]])
         ->call('save')
         ->assertHasNoErrors();
 
@@ -95,7 +95,7 @@ it('records one meetup change for an editor series, not one per occurrence', fun
         ->set('recurrenceType', RecurrenceType::Weekly->value)
         ->set('location', 'Marktplatz')
         ->set('description', 'Wöchentlicher Stammtisch')
-        ->set('link', 'https://einundzwanzig.space')
+        ->set('links', [['url' => 'https://einundzwanzig.space', 'label' => null]])
         ->call('save')
         ->assertHasNoErrors();
 
@@ -120,7 +120,7 @@ it('resolves the selectable tag list once for an event series, not once per occu
         ->set('recurrenceType', RecurrenceType::Weekly->value)
         ->set('location', 'Marktplatz')
         ->set('description', 'Wöchentlicher Stammtisch')
-        ->set('link', 'https://einundzwanzig.space')
+        ->set('links', [['url' => 'https://einundzwanzig.space', 'label' => null]])
         ->set('tagIds', [$tag->id])
         ->call('save')
         ->assertHasNoErrors();

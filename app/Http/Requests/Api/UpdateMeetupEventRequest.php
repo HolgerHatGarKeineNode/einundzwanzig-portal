@@ -5,6 +5,7 @@ namespace App\Http\Requests\Api;
 use App\Enums\RecurrenceType;
 use App\Http\Requests\Concerns\ValidatesOsmPlace;
 use App\Models\Meetup;
+use App\Models\MeetupEvent;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -84,9 +85,43 @@ class UpdateMeetupEventRequest extends FormRequest
             /**
              * Where to read more or sign up.
              *
+             * DEPRECATED (issue #70): use `links`. Still accepted and stored as a
+             * one-entry list, which REPLACES whatever list the event had. When both are
+             * sent, `links` wins and this value is dropped.
+             *
              * @example https://example.com/meetup
              */
             'link' => ['sometimes', 'nullable', 'url', 'max:255'],
+
+            /**
+             * Every place this date is announced — Meetup.com, Luma, the group's own
+             * site, Telegram, a Nostr note. At most five. Sending it replaces the whole
+             * list; send `[]` to remove every link. Omit it — or send `null`, which is
+             * read as "not given" — to leave the list alone. A sixth entry is rejected;
+             * nothing is silently dropped.
+             *
+             * The null case is enforced on the MODEL ({@see MeetupEvent::booted()}), not
+             * by the `sometimes` below: Laravel counts an explicitly sent null as
+             * present, so it passes validation and reaches update() like any other
+             * value. Until that guard existed, this very docblock described behaviour
+             * the code did not have, and the request quietly emptied a stored list.
+             */
+            'links' => ['sometimes', 'nullable', 'array', 'max:'.MeetupEvent::MAX_LINKS],
+
+            /**
+             * The link itself.
+             *
+             * @example https://www.meetup.com/bitcoin-berlin/events/123456789/
+             */
+            'links.*.url' => ['required', 'url', 'max:255'],
+
+            /**
+             * What to call this link, e.g. "Meetup.com". Optional: an entry without a
+             * label is stored and published as the bare URL.
+             *
+             * @example Meetup.com
+             */
+            'links.*.label' => ['nullable', 'string', 'max:100'],
 
             /**
              * Makes this a recurring series, or `null` to turn it back into a single date.

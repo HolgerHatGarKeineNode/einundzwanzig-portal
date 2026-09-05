@@ -23,7 +23,7 @@ function fillEvent($test): object
         ->set('startTime', '19:00')
         ->set('location', 'Café Test')
         ->set('description', 'Ein Test-Event')
-        ->set('link', 'https://example.com');
+        ->set('links', [['url' => 'https://example.com', 'label' => null]]);
 }
 
 it('saves an optional title', function () {

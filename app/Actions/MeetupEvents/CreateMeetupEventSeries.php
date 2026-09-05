@@ -40,7 +40,12 @@ class CreateMeetupEventSeries
         'title',
         'location',
         'description',
+        // `link` is the deprecated single link (issue #70) and stays because the API
+        // still accepts it; `links` is the list every occurrence of the series carries.
+        // Without the second entry a series created with `links` would come out with
+        // none — the model's link/links mirror cannot recover what was never copied.
         'link',
+        'links',
         'osm_type',
         'osm_id',
         'osm_name',

@@ -76,7 +76,7 @@ it('saves the picked tags on a new event', function () {
         ->set('startTime', '19:00')
         ->set('location', 'Café Test')
         ->set('description', 'Ein Test-Event')
-        ->set('link', 'https://example.com')
+        ->set('links', [['url' => 'https://example.com', 'label' => null]])
         ->set('tagIds', [$talk->id, $beginners->id])
         ->call('save')
         ->assertHasNoErrors();
@@ -107,7 +107,7 @@ it('requires a tag in czechia but nowhere else', function () {
         ->set('startTime', '19:00')
         ->set('location', 'Místo')
         ->set('description', 'Popis')
-        ->set('link', 'https://example.com');
+        ->set('links', [['url' => 'https://example.com', 'label' => null]]);
 
     $fill(Livewire::test('meetups.create-edit-events', ['meetup' => $czech]))
         ->set('tagIds', [])
@@ -146,7 +146,7 @@ it('refuses a tag id the user was never offered', function () {
         ->set('startTime', '19:00')
         ->set('location', 'Café Test')
         ->set('description', 'Ein Test-Event')
-        ->set('link', 'https://example.com')
+        ->set('links', [['url' => 'https://example.com', 'label' => null]])
         ->set('tagIds', [$secret->id])
         ->call('save')
         ->assertHasNoErrors();

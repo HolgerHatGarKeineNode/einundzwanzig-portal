@@ -5,6 +5,7 @@ namespace App\Http\Requests\Api;
 use App\Enums\RecurrenceType;
 use App\Http\Requests\Concerns\ValidatesOsmPlace;
 use App\Models\Meetup;
+use App\Models\MeetupEvent;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -85,9 +86,41 @@ class StoreMeetupEventRequest extends FormRequest
             /**
              * Where to read more or sign up.
              *
+             * DEPRECATED (issue #70): use `links`. Still accepted and stored as a
+             * one-entry list, so an existing client keeps working unchanged. When both
+             * are sent, `links` wins and this value is dropped.
+             *
              * @example https://example.com/meetup
              */
             'link' => ['nullable', 'url', 'max:255'],
+
+            /**
+             * Every place this date is announced — Meetup.com, Luma, the group's own
+             * site, Telegram, a Nostr note. At most five, and `[]` or omitted means none.
+             * A sixth entry is rejected; nothing is silently dropped.
+             *
+             * An explicit `null` is read as "not given", not as "no links" — so a client
+             * that sends every field it knows about does not wipe a `link` it sent in
+             * the same request. Enforced on the model ({@see MeetupEvent::booted()}),
+             * which is also what keeps the same null from emptying a STORED list on
+             * `PATCH`.
+             */
+            'links' => ['nullable', 'array', 'max:'.MeetupEvent::MAX_LINKS],
+
+            /**
+             * The link itself.
+             *
+             * @example https://www.meetup.com/bitcoin-berlin/events/123456789/
+             */
+            'links.*.url' => ['required', 'url', 'max:255'],
+
+            /**
+             * What to call this link, e.g. "Meetup.com". Optional: an entry without a
+             * label is stored and published as the bare URL.
+             *
+             * @example Meetup.com
+             */
+            'links.*.label' => ['nullable', 'string', 'max:100'],
 
             /**
              * Makes this a recurring series instead of a single date.
