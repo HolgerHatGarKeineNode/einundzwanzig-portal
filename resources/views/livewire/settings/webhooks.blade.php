@@ -364,12 +364,46 @@ class extends Component
                     @endforeach
                 </flux:checkbox.group>
 
-                <flux:field variant="inline">
+                {{-- Issue #115. The description sits BEFORE the switch on purpose, and
+                     the order is the whole fix — there is no CSS of ours here.
+
+                     `variant="inline"` is a two-column grid whose placement rules are
+                     written as sibling selectors. The one that decides where a
+                     description lands reads `[data-flux-control] ~ [data-flux-description]`
+                     and pins it to `row-start-2 col-start-2` — the column the switch
+                     lives in. With the description after the switch, that column is an
+                     `auto` track that has to fit the description's min-content, so it
+                     took the width and the `1fr` label column collapsed to its own
+                     min-content. Measured 2026-09-05 on the German page: columns
+                     `75.59px 243.41px` at 375px and `75.59px 428.41px` at 1280px, the
+                     label on 4 lines at both, and the description starting 83.59px to
+                     the RIGHT of the label. English, the longer string, was 100.39px
+                     off at 375px.
+
+                     Moving the description ahead of the switch stops that selector from
+                     matching. The switch keeps its own explicit `row-start-1 col-start-2`
+                     placement from the label-then-control rule, so it stays top-right;
+                     the description is auto-placed, finds row 1 taken, and lands at
+                     row 2 column 1 — directly under the label and on its left edge. The
+                     `auto` column is then sized by the 32px switch alone, so the label
+                     gets the rest: 287px at 375px, 472px at 1280px. That is one line
+                     everywhere except the English label at 375px, which needs 294px and
+                     wraps once — a full-width label breaking over two lines, not the
+                     four-line column this issue is about.
+
+                     The alternative was to force the description back with
+                     `col-start-1`, which loses: Flux's rule carries specificity (0,3,0)
+                     against a utility class's (0,1,0), so it would need `!important` to
+                     land at all. Reordering two lines beats winning a specificity fight.
+
+                     Pinned by tests/Browser/Settings/WebhookSecretFieldAlignmentTest.php,
+                     which measures the two left edges rather than these class names. --}}
+                <flux:field variant="inline" data-testid="webhook-reveal-secret-field">
                     <flux:label>{{ __('Secret dauerhaft abrufbar machen') }}</flux:label>
-                    <flux:switch wire:model="revealSecret" />
                     <flux:description>
                         {{ __('Standardmäßig wird das Secret nur einmal direkt nach dem Erstellen angezeigt. Aktiviert, kannst du es jederzeit in der Liste unten wieder einsehen.') }}
                     </flux:description>
+                    <flux:switch wire:model="revealSecret" />
                 </flux:field>
 
                 <div class="flex items-center gap-4">
