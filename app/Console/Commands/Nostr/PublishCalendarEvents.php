@@ -7,6 +7,7 @@ use App\Models\MeetupEvent;
 use App\Support\NostrCalendarEventFactory;
 use App\Support\NostrEventTransmitter;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Schema;
 use swentel\nostr\Key\Key;
 use swentel\nostr\Sign\Sign;
 
@@ -86,6 +87,17 @@ class PublishCalendarEvents extends Command
             return self::FAILURE;
         }
 
+        $missingColumns = $this->missingGateColumns($modelName);
+
+        if ($missingColumns !== []) {
+            $this->error(sprintf(
+                'Missing column(s): %s — run php artisan migrate. Without them this command finds nothing to publish and would exit 0 as if everything were up to date.',
+                implode(', ', $missingColumns),
+            ));
+
+            return self::FAILURE;
+        }
+
         $model = $query->first();
 
         if (! $model) {
@@ -124,5 +136,41 @@ class PublishCalendarEvents extends Command
         $this->info("Published calendar event for {$modelName} #{$model->id}");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * The columns the query above gates on, per model — reported, never assumed.
+     *
+     * Issue #72: SQLite degrades a double-quoted identifier that matches no column
+     * into a STRING LITERAL instead of raising an error, and Laravel quotes
+     * identifiers with double quotes. On a database where the 2026_08_29 migrations
+     * have not run, `where "nostr_coordinate" is null` therefore compares the constant
+     * string 'nostr_coordinate' against NULL — never true. This command would find
+     * nothing to publish, print "No unpublished items" and exit 0, which an operator
+     * reading exit codes cannot tell apart from a healthy, caught-up system. The list
+     * is written out rather than derived so that it stays readable next to the queries
+     * it mirrors; `NostrWhoami::publishingState()` contains the same check.
+     *
+     * @return list<string> the missing columns as `table.column`, empty when ready
+     */
+    private function missingGateColumns(string $modelName): array
+    {
+        $required = match ($modelName) {
+            'Meetup' => ['meetups' => ['nostr_coordinate', 'nostr_publishing_enabled']],
+            'MeetupEvent' => ['meetup_events' => ['nostr_coordinate'], 'meetups' => ['nostr_publishing_enabled']],
+            default => [],
+        };
+
+        $missing = [];
+
+        foreach ($required as $table => $columns) {
+            foreach ($columns as $column) {
+                if (! Schema::hasColumn($table, $column)) {
+                    $missing[] = "{$table}.{$column}";
+                }
+            }
+        }
+
+        return $missing;
     }
 }
