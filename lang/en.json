@@ -893,5 +893,9 @@
     "z.B. Hinterzimmer im Café Mustermann": "e.g. back room at Cafe Mustermann",
     "Freitext für Besucher. Auch Details, die ein Kartenpunkt nicht zeigt.": "Free text for visitors. Also details a map pin cannot show.",
     "Eine feste Bearbeitungszeit nennen wir nicht — wir könnten sie nicht zusagen. Wenn du nichts hörst, frag per Nostr-DM nach:": "We do not promise a turnaround time — we could not keep one. If you hear nothing, ask by Nostr DM:",
-    "Profil auf njump öffnen": "Open profile on njump"
+    "Profil auf njump öffnen": "Open profile on njump",
+    "Event absagen": "Cancel event",
+    "Abgesagt": "Cancelled",
+    "Dieses Event wirklich absagen? Kalender-Abonnenten erhalten die Absage.": "Really cancel this event? Calendar subscribers will receive the cancellation.",
+    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Event cancelled. Calendar subscribers will be notified."
 }

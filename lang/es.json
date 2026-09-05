@@ -893,5 +893,9 @@
     "z.B. Hinterzimmer im Café Mustermann": "p. ej. sala trasera del Café Mustermann",
     "Freitext für Besucher. Auch Details, die ein Kartenpunkt nicht zeigt.": "Texto libre para los visitantes. También detalles que un punto en el mapa no muestra.",
     "Eine feste Bearbeitungszeit nennen wir nicht — wir könnten sie nicht zusagen. Wenn du nichts hörst, frag per Nostr-DM nach:": "No prometemos un plazo de respuesta: no podríamos cumplirlo. Si no recibes noticias, escríbenos por DM en Nostr:",
-    "Profil auf njump öffnen": "Abrir el perfil en njump"
+    "Profil auf njump öffnen": "Abrir el perfil en njump",
+    "Event absagen": "Cancelar evento",
+    "Abgesagt": "Cancelado",
+    "Dieses Event wirklich absagen? Kalender-Abonnenten erhalten die Absage.": "¿Cancelar de verdad este evento? Los suscriptores del calendario recibirán la cancelación.",
+    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Evento cancelado. Se informará a los suscriptores del calendario."
 }

@@ -893,5 +893,9 @@
     "z.B. Hinterzimmer im Café Mustermann": "bijv. achterzaal in Café Mustermann",
     "Freitext für Besucher. Auch Details, die ein Kartenpunkt nicht zeigt.": "Vrije tekst voor bezoekers. Ook details die een kaartpunt niet toont.",
     "Eine feste Bearbeitungszeit nennen wir nicht — wir könnten sie nicht zusagen. Wenn du nichts hörst, frag per Nostr-DM nach:": "We beloven geen doorlooptijd — die zouden we niet kunnen waarmaken. Hoor je niets, stuur ons dan een Nostr-DM:",
-    "Profil auf njump öffnen": "Profiel openen op njump"
+    "Profil auf njump öffnen": "Profiel openen op njump",
+    "Event absagen": "Evenement annuleren",
+    "Abgesagt": "Geannuleerd",
+    "Dieses Event wirklich absagen? Kalender-Abonnenten erhalten die Absage.": "Dit evenement echt annuleren? Agenda-abonnees ontvangen de annulering.",
+    "Event abgesagt. Abonnenten des Kalenders werden informiert.": "Evenement geannuleerd. Abonnees van de agenda worden geïnformeerd."
 }

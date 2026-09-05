@@ -522,6 +522,37 @@ class extends Component
                 navigate: true);
         }
     }
+
+    /**
+     * Call the event off without removing it (issue #56).
+     *
+     * The difference to delete() is who gets told. A deleted event stops appearing
+     * in the calendar feed and nothing announces that, so a subscriber whose client
+     * already materialised the date keeps it — the feed has no way to say "gone".
+     * A cancelled event stays in the feed as STATUS:CANCELLED until
+     * MeetupEvent::CANCELLED_FEED_WINDOW_DAYS after its start, which is what
+     * actually reaches the people who were going to turn up.
+     *
+     * Deletion is therefore for an event that should not exist (duplicate, typo,
+     * wrong meetup); cancellation is for one that existed and is not happening.
+     *
+     * Stays on the form instead of redirecting like delete() does: the event is
+     * still there and still editable, and the organiser's next move is usually to
+     * write into the description WHY it was called off.
+     */
+    public function cancel(): void
+    {
+        $this->authorizeManage();
+
+        if ($this->event && ! $this->event->isCancelled()) {
+            // update(), not a direct assignment plus save(): it is the touch of
+            // `updated_at` that raises SEQUENCE in the feed, which is what makes a
+            // client accept the cancellation over the CONFIRMED copy it holds.
+            $this->event->update(['cancelled_at' => now()]);
+
+            session()->flash('status', __('Event abgesagt. Abonnenten des Kalenders werden informiert.'));
+        }
+    }
 }; ?>
 
 <div class="max-w-4xl mx-auto p-6">
@@ -817,6 +848,21 @@ class extends Component
                 </flux:button>
 
                 @if($event)
+                    {{-- Cancelling and deleting are offered side by side because they are
+                         different answers (issue #56): cancelling keeps the event and tells
+                         calendar subscribers it is off, deleting removes it and tells them
+                         nothing. Only deleting is styled `danger` — the loud variant belongs
+                         to the irreversible one, and two red buttons next to each other would
+                         say the choice does not matter. --}}
+                    @if($event->isCancelled())
+                        <flux:badge color="amber">{{ __('Abgesagt') }}</flux:badge>
+                    @else
+                        <flux:button type="button" wire:click="cancel"
+                                     wire:confirm="{{ __('Dieses Event wirklich absagen? Kalender-Abonnenten erhalten die Absage.') }}">
+                            {{ __('Event absagen') }}
+                        </flux:button>
+                    @endif
+
                     <flux:button variant="danger" type="button" wire:click="delete"
                                  wire:confirm="{{ __('Bist du sicher, dass du dieses Event löschen möchtest?') }}">
                         {{ __('Event löschen') }}
