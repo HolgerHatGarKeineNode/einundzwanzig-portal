@@ -21,10 +21,55 @@ class MeetupEventResource extends JsonResource
             'meetup_id' => $this->meetup_id,
             /** Headline for this one date; null means the meetup's own name applies. */
             'title' => $this->title,
-            /** Start of the event, UTC. */
+            /**
+             * DEPRECATED (issue #85): start of the event, UTC, in Carbon's default JSON
+             * form — `2026-09-16T17:00:00.000000Z`, microseconds and a `Z` suffix. That
+             * is a THIRD spelling of one instant beside the `2026-09-16 17:00` and
+             * `2026-09-16T17:00:00+00:00` the list endpoints emit; read `start_iso`
+             * below instead, which is the form the rest of the API uses.
+             *
+             * Kept unchanged, byte for byte, until the consumers of these endpoints and
+             * of the MCP tools have moved over — dropping it is a breaking change and
+             * belongs to a coordinated client release, not to a later edit here. Both
+             * fields describe the same instant, so a client can migrate one at a time.
+             */
             'start' => $this->start,
-            /** End of THIS occurrence, UTC. Null for open-ended meetups; `recurrence_end_date` ends the series. */
+            /**
+             * DEPRECATED (issue #85), exactly like `start` above and on the same terms:
+             * end of THIS occurrence, UTC, as `2026-09-16T20:30:00.000000Z`. Null for
+             * open-ended meetups; `recurrence_end_date` ends the series. Read `end_iso`.
+             */
             'end' => $this->end,
+            /**
+             * The zone-marked replacement for `start` (issue #85):
+             * `2026-09-16T17:00:00+00:00` — ISO 8601 with a numeric OFFSET, not the `Z`
+             * shorthand and without microseconds. Identical format and identical
+             * `<field>_iso` naming to `start_iso` on `GET /api/meetup-events` and
+             * `next_event_start_iso` on `GET /api/mobile/meetups` (issue #71), so a
+             * client reading a list and then a single event parses ONE form.
+             *
+             * This is the CONVERT case, not the reinterpret one. `start` is a `datetime`
+             * cast, so the value arrives as an App\Support\Carbon that already knows its
+             * zone, and `->setTimezone('UTC')` moves that known instant to UTC.
+             * `Carbon::parse($value, 'UTC')` — what MobileMeetupListController needs,
+             * because its correlated subquery hands it a bare `Y-m-d H:i:s` string with
+             * no zone at all — would be the wrong operation here: this value is never a
+             * zoneless string. App\Support\Carbon extends CarbonImmutable, so the
+             * conversion returns a new instance and cannot move the deprecated field.
+             *
+             * A no-op in value today (config('app.timezone') is UTC, and SetTimezone
+             * runs on the web middleware group only — never on an API or MCP request).
+             * Spelling the conversion out makes `+00:00` a promise of this resource
+             * instead of a side effect of that configuration.
+             */
+            'start_iso' => $this->start->setTimezone('UTC')->toIso8601String(),
+            /**
+             * The zone-marked replacement for `end` (issue #85):
+             * `2026-09-16T20:30:00+00:00`, converted exactly like `start_iso`. Always
+             * present, and null for an open-ended event — never absent, so a client can
+             * tell "no end time" from "this endpoint does not serve one".
+             */
+            'end_iso' => $this->end?->setTimezone('UTC')->toIso8601String(),
             /**
              * The address in plain words, as the organiser wrote it. Always the readable
              * answer — including "watch the Signal group" — while the `osm_*` fields below
