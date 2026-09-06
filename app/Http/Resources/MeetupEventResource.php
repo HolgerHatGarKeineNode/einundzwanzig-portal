@@ -115,10 +115,62 @@ class MeetupEventResource extends JsonResource
             'recurrence_day_of_week' => $this->recurrence_day_of_week,
             'recurrence_day_position' => $this->recurrence_day_position,
             'recurrence_interval' => $this->recurrence_interval,
+            /**
+             * DEPRECATED (issue #125), on the same terms as `start` above: when the
+             * SERIES stops producing occurrences, as `2026-12-31T22:59:59.000000Z` —
+             * Carbon's default JSON form with microseconds and a `Z` suffix. Read
+             * `recurrence_end_date_iso`. Null on an event that is not part of a series.
+             *
+             * Kept unchanged, byte for byte; removing it is a breaking change for the
+             * consumers of these endpoints and of the MCP tools.
+             */
             'recurrence_end_date' => $this->recurrence_end_date,
+            /**
+             * The zone-marked replacement for `recurrence_end_date` (issue #125):
+             * `2026-12-31T22:59:59+00:00`, converted exactly like `start_iso` above and
+             * for the same reason — `recurrence_end_date` is a `datetime` cast, so the
+             * value arrives as an App\Support\Carbon that already knows its zone.
+             * Always present, and null for an event without a series end — never
+             * absent, exactly like `end_iso`.
+             *
+             * A TIMESTAMP, not a calendar date, however much the name reads like one.
+             * The column is `datetime` (migration 2026_01_17_163021), and the web
+             * editor writes the END OF THE CHOSEN DAY in the organiser's own timezone,
+             * converted to UTC — `2026-12-31` picked in Europe/Berlin is stored as
+             * `2026-12-31 22:59:59`, and the same day picked in America/New_York is
+             * stored as `2027-01-01 04:59:59`. The API accepts a bare `Y-m-d` as well
+             * (StoreMeetupEventRequest rule `date`), which lands on midnight UTC. So a
+             * client that wants the DAY the organiser meant must format this instant in
+             * that organiser's zone; formatting it in its own can move it by a day.
+             * Truncating to a date here would destroy the information needed to do so.
+             */
+            'recurrence_end_date_iso' => $this->recurrence_end_date?->setTimezone('UTC')->toIso8601String(),
             'created_by' => $this->created_by,
+            /**
+             * DEPRECATED (issue #125): when this event was first written, as
+             * `2026-01-02T03:04:05.000000Z`. Read `created_at_iso`. Kept unchanged,
+             * byte for byte, on the same terms as `start` above.
+             */
             'created_at' => $this->created_at,
+            /**
+             * The zone-marked replacement for `created_at` (issue #125):
+             * `2026-01-02T03:04:05+00:00`, converted exactly like `start_iso` above.
+             *
+             * Metadata rather than event data, and converged anyway: ONE spelling holds
+             * across this whole resource, so no consumer has to learn which field
+             * carries which form. `?->` because the column is nullable — a row written
+             * with timestamps disabled has no value, and a resource must not fatal on
+             * one.
+             */
+            'created_at_iso' => $this->created_at?->setTimezone('UTC')->toIso8601String(),
+            /**
+             * DEPRECATED (issue #125): when this event was last written, as
+             * `2026-02-03T04:05:06.000000Z`. Read `updated_at_iso`. Kept unchanged,
+             * byte for byte, on the same terms as `start` above.
+             */
             'updated_at' => $this->updated_at,
+            /** The zone-marked replacement for `updated_at` (issue #125), on the same terms as `created_at_iso`. */
+            'updated_at_iso' => $this->updated_at?->setTimezone('UTC')->toIso8601String(),
         ];
     }
 }

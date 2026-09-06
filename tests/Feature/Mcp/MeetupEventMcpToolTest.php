@@ -10,6 +10,7 @@ use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 
 it('lets an authenticated user create a meetup event and stamps created_by', function () {
     $user = User::factory()->create();
@@ -110,4 +111,49 @@ it('hands an agent the same start_iso over MCP as GET /api/meetup-events does ov
         ->tool(ShowMyMeetupEventTool::class, ['id' => $event->id])
         ->assertOk()
         ->assertSee($listRow['start_iso']);
+});
+
+it('hands an agent the same series end and record timestamps over MCP as the HTTP resource does', function () {
+    /*
+     * Issue #125. The MCP tools are the agent-driven consumer of MeetupEventResource,
+     * and `recurrence_end_date`, `created_at` and `updated_at` reached them in the
+     * `.000000Z` form long after #85 had converged `start` / `end`.
+     *
+     * Every value is asserted against what the HTTP endpoint returned for the SAME
+     * event, not against a second literal — a per-consumer literal stays green while
+     * the two diverge. The literals are pinned once on the HTTP side first, so a set
+     * of empty strings cannot satisfy assertSee().
+     */
+    $user = User::factory()->create();
+    Sanctum::actingAs($user);
+    $country = Country::factory()->create(['code' => 'de']);
+    $city = City::factory()->create(['country_id' => $country->id]);
+    $meetup = Meetup::factory()->create(['city_id' => $city->id, 'created_by' => $user->id]);
+    $event = MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+        'created_by' => $user->id,
+        'start' => '2026-08-01 18:00:00',
+        'recurrence_end_date' => '2026-12-31 22:59:59',
+        'created_at' => '2026-01-02 03:04:05',
+        'updated_at' => '2026-02-03 04:05:06',
+    ]);
+
+    $http = $this->getJson("/api/my-meetup-events/{$event->id}")->assertOk()->json('data');
+
+    expect($http['recurrence_end_date_iso'])->toBe('2026-12-31T22:59:59+00:00')
+        ->and($http['created_at_iso'])->toBe('2026-01-02T03:04:05+00:00')
+        ->and($http['updated_at_iso'])->toBe('2026-02-03T04:05:06+00:00');
+
+    $response = EinundzwanzigServer::actingAs($user)
+        ->tool(ShowMyMeetupEventTool::class, ['id' => $event->id])
+        ->assertOk()
+        ->assertSee($http['recurrence_end_date_iso'])
+        ->assertSee($http['created_at_iso'])
+        ->assertSee($http['updated_at_iso']);
+
+    // The deprecated spellings did NOT move: dropping them is the breaking change #125
+    // deliberately does not make.
+    $response->assertSee($http['recurrence_end_date'])
+        ->assertSee($http['created_at'])
+        ->assertSee($http['updated_at']);
 });
