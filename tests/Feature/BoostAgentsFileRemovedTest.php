@@ -1,5 +1,6 @@
 <?php
 
+use Laravel\Boost\BoostManager;
 use Laravel\Boost\Contracts\SupportsGuidelines;
 use Laravel\Boost\Install\Agents\Agent;
 
@@ -113,4 +114,52 @@ it('tells OpenCode to read the one guidelines file', function () {
         .'it, OpenCode reads whatever its defaults point at — which is how AGENTS.md earned its '
         .'keep in the first place.'
     );
+});
+
+it('pins every project-detected agent that writes guidelines at the one file', function () {
+    // boost.json decides what boost:install PRESELECTS; project detection decides
+    // what it OFFERS. An agent whose marker file is present can be ticked in an
+    // interactive install even though nothing preselected it, and it then writes
+    // wherever its own default points. Junie is that case here: .idea/ exists, so
+    // PhpStorm is offered, and Junie::guidelinesPath() falls back to AGENTS.md
+    // unless boost.agents.junie.guidelines_path pins it.
+    //
+    // Until #122 that pin was held by this file only as a side effect: boost.json
+    // said "phpstorm", the alias map translated it to junie, and the loop above
+    // happened to assert it. Removing the entry removed the only test behind the
+    // pin. This block holds it deliberately, and by detection rather than by name,
+    // so it also covers the next agent whose marker file appears.
+    $detected = [];
+
+    foreach (app(BoostManager::class)->getAgents() as $key => $class) {
+        $agent = Agent::fromName($key);
+
+        if (! $agent instanceof SupportsGuidelines) {
+            continue;
+        }
+
+        foreach ($agent->projectDetectionConfig()['paths'] ?? [] as $path) {
+            if (file_exists(base_path($path)) || glob(base_path($path)) !== []) {
+                $detected[$key] = $agent;
+
+                break;
+            }
+        }
+    }
+
+    expect($detected)->not->toBeEmpty(
+        'No agent is project-detected in this repository, so this guard asserts nothing. '
+        .'That is a real possibility (it depends on which marker files exist), but it '
+        .'means the pins in config/boost.php are now untested — check why they are there.'
+    );
+
+    foreach ($detected as $key => $agent) {
+        expect($agent->guidelinesPath())->toBe(
+            BOOST_GUIDELINES_FILE,
+            "boost:install offers the agent \"{$key}\" in this project (its marker file is "
+            .'present), and it would write its guidelines somewhere other than '
+            .BOOST_GUIDELINES_FILE.' — which is how AGENTS.md kept coming back. Pin it via '
+            ."boost.agents.{$key}.guidelines_path in config/boost.php."
+        );
+    }
 });

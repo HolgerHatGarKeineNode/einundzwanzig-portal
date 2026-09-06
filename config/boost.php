@@ -58,6 +58,14 @@ return [
     | The agent keys are the ones BoostManager registers, not the labels shown
     | during the install: PhpStorm is registered as "junie".
     |
+    | Pin every agent this project DETECTS, not only the ones boost.json
+    | preselects. Detection is what decides whether an interactive install
+    | offers an agent at all, and an offered agent left on its default writes
+    | its own file. Antigravity was found unpinned in #122 for exactly that
+    | reason: .agents/skills/ is tracked here, so it is detected on every
+    | machine, and its default is AGENTS.md — the file #120 deleted.
+    | tests/Feature/BoostAgentsFileRemovedTest.php holds this by detection.
+    |
     */
 
     'agents' => [
@@ -66,6 +74,9 @@ return [
         ],
         'junie' => [
             'guidelines_path' => env('BOOST_JUNIE_GUIDELINES_PATH', 'CLAUDE.md'),
+        ],
+        'antigravity' => [
+            'guidelines_path' => env('BOOST_ANTIGRAVITY_GUIDELINES_PATH', 'CLAUDE.md'),
         ],
     ],
 
