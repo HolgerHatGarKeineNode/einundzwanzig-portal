@@ -25,6 +25,13 @@ use Throwable;
  * It never fails. A warm-up problem is reported and logged, and the exit code
  * stays 0 — breaking `composer install` over a cache file would turn a slow
  * first request into a failed deploy.
+ *
+ * One gap in that promise is worth naming: discovery calls class_exists(), which
+ * autoloads the file. A compile-time fatal in a candidate file — a parse error,
+ * an abstract method left unimplemented — is not a Throwable and cannot be
+ * caught here; it would end the process and, with it, `composer install`. The
+ * candidate filter keeps that exposure to files that declare a class and mention
+ * Sushi, but it does not remove it.
  */
 class WarmSushiCaches extends Command
 {
