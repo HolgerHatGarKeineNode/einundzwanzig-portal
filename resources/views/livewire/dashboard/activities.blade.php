@@ -22,11 +22,11 @@ class extends Component {
             ->get();
 
         // Kombiniere und sortiere Activities
-        $activities = collect($recentMeetups->map(fn($m)
+        $activities = collect($recentMeetups->map(fn ($m)
             => [
-            'type' => 'meetup', 'data' => $m, 'created_at' => $m->created_at,
-        ]))
-            ->merge($recentEvents->map(fn($e) => ['type' => 'event', 'data' => $e, 'created_at' => $e->created_at]))
+                'type' => 'meetup', 'data' => $m, 'created_at' => $m->created_at,
+            ]))
+            ->merge($recentEvents->map(fn ($e) => ['type' => 'event', 'data' => $e, 'created_at' => $e->created_at]))
             ->sortByDesc('created_at')
             ->take(10);
 

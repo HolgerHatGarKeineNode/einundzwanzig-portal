@@ -150,7 +150,7 @@ class extends Component {
         $expectedChallenge = Session::get('nostr_login_challenge');
         $expiresAt = (int) Session::get('nostr_login_challenge_expires_at', 0);
 
-        if (!is_string($expectedChallenge) || $expectedChallenge === '' || $expiresAt < now()->timestamp) {
+        if (! is_string($expectedChallenge) || $expectedChallenge === '' || $expiresAt < now()->timestamp) {
             Session::forget(['nostr_login_challenge', 'nostr_login_challenge_expires_at']);
             throw ValidationException::withMessages(['email' => __('auth.failed')]);
         }
@@ -167,7 +167,7 @@ class extends Component {
      */
     protected function ensureIsNotRateLimited(): void
     {
-        if (!RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
             return;
         }
 

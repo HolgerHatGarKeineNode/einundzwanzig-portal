@@ -41,7 +41,7 @@ class extends Component {
                 'lowercase',
                 'email',
                 'max:255',
-                Rule::unique(User::class)->ignore($user->id)
+                Rule::unique(User::class)->ignore($user->id),
             ],
         ]);
 
@@ -64,7 +64,7 @@ class extends Component {
         $user = Auth::user();
 
         if ($user->hasVerifiedEmail()) {
-            $this->redirectIntended(default: route('dashboard', ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()],absolute: false));
+            $this->redirectIntended(default: route('dashboard', ['country' => str(session('lang_country', config('app.domain_country')))->after('-')->lower()], absolute: false));
 
             return;
         }

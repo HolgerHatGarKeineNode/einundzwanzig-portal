@@ -62,14 +62,14 @@ class extends Component {
         $mightAttendees = collect($this->event->might_attendees ?? []);
 
         // Check if user is in attendees
-        $attendeeEntry = $attendees->first(fn($v) => str($v)->startsWith($identifier));
+        $attendeeEntry = $attendees->first(fn ($v) => str($v)->startsWith($identifier));
         if ($attendeeEntry) {
             $this->name = str($attendeeEntry)->after('|')->toString();
             $this->willShowUp = true;
         }
 
         // Check if user is in might_attendees
-        $mightAttendeeEntry = $mightAttendees->first(fn($v) => str($v)->startsWith($identifier));
+        $mightAttendeeEntry = $mightAttendees->first(fn ($v) => str($v)->startsWith($identifier));
         if ($mightAttendeeEntry) {
             $this->name = str($mightAttendeeEntry)->after('|')->toString();
             $this->perhapsShowUp = true;
@@ -111,7 +111,7 @@ class extends Component {
         $attendees = collect($this->event->attendees ?? []);
         $entry = $this->getUserIdentifier().'|'.$this->name;
 
-        if (!$attendees->contains($entry)) {
+        if (! $attendees->contains($entry)) {
             $attendees->push($entry);
             $this->event->update(['attendees' => $attendees->toArray()]);
         }
@@ -131,7 +131,7 @@ class extends Component {
         $mightAttendees = collect($this->event->might_attendees ?? []);
         $entry = $this->getUserIdentifier().'|'.$this->name;
 
-        if (!$mightAttendees->contains($entry)) {
+        if (! $mightAttendees->contains($entry)) {
             $mightAttendees->push($entry);
             $this->event->update(['might_attendees' => $mightAttendees->toArray()]);
         }
@@ -150,10 +150,10 @@ class extends Component {
         $identifier = $this->getUserIdentifier();
 
         $attendees = collect($this->event->attendees ?? [])
-            ->reject(fn($v) => str($v)->startsWith($identifier));
+            ->reject(fn ($v) => str($v)->startsWith($identifier));
 
         $mightAttendees = collect($this->event->might_attendees ?? [])
-            ->reject(fn($v) => str($v)->startsWith($identifier));
+            ->reject(fn ($v) => str($v)->startsWith($identifier));
 
         $this->event->update([
             'attendees' => $attendees->toArray(),

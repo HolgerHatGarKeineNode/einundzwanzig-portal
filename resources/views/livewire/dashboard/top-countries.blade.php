@@ -33,6 +33,7 @@ class extends Component {
 
                 if ($userCreationDates->isEmpty()) {
                     $country->sparkline = [0];
+
                     return $country;
                 }
 
@@ -57,6 +58,7 @@ class extends Component {
                 }
 
                 $country->sparkline = $sparklineData;
+
                 return $country;
             });
 

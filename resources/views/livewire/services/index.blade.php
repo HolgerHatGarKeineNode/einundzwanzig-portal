@@ -59,8 +59,8 @@ class extends Component {
         return [
             'services' => SelfHostedService::query()
                 ->with('createdBy')
-                ->when($this->search, fn($q) => $q->whereLike('name', '%'.$this->search.'%'))
-                ->when($this->typeFilter, fn($q) => $q->where('type', $this->typeFilter))
+                ->when($this->search, fn ($q) => $q->whereLike('name', '%'.$this->search.'%'))
+                ->when($this->typeFilter, fn ($q) => $q->where('type', $this->typeFilter))
                 ->orderBy('name')
                 ->paginate(15),
             'types' => \App\Enums\SelfHostedServiceType::cases(),

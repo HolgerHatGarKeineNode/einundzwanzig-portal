@@ -28,6 +28,7 @@ class extends Component {
 
                 if ($userCreationDates->isEmpty()) {
                     $meetup->sparkline = [0];
+
                     return $meetup;
                 }
 
@@ -52,6 +53,7 @@ class extends Component {
                 }
 
                 $meetup->sparkline = $sparklineData;
+
                 return $meetup;
             });
 

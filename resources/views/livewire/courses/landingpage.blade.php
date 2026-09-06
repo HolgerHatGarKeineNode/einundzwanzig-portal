@@ -19,7 +19,7 @@ class extends Component {
     {
         $this->country = request()->route('country', config('app.domain_country'));
         $this->course->load([
-           'courseEvents.registrations',
+            'courseEvents.registrations',
         ]);
     }
 

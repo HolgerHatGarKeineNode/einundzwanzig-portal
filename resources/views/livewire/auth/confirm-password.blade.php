@@ -21,7 +21,7 @@ class extends Component {
             'password' => ['required', 'string'],
         ]);
 
-        if (!Auth::guard('web')->validate([
+        if (! Auth::guard('web')->validate([
             'email' => Auth::user()->email,
             'password' => $this->password,
         ])) {

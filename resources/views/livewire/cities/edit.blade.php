@@ -195,7 +195,6 @@ class extends Component {
         );
     }
 
-
     /**
      * Die OSM-Spalten aus dem gewaehlten Ort, immer alle acht.
      *

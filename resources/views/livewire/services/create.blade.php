@@ -53,8 +53,8 @@ class extends Component {
     public function with(): array
     {
         return [
-            'types' => collect(SelfHostedServiceType::cases())->map(fn($c) => [
-                'value' => $c->value, 'label' => $c->label()
+            'types' => collect(SelfHostedServiceType::cases())->map(fn ($c) => [
+                'value' => $c->value, 'label' => $c->label(),
             ]),
         ];
     }

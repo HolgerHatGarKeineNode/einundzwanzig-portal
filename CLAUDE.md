@@ -219,3 +219,26 @@ passage disappearing, and the passage reappearing inside the block.
   ```
 
   Browser assertions stay available on purpose — run them deliberately through `vendor/bin/pest --testsuite=Browser`, never as a side effect of a full run.
+
+## Code Formatting
+
+- **`vendor/bin/pint --dirty --format agent` never sees a Livewire single-file component.** Pint drops `*.blade.php` from its finder unless the `Pint/laravel_blade` rule is on (`ConfigurationFactory::notName()` in `vendor/laravel/pint/builds/pint`), and `--dirty` filters that same walk. Measured 2026-09-06 for issue #132: with `resources/views/livewire/dashboard.blade.php` modified **and** unformatted, `--dirty --test` reported `{"tool":"pint","result":"passed"}`. The rule in the Boost block above is necessary but not sufficient.
+
+  A Blade file carrying `class extends Component` has to be handed to Pint by path:
+
+  ```
+  vendor/bin/pint --dirty --format agent
+  vendor/bin/pint --format agent $(git diff --name-only --diff-filter=ACMR HEAD -- 'resources/views/*.blade.php')
+  ```
+
+  The second command needs at least one path — skip it when the list comes back empty.
+
+- **`pint.json` is what makes that safe, and it is not decoration.** It switches off every fixer of the Laravel preset that moves a line: `ordered_imports`, `ordered_traits`, `ordered_interfaces`, `phpdoc_order`, `braces_position`, `class_definition`, `class_attributes_separation`, `single_line_empty_body`, `single_class_element_per_statement`, `single_import_per_statement`, `no_multiple_statements_per_line`, `multiline_whitespace_before_semicolons`, `no_multiline_whitespace_around_double_arrow`, `linebreak_after_opening_tag`, `no_alternative_syntax` — and `fully_qualified_strict_types`, which inserts `use` lines that `ordered_imports` is no longer there to sort. Reordering lines in a Blade file is what takes a page down; the mechanism is written out in the long comment in `resources/views/livewire/meetups/landingpage.blade.php`. Read it before re-enabling any of them.
+
+- **A Blade parse error surfaces only when the page renders, so run the compile check after formatting a Blade file:**
+
+  ```
+  timeout 900 php artisan test --compact --filter=SingleFileComponentsCompile
+  ```
+
+  `tests/Feature/View/SingleFileComponentsCompileTest.php` takes every single-file component through the Livewire parser and the Blade compiler and carries its own controls, including the one case where the template breaks without producing a parse error.

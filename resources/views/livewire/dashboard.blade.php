@@ -18,7 +18,7 @@ class extends Component {
 
     public function mount(): void
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             $this->redirectRoute('login');
 
             return;
@@ -32,7 +32,7 @@ class extends Component {
             $user = auth()->user();
 
             // Prüfen ob bereits zugeordnet
-            if (!$user->meetups()->where('meetup_id', $this->selectedMeetupId)->exists()) {
+            if (! $user->meetups()->where('meetup_id', $this->selectedMeetupId)->exists()) {
                 $user->meetups()->attach($this->selectedMeetupId);
             }
 
