@@ -97,28 +97,45 @@ it('re-delivers a previously delivered UID as STATUS:CANCELLED instead of droppi
  * The bump must not depend on the clock ticking over. `updated_at` has
  * one-second resolution, so an organiser who saves and then cancels inside the
  * same second would otherwise emit the identical SEQUENCE twice — and a client
- * that fetched in between keeps its CONFIRMED copy. Same second here on purpose:
- * no travelTo().
+ * that fetched in between keeps its CONFIRMED copy.
+ *
+ * The clock is frozen for that, not merely left alone (issue #142). Until then
+ * this test created its own precondition by luck: it did not travel, and hoped
+ * the factory write and the cancellation would fall inside the same wall-clock
+ * second. A whole calendar is rendered between the two, so crossing a second
+ * boundary there is a matter of machine load, not of logic — it failed once in
+ * five gate runs with "Failed asserting that 1788637115 is identical to
+ * 1788637114", i.e. the base HAD moved and the strictly higher number would then
+ * have been produced by the clock rather than by the offset. Frozen, the base
+ * cannot move, so the bump below can only come from
+ * MeetupEvent::calendarSequenceOffset().
  */
 it('bumps SEQUENCE even when the cancellation lands in the same second as the previous save', function () {
+    $this->freezeTime();
+
     $event = MeetupEvent::factory()->create([
         'meetup_id' => $this->meetup->id,
         'start' => now()->addWeek(),
     ]);
 
+    $savedAt = $event->updated_at->getTimestamp();
+
     $uid = 'meetup-event-'.$event->id.'@einundzwanzig.space';
     $before = unfoldCancellationIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar')->getContent());
     preg_match('/SEQUENCE:(?<sequence>\d+)/', veventFor($before, $uid), $sequenceBefore);
 
-    // Not travelling: cancelled_at is written while updated_at still holds the
-    // very second the factory wrote.
+    // cancelled_at is written while updated_at still holds the very second the
+    // factory wrote — guaranteed by the frozen clock, asserted below.
     $event->update(['cancelled_at' => now()]);
     $event->refresh();
 
     $after = unfoldCancellationIcs(test()->get('http://portal.einundzwanzig.space/stream-calendar')->getContent());
     preg_match('/SEQUENCE:(?<sequence>\d+)/', veventFor($after, $uid), $sequenceAfter);
 
-    expect($event->updated_at->getTimestamp())->toBe((int) $sequenceBefore['sequence'])
+    // The condition this test is named after, now enforced rather than hoped
+    // for: one unchanged base under both fetches.
+    expect($event->updated_at->getTimestamp())->toBe($savedAt)
+        ->and((int) $sequenceBefore['sequence'])->toBe($savedAt)
         ->and((int) $sequenceAfter['sequence'])->toBeGreaterThan((int) $sequenceBefore['sequence']);
 });
 
