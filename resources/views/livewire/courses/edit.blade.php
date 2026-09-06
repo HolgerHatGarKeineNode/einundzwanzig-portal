@@ -23,7 +23,9 @@ class extends Component {
 
     // Basic Information
     public string $name = '';
+
     public ?int $lecturer_id = null;
+
     public ?string $description = null;
 
     // System fields (read-only) - locked to prevent client-side tampering

@@ -14,6 +14,7 @@ class extends Component {
     use SeoTrait;
 
     public string $name = '';
+
     public string $email = '';
 
     /**

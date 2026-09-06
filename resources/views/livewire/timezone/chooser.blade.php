@@ -5,8 +5,11 @@ use Flux\Flux;
 
 new class extends Component {
     public bool $withRedirect = true;
+
     public $currentRouteName;
+
     public $currentRouteParams;
+
     public string $selectedTimezone = 'UTC';
 
     public function mount(): void

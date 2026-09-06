@@ -162,6 +162,49 @@ it('compiles every single-file component into valid PHP', function () {
     expect($broken)->toBe([], 'components that no longer compile: '.json_encode($broken, JSON_PRETTY_PRINT));
 });
 
+it('keeps the fixer list in CLAUDE.md and pint.json in step', function () {
+    // The first attempt at #132 shipped a CLAUDE.md sentence naming two fixers
+    // as line-movers that are not — measured at their own preset configuration,
+    // both only edit inside a line. A prose list of switched-off fixers rots the
+    // moment someone edits pint.json, and it rots silently, in the one file whose
+    // whole job is to be believed later. Both directions are asserted.
+    $disabled = collect(json_decode(file_get_contents(base_path('pint.json')), true)['rules'])
+        ->filter(fn (mixed $value): bool => $value === false)
+        ->keys()
+        ->sort()
+        ->values()
+        ->all();
+
+    $claudeMd = file_get_contents(base_path('CLAUDE.md'));
+
+    // Only the three bullets that enumerate the switched-off fixers, so a fixer
+    // named elsewhere in the prose (as `class_attributes_separation` is, for the
+    // opposite reason) is not mistaken for a claim that it is off.
+    preg_match_all(
+        '/^  - \*\*(?:Permute existing lines|Move code between lines|Inserts rather than moves):\*\*.*$/m',
+        $claudeMd,
+        $matches
+    );
+
+    expect($matches[0])->toHaveCount(3, 'The three fixer bullets in CLAUDE.md have been renamed or removed; this guard can no longer find them.');
+
+    // The bullets are kept as bare enumerations for exactly this reason: any
+    // prose in them would put non-fixer words into the comparison, and an
+    // exclusion list would be the next thing to rot.
+    preg_match_all('/`([a-z][a-z0-9_]+)`/', implode("\n", $matches[0]), $named);
+    $documented = collect($named[1])
+        ->unique()
+        ->sort()
+        ->values()
+        ->all();
+
+    expect($documented)->toBe(
+        $disabled,
+        'CLAUDE.md and pint.json disagree about which fixers are switched off. '
+        ."pint.json: \n- ".implode("\n- ", $disabled)."\nCLAUDE.md: \n- ".implode("\n- ", $documented)
+    );
+});
+
 it('reports an inline @php(...) that swallows a following block and unbalances a conditional', function () {
     // The @endif sits OUTSIDE the swallowed region, so the compiled view keeps
     // an unclosed conditional. This is the shape that took meetups/landingpage

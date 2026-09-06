@@ -2,12 +2,10 @@
     "preset": "laravel",
     "rules": {
         "braces_position": false,
-        "class_attributes_separation": false,
         "class_definition": false,
         "fully_qualified_strict_types": false,
         "linebreak_after_opening_tag": false,
         "multiline_whitespace_before_semicolons": false,
-        "no_alternative_syntax": false,
         "no_multiline_whitespace_around_double_arrow": false,
         "no_multiple_statements_per_line": false,
         "ordered_imports": false,

@@ -14,8 +14,11 @@ class extends Component {
     use SeoTrait;
 
     public City $city;
+
     public string $name = '';
+
     public ?int $country_id = null;
+
     public ?int $region_id = null;
 
     /**
@@ -28,9 +31,13 @@ class extends Component {
      * @var array<string, mixed>
      */
     public array $osmPlace = [];
+
     public ?float $latitude = null;
+
     public ?float $longitude = null;
+
     public ?int $population = null;
+
     public ?string $population_date = null;
 
     /**

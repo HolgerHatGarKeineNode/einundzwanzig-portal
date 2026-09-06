@@ -21,18 +21,28 @@ class extends Component {
     public Lecturer $lecturer;
 
     public string $name = '';
+
     public ?string $subtitle = null;
+
     public ?string $intro = null;
+
     public ?string $description = null;
+
     public bool $active = true;
 
     // Social & Payment Links
     public ?string $website = null;
+
     public ?string $twitter_username = null;
+
     public ?string $nostr = null;
+
     public ?string $lightning_address = null;
+
     public ?string $lnurl = null;
+
     public ?string $node_id = null;
+
     public ?string $paynym = null;
 
     // System fields (read-only) - locked to prevent client-side tampering

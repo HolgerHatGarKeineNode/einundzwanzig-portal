@@ -18,7 +18,9 @@ class extends Component {
     public $logo;
 
     public string $name = '';
+
     public ?int $lecturer_id = null;
+
     public ?string $description = null;
 
     /**

@@ -13,19 +13,25 @@ class extends Component {
     use SeoTrait;
 
     public MeetupEvent $event;
+
     public $country = 'de';
 
     #[Validate('required|min:2')]
     public string $name = '';
 
     public bool $willShowUp = false;
+
     public bool $perhapsShowUp = false;
+
     public array $attendees = [];
+
     public array $mightAttendees = [];
 
     // Anmeldung für dieses Meetup erlaubt? Teilnehmerliste für den Betrachter sichtbar?
     public bool $rsvpEnabled = true;
+
     public bool $attendeesPublic = true;
+
     public bool $canSeeAttendees = true;
 
     public function mount(): void

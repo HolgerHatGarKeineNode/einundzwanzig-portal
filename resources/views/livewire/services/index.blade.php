@@ -13,7 +13,9 @@ class extends Component {
     use SeoTrait;
 
     public string $country = 'de';
+
     public string $search = '';
+
     public ?string $typeFilter = null;
 
     public function mount(): void

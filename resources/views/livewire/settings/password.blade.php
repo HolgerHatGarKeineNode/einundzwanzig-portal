@@ -14,7 +14,9 @@ class extends Component {
     use SeoTrait;
 
     public string $current_password = '';
+
     public string $password = '';
+
     public string $password_confirmation = '';
 
     /**

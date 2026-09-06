@@ -233,7 +233,19 @@ passage disappearing, and the passage reappearing inside the block.
 
   The second command needs at least one path — skip it when the list comes back empty.
 
-- **`pint.json` is what makes that safe, and it is not decoration.** It switches off every fixer of the Laravel preset that moves a line: `ordered_imports`, `ordered_traits`, `ordered_interfaces`, `phpdoc_order`, `braces_position`, `class_definition`, `class_attributes_separation`, `single_line_empty_body`, `single_class_element_per_statement`, `single_import_per_statement`, `no_multiple_statements_per_line`, `multiline_whitespace_before_semicolons`, `no_multiline_whitespace_around_double_arrow`, `linebreak_after_opening_tag`, `no_alternative_syntax` — and `fully_qualified_strict_types`, which inserts `use` lines that `ordered_imports` is no longer there to sort. Reordering lines in a Blade file is what takes a page down; the mechanism is written out in the long comment in `resources/views/livewire/meetups/landingpage.blade.php`. Read it before re-enabling any of them.
+- **`pint.json` is what makes that safe, and it is not decoration.** It switches off fourteen fixers, established by running each of the preset's 135 rules alone **at its own preset configuration** over the 52 components plus purpose-built fixtures and diffing the result — not by reading rule names:
+
+  - **Permute existing lines:** `ordered_imports`, `ordered_traits`, `phpdoc_order`, `ordered_interfaces`.
+  - **Move code between lines:** `braces_position`, `class_definition`, `single_line_empty_body`, `single_class_element_per_statement`, `single_import_per_statement`, `no_multiple_statements_per_line`, `multiline_whitespace_before_semicolons`, `no_multiline_whitespace_around_double_arrow`, `linebreak_after_opening_tag`.
+  - **Inserts rather than moves:** `fully_qualified_strict_types`.
+
+  Those three bullets are the whole list, and a test holds them to it: SingleFileComponentsCompileTest compares them against pint.json in both directions, because a prose list of switched-off fixers rots the moment someone edits the config.
+
+  Two entries need their reason spelled out. The first permutes *within* a line today and only becomes a line-permuter once the brace fixer is on again, which is why the two are off together. The second moves nothing — with its import-creating option it would have added 15 import lines across four components and rewritten their references, and with import ordering off there is nothing left to sort what it inserts; the two are a matched pair in the preset.
+
+  Everything else stays **on**, `class_attributes_separation` and `no_alternative_syntax` included: measured at the preset's own configuration, they only edit inside a line or add and remove blank lines. `class_attributes_separation` does split a line that carries two class members, but no component has that shape, no enabled fixer creates it, and a class body cannot leave PHP — a `?>` inside one is a parse error — so it can never move a line bordering Blade markup.
+
+- **The narrowing is insurance, not a repair — do not read it as averting a present danger.** All 52 components were also formatted with the FULL preset and compile-checked: none broke. Every component holds a single `<?php` region, so Blade directives are inline HTML that no PHP fixer can reach, and not one component contains an inline `@php(...)`; the single grep hit is the regex quoted inside landingpage's own comment. What is protected is the component written next. The mechanism is spelled out in the long comment in `resources/views/livewire/meetups/landingpage.blade.php` — read it before re-enabling any of the fourteen.
 
 - **A Blade parse error surfaces only when the page renders, so run the compile check after formatting a Blade file:**
 
