@@ -29,22 +29,21 @@ use Laravel\Boost\Install\Agents\Agent;
 const BOOST_GUIDELINES_FILE = 'CLAUDE.md';
 
 /**
- * Agent names as boost.json spells them, mapped to the key BoostManager
- * registers them under. boost.json says "phpstorm"; the registry knows that
- * agent as "junie" (Laravel\Boost\Install\Agents\Junie), so the name in
- * boost.json resolves to nothing on its own — Boost drops it from the
- * defaults instead of reporting it. Checking it anyway is deliberate: an
- * unresolvable name is exactly the case where a stale default would go
- * unnoticed.
+ * The agent names enabled in boost.json.
  *
- * @var array<string, string>
- */
-const BOOST_AGENT_NAME_ALIASES = [
-    'phpstorm' => 'junie',
-];
-
-/**
- * The agent names enabled in boost.json, translated to registry keys.
+ * These are passed to Agent::fromName() unchanged, which is the point: an
+ * unresolvable name is exactly the case Boost handles worst. Its
+ * InstallCommand::selectAgents() filters the boost.json defaults with
+ * has($name) and drops an unknown one in silence — nothing preselected,
+ * nothing reported, and a typo indistinguishable from a correct entry. This
+ * guard turns that silence into a failure.
+ *
+ * boost.json carried "phpstorm" until #122. Boost registers that agent as
+ * "junie" (Laravel\Boost\Install\Agents\Junie), so the entry never did
+ * anything and nobody was told. PhpStorm is no longer used on this project,
+ * so the entry was removed rather than corrected, and with it the alias map
+ * that only existed to resolve it. Should a future entry need one, add the
+ * translation here — and note that Boost's own name is the one to use.
  *
  * @return array<int, string>
  */
@@ -58,10 +57,7 @@ function enabledBoostAgentNames(): array
 
     expect($names)->not->toBeEmpty('boost.json lists no agents; this guard would assert nothing.');
 
-    return array_map(
-        fn (string $name): string => BOOST_AGENT_NAME_ALIASES[$name] ?? $name,
-        $names
-    );
+    return $names;
 }
 
 it('has no AGENTS.md', function () {
@@ -81,8 +77,8 @@ it('points every enabled agent at the one guidelines file', function () {
 
         expect($agent)->not->toBeNull(
             "boost.json enables the agent \"{$name}\", which Boost does not register under that "
-            .'name. This guard cannot tell where its guidelines would be written; add it to '
-            .'BOOST_AGENT_NAME_ALIASES with the key BoostManager uses.'
+            .'name, so boost:install drops it in silence and configures nothing. Use the name '
+            .'BoostManager registers, or remove the entry.'
         );
 
         if (! $agent instanceof SupportsGuidelines) {
