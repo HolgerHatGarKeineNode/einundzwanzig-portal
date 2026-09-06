@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Support\Carbon;
+use App\Support\SushiCache;
 use Dedoc\Scramble\DocumentTransformers\AddDocumentTags;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
@@ -34,6 +35,11 @@ class AppServiceProvider extends ServiceProvider
         Date::use(
             Carbon::class
         );
+
+        // Deliberately in register(), not in boot(): a model boots exactly once
+        // per process, so a Sushi model that another provider boots before this
+        // one would never be seen by the listener again.
+        $this->guardSushiCaches();
     }
 
     /**
@@ -74,6 +80,36 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Model::preventLazyLoading(app()->environment('local'));
+    }
+
+    /**
+     * Never let a Sushi model connect to a cache file that is stale, truncated
+     * or half-migrated (Issue #139).
+     *
+     * Sushi trusts one mtime comparison, and its own rebuild truncates the file
+     * in place before filling it. A concurrent request in that window connects
+     * to an empty database and 500s; a rebuild that dies leaves that state
+     * behind permanently, because the truncated file keeps a future mtime.
+     *
+     * "eloquent.booting" is the last moment before the trait inspects the file:
+     * bootIfNotBooted() fires it, then runs static::boot() and with it
+     * bootSushi(). {@see SushiCache} rebuilds into a temporary file and
+     * publishes it with rename(), so Sushi finds a complete, fresh database and
+     * takes its "up to date" branch — and no concurrent reader ever sees a
+     * truncated one.
+     *
+     * The listener sees every model boot in the process, which is why the Sushi
+     * check in front of it is a memoised array lookup.
+     */
+    protected function guardSushiCaches(): void
+    {
+        Event::listen('eloquent.booting: *', function (string $event, array $payload): void {
+            $model = $payload[0] ?? null;
+
+            if ($model instanceof Model && SushiCache::isSushiModel($model::class)) {
+                SushiCache::ensureFresh($model);
+            }
+        });
     }
 
     /**
