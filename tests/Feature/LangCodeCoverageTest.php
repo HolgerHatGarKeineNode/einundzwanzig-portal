@@ -130,10 +130,11 @@ it('has no empty value in a non-German locale for a key reachable from code', fu
     $codeKeys = extractCodebaseTranslationKeys();
 
     // de.json is exempt HERE because most of its keys ARE the German source
-    // text, so an empty value is correct for them (651 of 908 values are empty
-    // for exactly that reason, measured 2026-09-05). The subset of German keys
-    // for which an empty value is NOT correct — those whose text is English —
-    // is guarded separately below; see #86.
+    // text, so an empty value is correct for them (619 of 911 values are empty
+    // for exactly that reason, measured 2026-09-07 after #121 filled 30 of
+    // them; it read 651 of 908 on 2026-09-05). The subset of German keys for
+    // which an empty value is NOT correct — those whose text is English — is
+    // guarded separately below; see #86.
     $locales = array_values(array_diff(LANG_CODE_COVERAGE_LOCALES, ['de']));
 
     $emptyByLocale = [];
@@ -160,95 +161,73 @@ it('has no empty value in a non-German locale for a key reachable from code', fu
  * Code-reachable keys whose text is English and whose German value is empty,
  * so a German visitor is served the raw English key text (#86).
  *
- * Frozen baseline, measured 2026-09-05: 70 keys. It is a ratchet, not a
- * blessing — number 71 turns the guard below red. The list mixes two kinds of
- * entry and does not try to tell them apart, because no static check can:
+ * Baseline, still a ratchet and not a blessing — the entry after the last one
+ * here turns the guard below red.
  *
- *  - Language-neutral by nature. Protocol, brand and field names that read the
- *    same in German ("Nostr", "Telegram", "LNURL", "Status", "URL (Onion/Tor)").
- *    An empty German value is the right answer for these.
- *  - Genuinely untranslated. English admin-UI wording that a German visitor
- *    should not see ("Population Date", "Created at", "Search cities...").
- *    These are real gaps, older than #86 and out of its scope; they need a
- *    translator, not a test change.
+ * #86 froze 70 keys on 2026-09-05 without sorting them, because no static
+ * check can tell a brand name from an untranslated label and labelling them
+ * here would have buried the second group under a word that says "fine".
+ * #121 did the sorting by hand, one judgement per key: 30 got German text in
+ * lang/de.json and left this list, 40 remain and are grouped below with the
+ * reason they stay, so the next reader does not judge them a third time.
  *
- * Sorting one from the other is a human call on 70 strings, and making it here
- * would bury the second group under a label that says "fine". Freezing both
- * keeps the count honest and visible.
+ * What stays is NOT "untranslatable in principle" — it is "the German text is
+ * this text". Two kinds:
+ *
+ *  - Already correct German. Loanwords and product terms the German UI writes
+ *    exactly this way ("Status", "Details", "Tags", "Top Meetups"), each
+ *    corroborated by a German source key in lang/de.json that uses the same
+ *    word.
+ *  - Brand, protocol and network names ("Nostr", "Telegram", "LNURL",
+ *    "URL (Onion/Tor)"). These are names, not words.
  *
  * @var list<string>
  */
 const LANG_GERMAN_EMPTY_BASELINE = [
-    'API Tokens',
-    'Actions',
-    'Anonymous',
-    'App',
-    'Basic Information',
-    'Bitcoin - Rabbit Hole',
-    'Bitcoin Event Details',
-    'Bitcoin Meetups',
-    'Bitcoin Meetups - Community Events',
-    'Cities',
-    'City successfully created!',
-    'City successfully updated!',
-    'Click to connect',
-    'Community',
-    'Coordinates',
-    'Copy',
-    'Country',
-    'Created By',
-    'Created at',
-    'Dashboard - Bitcoin Meetups',
-    'Demographics',
-    'Details',
-    'Edit',
-    'Edit City',
-    'Event Details',
-    'Follow the Rabbit - Bitcoin Journey',
-    'ID',
-    'LNURL',
-    'Latitude',
-    'Lightning',
-    'Lightning Node ID',
-    'Link',
-    'Links',
-    'Login - Bitcoin Meetups',
-    'Longitude',
-    'Matrix',
-    'Meetups',
-    'Name (:lang)',
-    'Node ID',
-    'Nostr',
-    'Nostr (NIP-52)',
-    'PayNym',
-    'Podcasts',
-    'Population',
-    'Population Date',
-    'Search cities...',
-    'Select a country',
-    'Service Details',
-    'Services',
-    'Signal',
-    'Signal: @username, SimpleX: https://..., Email: ...',
-    'SimpleX',
-    'Simplex',
-    'Status',
-    'Tags',
-    'Telegram',
-    'Telegram Link',
-    'Top Meetups',
-    'Tor Hidden Service URL',
-    'Twitter',
-    'URL (Clearnet)',
-    'URL (I2P)',
-    'URL (Onion/Tor)',
-    'URL (pkdns)',
-    'Update City',
-    'Updated at',
-    'Votes',
-    'Webhooks',
-    'Website',
-    'no location set',
+    // Already correct German: the key text IS what the German UI says. Each
+    // reason names the German source key or sibling that spells it the same.
+    'API Tokens',                          // house spelling: 'API Tokens - Einstellungen', 'Du hast noch keine API Tokens erstellt.'
+    'App',                                 // German noun; cf. 'Mit der App verbinden'
+    'Bitcoin - Rabbit Hole',               // established term in the German Bitcoin scene, and the page's own name
+    'Bitcoin Event Details',               // "Event" and "Details" are German here; cf. 'Details über das Event'
+    'Bitcoin Meetups',                     // the site's own name; cf. 'Willkommen bei Bitcoin Meetups'
+    'Bitcoin Meetups - Community Events',  // same vocabulary as 'Erstelle und bearbeite Bitcoin Meetup Events für deine Community.'
+    'Dashboard - Bitcoin Meetups',         // 'Dashboard' already carries the value "Dashboard" in de.json
+    'Details',                             // German noun; cf. 'Details über das Event', 'Details/Anmelden'
+    'Event Details',                       // as 'Details'; the house writes open compounds ('Matrix Gruppe', 'IP Adresse')
+    'ID',                                  // cf. its own description 'System-generierte ID (nur lesbar)'
+    'Link',                                // "der Link"; cf. 'Link zu weiteren Informationen oder zur Anmeldung'
+    'Links',                               // cf. 'Kontakt & Links'
+    'Meetups',                             // the product's term; cf. 'Meetups erstellt', 'Meetups in :region'
+    'Name (:lang)',                        // "Name" is identical in German; de.json even carries "Name": "Name"
+    'Podcasts',                            // German plural of "der Podcast"; sits beside 'Episoden', 'Bibliotheken'
+    'Service Details',                     // as 'Details'; cf. 'Erfahre mehr über diesen Self-Hosted Service…'
+    'Services',                            // the product word: 'Service erstellen', 'Suche nach Services...'
+    'Status',                              // "der Status"; cf. its own description 'Ist dieser Dozent aktiv?'
+    'Tags',                                // the product's German term: 'Tags wählen', 'Tags verwalten', 'Tag-Vorschläge'
+    'Telegram Link',                       // matches its sibling labels 'Matrix Gruppe', 'Twitter Benutzername'
+    'Top Meetups',                         // the sibling dashboard card is 'Top Länder' — German, same shape
+    'Tor Hidden Service URL',              // Tor's own term; siblings are 'I2P Adresse', 'Pkarr DNS Adresse'
+    'Webhooks',                            // used as a German word: 'Deine Webhooks', 'Webhook-Freigaben'
+
+    // Brand, protocol and network names. Names, not words.
+    'LNURL',                               // Lightning specification
+    'Lightning',                           // protocol; cf. the German 'kein Lightning' beside it
+    'Lightning Node ID',                   // protocol field
+    'Matrix',                              // messaging protocol
+    'Node ID',                             // protocol field; its description is 'Lightning Node ID'
+    'Nostr',                               // protocol
+    'Nostr (NIP-52)',                      // protocol plus specification number
+    'PayNym',                              // product name
+    'Signal',                              // messenger
+    'SimpleX',                             // messenger
+    'Simplex',                             // the same messenger, miscapitalised at two call sites (#121)
+    'Telegram',                            // messenger
+    'Twitter',                             // product name
+    'URL (Clearnet)',                      // network name
+    'URL (I2P)',                           // network name
+    'URL (Onion/Tor)',                     // network name
+    'URL (pkdns)',                         // network name
 ];
 
 /**
