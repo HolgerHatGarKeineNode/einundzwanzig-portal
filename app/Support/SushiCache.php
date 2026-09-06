@@ -152,8 +152,10 @@ final class SushiCache
                 // same mtime one step later, in its own switch, and the boot
                 // dies with "ErrorException: filemtime(): stat failed for …"
                 // (measured). Only patching Sushi could change that. What is in
-                // reach is not wasting the work and not writing one log line per
-                // request while it lasts.
+                // reach is the wasted build — and one log line, not the noise as
+                // such: Laravel's own handler logs that ErrorException once per
+                // request anyway, so reportOnce() saves the *additional* line
+                // this guard would otherwise contribute, nothing more.
                 self::reportOnce(
                     $class.':source-file-gone',
                     'The source file of Sushi model '.$class.' is gone; its cache can neither be verified nor stamped.'
@@ -171,6 +173,29 @@ final class SushiCache
             self::report($class, $exception);
 
             return self::FAILED;
+        }
+    }
+
+    /**
+     * Where the model keeps its cache file, or null when it has none — it does
+     * not use Sushi, does not cache to disk, or the trait cannot say.
+     *
+     * Answered by the trait itself, so a caller does not have to re-derive the
+     * name. Safe on an instance built without its constructor, which is how the
+     * warm-up asks before booting anything.
+     */
+    public static function cachePathFor(Model $model): ?string
+    {
+        try {
+            if (! self::isSushiModel($model::class) || ! self::readFromSushi($model, 'sushiShouldCache')) {
+                return null;
+            }
+
+            $cachePath = self::readFromSushi($model, 'sushiCachePath');
+
+            return is_string($cachePath) ? $cachePath : null;
+        } catch (Throwable) {
+            return null;
         }
     }
 
@@ -401,7 +426,14 @@ final class SushiCache
     {
         if (! is_file($cachePath)) {
             // Cold start: there is no file to lock on, and no reader that could
-            // be handed a truncated one either.
+            // be handed a truncated one either. Concurrent first requests each
+            // build their own copy — correct, just duplicated — and sushi:warm
+            // normally creates the file before any traffic arrives at all.
+            //
+            // The one thing that would make this a real cost is a Sushi model
+            // whose getRows() does I/O: N cold-start rebuilds would then each
+            // pay for that, with nothing serialising them. See the note on
+            // rebuild() — such a model has a second problem there anyway.
             return null;
         }
 
@@ -493,6 +525,13 @@ final class SushiCache
             // 022/0077/0002, so an FPM pool at umask 0000 would publish a
             // world-writable database. Sushi's in-place write kept the mode the
             // file already had; a rename() brings the new file's mode with it.
+            //
+            // Unconditional on purpose, in both directions: it caps a loose
+            // umask (0666 -> 0644) and it also widens a deliberately tight one
+            // (0600 -> 0644). This is a cache of public reference data that the
+            // web user has to be able to read even when the deploy user wrote
+            // it, so a mode narrower than 0644 is a deploy that stops serving,
+            // not a mode worth preserving.
             chmod($temporaryPath, 0644);
 
             touch($temporaryPath, $dataModifiedAt);
@@ -512,13 +551,29 @@ final class SushiCache
     /**
      * Create the file the rebuild writes into.
      *
-     * The name is random rather than derived from the pid, and the file is
-     * created with O_EXCL (fopen mode 'x'), which fails if anything is already
-     * at that path — a symlink included, since O_CREAT|O_EXCL does not follow
-     * one. A predictable name plus a following open would let anyone able to
-     * write into the cache directory pick a victim file for this process to
-     * truncate and then overwrite. Sushi's own fixed path is guessable too, but
-     * it is a single name; a pid-derived one is guessable in bulk.
+     * THE 64 RANDOM BITS IN THE NAME ARE THE DEFENCE — not the 'x'. A
+     * predictable name would let anyone able to write into the cache directory
+     * plant something at the path this process is about to open, and have it
+     * truncate and overwrite a file of their choosing. Sushi's own fixed path is
+     * guessable too, but it is one name; a pid-derived one is guessable in bulk.
+     * Do not restore a derived name.
+     *
+     * The 'x' is a second, LEAKY layer, and it is worth knowing where it leaks.
+     * PHP documents mode 'x' as "equivalent to specifying O_EXCL|O_CREAT flags
+     * for the underlying open(2)". It is not, measured on PHP 8.5.9 in this very
+     * directory:
+     *
+     *   planted at the path        fopen(…, 'x')   victim
+     *   plain existing file        refused         intact
+     *   symlink -> existing file   refused         intact
+     *   dangling symlink           SUCCEEDS        target created
+     *
+     * The kernel control on the same path refuses all four:
+     * os.open(p, O_CREAT|O_EXCL|O_WRONLY) raises FileExistsError and creates
+     * nothing. So 'x' catches a plant that points somewhere real and misses one
+     * that points somewhere yet to exist. It is kept because it costs nothing
+     * and covers three of the four cases, but the unguessable name is what
+     * closes the hole.
      *
      * Laravel's SQLite connector refuses a database path that does not exist
      * yet, which is why the empty file is created up front.
@@ -571,10 +626,23 @@ final class SushiCache
     }
 
     /**
+     * Rate-limited like every other condition here, and for the same reason: a
+     * failure that does not heal on its own repeats on every request, on the
+     * boot path of nearly every page. The key carries the exception class, so a
+     * *different* failure of the same model still gets its line.
+     *
      * @param  class-string  $class
      */
     private static function report(string $class, Throwable $exception): void
     {
+        $key = $class.':'.$exception::class;
+
+        if (isset(self::$reported[$key])) {
+            return;
+        }
+
+        self::$reported[$key] = true;
+
         self::write('Sushi cache could not be prepared for '.$class.'.', [
             'exception' => $exception::class,
             'reason' => self::reportableReason($exception),
@@ -615,19 +683,54 @@ final class SushiCache
     }
 
     /**
-     * QueryException::formatMessage() substitutes the bindings into the SQL, so
-     * a failing insert carries a whole chunk of model rows and the absolute
-     * database path in its message. Log context leaves the box verbatim —
-     * laravel/nightwatch json_encodes it as-is and its redact_payload_fields
-     * does not reach log context — so everything from " (Connection: " onwards
-     * is dropped and what remains is bounded. That leaves the SQLSTATE line,
-     * which is the part worth reading.
+     * Log context leaves the box verbatim — laravel/nightwatch json_encodes it
+     * as-is and its redact_payload_fields does not reach log context — so an
+     * exception message is cut down before it goes in.
+     *
+     * Three steps, because no single one is enough:
+     *
+     *  - " (Connection: " onwards is dropped. That is where
+     *    QueryException::formatMessage() puts the substituted bindings — a whole
+     *    insert chunk of model rows — and the database path. Only QueryException
+     *    has that marker.
+     *  - Every other exception on this path names an absolute path in plain
+     *    prose and is *short*: measured 118 to 191 characters for this class's
+     *    own RuntimeExceptions, PDO's SQLiteDatabaseDoesNotExistException and
+     *    the filemtime ErrorException, so the length cap never reaches them. The
+     *    application's roots are therefore replaced by name. The symlink-resolved
+     *    forms go in as well: on a zero-downtime deploy storage/ is a shared
+     *    symlink, so a path in a message is the resolved one while
+     *    storage_path() is the release one, and matching only the latter would
+     *    strip nothing where it matters most.
+     *  - The length cap stays as the backstop for everything unforeseen.
      */
     private static function reportableReason(Throwable $exception): string
     {
-        return Str::limit(
-            Str::before($exception->getMessage(), ' (Connection: '),
-            self::REPORTED_REASON_LIMIT
-        );
+        $reason = Str::before($exception->getMessage(), ' (Connection: ');
+
+        return Str::limit(strtr($reason, self::redactedRoots()), self::REPORTED_REASON_LIMIT);
+    }
+
+    /**
+     * storage_path() is nested inside base_path(), so the order of these pairs
+     * matters — strtr() resolves that by itself, it tries the longest key first.
+     *
+     * @return array<string, string>
+     */
+    private static function redactedRoots(): array
+    {
+        $roots = [];
+
+        foreach ([[storage_path(), '<storage>'], [base_path(), '<base>']] as [$path, $label]) {
+            $roots[$path] = $label;
+
+            $resolved = realpath($path);
+
+            if ($resolved !== false) {
+                $roots[$resolved] = $label;
+            }
+        }
+
+        return $roots;
     }
 }

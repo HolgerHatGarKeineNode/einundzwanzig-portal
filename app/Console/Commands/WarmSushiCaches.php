@@ -100,6 +100,8 @@ class WarmSushiCaches extends Command
             // cache has to be sound before that happens.
             $blueprint = $reflection->newInstanceWithoutConstructor();
 
+            $this->removeStaleLockFile($blueprint);
+
             $status = SushiCache::ensureFresh($blueprint);
             $expected = count($blueprint->getRows());
 
@@ -117,6 +119,39 @@ class WarmSushiCaches extends Command
             $this->line(sprintf('%s: %d row(s) (%s).', $model, $counted, $status));
         } catch (Throwable $exception) {
             $this->warn($model.': warm-up failed — '.$exception->getMessage());
+        }
+    }
+
+    /**
+     * Remove the "<cache>.lock" side-car that an earlier revision of the guard
+     * created.
+     *
+     * Dropping the side-car from the code does not remove it from a server:
+     * storage/ is shared across releases, nothing ever replaces that file, and
+     * it would sit there forever — zero bytes, unread, one per model. The
+     * warm-up is the one place that runs once per deploy with the cache path
+     * already resolved, so it is where the cleanup belongs.
+     *
+     * Narrow on purpose: exactly that suffix, exactly next to a resolved cache
+     * path, only when it is a regular file, and every failure swallowed like
+     * everything else in this command.
+     */
+    protected function removeStaleLockFile(Model $model): void
+    {
+        $cachePath = SushiCache::cachePathFor($model);
+
+        if ($cachePath === null) {
+            return;
+        }
+
+        $lockFile = $cachePath.'.lock';
+
+        if (! is_file($lockFile)) {
+            return;
+        }
+
+        if (@unlink($lockFile)) {
+            $this->line($model::class.': removed the stale lock file next to its cache.');
         }
     }
 }

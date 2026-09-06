@@ -57,6 +57,20 @@ function sushiDataPathOfModel(Model $model): string
 }
 
 /**
+ * Clears the guard's own per-process "already reported" registry.
+ *
+ * SushiCache rate-limits every warning it writes, so without this a test that
+ * asserts on a log line would depend on whether an earlier test in the same
+ * process already tripped the same key. Reflection rather than a public reset
+ * method: the deduplication is an implementation detail, not API.
+ */
+function forgetSushiCacheReports(): void
+{
+    $property = new ReflectionProperty(SushiCache::class, 'reported');
+    $property->setValue(null, []);
+}
+
+/**
  * Drops one model out of Eloquent's booted registry so the next instantiation
  * runs bootSushi again — the moment at which the cache file is inspected.
  * Model::clearBootedModels() would do it for every model in the process and
@@ -73,6 +87,8 @@ function forgetBootedModel(string $model): void
 }
 
 beforeEach(function () {
+    forgetSushiCacheReports();
+
     // Force one healthy build, then keep a copy: a red run leaves a broken
     // cache file behind, and every later test that renders the sidebar would
     // fail for that reason instead of its own.
@@ -335,6 +351,11 @@ it('leaves no temporary file behind and publishes a regular file', function () {
     // given an unpredictable name and O_EXCL, and it holds after. The exploit
     // those two close needs a file planted at the exact temporary path, which
     // is no longer constructible — see the note in the report.
+    // Compared against what was there before, not against an empty directory:
+    // the claim is that this rebuild leaves nothing behind, and an unrelated
+    // leftover from another test would otherwise fail it for the wrong reason.
+    $before = glob(dirname($this->cachePath).'/*.building');
+
     touch($this->cachePath, filemtime(sushiDataPathOfModel(new Country)) - 3600);
 
     forgetBootedModel(Country::class);
@@ -343,7 +364,114 @@ it('leaves no temporary file behind and publishes a regular file', function () {
 
     clearstatcache();
 
-    expect(glob(dirname($this->cachePath).'/*.building'))->toBe([])
+    expect(glob(dirname($this->cachePath).'/*.building'))->toBe($before)
         ->and(is_link($this->cachePath))->toBeFalse()
         ->and(is_file($this->cachePath))->toBeTrue();
+});
+
+/*
+|--------------------------------------------------------------------------
+| The third gate pass on 8989fab.
+|--------------------------------------------------------------------------
+*/
+
+it('names its temporary file unpredictably', function () {
+    // This is the whole of F2's defence, and the only thing standing between a
+    // future refactor and a reopened hole: PHP's 'x' mode is documented as
+    // "equivalent to O_EXCL|O_CREAT" but measured on 8.5.9 it follows a
+    // DANGLING symlink and creates the target, where the kernel's own
+    // O_CREAT|O_EXCL refuses. So the name — not the open mode — is what stops
+    // anyone able to write into the cache directory from picking a victim file.
+    // A pid-derived name, which is what this replaced, is guessable in bulk.
+    $create = new ReflectionMethod(SushiCache::class, 'createTemporaryFile');
+    $first = null;
+    $second = null;
+
+    // The creation itself is inside the try: a derived name makes the second
+    // call collide and throw, and the first file still has to be cleaned up.
+    try {
+        $first = $create->invoke(null, $this->cachePath);
+        $second = $create->invoke(null, $this->cachePath);
+
+        expect($first)->not->toBe($second)
+            ->and(str_contains($first, (string) getmypid()))->toBeFalse()
+            ->and(str_contains($second, (string) getmypid()))->toBeFalse()
+            ->and(str_ends_with($first, '.building'))->toBeTrue();
+    } finally {
+        foreach ([$first, $second] as $path) {
+            if ($path !== null) {
+                @unlink($path);
+            }
+        }
+    }
+});
+
+it('refuses to build into a path it cannot create', function () {
+    // The other half of createTemporaryFile(): a failed create is an exception,
+    // never a silent fall-through to writing somewhere unintended. Provoked
+    // through a missing directory rather than an occupied name, because the
+    // name is random and cannot be occupied on purpose any more.
+    $create = new ReflectionMethod(SushiCache::class, 'createTemporaryFile');
+
+    expect(fn () => $create->invoke(null, $this->cachePath.'/no/such/directory/cache.sqlite'))
+        ->toThrow(RuntimeException::class);
+});
+
+it('keeps the application paths out of the log context of any exception', function () {
+    // Cutting at " (Connection: " only works on a QueryException. Every other
+    // exception on this path names an absolute path in plain prose and is short
+    // enough that the length cap never reaches it — measured 118 to 191
+    // characters. This is the case the F1 test constructs, and it produced two
+    // absolute paths in one line.
+    Log::spy();
+
+    unlink($this->cachePath);
+    mkdir($this->cachePath);
+
+    $blueprint = (new ReflectionClass(Country::class))->newInstanceWithoutConstructor();
+
+    expect(SushiCache::ensureFresh($blueprint))->toBe(SushiCache::FAILED);
+
+    Log::shouldHaveReceived('warning')->withArgs(function ($message, $context) {
+        $reason = $context['reason'] ?? '';
+
+        return ! str_contains($reason, base_path())
+            && ! str_contains($reason, storage_path())
+            && ! str_contains($reason, (string) realpath(storage_path()))
+            && str_contains($reason, '<storage>');
+    })->once();
+});
+
+it('reports a persistent failure once per process, not once per request', function () {
+    // The catch-all path used to write on every call while the three keyed
+    // conditions were deduplicated — so a persistent local misconfiguration
+    // wrote one warning per request, each shipping the paths above off-box.
+    Log::spy();
+
+    unlink($this->cachePath);
+    mkdir($this->cachePath);
+
+    $blueprint = (new ReflectionClass(Country::class))->newInstanceWithoutConstructor();
+
+    expect(SushiCache::ensureFresh($blueprint))->toBe(SushiCache::FAILED)
+        ->and(SushiCache::ensureFresh($blueprint))->toBe(SushiCache::FAILED)
+        ->and(SushiCache::ensureFresh($blueprint))->toBe(SushiCache::FAILED);
+
+    Log::shouldHaveReceived('warning')->once();
+});
+
+it('clears a stale lock file left behind by an earlier release', function () {
+    // Dropping the side-car from the code does not remove it from a server:
+    // storage/ is shared across releases and nothing replaces that file.
+    touch($this->cachePath.'.lock');
+
+    try {
+        $this->artisan('sushi:warm')
+            ->expectsOutputToContain('removed the stale lock file')
+            ->assertExitCode(0);
+
+        expect(is_file($this->cachePath.'.lock'))->toBeFalse();
+    } finally {
+        @unlink($this->cachePath.'.lock');
+    }
 });
