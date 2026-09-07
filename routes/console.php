@@ -215,6 +215,18 @@ Schedule::command(PublishCalendarEvents::class, [
 | `nostr_publishing_enabled` is honoured here as everywhere: a re-send is a new
 | signed event, i.e. a publishing act, so a meetup that has opted out is not in
 | the candidate set at all.
+|
+| SINCE #141 THIS ENTRY ALSO CARRIES CANCELLATIONS. An organiser calling an
+| event off changes its published payload — NostrCalendarEventFactory puts a
+| marker in the title and content and a `status` / NIP-32 label pair in the tags
+| — so the record goes stale by exactly the mechanism above and needs no second
+| trigger. What that costs is LATENCY: a cancellation reaches the relays on the
+| next hourly run, within the batch cap of 10, and so does the reversal (#140).
+| An organiser who calls an event off an hour before it starts should be told
+| that the ICS feed is immediate and this is not; a shorter cadence would not
+| help much, because the scan cost is per published record and the marker is
+| already the fastest thing in the chain. `nostr:republish-calendar --meetup=<id>
+| --force` is the manual way to make it immediate for one meetup.
 */
 Schedule::command(RepublishCalendarEvents::class, [
     '--changed',

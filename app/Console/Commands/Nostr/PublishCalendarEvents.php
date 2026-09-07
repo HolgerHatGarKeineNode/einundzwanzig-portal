@@ -73,9 +73,35 @@ class PublishCalendarEvents extends Command
                 ->whereNull('nostr_coordinate')
                 ->where('nostr_publishing_enabled', true)
                 ->orderBy('created_at'),
+            /*
+             * `cancelled_at IS NULL` — an event that is off is never published in the
+             * first place (issue #141).
+             *
+             * This is the OTHER half of #141 and it is not the same as the marker. A
+             * record already on the relays is repaired by re-sending it with the
+             * cancellation marker, because a subscriber has seen it and only something
+             * they still receive can tell them otherwise. A record that was never
+             * published has no such reader: publishing it now would CREATE a live
+             * calendar entry for an event that is not happening — the defect #141
+             * reports, arriving through the front door. And it could not be taken back
+             * afterwards, since this portal emits no NIP-09 deletion (see
+             * RepublishCalendarEvents::records(), which states that gap for the same
+             * reason).
+             *
+             * The ICS feed answers the same question differently, on purpose: it
+             * delivers cancelled events for 30 days (MeetupEvent::visibleInCalendarFeed)
+             * because it is a full-state feed a client reconciles by UID, where an extra
+             * entry is inert. A publish here is a permanent write to public relays.
+             *
+             * NOT a filter on `nostr_publishing_enabled`'s side of the gate, and not
+             * one-way either: an organiser who takes the cancellation back (#140) puts
+             * the record straight back into this queue, and it publishes normally as long
+             * as its start is still ahead.
+             */
             'MeetupEvent' => MeetupEvent::query()
                 ->with('meetup.city.country')
                 ->whereNull('nostr_coordinate')
+                ->whereNull('cancelled_at')
                 ->where('start', '>', now())
                 ->whereHas('meetup', fn ($meetup) => $meetup->where('nostr_publishing_enabled', true))
                 ->orderBy('start'),
@@ -229,13 +255,21 @@ class PublishCalendarEvents extends Command
      * is written out rather than derived so that it stays readable next to the queries
      * it mirrors; `NostrWhoami::publishingState()` contains the same check.
      *
+     * `cancelled_at` is in the list for the same reason and not as an afterthought: it
+     * is a column the MeetupEvent query GATES ON since #141, and a degraded
+     * `where "cancelled_at" is null` is never true, so its absence would stop every
+     * event from publishing while the command reported "No unpublished items" and exit
+     * 0. That the column has existed since #56 and the coordinate columns are younger
+     * makes the case unlikely, not different — this list says what the query needs, not
+     * what history suggests it will find.
+     *
      * @return list<string> the missing columns as `table.column`, empty when ready
      */
     private function missingGateColumns(string $modelName): array
     {
         $required = match ($modelName) {
             'Meetup' => ['meetups' => ['nostr_coordinate', 'nostr_publishing_enabled']],
-            'MeetupEvent' => ['meetup_events' => ['nostr_coordinate'], 'meetups' => ['nostr_publishing_enabled']],
+            'MeetupEvent' => ['meetup_events' => ['nostr_coordinate', 'cancelled_at'], 'meetups' => ['nostr_publishing_enabled']],
             default => [],
         };
 

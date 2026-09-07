@@ -322,6 +322,13 @@ class RepublishCalendarEvents extends Command
      * them either — it never emits a NIP-09 deletion. That is a real gap, and a
      * different one from this issue.
      *
+     * A CANCELLED EVENT IS NOT FILTERED OUT, and that is this command's half of issue
+     * #141. `nostr:publish-calendar` refuses to publish a cancelled event that was never
+     * on the relays; a cancelled event that IS on them is the opposite case — it is the
+     * one record with something new to say, and the only way to say it is to re-send it
+     * carrying the marker NostrCalendarEventFactory now builds. `--changed` picks it up
+     * on its own, because the marker moves the payload and therefore the fingerprint.
+     *
      * @return Collection<int, Meetup|MeetupEvent>
      */
     private function records(?string $modelName, ?Meetup $meetup): Collection

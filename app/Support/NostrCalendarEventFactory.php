@@ -57,6 +57,85 @@ class NostrCalendarEventFactory
     private const STATIC_TOPICS = ['bitcoin', 'meetup'];
 
     /**
+     * The word a cancelled event is marked with, in the two spellings each of its two
+     * audiences uses (issue #141).
+     *
+     * ## Why a marker at all, and why in the title
+     *
+     * NIP-52 HAS NO CANCELLATION STATUS for kinds 31922/31923. Researched for #141
+     * against the spec as it stood on 2026-02-13 and against all 457 open pull requests
+     * on nostr-protocol/nips; no client of the ten examined writes or reads one. The
+     * `status` tag NIP-52 does define belongs to kind 31925, the RSVP, and its
+     * vocabulary is `accepted`/`declined`/`tentative` — an attendee's answer, not the
+     * organiser's. Verified again against nostr-protocol/nips at
+     * c3fd9af17939316bf6d0d83a5759100f8b0a1bdb (2026-09-04), 52.md lines 186-201.
+     *
+     * That leaves two ways to tell the relays. DELETE the record with a NIP-09 kind 5,
+     * or KEEP it and mark it. The owner chose to keep and mark, and the reason is the
+     * one {@see \App\Http\Controllers\DownloadMeetupCalendar} already gives for the ICS
+     * feed: a subscriber has already materialised the entry, so an entry that merely
+     * stops being delivered tells them nothing. A deleted kind 31923 is the disappearing
+     * entry — and worse, NIP-09 deletion is a request relays may ignore, so the likely
+     * outcome is a record that is gone from some relays and unchanged on the rest.
+     *
+     * THE TITLE MARKER IS THE LOAD-BEARING HALF, not the tags below it. It is the only
+     * thing all ten examined renderers display, because it needs no support for a
+     * convention none of them implements. The same reflex shows in the leading NIP-52
+     * extension proposal: nips PR #2351 (NIP-52R), asked what a client should do to call
+     * off ONE occurrence of a recurring series, answers "publish a new non-recurring
+     * event at the specific time, note in its description that it replaces the
+     * occurrence". Read for #141 as "NIP-52R recommends exactly this"; it does not —
+     * its scope is a recurring series and its vehicle is a NEW event, not a marker on
+     * the existing one. What it is, is a draft NIP reaching for prose in the same place,
+     * for want of a tag. The tags below are the machine-readable form for a client that
+     * one day does look, and today they are also what makes the payload — and therefore
+     * the #92 fingerprint — differ in a way no title normalisation can flatten.
+     *
+     * ## Two spellings, each in its own vocabulary
+     *
+     * `CANCELLED`, double-l, in the human-facing marker: that is the word this portal
+     * already publishes for the same event in its ICS feed (`STATUS:CANCELLED`,
+     * RFC 5545 §3.8.1.11), and inventing a second spelling for the same fact in a second
+     * feed would be a difference with no meaning behind it.
+     *
+     * `canceled`, single-l, in the tag value: that is the ONLY spelling in the NIP set.
+     * Measured over all 100 NIP files at the commit above — two occurrences of
+     * `canceled` (69.md line 59, an `s` tag's value vocabulary; 90.md line 204, prose)
+     * and zero of `cancelled`. A tag value is matched byte for byte by relays and
+     * clients, so it follows the vocabulary it will be compared against, not the one
+     * the sentence next to it uses.
+     *
+     * NEITHER IS TRANSLATED, deliberately, and for the reason {@see self::topicTags()}
+     * gives at length: these events are replaceable and get re-published, so a value
+     * that moved with the locale of whichever process happened to run the publisher
+     * would make the same event say different things over time.
+     */
+    public const CANCELLED_TITLE_PREFIX = 'CANCELLED: ';
+
+    /**
+     * The line prepended to a cancelled event's content.
+     *
+     * The title carries the marker for every renderer that shows a title; this carries
+     * it for the generic clients that render an unknown kind by printing its `content`
+     * and nothing else. Both come off again on an un-cancel, because both are DERIVED
+     * from `cancelled_at` on every build rather than written into the record — see the
+     * un-cancel test in `tests/Feature/Console/NostrCalendarCancellationTest.php`.
+     */
+    public const CANCELLED_CONTENT_NOTICE = 'CANCELLED: this event is not taking place.';
+
+    /**
+     * The tag value, and the NIP-32 label that mirrors it. See
+     * {@see self::CANCELLED_TITLE_PREFIX} for the spelling and {@see self::cancellationTags()}
+     * for why the same fact is written twice.
+     */
+    public const CANCELLED_STATUS = 'canceled';
+
+    /**
+     * The NIP-32 label namespace the mirror is published under.
+     */
+    public const CANCELLED_LABEL_NAMESPACE = 'status';
+
+    /**
      * A blank event of the given kind, stamped from the APPLICATION clock.
      *
      * swentel\nostr\Event\Event::__construct() already stamps `created_at` with PHP's
@@ -179,6 +258,14 @@ class NostrCalendarEventFactory
      * under it. The `31923:` prefix check is the same "no tag beats a wrong tag" rule
      * the rest of this class follows — a row holding anything else contributes nothing.
      *
+     * A CANCELLED EVENT STAYS LISTED (issue #141). Dropping its `a` tag would make the
+     * calendar's own reader lose sight of exactly the record that has something to say,
+     * which is the disappearing-entry failure #56 rejected for the ICS feed; the
+     * cancellation travels in the kind 31923 itself, where a reader who followed the tag
+     * reads it. It also keeps this list — and therefore the calendar's fingerprint —
+     * unmoved by a cancellation, so #141 costs one re-send of the event and none of the
+     * calendar.
+     *
      * @return list<string>
      */
     private static function publishedEventCoordinates(Meetup $meetup): array
@@ -219,9 +306,16 @@ class NostrCalendarEventFactory
     public static function forMeetupEvent(MeetupEvent $meetupEvent, string $pubkeyHex): Event
     {
         $event = self::newEvent(self::KIND_TIME_BASED_EVENT);
-        $event->setContent((string) ($meetupEvent->description ?? ''));
+        $event->setContent(self::eventContent($meetupEvent));
         $event->addTag(['d', self::eventDTag($meetupEvent)]);
-        $event->addTag(['title', $meetupEvent->title ?: $meetupEvent->meetup->name]);
+        $event->addTag(['title', self::eventTitle($meetupEvent)]);
+
+        // Directly behind the title, because the marker in it and these tags are one
+        // statement in two forms. The position is otherwise arbitrary — but it is fixed,
+        // since NostrPayloadFingerprint hashes the tag list in order.
+        foreach (self::cancellationTags($meetupEvent) as $tag) {
+            $event->addTag($tag);
+        }
 
         $start = $meetupEvent->start->getTimestamp();
         $event->addTag(['start', (string) $start]);
@@ -313,6 +407,107 @@ class NostrCalendarEventFactory
         )]);
 
         return $event;
+    }
+
+    /**
+     * The event's title, carrying the cancellation marker when it is off (issue #141).
+     *
+     * DERIVED ON EVERY BUILD from `cancelled_at`, never written into the record. That is
+     * what makes the reversal work without a second mechanism: an organiser who takes a
+     * cancellation back (#140) produces a payload identical to the one published before
+     * the cancellation, so {@see NostrPayloadFingerprint} lands back on the value it had
+     * then and `nostr:republish-calendar --changed` re-sends the clean event.
+     */
+    private static function eventTitle(MeetupEvent $meetupEvent): string
+    {
+        $title = $meetupEvent->title ?: $meetupEvent->meetup->name;
+
+        return $meetupEvent->isCancelled() ? self::CANCELLED_TITLE_PREFIX.$title : $title;
+    }
+
+    /**
+     * The event's content, with the cancellation notice in front of it (issue #141).
+     *
+     * A blank line between notice and description, so a renderer that treats the content
+     * as prose does not run the two into one paragraph. An event without a description
+     * gets the notice alone rather than a notice followed by two newlines — trailing
+     * whitespace is part of the payload, and therefore part of the fingerprint.
+     */
+    private static function eventContent(MeetupEvent $meetupEvent): string
+    {
+        $description = (string) ($meetupEvent->description ?? '');
+
+        if (! $meetupEvent->isCancelled()) {
+            return $description;
+        }
+
+        return $description === ''
+            ? self::CANCELLED_CONTENT_NOTICE
+            : self::CANCELLED_CONTENT_NOTICE."\n\n".$description;
+    }
+
+    /**
+     * The machine-readable half of a cancellation (issue #141), or nothing at all.
+     *
+     * THE SAME FACT IS WRITTEN TWICE, and the two are not redundant:
+     *
+     *  - `["status", "canceled"]` is the readable form. `status` is the word NIP-52
+     *    itself uses for the state of a calendar record (52.md, kind 31925), so a human
+     *    reading the raw event needs no lookup table. It is multi-letter, though, and
+     *    NIP-01 §"Tags" makes only single-letter keys indexable — "as a convention, all
+     *    single-letter (only english alphabet letters: a-z, A-Z) key tags are expected
+     *    to be indexed by relays" — so nobody can FILTER on it.
+     *  - `["L", "status"]` + `["l", "canceled", "status"]` is the filterable form.
+     *    NIP-32 defines `L` as a label namespace and `l` as a label carrying that
+     *    namespace as its mark, and says in so many words that "`l` and `L` tags MAY be
+     *    added to other event kinds to support self-reporting … labels refer to the
+     *    event itself" — which is exactly this case, an organiser labelling their own
+     *    record. Both are single-letter, and NIP-01 indexes the FIRST value of a tag, so
+     *    `{"kinds":[31923],"#l":["canceled"]}` is a query a relay can actually answer.
+     *    Verified against nostr-protocol/nips at c3fd9af17939316bf6d0d83a5759100f8b0a1bdb
+     *    (2026-09-04), 01.md line 84 and 32.md.
+     *
+     * NIP-32 asks (SHOULD, not MUST) that a namespace be unambiguous "such as an ISO
+     * standard or reverse domain name notation". `status` is neither, and that is the
+     * owner's decision taken with the trade-off visible: a reverse-DNS namespace of ours
+     * would be unambiguous and unguessable, and a label nobody can guess is one nobody
+     * filters on. The value stays inside the `status` namespace, so a reader that does
+     * not know it can see what it claims to be.
+     *
+     * THE ONE KNOWN COLLISION, measured rather than assumed, and accepted with its cost
+     * stated. The same nips PR #2351 puts `L`/`l` on these very kinds for something
+     * else: `["L","rrule"]` + `["l","<RRULE string>"]`. Its client pseudo-code reads
+     * `rruleStr = event.tags["l"]` and decides recurrence by "`L`/`l` tags present",
+     * WITHOUT checking the mark — so a client that implemented that draft literally
+     * would read our cancellation label as the recurrence rule `canceled` and try to
+     * parse it as RFC 5545. Three things keep this from being a reason not to ship:
+     * the PR is unmerged and nothing implements it; its own examples emit `["l", "…"]`
+     * with no mark at all, which NIP-32 forbids ("`l` tags MUST include a mark matching
+     * an `L` tag value"), so a reader who follows NIP-32 rather than that pseudo-code
+     * separates the two namespaces correctly; and an RRULE parser handed `canceled`
+     * fails rather than silently mis-renders. IF #2351 EVER MERGES IN THAT SHAPE, this
+     * namespace is the thing to re-examine — a reverse-DNS one would end the ambiguity
+     * at the price named above.
+     *
+     * NOTHING IS EMITTED FOR AN EVENT THAT IS ON. An absent tag is the "no tag beats a
+     * wrong tag" rule the rest of this class follows, and it has a second consequence
+     * that matters here: every event already published carries no `status` tag, so this
+     * change does not move one single fingerprint in the back catalogue. Only a
+     * cancellation does.
+     *
+     * @return list<list<string>>
+     */
+    private static function cancellationTags(MeetupEvent $meetupEvent): array
+    {
+        if (! $meetupEvent->isCancelled()) {
+            return [];
+        }
+
+        return [
+            ['status', self::CANCELLED_STATUS],
+            ['L', self::CANCELLED_LABEL_NAMESPACE],
+            ['l', self::CANCELLED_STATUS, self::CANCELLED_LABEL_NAMESPACE],
+        ];
     }
 
     /**
