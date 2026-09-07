@@ -297,11 +297,15 @@ class extends Component
                     "is_active": true,
                     "rsvp_enabled": true,
                     "attendees_public": true,
+                    "nostr_publishing_enabled": false,
                     "logo": "https://portal.einundzwanzig.space/img/domains/twenty-one.png",
                     "last_event_at": "2026-09-18T18:00:00.000000Z",
+                    "last_event_at_iso": "2026-09-18T18:00:00+00:00",
                     "created_by": 3,
                     "created_at": "2024-02-01T09:12:00.000000Z",
-                    "updated_at": "2026-08-23T16:23:11.000000Z"
+                    "created_at_iso": "2024-02-01T09:12:00+00:00",
+                    "updated_at": "2026-08-23T16:23:11.000000Z",
+                    "updated_at_iso": "2026-08-23T16:23:11+00:00"
                   },
                   "links": {
                     "self": null
