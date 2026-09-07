@@ -310,6 +310,8 @@ class extends Component
                     "title": "Bitcoin-Stammtisch #42",
                     "start": "2026-09-18T18:00:00.000000Z",
                     "end": null,
+                    "start_iso": "2026-09-18T18:00:00+00:00",
+                    "end_iso": null,
                     "location": "Bürgerhaus, Seiteneingang",
                     "osm_type": "way",
                     "osm_id": 123456789,
@@ -319,6 +321,10 @@ class extends Component
                     "osm_lon": "11.0767000",
                     "description": "Offener Abend, jeder ist willkommen.",
                     "link": "https://example.org/stammtisch",
+                    "links": [
+                      {"url": "https://example.org/stammtisch", "label": null},
+                      {"url": "https://t.me/stammtisch", "label": "Telegram"}
+                    ],
                     "tags": [
                       {
                         "id": 5,
@@ -337,9 +343,12 @@ class extends Component
                     "recurrence_day_position": null,
                     "recurrence_interval": 1,
                     "recurrence_end_date": null,
+                    "recurrence_end_date_iso": null,
                     "created_by": 3,
                     "created_at": "2025-12-30T20:20:10.000000Z",
-                    "updated_at": "2026-09-03T16:23:11.000000Z"
+                    "created_at_iso": "2025-12-30T20:20:10+00:00",
+                    "updated_at": "2026-09-03T16:23:11.000000Z",
+                    "updated_at_iso": "2026-09-03T16:23:11+00:00"
                   },
                   "links": {
                     "self": null

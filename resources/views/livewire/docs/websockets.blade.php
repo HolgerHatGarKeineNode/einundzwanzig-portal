@@ -219,7 +219,7 @@ class extends Component
         $examples = [
             [
                 'title' => 'meetup-event.created',
-                'note' => 'A new meetup date. `data` is the complete object, in the same shape `GET /api/meetup-events` returns it — no `data` wrapper inside, because the REST API does not use one either.',
+                'note' => 'A new meetup date. `data` is the complete object in the shape of the REST resource — `MeetupEventResource`, the same one `GET /api/my-meetup-events` and `GET /api/changes` carry — with no `data` wrapper inside, because the REST API does not use one either. It is NOT the shape of the public list `GET /api/meetup-events`: that one is hand-built for the map clients, spells `start` as `2026-09-16 17:00`, carries no timestamps and no recurrence fields, and adds `attendees` and the `meetup.*` keys.',
                 'json' => <<<'JSON'
                 {
                   "action": "created",
@@ -234,6 +234,8 @@ class extends Component
                     "title": "Bitcoin-Stammtisch #42",
                     "start": "2026-09-18T18:00:00.000000Z",
                     "end": null,
+                    "start_iso": "2026-09-18T18:00:00+00:00",
+                    "end_iso": null,
                     "location": "Bürgerhaus, Seiteneingang",
                     "osm_type": null,
                     "osm_id": null,
@@ -243,15 +245,22 @@ class extends Component
                     "osm_lon": null,
                     "description": "Offener Abend, jeder ist willkommen.",
                     "link": "https://example.org/stammtisch",
+                    "links": [
+                      {"url": "https://example.org/stammtisch", "label": null},
+                      {"url": "https://t.me/stammtisch", "label": "Telegram"}
+                    ],
                     "tags": [],
                     "recurrence_type": null,
                     "recurrence_day_of_week": null,
                     "recurrence_day_position": null,
                     "recurrence_interval": 1,
                     "recurrence_end_date": null,
+                    "recurrence_end_date_iso": null,
                     "created_by": 3,
                     "created_at": "2026-08-23T16:23:11.000000Z",
-                    "updated_at": "2026-08-23T16:23:11.000000Z"
+                    "created_at_iso": "2026-08-23T16:23:11+00:00",
+                    "updated_at": "2026-08-23T16:23:11.000000Z",
+                    "updated_at_iso": "2026-08-23T16:23:11+00:00"
                   },
                   "links": {
                     "self": null
