@@ -152,7 +152,13 @@ class extends Component {
                     <flux:separator class="my-4"/>
                     <div class="space-y-3">
                         @foreach($myMeetups as $meetup)
-                            <div class="flex flex-col sm:flex-row items-start justify-between gap-3 {{ $meetup->is_active ? '' : 'opacity-60' }}">
+                            {{-- Issue #123: `opacity-60` when inactive. It took the city line
+                                 from 7.814:1 to 2.958:1 on the light page. The "Inaktiv"
+                                 badge and the grayscale avatar carry the state; the fade
+                                 only carried a contrast loss. --}}
+                            <div class="flex flex-col sm:flex-row items-start justify-between gap-3"
+                                 data-testid="dashboard-my-meetup"
+                                 data-active="{{ $meetup->is_active ? 'true' : 'false' }}">
                                 <div class="flex items-center gap-3 flex-1">
                                     <flux:avatar
                                         :href="route('meetups.landingpage', ['meetup' => $meetup, 'country' => $country])"
@@ -172,7 +178,7 @@ class extends Component {
                                                     <flux:badge color="zinc" size="sm">{{ __('Inaktiv') }}</flux:badge>
                                                 @endunless
                                             </div>
-                                            <div class="text-xs text-zinc-500">
+                                            <div class="text-xs text-zinc-600 dark:text-zinc-300">
                                                 {{ $meetup->city->name }}
                                             </div>
                                         </div>

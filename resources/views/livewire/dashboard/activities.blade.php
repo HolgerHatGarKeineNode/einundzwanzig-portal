@@ -63,8 +63,13 @@ class extends Component {
                 @foreach($activities as $activity)
                     @if($activity['type'] === 'meetup')
                         @php $meetup = $activity['data']; @endphp
+                        {{-- Issue #123: `opacity-60` when inactive. It took the city line to
+                             2.958:1 light and the relative timestamp to 3.012:1 dark.
+                             State stays on the badge and the grayscale avatar. --}}
                         <a href="{{ route('meetups.landingpage', ['meetup' => $meetup, 'country' => $meetup->city->country->code]) }}"
-                           class="block p-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg transition-colors {{ $meetup->is_active ? '' : 'opacity-60' }}">
+                           data-testid="dashboard-activity-meetup"
+                           data-active="{{ $meetup->is_active ? 'true' : 'false' }}"
+                           class="block p-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg transition-colors">
                             <div class="flex items-start gap-3">
                                 <flux:avatar
                                     size="sm"
@@ -83,10 +88,10 @@ class extends Component {
                                         />
                                     </div>
                                     <div class="font-medium mt-1">{{ $meetup->name }}</div>
-                                    <div class="text-xs text-zinc-500">
+                                    <div class="text-xs text-zinc-600 dark:text-zinc-300">
                                         {{ $meetup->city->name }}, {{ $meetup->city->country->name }}
                                     </div>
-                                    <div class="text-xs text-zinc-400 mt-1">
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                                         {{ $activity['created_at']->diffForHumans() }}
                                     </div>
                                 </div>

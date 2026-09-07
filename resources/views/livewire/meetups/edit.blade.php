@@ -569,12 +569,34 @@ class extends Component
 
                 <flux:separator variant="subtle"/>
 
-                <div x-bind:class="rsvp ? '' : 'opacity-50 pointer-events-none'">
+                {{-- Issue #123: this block was wrapped in `opacity-50 pointer-events-none`
+                     while RSVP was off. That is the one site on the issue's list that
+                     breached 1.4.3 in BOTH themes: the switch's own label and
+                     description fell from 7.814:1 to 2.378:1 on the light page and
+                     from 10.210:1 to 3.676:1 on the dark one.
+
+                     The switch is genuinely `disabled`, and WCAG exempts an inactive
+                     control from the contrast minimum — but the text beside it is not
+                     the control, it is the explanation someone needs in order to
+                     decide whether to turn RSVP on. `pointer-events-none` went with
+                     the fade: beside a disabled control it blocked nothing except
+                     hover and selecting that explanation. --}}
+                <div data-testid="attendees-public-block">
                     <flux:switch
                         wire:model="attendees_public"
                         x-bind:disabled="!rsvp"
                         :label="__('Teilnehmerliste öffentlich zeigen')"
                         :description="__('Aus: Zu-/Absagen und Zähler bleiben öffentlich verborgen. Du und weitere Leader seht sie weiterhin.')"/>
+
+                    {{-- The dependency now says itself what the fading used to imply.
+                         An appearance is not an explanation: a user who cannot work
+                         out WHY a control is unavailable is left guessing, which is
+                         the failure Nielsen's "visibility of system status" names. --}}
+                    <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300"
+                       data-testid="attendees-public-hint"
+                       x-show="!rsvp" x-cloak>
+                        {{ __('Schalte zuerst die Anmeldung ein — ohne sie gibt es keine Teilnehmerliste, die sich zeigen ließe.') }}
+                    </p>
                 </div>
             </div>
         </flux:fieldset>
@@ -745,6 +767,7 @@ class extends Component
                         <p class="font-semibold">
                             {{ trans_choice('Es gibt in diesem Land bereits :count Ort dieses Namens.|Es gibt in diesem Land bereits :count Orte dieses Namens.', count($duplicateCityCandidates), ['count' => count($duplicateCityCandidates)]) }}
                         </p>
+                        {{-- Issue #123: measured 16.442:1 light / 10.603:1 dark. Stays. --}}
                         <ul class="mt-2 space-y-1 opacity-90">
                             @foreach ($duplicateCityCandidates as $candidate)
                                 <li>#{{ $candidate['id'] }} · {{ number_format($candidate['latitude'], 4) }} / {{ number_format($candidate['longitude'], 4) }}</li>

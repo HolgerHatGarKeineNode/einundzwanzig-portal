@@ -910,5 +910,6 @@
     "Fehlt in: :langs": "Trūkst: :langs",
     "Mindestens eine Sprache muss einen Namen tragen.": "Vismaz vienā valodā jābūt nosaukumam.",
     "Alle Sprachen tragen denselben Namen — vermutlich vom alten Picker kopiert. Lösche die Sprachen, in denen er nicht steht.": "Visās valodās ir viens un tas pats nosaukums — visticamāk, to nokopēja vecais atlasītājs. Dzēs valodas, kurās tas tā neskan.",
-    "Redaktion": "Redakcija"
+    "Redaktion": "Redakcija",
+    "Schalte zuerst die Anmeldung ein — ohne sie gibt es keine Teilnehmerliste, die sich zeigen ließe.": "Vispirms ieslēdz reģistrāciju — bez tās nav dalībnieku saraksta, ko rādīt."
 }

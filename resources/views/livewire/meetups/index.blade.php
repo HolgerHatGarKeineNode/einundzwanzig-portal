@@ -100,7 +100,20 @@ class extends Component
 
         <flux:table.rows>
             @foreach ($meetups as $meetup)
-                <flux:table.row :key="$meetup->id" :class="$meetup->is_active ? '' : 'opacity-60'">
+                {{-- Issue #123: this row carried `opacity-60` when the meetup was
+                     inactive. Measured on the light page it took the name link from
+                     15.134:1 to 4.174:1, the location line from 7.814:1 to 2.921:1
+                     and — worst — the "Inaktiv" badge itself from 9.180:1 to
+                     3.139:1, dimming the row's only statement of the very state it
+                     was trying to convey. On the dark page the badge went 5.827:1
+                     to 3.484:1.
+
+                     Nothing replaced it, because nothing had to: the badge says
+                     "Inaktiv" in words and the avatar below is `grayscale`. The
+                     fade was a third copy of a signal already given twice, and the
+                     only one of the three that cost legibility. --}}
+                <flux:table.row :key="$meetup->id" data-testid="meetup-row"
+                                :data-active="$meetup->is_active ? 'true' : 'false'">
                     <flux:table.cell variant="strong" class="flex items-center gap-3">
                         <flux:avatar
                             class="[:where(&)]:size-24 [:where(&)]:text-base {{ $meetup->is_active ? '' : 'grayscale' }}" size="xl"
@@ -150,11 +163,11 @@ class extends Component
                                 <flux:badge color="zinc" size="sm">{{ __('Inaktiv') }}</flux:badge>
                             @endif
                             @if($meetup->last_event_at)
-                                <span class="text-xs text-zinc-500">
+                                <span class="text-xs text-zinc-600 dark:text-zinc-300">
                                     {{ __('Letztes Event') }}: {{ $meetup->last_event_at->asDate() }}
                                 </span>
                             @else
-                                <span class="text-xs text-zinc-500">{{ __('Noch kein Event') }}</span>
+                                <span class="text-xs text-zinc-600 dark:text-zinc-300">{{ __('Noch kein Event') }}</span>
                             @endif
                         </div>
                     </flux:table.cell>
@@ -172,7 +185,7 @@ class extends Component
                                     <flux:badge color="green" size="sm" icon="calendar-days">
                                         {{ $meetup->nextEvent['start']->asDateTime() }}
                                     </flux:badge>
-                                    <div class="text-xs text-zinc-500 flex items-center gap-2">
+                                    <div class="text-xs text-zinc-600 dark:text-zinc-300 flex items-center gap-2">
                                         <span>{{ trans_choice(':count Zusage|:count Zusagen', $meetup->nextEvent['attendees']) }}</span>
                                         <flux:separator vertical/>
                                         <span>{{ trans_choice(':count Vielleicht|:count Vielleicht', $meetup->nextEvent['might_attendees']) }}</span>

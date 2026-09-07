@@ -633,7 +633,12 @@ class extends Component
                                 data-testid="add-city-result-{{ $index }}"
                                 class="rounded-md border border-zinc-200 p-2 text-start hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
                             <div class="text-sm font-medium">{{ $hit['osm_name'] }}</div>
-                            <div class="text-xs opacity-60">{{ $hit['osm_address'] }}</div>
+                            {{-- Issue #123: was `text-xs opacity-60`. Measured 5.742:1 light and
+                                 6.364:1 dark, so it did not breach 1.4.3 — but it is the same
+                                 line as the OSM picker's, and one picker dimming its result
+                                 rows two different ways is a coin toss for the next editor.
+                                 Named colour: 7.814:1 light, 10.210:1 dark. --}}
+                            <div class="text-xs text-zinc-600 dark:text-zinc-300">{{ $hit['osm_address'] }}</div>
                         </button>
                     @endforeach
                 </div>

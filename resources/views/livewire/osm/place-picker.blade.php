@@ -103,10 +103,24 @@ new class extends Component {
     @if ($this->chosen)
         <div class="flex items-start justify-between gap-4 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700"
              data-testid="osm-chosen">
+            {{-- Issue #123: these two lines were `text-xs opacity-60`, and the issue
+                 called them its worst case. Measured at the pixel, they were not:
+                 the box inherits the page's plain black, and black at 60% over
+                 white is 5.742:1 (6.364:1 on the dark page) against a 4.5:1 bar.
+                 12px does not raise that bar — WCAG 1.4.3 only ever LOWERS it, at
+                 24px or 18.66px bold.
+
+                 The class went anyway. `opacity` fades the glyph and the ground
+                 it sits on by the same factor, so it was spending three quarters
+                 of the pair's reserve (21:1 down to 5.742:1) to say "secondary",
+                 which a named colour says for nothing — and it left the lines one
+                 token change away from failing without any warning. Same two
+                 tokens the tag picker uses for its provenance line: 7.814:1 light,
+                 10.210:1 dark. --}}
             <div class="min-w-0">
                 <div class="font-medium">{{ $place['osm_name'] }}</div>
-                <div class="mt-0.5 text-xs opacity-60">{{ $place['osm_address'] }}</div>
-                <div class="mt-1 text-xs opacity-60">
+                <div class="mt-0.5 text-xs text-zinc-600 dark:text-zinc-300">{{ $place['osm_address'] }}</div>
+                <div class="mt-1 text-xs text-zinc-600 dark:text-zinc-300">
                     OSM {{ $place['osm_type'] }}/{{ $place['osm_id'] }}
                 </div>
             </div>
@@ -137,7 +151,7 @@ new class extends Component {
                             data-testid="osm-result-{{ $index }}"
                             class="rounded-md border border-zinc-200 p-2 text-start hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
                         <div class="text-sm font-medium">{{ $hit['osm_name'] }}</div>
-                        <div class="text-xs opacity-60">{{ $hit['osm_address'] }}</div>
+                        <div class="text-xs text-zinc-600 dark:text-zinc-300">{{ $hit['osm_address'] }}</div>
                     </button>
                 @endforeach
             </div>

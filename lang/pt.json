@@ -910,5 +910,6 @@
     "Fehlt in: :langs": "Falta em: :langs",
     "Mindestens eine Sprache muss einen Namen tragen.": "Pelo menos um idioma tem de ter um nome.",
     "Alle Sprachen tragen denselben Namen — vermutlich vom alten Picker kopiert. Lösche die Sprachen, in denen er nicht steht.": "Todos os idiomas têm o mesmo nome — provavelmente copiado pelo seletor antigo. Apaga os idiomas em que não se escreve assim.",
-    "Redaktion": "Redação"
+    "Redaktion": "Redação",
+    "Schalte zuerst die Anmeldung ein — ohne sie gibt es keine Teilnehmerliste, die sich zeigen ließe.": "Ativa primeiro a inscrição — sem ela não há lista de participantes para mostrar."
 }

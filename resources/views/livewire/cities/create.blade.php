@@ -253,6 +253,12 @@ class extends Component
                         <p class="font-semibold">
                             {{ trans_choice('Es gibt in diesem Land bereits :count Ort dieses Namens.|Es gibt in diesem Land bereits :count Orte dieses Namens.', count($duplicateCandidates), ['count' => count($duplicateCandidates)]) }}
                         </p>
+                        {{-- Issue #123 listed this `opacity-90` as "mild" and asked for a
+                             measurement before a decision. Measured: 16.284:1 on the light
+                             page, 10.603:1 on the dark one, against a 4.5:1 bar. It stays.
+                             The fade costs about a seventh of the reserve here, which the
+                             callout has to spare — unlike every other site on that list,
+                             which started from an already-muted pair. --}}
                         <ul class="mt-2 space-y-1 opacity-90">
                             @foreach ($duplicateCandidates as $candidate)
                                 <li>

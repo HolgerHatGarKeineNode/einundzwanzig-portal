@@ -910,5 +910,6 @@
     "Fehlt in: :langs": "Hiányzik: :langs",
     "Mindestens eine Sprache muss einen Namen tragen.": "Legalább egy nyelven meg kell adni a nevet.",
     "Alle Sprachen tragen denselben Namen — vermutlich vom alten Picker kopiert. Lösche die Sprachen, in denen er nicht steht.": "Minden nyelven ugyanaz a név szerepel — valószínűleg a régi választó másolta be. Töröld azokat a nyelveket, amelyeken nem így hangzik.",
-    "Redaktion": "Szerkesztőség"
+    "Redaktion": "Szerkesztőség",
+    "Schalte zuerst die Anmeldung ein — ohne sie gibt es keine Teilnehmerliste, die sich zeigen ließe.": "Előbb kapcsold be a jelentkezést — enélkül nincs résztvevőlista, amit meg lehetne mutatni."
 }

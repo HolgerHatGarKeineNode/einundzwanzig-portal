@@ -88,8 +88,13 @@ class extends Component {
             <flux:separator class="my-4"/>
             <div class="space-y-3">
                 @foreach($topMeetups as $meetup)
+                    {{-- Issue #123: `opacity-60` when inactive. It took the member count
+                         from 7.814:1 to 2.958:1 on the light page. State stays on the
+                         badge and the grayscale avatar. --}}
                     <a href="{{ route('meetups.landingpage', ['meetup' => $meetup, 'country' => $meetup->city->country->code]) }}"
-                       class="flex items-center justify-between gap-3 p-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg transition-colors block {{ $meetup->is_active ? '' : 'opacity-60' }}">
+                       data-testid="dashboard-top-meetup"
+                       data-active="{{ $meetup->is_active ? 'true' : 'false' }}"
+                       class="flex items-center justify-between gap-3 p-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg transition-colors block">
                         <div class="flex items-center gap-3 flex-1">
                             <flux:avatar
                                 size="sm"
@@ -103,7 +108,7 @@ class extends Component {
                                     @endunless
                                 </div>
                                 <div class="flex items-center space-x-2">
-                                    <div class="text-xs text-zinc-500">{{ trans_choice(':count Nutzer|:count Nutzer', $meetup->users_count) }}</div>
+                                    <div class="text-xs text-zinc-600 dark:text-zinc-300">{{ trans_choice(':count Nutzer|:count Nutzer', $meetup->users_count) }}</div>
                                     <img
                                         alt="{{ strtolower($meetup->city->country->code) }}"
                                         src="{{ asset('vendor/blade-flags/country-'.strtolower($meetup->city->country->code).'.svg') }}"
