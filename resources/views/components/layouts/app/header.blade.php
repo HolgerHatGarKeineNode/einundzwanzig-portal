@@ -20,16 +20,6 @@
                           :current="request()->routeIs('dashboard')" wire:navigate>
             {{ __('Dashboard') }}
         </flux:navbar.item>
-
-        {{-- Redaktionsbereich (Issue #143), gespiegelt aus app/sidebar.blade.php: dieselbe
-             TagEditorGate, die die Route selbst prueft. --}}
-        @if (\App\Support\TagEditorGate::allows(auth()->user()))
-            <flux:navbar.item icon="tag" :href="route('tags.moderation', ['country' => str(session('lang_country', 'de'))->after('-')->lower()])"
-                              :current="request()->routeIs('tags.moderation')" wire:navigate
-                              data-testid="header-tags-moderation">
-                {{ __('Tags verwalten') }}
-            </flux:navbar.item>
-        @endif
     </flux:navbar>
 
     <flux:spacer/>
@@ -120,15 +110,6 @@
                                :current="request()->routeIs('dashboard')" wire:navigate>
                 {{ __('Dashboard') }}
             </flux:navlist.item>
-
-            {{-- Dieselbe Gate wie oben in der Desktop-Navbar (Issue #143). --}}
-            @if (\App\Support\TagEditorGate::allows(auth()->user()))
-                <flux:navlist.item icon="tag" :href="route('tags.moderation', ['country' => str(session('lang_country', 'de'))->after('-')->lower()])"
-                                   :current="request()->routeIs('tags.moderation')" wire:navigate
-                                   data-testid="header-tags-moderation">
-                    {{ __('Tags verwalten') }}
-                </flux:navlist.item>
-            @endif
         </flux:navlist.group>
     </flux:navlist>
 

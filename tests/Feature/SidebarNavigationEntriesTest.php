@@ -232,23 +232,3 @@ it('hides the tag moderation entry from a guest', function () {
 
     expect(hasSidebarTestid($html, 'sidebar-tags-moderation'))->toBeFalse();
 });
-
-it('carries the same gated entry in the header layout', function () {
-    /*
-     * components.layouts.app.header has no route in this application — the app
-     * renders through components.layouts.app.sidebar (resources/views/components/
-     * layouts/app.blade.php) — so nothing can reach it with a request. The same
-     * source guard CopyToClipboardKeyboardTest uses for that file: both of its
-     * navigation regions carry the entry, and both carry the gate.
-     */
-    $contents = file_get_contents(base_path('resources/views/components/layouts/app/header.blade.php'));
-
-    // str_contains(), not the variadic toContain matcher — see the note in
-    // CopyToClipboardKeyboardTest for why a negated toContain can pass on its message.
-    expect(substr_count($contents, 'data-testid="header-tags-moderation"'))
-        ->toBe(2, 'header.blade.php must carry the tag moderation entry in both its desktop and mobile region.')
-        ->and(substr_count($contents, '\App\Support\TagEditorGate::allows(auth()->user())'))
-        ->toBe(2, 'both header.blade.php entries must be behind TagEditorGate.')
-        ->and(str_contains($contents, "route('tags.moderation'"))
-        ->toBeTrue('header.blade.php no longer links to the tags.moderation route.');
-});
