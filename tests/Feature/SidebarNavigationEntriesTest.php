@@ -189,3 +189,66 @@ it('adds a constant number of queries no matter how many meetups are led', funct
 
     expect($six)->toBe($one);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Issue #143 — the tag editors' vocabulary workbench
+|--------------------------------------------------------------------------
+|
+| /{country}/tags/moderation had no link anywhere in the application: grepping
+| resources/ found the route definition and two prose mentions in comments and
+| nothing else, so a tag editor had to know the URL. The screen keeps its worth
+| with the approval gate off — it is where icons, descriptions, `featured` and
+| the ordering of the vocabulary are maintained — so it gets an entry rather
+| than a removal.
+|
+| The gate on the entry is TagEditorGate, the same one the route checks in
+| routes/web.php. Deliberately a different list from the board gate above: the
+| two happen to hold the same npubs today and must be free to diverge.
+|
+*/
+
+function sidebarTagEditor(): User
+{
+    return User::factory()->create(['nostr' => config('einundzwanzig.tag_editors')[0]]);
+}
+
+it('shows the tag moderation entry to a tag editor', function () {
+    $html = $this->actingAs(sidebarTagEditor())->get('/de/services')->assertOk()->getContent();
+
+    expect(hasSidebarTestid($html, 'sidebar-tags-moderation'))->toBeTrue()
+        ->and($html)->toContain('/de/tags/moderation');
+});
+
+it('hides the tag moderation entry from an authenticated non-editor', function () {
+    $html = $this->actingAs(User::factory()->create(['nostr' => null]))->get('/de/services')->assertOk()->getContent();
+
+    expect(hasSidebarTestid($html, 'sidebar-tags-moderation'))->toBeFalse()
+        ->and($html)->not->toContain('/de/tags/moderation');
+});
+
+it('hides the tag moderation entry from a guest', function () {
+    $html = $this->get('/de/services')->assertOk()->getContent();
+
+    expect(hasSidebarTestid($html, 'sidebar-tags-moderation'))->toBeFalse();
+});
+
+it('carries the same gated entry in the header layout', function () {
+    /*
+     * components.layouts.app.header has no route in this application — the app
+     * renders through components.layouts.app.sidebar (resources/views/components/
+     * layouts/app.blade.php) — so nothing can reach it with a request. The same
+     * source guard CopyToClipboardKeyboardTest uses for that file: both of its
+     * navigation regions carry the entry, and both carry the gate.
+     */
+    $contents = file_get_contents(base_path('resources/views/components/layouts/app/header.blade.php'));
+
+    // str_contains(), not the variadic toContain matcher — see the note in
+    // CopyToClipboardKeyboardTest for why a negated toContain can pass on its message.
+    expect(substr_count($contents, 'data-testid="header-tags-moderation"'))
+        ->toBe(2, 'header.blade.php must carry the tag moderation entry in both its desktop and mobile region.')
+        ->and(substr_count($contents, '\App\Support\TagEditorGate::allows(auth()->user())'))
+        ->toBe(2, 'both header.blade.php entries must be behind TagEditorGate.')
+        ->and(str_contains($contents, "route('tags.moderation'"))
+        ->toBeTrue('header.blade.php no longer links to the tags.moderation route.');
+});

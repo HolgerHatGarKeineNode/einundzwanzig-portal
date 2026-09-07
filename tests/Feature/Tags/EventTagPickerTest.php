@@ -134,7 +134,12 @@ it('reads the requirement from the meetup country, not the browsed one', functio
 });
 
 it('refuses a tag id the user was never offered', function () {
-    // A crafted request must not attach someone else's pending suggestion.
+    // A crafted request must not attach someone else's pending suggestion. Only
+    // meaningful with the approval gate ON — with it off there is no tag outside a
+    // signed-in user's scope, which is the point of #143. The type filter is what
+    // still refuses in the open state; see the case below.
+    config(['einundzwanzig.tags.require_approval' => true]);
+
     $owner = actingAsUser();
     $meetup = meetupInCountry('de', $owner);
 
@@ -174,8 +179,10 @@ it('lets an editor create a live tag straight from the picker', function () {
         ->and($tag->created_by)->toBe(auth()->id());
 });
 
-it('stores a non-editors tag as an unapproved suggestion but selects it anyway', function () {
+it('stores a non-editors tag as an unapproved suggestion but selects it anyway while the gate is on', function () {
     // The point: a mandatory-tag country must not become a dead end for them.
+    config(['einundzwanzig.tags.require_approval' => true]);
+
     $this->actingAs(User::factory()->create(['nostr' => null]));
 
     $component = Livewire::test('tags.picker', ['type' => 'meetup_event'])
@@ -186,6 +193,31 @@ it('stores a non-editors tag as an unapproved suggestion but selects it anyway',
 
     expect($tag->isApproved())->toBeFalse();
     $component->assertSet('tagIds', [$tag->id]);
+});
+
+it('marks a pending tag as under review only while the gate is on', function () {
+    // The affordance must not promise a review that will never happen: with the gate
+    // off a NULL approved_at is provenance, not a state anyone acts on.
+    $this->actingAs(User::factory()->create(['nostr' => null]));
+
+    Tag::factory()->pending(User::factory()->create())
+        ->named(['de' => 'Lagerfeuerrunde'])
+        ->create(['type' => 'meetup_event']);
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->assertSee('Lagerfeuerrunde')
+        ->assertDontSee('in Prüfung');
+
+    config(['einundzwanzig.tags.require_approval' => true]);
+
+    // Its own author still sees it, and now with the marker.
+    $author = User::factory()->create(['nostr' => null]);
+    $own = Tag::factory()->pending($author)->named(['de' => 'Sauna-Session'])->create(['type' => 'meetup_event']);
+    $this->actingAs($author);
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->assertSee($own->getTranslation('name', 'de'))
+        ->assertSee('in Prüfung');
 });
 
 it('names a new tag only in the language it was typed in', function () {

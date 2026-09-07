@@ -9,7 +9,9 @@ use App\Models\Tag;
 use App\Observers\MeetupEventObserver;
 use App\Traits\SeoTrait;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
@@ -447,24 +449,70 @@ class extends Component
     }
 
     /**
-     * The tags the user was actually offered, resolved once. Every occurrence of a
-     * series shares the same selection (see {@see self::syncTags()}), so this must not
-     * run again per occurrence — the query is otherwise identical every time.
+     * The tags the user was actually offered, PLUS the ones this event already carries.
+     *
+     * The second half repairs the silent data loss of issue #143. `selectableBy()` alone
+     * answered with what the current user may PICK, and a save re-filtered the whole
+     * selection through it — so a co-admin who opened an event tagged by someone else
+     * with a tag they could not see (a third user's pending suggestion) dropped that tag
+     * on any save at all. Measured: tagIds [1] after mount, picker options [], no
+     * validation error, zero tags afterwards. In a `tags_required_countries` country the
+     * next save then failed validation on an event the organiser had never emptied.
+     *
+     * Keeping what is already attached costs nothing — those ids were not chosen in this
+     * request, they were loaded from the event in mount() — while an id that is NEITHER
+     * selectable NOR already attached is still refused, which is the property that keeps
+     * a crafted request out.
+     *
+     * The widening only has work to do while the approval gate is ON; that is also the
+     * only state in which the defect bites, and the state this code has to survive the
+     * gate being switched back to.
+     *
+     * Resolved once. Every occurrence of a series shares the same selection (see
+     * {@see self::syncTags()}), so this must not run again per occurrence — the query is
+     * otherwise identical every time. For a NEW event (and therefore for every series,
+     * which only ever creates) `$this->event` is null and the second half contributes
+     * nothing, so that path is unchanged.
      */
     private function allowedTags(): Collection
     {
-        return Tag::query()
+        $picked = Tag::query()
             ->where('type', 'meetup_event')
-            ->selectableBy(auth()->user())
-            ->whereIn('id', $this->tagIds)
+            ->whereIn('id', $this->tagIds);
+
+        /*
+         * With the approval gate off, scopeSelectableBy() adds no constraint at all —
+         * every tag is selectable, so an already-attached one is preserved by the plain
+         * selection and there is nothing left to widen past. The branch is not an
+         * optimisation: an OR group whose only remaining member is the attached-tag list
+         * would NARROW the result to exactly that list and drop every newly picked tag.
+         */
+        if (! config('einundzwanzig.tags.require_approval', true)) {
+            return $picked->get();
+        }
+
+        return $picked
+            ->where(function (Builder $query): void {
+                $query->selectableBy(auth()->user());
+
+                if ($this->event !== null) {
+                    // Straight at the pivot, not through $event->tags(): a second query
+                    // over `tags` is what AdministrationFormPerformanceTest pins to one.
+                    $query->orWhereIn('id', DB::table('taggables')
+                        ->select('tag_id')
+                        ->where('taggable_type', $this->event->getMorphClass())
+                        ->where('taggable_id', $this->event->getKey()));
+                }
+            })
             ->get();
     }
 
     /**
      * Attach the picked tags, scoped to the event type so nothing else is disturbed.
      *
-     * Only ids the user was actually offered are accepted — a crafted request must not
-     * be able to attach someone else's unapproved suggestion. Pass an already-resolved
+     * Only ids {@see self::allowedTags()} lets through are accepted — a crafted request
+     * must not be able to attach a tag outside the user's scope that this event does not
+     * already carry. Pass an already-resolved
      * $allowedTags when calling this in a loop (see {@see self::createEventSeries()});
      * without it, each call re-resolves the same list from scratch.
      */

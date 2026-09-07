@@ -15,10 +15,12 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 /**
  * The whole event-tag vocabulary in one call (issue #117).
  *
- * A FLAT LIST, NOT A SEARCH. The `meetup_event` group holds sixteen tags; a search
- * parameter would cost a round trip and could still answer with a name the caller then
- * has to guess a spelling for. {@see ListCountriesTool} is the existing precedent for
- * a lookup tool that simply hands over its list.
+ * A FLAT LIST, NOT A SEARCH. The `meetup_event` group is small — sixteen tags in the
+ * seeded vocabulary (database/seeders/data/tags.php, counted 2026-09-07) plus whatever
+ * organisers have added since; a search parameter would cost a round trip and could
+ * still answer with a name the caller then has to guess a spelling for.
+ * {@see ListCountriesTool} is the existing precedent for a lookup tool that simply
+ * hands over its list.
  *
  * Every entry carries `translations`, the tag's name in each language it has, because
  * that is what create-meetup-event and update-meetup-event match against — any of the
@@ -28,10 +30,11 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
  * The list is the picker's list. It runs through the same scope the resolver uses
  * ({@see ResolvesEventTags::selectableEventTags()}), so a tag offered here is by
  * construction a tag that can be attached, and one that cannot be attached is not
- * offered.
+ * offered. With the approval gate off (issue #143) that scope filters nothing, so the
+ * answer is the whole group and every caller sees the same list.
  */
 #[IsReadOnly]
-#[Description('Listet alle Tags, die einem Meetup-Termin zugeordnet werden können (Gruppe "meetup_event", 16 Einträge, keine Suche nötig). Jeder Eintrag enthält id, name, locale, featured, approved und unter "translations" den Namen in jeder vorhandenen der neun Sprachen. Genau diese Namen akzeptieren create-meetup-event und update-meetup-event im Feld "tags"; ein anderer Name wird abgelehnt und NIE neu angelegt.')]
+#[Description('Listet alle Tags, die einem Meetup-Termin zugeordnet werden können (Gruppe "meetup_event", vollständige Liste, keine Suche nötig). Jeder Eintrag enthält id, name, locale, featured, approved und unter "translations" den Namen in jeder vorhandenen der neun Sprachen. "approved" ist nur ein Vermerk der redaktionellen Prüfung und KEINE Einschränkung — jeder gelistete Tag ist verwendbar. Genau diese Namen akzeptieren create-meetup-event und update-meetup-event im Feld "tags"; ein anderer Name wird abgelehnt und NIE neu angelegt.')]
 class ListEventTagsTool extends Tool
 {
     use ResolvesEventTags;
@@ -53,7 +56,7 @@ class ListEventTagsTool extends Tool
     }
 
     /**
-     * No parameters: sixteen entries are the whole answer.
+     * No parameters: the group is small enough that the whole list is the answer.
      *
      * @return array<string, Type>
      */

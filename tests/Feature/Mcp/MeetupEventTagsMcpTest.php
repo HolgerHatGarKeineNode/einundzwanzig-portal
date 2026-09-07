@@ -291,7 +291,12 @@ it('refuses an ambiguous tag name instead of picking the first hit', function ()
     expect(tagIdsOf($event))->toBe([]);
 });
 
-it('refuses someone elses unapproved suggestion', function () {
+it('refuses someone elses unapproved suggestion while the gate is on', function () {
+    // Only a refusal while einundzwanzig.tags.require_approval is on; with it off there
+    // is no such thing as a tag outside a caller's scope (issue #143). The case stays
+    // because the workflow is dormant, not deleted.
+    config(['einundzwanzig.tags.require_approval' => true]);
+
     $user = User::factory()->create();
     $event = mcpEventFor($user);
     $stranger = User::factory()->create();
@@ -420,7 +425,9 @@ it('lists the event tag vocabulary with every name a tag carries', function () {
         ->assertSee(array_values($names));
 });
 
-it('offers only the tags that can actually be attached', function () {
+it('offers only the tags that can actually be attached while the gate is on', function () {
+    config(['einundzwanzig.tags.require_approval' => true]);
+
     $user = User::factory()->create();
     $stranger = User::factory()->create();
 
@@ -437,4 +444,30 @@ it('offers only the tags that can actually be attached', function () {
         // list at all -- the agent would have no way to tell the two apart.
         ->assertDontSee('Fremdvorschlag')
         ->assertDontSee('Buchtipp');
+});
+
+it('offers a strangers brand-new tag while the gate is off', function () {
+    // The open state (issue #143), at the shipped default: whatever one organiser
+    // created is in the next agent's list, and in the list of the write tools.
+    $user = User::factory()->create();
+    $stranger = User::factory()->create();
+
+    mcpEventTag(['de' => 'Vortrag']);
+    $fresh = Tag::factory()->ofType('meetup_event')->named(['de' => 'Fremdvorschlag'])->pending($stranger)->create();
+    Tag::factory()->ofType('library_item')->named(['de' => 'Buchtipp'])->create();
+
+    EinundzwanzigServer::actingAs($user)
+        ->tool(ListEventTagsTool::class, [])
+        ->assertOk()
+        ->assertSee(['Vortrag', 'Fremdvorschlag'])
+        // The group boundary is not a permission and does not move with the gate.
+        ->assertDontSee('Buchtipp');
+
+    $event = mcpEventFor($user);
+
+    EinundzwanzigServer::actingAs($user)
+        ->tool(UpdateMeetupEventTool::class, ['id' => $event->id, 'tags' => ['Fremdvorschlag']])
+        ->assertOk();
+
+    expect(tagIdsOf($event))->toBe([$fresh->id]);
 });

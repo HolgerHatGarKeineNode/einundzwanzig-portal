@@ -86,7 +86,9 @@ it('separates approved, pending and featured tags by scope', function () {
         ->not->toContain($approved->id);
 });
 
-it('offers a pending tag to its author but not to anyone else', function () {
+it('offers a pending tag to its author but not to anyone else while the gate is on', function () {
+    config(['einundzwanzig.tags.require_approval' => true]);
+
     $author = User::factory()->create();
     $stranger = User::factory()->create();
 
@@ -101,6 +103,34 @@ it('offers a pending tag to its author but not to anyone else', function () {
     expect(Tag::query()->selectableBy(null)->pluck('id'))
         ->toContain($approved->id)
         ->not->toContain($ownSuggestion->id, $foreignSuggestion->id);
+});
+
+it('offers every tag to everyone, including guests, while the gate is off', function () {
+    // The shipped default (issue #143) — deliberately not configured here, because an
+    // unconfigured test must see what production sees.
+    $author = User::factory()->create();
+    $stranger = User::factory()->create();
+
+    $approved = Tag::factory()->create();
+    $ownSuggestion = Tag::factory()->pending($author)->create();
+    $foreignSuggestion = Tag::factory()->pending($stranger)->create();
+
+    expect(config('einundzwanzig.tags.require_approval'))->toBeFalse();
+
+    foreach ([$author, $stranger, null] as $viewer) {
+        expect(Tag::query()->selectableBy($viewer)->pluck('id'))
+            ->toContain($approved->id, $ownSuggestion->id, $foreignSuggestion->id);
+    }
+});
+
+it('filters rather than opens when the config key is missing', function () {
+    config(['einundzwanzig.tags' => []]);
+
+    $stranger = User::factory()->create();
+    $foreignSuggestion = Tag::factory()->pending(User::factory()->create())->create();
+
+    expect(Tag::query()->selectableBy($stranger)->pluck('id'))
+        ->not->toContain($foreignSuggestion->id);
 });
 
 it('records who suggested a tag', function () {

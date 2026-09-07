@@ -69,8 +69,9 @@ new class extends Component
     }
 
     /**
-     * Everything selectable: approved tags plus the current user's own pending
-     * suggestions, so a suggester can re-select what they just proposed.
+     * Everything selectable, as {@see Tag::scopeSelectableBy()} defines it: every tag
+     * of this type while the approval gate is off, and approved tags plus the current
+     * user's own pending suggestions while it is on.
      *
      * `ordered()` is the moderation screen's sort order (tags.order_column). Without
      * it the resting list came out in whatever order the database returned and the
@@ -109,9 +110,11 @@ new class extends Component
     /**
      * Create the tag the user typed, or select the existing one it duplicates.
      *
-     * An editor's tag is live immediately; anyone else's is stored unapproved but is
-     * still selected here and now — otherwise a mandatory-tag country would be a dead
-     * end for them.
+     * `approved_at` follows the `create` ability, which follows the approval gate: with
+     * the gate off every signed-in user passes `can('create')`, so every tag is stamped
+     * `now()` and is live at once. With the gate on, an editor's tag is live immediately
+     * and anyone else's is stored unapproved but still selected here and now — otherwise
+     * a mandatory-tag country would be a dead end for them.
      *
      * ONE LOCALE, NOT NINE. This used to copy the typed name into all nine tag locales
      * so the other eight could find it. The copy was not a translation, and it disabled
@@ -279,9 +282,13 @@ new class extends Component
                                 ])
 
                                 <span>{{ $tag->displayName() }}</span>
-                                @unless ($tag->isApproved())
+                                {{-- Only while the approval gate is on (issue #143). With it off a
+                                     NULL approved_at is provenance — "arrived as a suggestion" — and
+                                     no longer says anything about whether the tag may be used, so
+                                     the marker would announce a review that will never happen. --}}
+                                @if (config('einundzwanzig.tags.require_approval', true) && ! $tag->isApproved())
                                     <span class="text-xs text-zinc-600 dark:text-zinc-300">{{ __('in Prüfung') }}</span>
-                                @endunless
+                                @endif
                             </span>
 
                             {{--

@@ -159,12 +159,49 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Tag approval gate
+    |--------------------------------------------------------------------------
+    |
+    | `require_approval` is the master switch over the whole tag approval
+    | workflow. With it OFF — the state the project runs in since issue #143 —
+    | every tag is usable and visible to everyone the moment it is created:
+    | Tag::scopeSelectableBy() applies no filter, TagPolicy::create() lets any
+    | signed-in user create outright, and TagPolicy::view() shows every tag. With
+    | it ON, the pre-#143 behaviour returns unchanged: only `tag_editors` below
+    | create live tags, everyone else suggests, and a suggestion stays out of
+    | other people's pickers until an editor approves it.
+    |
+    | The workflow is DORMANT, not deleted. App\Support\TagEditorGate, the
+    | TagPolicy methods, the tags.moderation screen, the `approved_at` column and
+    | the `approved`/`pending` scopes all stay in place and stay tested — flipping
+    | this one value back to true restores the previous behaviour with no other
+    | edit anywhere.
+    |
+    | `approved_at` is deliberately NOT backfilled. It stays the record of which
+    | tags arrived as user suggestions rather than as curated vocabulary, which is
+    | what the planned manual clean-up needs to tell them apart. A NULL there now
+    | means "was suggested", not "is hidden".
+    |
+    | Every call site reads it as config('einundzwanzig.tags.require_approval',
+    | true) — default TRUE, so a missing key fails closed, matching the
+    | fail-closed design TagEditorGate states for itself.
+    |
+    */
+
+    'tags' => [
+        'require_approval' => false,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Tag editors
     |--------------------------------------------------------------------------
     |
-    | Nostr npubs allowed to create tags directly. Everyone else may still
-    | suggest one — it is usable on their own event immediately but stays out of
-    | other people's suggestions until a tag editor approves it.
+    | Nostr npubs allowed to create tags directly while `tags.require_approval`
+    | above is on. Everyone else may still suggest one — it is usable on their own
+    | event immediately but stays out of other people's suggestions until a tag
+    | editor approves it. With the gate off the list still decides who reaches
+    | the tags.moderation vocabulary screen.
     |
     | Seeded with the board of Einundzwanzig e.V., copied on 2026-08-17 from
     | einundzwanzig-verein, config/einundzwanzig/config.php ('current_board').

@@ -94,8 +94,13 @@ class TagResource extends JsonResource
              */
             'featured' => $this->featured,
             /**
-             * False for a tag a user proposed that no editor has cleared yet. Unapproved
-             * tags are visible only on their proposer's own event.
+             * An editor-review marker, not a visibility gate.
+             *
+             * False means the tag arrived as a user suggestion that no tag editor has
+             * reviewed. It does NOT restrict anything: the approval gate is switched off
+             * (issue #143), so every tag this endpoint returns is usable by everyone and
+             * attachable by everyone. Treat it as provenance for a future clean-up, and
+             * do not filter on it.
              */
             'approved' => $this->isApproved(),
             /**

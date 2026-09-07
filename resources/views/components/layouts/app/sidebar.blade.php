@@ -217,6 +217,23 @@
             </flux:navlist.item>
         </flux:navlist.group>
 
+        {{-- Redaktionsbereich (Issue #143): /tags/moderation war von keiner einzigen
+             Ansicht aus verlinkt und nur ueber die eingetippte URL erreichbar. Der
+             Eintrag haengt an derselben TagEditorGate, die die Route selbst prueft — er
+             ist die Auffindbarkeit, nicht die Rechtegrenze. Der Bildschirm bleibt auch
+             mit abgeschalteter Tag-Freigabe die Werkbank fuer das Vokabular: Symbole,
+             Beschreibungen, `featured` und die Reihenfolge. --}}
+        @if (\App\Support\TagEditorGate::allows(auth()->user()))
+            <flux:navlist.group :heading="__('Redaktion')" class="grid">
+                <flux:navlist.item icon="tag" :href="route_with_country('tags.moderation')"
+                                   :current="request()->routeIs('tags.moderation')"
+                                   wire:navigate
+                                   data-testid="sidebar-tags-moderation">
+                    {{ __('Tags verwalten') }}
+                </flux:navlist.item>
+            </flux:navlist.group>
+        @endif
+
         {{-- Vorstandsbereich (Issue #40): der Zugang haengt an derselben BoardGate, die
              die Seite selbst in ihrem mount() prueft — der Eintrag ist die Auffindbarkeit,
              nicht die Rechtegrenze. Ohne ihn musste ein Vorstandsmitglied die URL kennen. --}}

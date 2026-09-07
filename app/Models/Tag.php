@@ -130,12 +130,24 @@ class Tag extends \Spatie\Tags\Tag
     }
 
     /**
-     * Tags this user is allowed to see offered: everything approved, plus their own
-     * pending suggestions. Without the second half a suggester could not re-select
-     * the tag they just proposed.
+     * The tags this user may be offered.
+     *
+     * With `einundzwanzig.tags.require_approval` off — the state since issue #143 —
+     * that is every tag of the queried type: a tag is usable by everyone the moment
+     * it exists, and no filter is applied at all.
+     *
+     * With the gate on, the pre-#143 rule returns verbatim: everything approved, plus
+     * the caller's own pending suggestions. Without that second half a suggester could
+     * not re-select the tag they just proposed.
+     *
+     * The default is TRUE on purpose: a missing config key filters rather than opens.
      */
     public function scopeSelectableBy(Builder $query, ?User $user): Builder
     {
+        if (! config('einundzwanzig.tags.require_approval', true)) {
+            return $query;
+        }
+
         return $query->where(function (Builder $query) use ($user): void {
             $query->whereNotNull('approved_at');
 

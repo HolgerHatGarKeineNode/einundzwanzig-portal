@@ -26,12 +26,16 @@ use Laravel\Mcp\Response;
  *    returns a model it was given untouched, which is what makes the sync in the
  *    calling tool incapable of creating.
  * 2. ONLY WHAT THE PICKER OFFERS. The lookup runs through Tag::scopeSelectableBy(),
- *    the same scope resources/views/livewire/tags/picker.blade.php uses, for the
- *    reason that file states: a crafted request must not be able to attach someone
- *    else's unapproved suggestion. An MCP call is exactly such a request path. A tag
- *    outside the scope therefore reads as "not found" rather than "not allowed" —
- *    the caller could not have picked it either way, and the wording does not
- *    disclose another user's pending suggestion.
+ *    the same scope resources/views/livewire/tags/picker.blade.php uses, so an agent
+ *    can attach exactly what a human organiser could have picked and nothing else.
+ *    What that means depends on the approval gate: with
+ *    `einundzwanzig.tags.require_approval` OFF — the state since issue #143 — the
+ *    scope filters nothing, so every tag of the group is resolvable and this rule
+ *    grants rather than restricts. With the gate ON it is a restriction again: a
+ *    crafted request must not be able to attach someone else's unapproved suggestion,
+ *    and an MCP call is exactly such a request path. A tag outside the scope reads as
+ *    "not found" rather than "not allowed" either way — the caller could not have
+ *    picked it, and the wording does not disclose another user's pending suggestion.
  * 3. ALL OR NOTHING. A list is resolved completely before the caller writes anything.
  *    Half an applied tag list is worse than a rejected one, because the caller has no
  *    way to tell which half arrived.
@@ -159,8 +163,9 @@ trait ResolvesEventTags
     {
         return Tag::query()
             ->where('type', self::EVENT_TAG_TYPE)
-            // Anything that is not a User is treated as nobody, which yields the
-            // approved tags only — the restrictive answer, not the permissive one.
+            // Anything that is not a User is treated as nobody. While the approval gate
+            // is on that yields the approved tags only — the restrictive answer, not the
+            // permissive one.
             ->selectableBy($user instanceof User ? $user : null);
     }
 
