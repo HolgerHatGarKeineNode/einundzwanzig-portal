@@ -56,6 +56,50 @@ class extends Component {
         ];
     }
 
+    /**
+     * Per hue, the RESTING fill restated so that hovering does not change it.
+     *
+     * `as="button"` (issue #124) switched on Flux' own hover fills, which had
+     * matched nothing while these chips were divs. They make the fill denser —
+     * `/20` to `/30` on the light page, `/40` to `/50` on the dark one — which
+     * moves the ground toward the hue and closes the gap with the text.
+     * Measured on all ten chips the moment the buttons landed: seven fell under
+     * 4.5:1 while hovered. Worst was amber at 3.694:1 on the dark page; rose and
+     * pink went under on the light page at 4.385:1 and 4.335:1.
+     *
+     * So hover keeps the resting fill, which the ten chips of issue #114 already
+     * had to clear 4.5:1 with, and the hover affordance is carried entirely by
+     * `hover:inset-ring-1 inset-ring-current` — the same decision this component
+     * made for the SELECTED state: form, not colour. A ring cannot lose contrast
+     * as it thickens.
+     *
+     * The values are Flux' own resting alphas (`bg-<hue>-400/20`, amber `/25`,
+     * zinc `/15`, `dark:bg-<hue>-400/40`), restated because a utility is the
+     * only way to override one. `!` because Flux' rules are not important and
+     * this has to beat them at any specificity; both halves are spelled out
+     * because an unqualified `!` would otherwise also outrank the dark variant.
+     * If Flux retunes a resting alpha this drifts — which is why every hovered
+     * chip is measured at the pixel in ServiceTypeFilterChipKeyboardTest rather
+     * than trusted.
+     *
+     * @return array<string, string>
+     */
+    private function hoverFillOverrides(): array
+    {
+        return [
+            'blue' => 'hover:bg-blue-400/20! dark:hover:bg-blue-400/40!',
+            'amber' => 'hover:bg-amber-400/25! dark:hover:bg-amber-400/40!',
+            'cyan' => 'hover:bg-cyan-400/20! dark:hover:bg-cyan-400/40!',
+            'green' => 'hover:bg-green-400/20! dark:hover:bg-green-400/40!',
+            'violet' => 'hover:bg-violet-400/20! dark:hover:bg-violet-400/40!',
+            'fuchsia' => 'hover:bg-fuchsia-400/20! dark:hover:bg-fuchsia-400/40!',
+            'pink' => 'hover:bg-pink-400/20! dark:hover:bg-pink-400/40!',
+            'rose' => 'hover:bg-rose-400/20! dark:hover:bg-rose-400/40!',
+            'orange' => 'hover:bg-orange-400/20! dark:hover:bg-orange-400/40!',
+            'zinc' => 'hover:bg-zinc-400/15! dark:hover:bg-zinc-400/40!',
+        ];
+    }
+
     public function with(): array
     {
         return [
@@ -67,6 +111,7 @@ class extends Component {
                 ->paginate(15),
             'types' => \App\Enums\SelfHostedServiceType::cases(),
             'textContrastOverrides' => $this->textContrastOverrides(),
+            'hoverFillOverrides' => $this->hoverFillOverrides(),
         ];
     }
 }; ?>
@@ -97,7 +142,14 @@ class extends Component {
         colours below the 4.5:1 that 14px/500 demands (WCAG 1.4.3, issue #114).
         Flux' own pair — text-<hue>-700/800 on bg-<hue>-400/20 light,
         text-<hue>-200 on bg-<hue>-400/40 dark — clears 4.5:1 on its own, so
-        both states keep it untouched and nothing here is per-hue.
+        selecting a chip keeps it untouched.
+
+        Two per-hue maps hang off that pair and neither is decoration:
+        textContrastOverrides() darkens the two text tokens Flux gets wrong on
+        the light page, and hoverFillOverrides() holds the RESTING fill in place
+        while hovered. Both are spelled out hue by hue because a Tailwind
+        utility is the only way to beat a Tailwind utility, and both are pinned
+        by measurement rather than by reading — see the two test files.
 
         `inset-ring-current` is the badge's own text colour, which means the
         indicator inherits whatever contrast the text already has (>= 4.5:1,
@@ -105,28 +157,52 @@ class extends Component {
         hues at once, and the check glyph keeps the state off colour alone
         (1.4.1). Inset rather than outset: it stays inside the border box, so
         selecting a chip does not move its neighbours.
+
+        `as="button"` is what makes any of that reachable (issue #124). Without
+        it `flux:badge` renders a `<div>`, and a div carrying `wire:click` is a
+        control only for people who point at it: no tab stop, no Enter, no
+        Space, and nothing announced. Ten filters that a keyboard cannot reach
+        are ten filters that are not there.
+
+        It also turns on behaviour that was inert before. Flux writes its hover
+        fills two different ways — `[&:is(button)]:hover:bg-<hue>-400/30` on the
+        light page and `dark:[button]:hover:bg-<hue>-400/50` on the dark one —
+        and both compile to `:is(button):hover`, so neither matched anything
+        while these were divs. Both are live now, which makes the hovered
+        rendering new behaviour rather than an unchanged one, and both are
+        measured at the pixel in tests/Browser/Services/.
+
+        `aria-pressed` rather than `aria-checked` or a link: these are toggles
+        that filter the list in place, they do not navigate, and each is
+        independently on or off rather than one choice out of a set.
     --}}
-    <div class="flex flex-wrap gap-2 mb-6">
+    <div class="flex flex-wrap gap-2 mb-6" role="group" aria-label="{{ __('Nach Service-Typ filtern') }}">
         @foreach($types as $type)
             <flux:badge
+                as="button"
                 wire:click="filterByType('{{ $type->value }}')"
                 size="lg"
                 color="{{ $type->color() }}"
                 :icon="$typeFilter === $type->value ? 'check' : null"
+                :aria-pressed="$typeFilter === $type->value ? 'true' : 'false'"
                 data-testid="service-type-chip"
                 data-type="{{ $type->value }}"
                 data-selected="{{ $typeFilter === $type->value ? 'true' : 'false' }}"
-                class="cursor-pointer transition-shadow duration-150 ease-out {{ $textContrastOverrides[$type->color()] ?? '' }} {{ $typeFilter === $type->value ? 'inset-ring-2 inset-ring-current' : 'hover:inset-ring-1 hover:inset-ring-current' }}"
+                class="cursor-pointer transition-shadow duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current {{ $textContrastOverrides[$type->color()] ?? '' }} {{ $hoverFillOverrides[$type->color()] ?? '' }} {{ $typeFilter === $type->value ? 'inset-ring-2 inset-ring-current' : 'hover:inset-ring-1 hover:inset-ring-current' }}"
             >
                 {{ $type->label() }}
             </flux:badge>
         @endforeach
         @if($typeFilter)
+            {{-- Not a toggle: it clears whatever is set and then removes itself,
+                 so it has no pressed state to report. --}}
             <flux:badge
+                as="button"
                 wire:click="filterByType(null)"
                 size="lg"
                 color="zinc"
-                class="cursor-pointer"
+                data-testid="service-filter-reset"
+                class="cursor-pointer hover:bg-zinc-400/15! dark:hover:bg-zinc-400/40! focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
             >
                 <flux:icon.x-mark variant="mini" class="inline"/>
                 {{ __('Filter zurücksetzen') }}

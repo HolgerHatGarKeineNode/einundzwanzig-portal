@@ -113,6 +113,126 @@ function pixelReadPng(string $path): array
     ];
 }
 
+/**
+ * Finds an inset ring by DIFFERENCING two screenshots of the same element,
+ * rather than by sampling a fixed offset from its border.
+ *
+ * A fixed offset does not survive this repository. `screenshotElement()` clips
+ * to the bounding box rounded outward, so an element sitting on a fractional x
+ * comes back with a CSS pixel of page ground on ONE side and none on the other:
+ * measured on the btcpay chip at 252x64 device pixels, x0 and x1 were the white
+ * page while x251 was already the ring. Any single inset therefore reads the
+ * ring on one side and the page on the other, and the two-sided agreement check
+ * that is supposed to validate the probe fails on a perfectly good ring.
+ *
+ * Differencing needs none of that. Both images are the same element at the same
+ * geometry, so a pixel that changed between them changed because the rendering
+ * changed. Requiring changes on BOTH sides is the probe's own check: a ring goes
+ * all the way round, so a one-sided difference means something else moved.
+ *
+ * @return array{ring: ?string, left: int, right: int, changed: int}
+ */
+function pixelRingBetween(string $restPath, string $hoverPath, int $band = 8): array
+{
+    $rest = imagecreatefrompng($restPath);
+    $hover = imagecreatefrompng($hoverPath);
+
+    $width = min(imagesx($rest), imagesx($hover));
+    $height = min(imagesy($rest), imagesy($hover));
+    $middle = intdiv($height, 2);
+
+    $counts = [];
+    $left = 0;
+    $right = 0;
+
+    foreach (range(0, min($band, intdiv($width, 2)) - 1) as $offset) {
+        foreach ([[$offset, 'left'], [$width - 1 - $offset, 'right']] as [$x, $side]) {
+            $before = imagecolorat($rest, $x, $middle) & 0xFFFFFF;
+            $after = imagecolorat($hover, $x, $middle) & 0xFFFFFF;
+
+            if ($before === $after) {
+                continue;
+            }
+
+            $counts[$after] = ($counts[$after] ?? 0) + 1;
+            $side === 'left' ? $left++ : $right++;
+        }
+    }
+
+    imagedestroy($rest);
+    imagedestroy($hover);
+
+    arsort($counts);
+
+    return [
+        'ring' => $counts === [] ? null : sprintf('#%06X', array_key_first($counts)),
+        'left' => $left,
+        'right' => $right,
+        'changed' => array_sum($counts),
+    ];
+}
+
+/**
+ * The dominant before/after colour pair over the pixels that changed between
+ * two screenshots of the same region.
+ *
+ * For an outline, which `screenshotElement()` cannot capture on the element
+ * itself: `outline` is painted OUTSIDE the border box, and the capture clips to
+ * that box. Photograph the container instead, once without the indicator and
+ * once with, and the pixels that differ are the indicator — against whatever it
+ * is actually sitting on, which is what WCAG 1.4.11 asks about.
+ *
+ * The dominant pair rather than the extreme one: an antialiased edge produces
+ * colours between the indicator and its ground, and the darkest of those would
+ * describe the blend rather than the indicator.
+ *
+ * @return array{before: ?string, after: ?string, changed: int, total: int}
+ */
+function pixelDominantChange(string $beforePath, string $afterPath): array
+{
+    $before = imagecreatefrompng($beforePath);
+    $after = imagecreatefrompng($afterPath);
+
+    $width = min(imagesx($before), imagesx($after));
+    $height = min(imagesy($before), imagesy($after));
+
+    $pairs = [];
+    $changed = 0;
+
+    for ($y = 0; $y < $height; $y++) {
+        for ($x = 0; $x < $width; $x++) {
+            $b = imagecolorat($before, $x, $y) & 0xFFFFFF;
+            $a = imagecolorat($after, $x, $y) & 0xFFFFFF;
+
+            if ($b === $a) {
+                continue;
+            }
+
+            $changed++;
+            $key = $b.':'.$a;
+            $pairs[$key] = ($pairs[$key] ?? 0) + 1;
+        }
+    }
+
+    imagedestroy($before);
+    imagedestroy($after);
+
+    arsort($pairs);
+
+    if ($pairs === []) {
+        return ['before' => null, 'after' => null, 'changed' => 0, 'total' => $width * $height];
+    }
+
+    [$b, $a] = array_map('intval', explode(':', (string) array_key_first($pairs)));
+
+    return [
+        'before' => sprintf('#%06X', $b),
+        'after' => sprintf('#%06X', $a),
+        'changed' => $changed,
+        'total' => $width * $height,
+    ];
+}
+
 /** The same extraction rule, run by Chromium's PNG decoder instead of GD. */
 const PIXEL_CANVAS_READBACK = <<<'JS'
 (() => {
