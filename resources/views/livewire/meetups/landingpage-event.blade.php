@@ -251,7 +251,7 @@ class extends Component {
                     @if($event->description)
                         <div class="pt-4 border-t border-zinc-200 dark:border-zinc-700">
                             <flux:heading size="lg" class="mb-2">{{ __('Beschreibung') }}</flux:heading>
-                            <flux:text class="whitespace-pre-wrap">{{ $event->description }}</flux:text>
+                            <flux:text class="whitespace-pre-wrap wrap-anywhere">{{ $event->description }}</flux:text>
                         </div>
                     @endif
 

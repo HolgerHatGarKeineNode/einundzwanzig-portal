@@ -39,7 +39,7 @@
     {{-- data-testid statt Textprobe: die Copy ist uebersetzbar, der Haken nicht. --}}
     <div data-testid="nostr-calendar-address"
          data-nostr-kind="{{ $address->kind }}"
-         class="col-span-full space-y-2">
+         class="col-span-full min-w-0 space-y-2">
         <flux:heading size="sm">
             {{ $address->isCalendar() ? __('Nostr-Kalender (NIP-52)') : __('Nostr-Termin (NIP-52)') }}
         </flux:heading>
@@ -52,7 +52,7 @@
               role="button"
               tabindex="0"
               title="{{ __('In die Zwischenablage kopieren') }}"
-              class="cursor-pointer block p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs break-all">{{ $address->naddr() }}</code>
+              class="cursor-pointer block max-w-full min-w-0 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs wrap-anywhere">{{ $address->naddr() }}</code>
 
         <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
             <span>{{ __('Ansehen bei') }}</span>
@@ -70,7 +70,7 @@
                  Clients lesen den; ein Mensch braucht sie lesbar. --}}
             <p class="text-xs text-gray-600 dark:text-gray-400">
                 {{ __('Veröffentlicht an:') }}
-                <span class="break-all">{{ implode(' · ', $address->relays()) }}</span>
+                <span class="wrap-anywhere">{{ implode(' · ', $address->relays()) }}</span>
             </p>
         @endif
     </div>
@@ -88,7 +88,7 @@
                  wo etwas auftauchen müsste, soll nicht raten müssen (Issue #49, Frage 2). --}}
             <p class="text-xs text-gray-600 dark:text-gray-400">
                 {{ __('Ziel-Relays:') }}
-                <span class="break-all">{{ implode(' · ', $targetRelays) }}</span>
+                <span class="wrap-anywhere">{{ implode(' · ', $targetRelays) }}</span>
             </p>
         @endif
     </div>

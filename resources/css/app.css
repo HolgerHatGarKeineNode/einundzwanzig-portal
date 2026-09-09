@@ -65,6 +65,21 @@
     button {
         @apply cursor-pointer;
     }
+
+    /*
+     * Unzerbrechliche Tokens (npub, naddr, Invite-URLs, Onion) sprengen auf
+     * schmalen Viewports das Layout. overflow-wrap: break-word senkt die
+     * min-content-Breite NICHT — overflow-wrap: anywhere schon. Gemessen an
+     * Issue #66 (EventHeaderFitsColumnTest) und am Meetup-Intro, in dem ein
+     * npub trotz break-all auf dem danebenstehenden <code> aus der Karte lief,
+     * weil derselbe String in Markdown/Freitext die Klasse nie trug.
+     *
+     * whitespace-nowrap an Buttons und Badges bleibt staerker und bricht
+     * weiterhin nicht um.
+     */
+    html {
+        overflow-wrap: anywhere;
+    }
 }
 
 /* ----------------------------------------

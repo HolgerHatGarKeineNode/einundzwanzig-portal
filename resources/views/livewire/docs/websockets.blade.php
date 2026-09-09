@@ -735,12 +735,12 @@ class extends Component
                 <tbody class="divide-y divide-zinc-200 dark:divide-white/10">
                     <tr class="bg-white/60 dark:bg-white/[0.03]">
                         <th scope="row" class="w-56 px-5 py-4 align-top font-semibold">WebSocket URL</th>
-                        <td class="px-5 py-4 font-mono break-all">{{ $this->connection['url'] }}</td>
+                        <td class="px-5 py-4 font-mono wrap-anywhere">{{ $this->connection['url'] }}</td>
                     </tr>
                     <tr class="bg-white/60 dark:bg-white/[0.03]">
                         <th scope="row" class="px-5 py-4 align-top font-semibold">Host</th>
                         <td class="px-5 py-4">
-                            <span class="font-mono break-all">{{ $this->connection['host'] }}</span>
+                            <span class="font-mono wrap-anywhere">{{ $this->connection['host'] }}</span>
                             <span class="mt-1 block text-zinc-500 dark:text-zinc-400">
                                 The socket has its own hostname with its own certificate — it is not the
                                 portal domain. The REST endpoints, <code>/api/changes</code> included, stay
@@ -775,7 +775,7 @@ class extends Component
                     <tr class="bg-white/60 dark:bg-white/[0.03]">
                         <th scope="row" class="px-5 py-4 align-top font-semibold">App key</th>
                         <td class="px-5 py-4">
-                            <span class="font-mono break-all">{{ $this->connection['key'] }}</span>
+                            <span class="font-mono wrap-anywhere">{{ $this->connection['key'] }}</span>
                             <span class="mt-1 block text-zinc-500 dark:text-zinc-400">
                                 Public by design. There is no secret to hand out, because there is nothing to
                                 authenticate: both channels are public and carry only data the REST API serves

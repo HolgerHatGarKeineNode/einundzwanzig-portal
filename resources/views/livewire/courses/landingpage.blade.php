@@ -62,7 +62,7 @@ class extends Component {
             @if($course->description)
                 <div>
                     <flux:heading size="lg" class="mb-2">{{ __('Über den Kurs') }}</flux:heading>
-                    <x-markdown class="prose whitespace-pre-wrap">{!! $course->description !!}</x-markdown>
+                    <x-markdown class="prose whitespace-pre-wrap wrap-anywhere min-w-0 max-w-full">{!! $course->description !!}</x-markdown>
                 </div>
             @endif
 
@@ -81,7 +81,7 @@ class extends Component {
                             @endif
                             @if($course->lecturer->intro)
                                 <x-markdown
-                                    class="prose prose-sm whitespace-pre-wrap">{!! $course->lecturer->intro !!}</x-markdown>
+                                    class="prose prose-sm whitespace-pre-wrap wrap-anywhere min-w-0 max-w-full">{!! $course->lecturer->intro !!}</x-markdown>
                             @endif
 
                             <!-- Lecturer Social Links -->
@@ -164,7 +164,7 @@ class extends Component {
                                      Hoehe. Gemessen: ohne ihn schob das eigene Padding des
                                      Ankers die Stadt um 4px nach unten, und zwei Karten
                                      nebeneinander liefen ausgefranst. --}}
-                                <div class="min-w-0 break-words">
+                                <div class="min-w-0 wrap-anywhere">
                                     <x-osm-place :place="$event"/>
                                     @if($event->city)
                                         <div class="text-sm text-zinc-600 dark:text-zinc-300">

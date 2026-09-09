@@ -5,7 +5,7 @@
                 <flux:callout variant="secondary" icon="key">
                     <flux:callout.heading>{{ __('Erkannte Nostr-Identität') }}</flux:callout.heading>
                     <flux:callout.text>
-                        <code class="break-all text-xs">{{ $verifiedNpub }}</code>
+                        <code class="wrap-anywhere text-xs">{{ $verifiedNpub }}</code>
                     </flux:callout.text>
                 </flux:callout>
 

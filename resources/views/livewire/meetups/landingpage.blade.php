@@ -61,8 +61,8 @@ class extends Component
     <div class="flex flex-col sm:flex-row items-center space-x-0 sm:space-x-4 space-y-4 sm:space-y-0">
         <flux:avatar class="[:where(&)]:size-32 [:where(&)]:text-base" size="xl"
                      src="{{ $meetup->getFirstMediaUrl('logo') }}"/>
-        <div class="space-y-2">
-            <flux:heading size="xl" class="mb-4">{{ $meetup->name }}</flux:heading>
+        <div class="space-y-2 min-w-0">
+            <flux:heading size="xl" class="mb-4 wrap-anywhere">{{ $meetup->name }}</flux:heading>
             <flux:subheading class="text-gray-600 dark:text-gray-400">
                 {{ $meetup->city->name }}, {{ $meetup->city->country->name }}
             </flux:subheading>
@@ -296,18 +296,18 @@ class extends Component
          It keeps the two-column shape it always had, one rank down. --}}
     <div class="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-8">
         <!-- Left Column: Meetup Details -->
-        <div class="space-y-6">
+        <div class="space-y-6 min-w-0">
             @if($meetup->intro)
                 <div>
                     <flux:heading size="lg" class="mb-2">{{ __('Über uns') }}</flux:heading>
-                    <x-markdown class="prose whitespace-pre-wrap">{!! $meetup->intro !!}</x-markdown>
+                    <x-markdown class="prose whitespace-pre-wrap wrap-anywhere min-w-0 max-w-full">{!! $meetup->intro !!}</x-markdown>
                 </div>
             @endif
 
             <div class="space-y-4">
                 <flux:heading size="lg">{{ __('Kontakt & Links') }}</flux:heading>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 min-w-0">
                     @if($meetup->webpage)
                         <flux:button href="{{ $meetup->webpage }}" target="_blank" rel="noopener noreferrer" variant="ghost"
                                      class="justify-start">
@@ -359,10 +359,11 @@ class extends Component
                     @endif
 
                     @if($meetup->nostr)
-                        <div class="col-span-full">
+                        <div class="col-span-full min-w-0">
                             <flux:heading size="sm" class="mb-2">Nostr</flux:heading>
                             <code x-copy-to-clipboard="'{{ $meetup->nostr }}'"
-                                  class="cursor-pointer block p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs break-all">{{ $meetup->nostr }}</code>
+                                  data-testid="meetup-nostr-npub"
+                                  class="cursor-pointer block max-w-full min-w-0 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs wrap-anywhere">{{ $meetup->nostr }}</code>
                         </div>
                     @endif
 

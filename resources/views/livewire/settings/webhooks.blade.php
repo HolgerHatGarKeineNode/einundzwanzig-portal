@@ -285,11 +285,12 @@ class extends Component
                          a button still gets focus, role and keyboard semantics for free
                          rather than by declaration, which is why this one stays a button.
 
-                         `break-all` because an npub is 63 characters with no break
+                         `wrap-anywhere` because an npub is 63 characters with no break
                          opportunity. Measured 2026-09-04: unwrapped it is 555px wide,
                          so in a 375px viewport it would set the page's minimum width
-                         and force horizontal scroll. With break-all it is 327px and the
-                         document stays at 375.
+                         and force horizontal scroll. With wrapping it is 327px and the
+                         document stays at 375. `break-all` wrapped the glyphs but did
+                         not lower min-content (Issue #66); `overflow-wrap: anywhere` does.
 
                          The BORDER, not the fill, is what identifies this as a control
                          (WCAG 1.4.11 wants 3:1 for that). A fill cannot do the job here:
@@ -304,7 +305,7 @@ class extends Component
                                 data-testid="webhook-contact-npub"
                                 x-copy-to-clipboard="'{{ $contactNpub }}'"
                                 title="{{ __('In die Zwischenablage kopieren') }}"
-                                class="block w-full break-all rounded-lg border border-zinc-500 p-3 text-left font-mono text-sm text-zinc-800 transition-colors hover:bg-zinc-100 dark:text-zinc-100 dark:hover:bg-zinc-700">{{ $contactNpub }}</button>
+                                class="block w-full wrap-anywhere rounded-lg border border-zinc-500 p-3 text-left font-mono text-sm text-zinc-800 transition-colors hover:bg-zinc-100 dark:text-zinc-100 dark:hover:bg-zinc-700">{{ $contactNpub }}</button>
 
                         {{-- `underline` and `py-1` are not decoration. Measured 2026-09-04:
                              a flux:link renders with text-decoration `none` and no external

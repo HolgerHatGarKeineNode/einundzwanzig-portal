@@ -35,7 +35,7 @@
                                             {{ $sourceLabels[$opt['src']] ?? $opt['src'] }}
                                             <span class="text-emerald-500 {{ $opt['is_new'] ? '' : 'hidden' }}">✨</span>
                                         </div>
-                                        <div class="break-words font-medium">{{ $opt['preview'] }}</div>
+                                        <div class="wrap-anywhere font-medium">{{ $opt['preview'] }}</div>
                                     </div>
                                 </div>
                             @endif

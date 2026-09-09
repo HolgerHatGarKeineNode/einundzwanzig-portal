@@ -917,7 +917,7 @@ class extends Component
                     @foreach ($this->headers as $header)
                         <tr wire:key="header-{{ $header['name'] }}">
                             <td class="px-5 py-4 align-top font-mono font-semibold text-orange-500">{{ $header['name'] }}</td>
-                            <td class="px-5 py-4 align-top font-mono text-xs break-all">{{ $header['value'] }}</td>
+                            <td class="px-5 py-4 align-top font-mono text-xs wrap-anywhere">{{ $header['value'] }}</td>
                             <td class="px-5 py-4 align-top text-zinc-600 dark:text-zinc-300">{!! $header['note'] !!}</td>
                         </tr>
                     @endforeach

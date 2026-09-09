@@ -2,7 +2,7 @@
 
 <div class="w-72">
     <div class="flex items-center justify-between mb-3 gap-2">
-        <flux:heading size="lg">{{ $meetup->name }}</flux:heading>
+        <flux:heading size="lg" class="min-w-0 wrap-anywhere">{{ $meetup->name }}</flux:heading>
         @if($meetup->is_active)
             <flux:badge color="green" size="sm">{{ __('Aktiv') }}</flux:badge>
         @else
@@ -46,7 +46,7 @@
             @if($meetup->nextEvent['osm_name'] || $meetup->nextEvent['location'])
                 <div class="flex items-start gap-2 text-sm">
                     <flux:icon.map-pin class="mt-0.5 size-4 shrink-0" aria-hidden="true"/>
-                    <div class="min-w-0 break-words">
+                    <div class="min-w-0 wrap-anywhere">
                         <x-osm-place :place="(object) $meetup->nextEvent" show-address/>
                     </div>
                 </div>

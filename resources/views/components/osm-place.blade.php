@@ -27,7 +27,7 @@
 @endphp
 
 @if($placeName)
-    <div {{ $attributes->merge(['class' => 'min-w-0 break-words']) }}>
+    <div {{ $attributes->merge(['class' => 'min-w-0 wrap-anywhere']) }}>
         <div class="text-sm font-medium text-zinc-800 dark:text-zinc-100">
             @if($osmUrl)
                 {{-- Der Ortsname selbst ist der Link: ein bekanntes Kartenobjekt ist der
