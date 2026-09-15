@@ -139,3 +139,29 @@ select:focus[data-flux-control] {
 .leaflet-container a {
     color: unset !important;
 }
+
+/*
+ * mill (nostr-signer) lives in Shadow DOM. Tokens are also passed via
+ * MILL.open({ theme }), but the host element must carry the same map so a
+ * late-upgraded custom element never flashes mill's purple/Space-Grotesk
+ * defaults. Inconsolata is loaded by @googlefonts on this origin.
+ */
+nostr-signer {
+    --mill-bg: #09090b;
+    --mill-surface: #18181b;
+    --mill-card: #27272a;
+    --mill-card-hover: #3f3f46;
+    --mill-overlay: rgba(9, 9, 11, 0.72);
+    --mill-border: #3f3f46;
+    --mill-border-light: #52525b;
+    --mill-accent: #f59e0b;
+    --mill-accent-hover: #fbbf24;
+    --mill-accent-dim: rgba(245, 158, 11, 0.13);
+    --mill-text: #fafafa;
+    --mill-text-secondary: #a1a1aa;
+    --mill-muted: #71717a;
+    --mill-radius: 8px;
+    --mill-font: "Inconsolata", ui-monospace, monospace;
+    --mill-font-mono: "Inconsolata", ui-monospace, monospace;
+    --mill-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+}

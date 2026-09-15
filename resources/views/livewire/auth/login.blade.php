@@ -266,10 +266,18 @@ class extends Component {
 
             <div class="flex flex-col gap-6">
 
+                <flux:button variant="filled"
+                             @click="loginWithGoogle"
+                             icon="globe-alt"
+                             x-bind:disabled="nostrLoginInProgress || millOpen"
+                             class="w-full cursor-pointer">
+                    {{ __('Log in mit Google') }}
+                </flux:button>
+
                 <flux:button variant="primary"
-                             @click="openNostrLogin"
+                             @click="loginWithNostr"
                              icon="cursor-arrow-ripple"
-                             x-bind:disabled="nostrLoginInProgress"
+                             x-bind:disabled="nostrLoginInProgress || millOpen"
                              x-bind:aria-busy="nostrLoginInProgress"
                              class="w-full cursor-pointer">
                     <span x-show="!nostrLoginInProgress">{{ __('Log in mit Nostr') }}</span>
@@ -279,6 +287,14 @@ class extends Component {
                     </span>
                 </flux:button>
 
+                <flux:button variant="outline"
+                             @click="lightningOpen = !lightningOpen"
+                             icon="bolt"
+                             x-bind:disabled="nostrLoginInProgress || millOpen"
+                             class="w-full cursor-pointer">
+                    {{ __('Log in mit Lightning') }}
+                </flux:button>
+
                 <flux:callout variant="warning" icon="bolt" class="text-start">
                     <flux:callout.heading>{{ __('Lightning-Login wird abgelöst') }}</flux:callout.heading>
                     <flux:callout.text>
@@ -286,8 +302,7 @@ class extends Component {
                     </flux:callout.text>
                 </flux:callout>
 
-                <flux:accordion>
-                    <flux:accordion.item :heading="__('Lightning-Login anzeigen')">
+                <div x-show="lightningOpen" x-cloak class="flex flex-col gap-4">
                         <div class="flex flex-col gap-4 pt-2">
                             <div class="flex justify-center" wire:key="qrcode">
                                 <a href="lightning:{{ $this->lnurl }}">
@@ -320,8 +335,7 @@ class extends Component {
                                 </div>
                             </div>
                         </div>
-                    </flux:accordion.item>
-                </flux:accordion>
+                </div>
             </div>
 
             <livewire:language.selector/>

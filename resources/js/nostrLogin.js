@@ -1,3 +1,5 @@
+import { connectMill, dropFailedBunker, hasNostrExtension } from './millAuth.js';
+
 export default () => ({
     pollingInterval: null,
     errorCheckInterval: null,
@@ -15,6 +17,8 @@ export default () => ({
     // before the full-page navigation to /auth/complete-lightning so the
     // browser does not race the redirect with another poll tick.
     lightningLoginInProgress: false,
+    millOpen: false,
+    lightningOpen: false,
 
     async init() {
         this.startTime = Date.now();
@@ -51,6 +55,52 @@ export default () => ({
         return null;
     },
 
+    async loginWithGoogle() {
+        if (this.millOpen || this.nostrLoginInProgress) {
+            return;
+        }
+
+        this.millOpen = true;
+        try {
+            await connectMill({ methods: ['pomegranate'], pomegranate: true });
+            await this.openNostrLogin();
+        } catch (error) {
+            dropFailedBunker();
+            if (error?.message !== 'cancelled') {
+                this.showAuthError('Google-Anmeldung fehlgeschlagen. Bitte Nostr oder Lightning versuchen.');
+            }
+        } finally {
+            this.millOpen = false;
+        }
+    },
+
+    async loginWithNostr() {
+        if (this.millOpen || this.nostrLoginInProgress) {
+            return;
+        }
+
+        if (hasNostrExtension()) {
+            await this.openNostrLogin();
+
+            return;
+        }
+
+        this.millOpen = true;
+        try {
+            await connectMill({ methods: ['nip46'] });
+            await this.openNostrLogin();
+        } catch (error) {
+            dropFailedBunker();
+            if (error?.message === 'timeout') {
+                this.showAuthError('Nostr-Connect abgebrochen. Google und Lightning bleiben verfügbar.');
+            } else if (error?.message !== 'cancelled') {
+                this.showAuthError('Nostr-Connect abgebrochen. Google und Lightning bleiben verfügbar.');
+            }
+        } finally {
+            this.millOpen = false;
+        }
+    },
+
     async openNostrLogin() {
         // Flip the flag immediately so the wire:poll <template x-if> in the
         // blade unmounts the polling element before we kick off any async
@@ -70,6 +120,7 @@ export default () => ({
             if (!window.nostr || typeof window.nostr.signEvent !== 'function') {
                 this.showAuthError('No Nostr signer found. Please install a Nostr browser extension.');
                 this.nostrLoginInProgress = false;
+                dropFailedBunker();
                 return;
             }
 
@@ -87,6 +138,7 @@ export default () => ({
                 console.error('Nostr signEvent failed:', error);
                 this.showAuthError('Could not sign Nostr login event. Please try again.');
                 this.nostrLoginInProgress = false;
+                dropFailedBunker();
                 return;
             }
 
@@ -111,6 +163,7 @@ export default () => ({
             console.error('openNostrLogin unexpected error:', error);
             this.showAuthError('Authentication failed. Please try again.');
             this.nostrLoginInProgress = false;
+            dropFailedBunker();
         }
     },
 
