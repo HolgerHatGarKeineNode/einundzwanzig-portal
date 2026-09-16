@@ -71,6 +71,57 @@ it('returns empty instead of throwing when the connection dies', function () {
     expect((new NominatimClient(minIntervalMs: 0))->search('Bitcoin Bar'))->toBeEmpty();
 });
 
+it('marks trySearch as failed on an http error without treating it as zero hits', function () {
+    Http::fake(['*' => Http::response('gateway down', 503)]);
+
+    $result = (new NominatimClient(minIntervalMs: 0))->trySearch('Bitcoin Bar');
+
+    expect($result['failed'])->toBeTrue()
+        ->and($result['hits'])->toBeEmpty();
+});
+
+it('marks trySearch as failed when the connection dies', function () {
+    Http::fake(fn () => throw new ConnectionException('timeout'));
+
+    $result = (new NominatimClient(minIntervalMs: 0))->trySearch('Bitcoin Bar');
+
+    expect($result['failed'])->toBeTrue()
+        ->and($result['hits'])->toBeEmpty();
+});
+
+it('does not cache a failed search so a later attempt still hits the network', function () {
+    Http::fake([
+        '*' => Http::sequence()
+            ->push('gateway down', 500)
+            ->push([nominatimRow()]),
+    ]);
+
+    $client = new NominatimClient(minIntervalMs: 0);
+    $first = $client->trySearch('Bitcoin Bar Praha');
+    $second = $client->trySearch('Bitcoin Bar Praha');
+
+    expect($first['failed'])->toBeTrue()
+        ->and($first['hits'])->toBeEmpty()
+        ->and($second['failed'])->toBeFalse()
+        ->and($second['hits'])->toHaveCount(1);
+
+    Http::assertSentCount(2);
+});
+
+it('caches a successful empty search so a repeated miss costs no request', function () {
+    Http::fake(['*' => Http::response([])]);
+
+    $client = new NominatimClient(minIntervalMs: 0);
+    $first = $client->trySearch('NirgendwoStadt');
+    $second = $client->trySearch('NirgendwoStadt');
+
+    expect($first['failed'])->toBeFalse()
+        ->and($second['failed'])->toBeFalse()
+        ->and($second['hits'])->toBeEmpty();
+
+    Http::assertSentCount(1);
+});
+
 it('does not call the service for a query that is too short', function () {
     Http::fake(['*' => Http::response([nominatimRow()])]);
 

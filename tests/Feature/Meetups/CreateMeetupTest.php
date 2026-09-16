@@ -3,7 +3,10 @@
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
+use App\Services\Osm\NominatimClient;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportFileUploads\FileUploadConfiguration;
 use Livewire\Livewire;
@@ -130,32 +133,34 @@ it('redirects guests to login when accessing meetup-create', function () {
     $this->get('/de/meetup-create')->assertRedirect(route('login'));
 });
 
-it('creates a city via createCity within the meetup-create flow', function () {
+it('creates a city from a Nominatim hit within the meetup-create flow', function () {
+    NominatimClient::resetThrottle();
+    Cache::flush();
+    app()->bind(NominatimClient::class, fn (): NominatimClient => new NominatimClient(minIntervalMs: 0));
     actingAsUser();
 
-    Livewire::test('meetups.create')
-        ->set('newCityName', 'Hamburg')
+    Http::fake(['*' => Http::response([[
+        'osm_type' => 'relation',
+        'osm_id' => 62422,
+        'name' => 'Hamburg',
+        'display_name' => 'Hamburg, Deutschland',
+        'lat' => '53.5511',
+        'lon' => '9.9937',
+        'category' => 'place',
+    ]])]);
+
+    $form = Livewire::test('meetups.create')
         ->set('newCityCountryId', $this->city->country_id)
-        ->set('newCityLatitude', 53.5511)
-        ->set('newCityLongitude', 9.9937)
-        ->call('createCity')
+        ->set('newCityQuery', 'Hamburg')
+        ->call('searchCity')
+        ->call('chooseCity', 0)
         ->assertHasNoErrors();
 
-    expect(City::query()->where('name', 'Hamburg')->exists())->toBeTrue();
-});
+    $city = City::query()->where('name', 'Hamburg')->first();
 
-it('does not crash with PropertyNotFoundException when newCityLatitude is set to null', function () {
-    actingAsUser();
-    Livewire::test('meetups.create')
-        ->set('newCityLatitude', null)
-        ->assertStatus(200)
-        ->assertSet('newCityLatitude', null);
-});
-
-it('does not crash with PropertyNotFoundException when newCityLongitude is set to null', function () {
-    actingAsUser();
-    Livewire::test('meetups.create')
-        ->set('newCityLongitude', null)
-        ->assertStatus(200)
-        ->assertSet('newCityLongitude', null);
+    expect($city)->not->toBeNull()
+        ->and($form->get('city_id'))->toBe($city->id)
+        ->and((float) $city->latitude)->toBe(53.5511)
+        ->and((float) $city->longitude)->toBe(9.9937)
+        ->and($city->osm_id)->toBe(62422);
 });

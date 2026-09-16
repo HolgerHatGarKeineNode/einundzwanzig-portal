@@ -7,11 +7,11 @@ use App\Models\Meetup;
 use App\Models\User;
 use App\Rules\UniqueMeetupName;
 use App\Rules\ValidNpub;
+use App\Services\Osm\NominatimClient;
 use App\Support\NostrLogin;
 use App\Traits\SeoTrait;
 use Flux\Flux;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
@@ -86,13 +86,19 @@ class extends Component
     public string $leaderNpub = '';
 
     // New City Modal
-    public string $newCityName = '';
-
     public ?int $newCityCountryId = null;
 
-    public ?float $newCityLatitude = null;
+    public string $newCityQuery = '';
 
-    public ?float $newCityLongitude = null;
+    /** @var array<int, array<string, mixed>> */
+    #[Locked]
+    public array $newCityResults = [];
+
+    #[Locked]
+    public bool $newCitySearched = false;
+
+    #[Locked]
+    public bool $newCityFailed = false;
 
     /**
      * Bestaetigung, dass hier bewusst ein weiterer Ort gleichen Namens entsteht —
@@ -108,6 +114,8 @@ class extends Component
      */
     public array $duplicateCityCandidates = [];
 
+    public ?int $pendingCityHitIndex = null;
+
     /**
      * Vorhandene Orte gleichen Namens im gewaehlten Land.
      *
@@ -116,13 +124,13 @@ class extends Component
      *
      * @return array<int, array{id: int, latitude: float, longitude: float}>
      */
-    protected function duplicateCityCandidates(): array
+    protected function duplicateCityCandidatesFor(string $name): array
     {
-        if (trim($this->newCityName) === '' || $this->newCityCountryId === null) {
+        if (trim($name) === '' || $this->newCityCountryId === null) {
             return [];
         }
 
-        return City::matchingName($this->newCityName, $this->newCityCountryId)
+        return City::matchingName($name, $this->newCityCountryId)
             ->map(fn (City $city): array => [
                 'id' => $city->getKey(),
                 'latitude' => (float) $city->latitude,
@@ -131,44 +139,133 @@ class extends Component
             ->all();
     }
 
-    public function createCity(): void
+    /**
+     * Searches OpenStreetMap for a town, so a missing city can be added without leaving
+     * the form. Coordinates come from the hit — organisers do not type WGS84.
+     */
+    public function searchCity(): void
     {
-        /*
-         * Trimmen VOR der Validierung, nicht danach. Die unique-Regel unten prueft den
-         * Wert, den sie bekommt — steht der Trim erst beim Speichern, laesst sie
-         * "Offenburg " an einem vorhandenen "Offenburg" vorbei und erzeugt genau die
-         * Dublette, die sie verhindern soll. Belegt: 12 der 305 Staedte in Produktion
-         * tragen ein nachgestelltes Leerzeichen, "Offenburg " steht dort seit 2023
-         * neben "Offenburg".
-         */
-        $this->newCityName = trim($this->newCityName);
-        $this->duplicateCityCandidates = $this->duplicateCityCandidates();
-
-        $validated = $this->validate([
-            // Landesbezogen, nicht global (Issue #33): Paris in Frankreich und Paris in
-            // Texas sind kein Konflikt. Innerhalb eines Landes bleibt die Bremse.
-            'newCityName' => [
-                'required', 'string', 'max:255',
-                ...($this->confirmDuplicateCity
-                    ? []
-                    : [Rule::unique('cities', 'name')->where('country_id', $this->newCityCountryId)]),
-            ],
+        $this->validate([
             'newCityCountryId' => ['required', 'exists:countries,id'],
-            'newCityLatitude' => ['required', 'numeric'],
-            'newCityLongitude' => ['required', 'numeric'],
+            'newCityQuery' => ['required', 'string', 'min:3'],
         ]);
 
+        $this->newCitySearched = true;
+        $this->newCityFailed = false;
+        $this->confirmDuplicateCity = false;
+        $this->duplicateCityCandidates = [];
+        $this->pendingCityHitIndex = null;
+
+        $code = Country::find($this->newCityCountryId)?->code;
+
+        $result = app(NominatimClient::class)->trySearch($this->newCityQuery, $code);
+
+        if ($result['failed']) {
+            $this->newCityResults = [];
+            $this->newCityFailed = true;
+
+            return;
+        }
+
+        $this->newCityResults = $result['hits']
+            ->filter(fn (array $hit): bool => ($hit['category'] ?? null) === 'place')
+            ->take(5)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Takes one search result and makes it the selected city.
+     *
+     * Order: same osm_type+osm_id → select; same name in country → confirmDuplicateCity;
+     * otherwise create from the hit. Not the course useCity path (silent LOWER(name)).
+     */
+    public function chooseCity(int $index): void
+    {
+        $hit = $this->newCityResults[$index] ?? null;
+
+        if ($hit === null) {
+            return;
+        }
+
+        if (! auth()->user()?->can('create', City::class)) {
+            $this->addError('newCityQuery', __('Du darfst keine Stadt anlegen.'));
+
+            return;
+        }
+
+        $name = trim((string) ($hit['osm_name'] ?? ''));
+
+        if ($name === '') {
+            return;
+        }
+
+        $osmType = $hit['osm_type'] ?? null;
+        $osmId = $hit['osm_id'] ?? null;
+
+        if (! blank($osmType) && ! blank($osmId)) {
+            $existing = City::query()
+                ->where('osm_type', $osmType)
+                ->where('osm_id', $osmId)
+                ->first();
+
+            if ($existing !== null) {
+                $this->selectAddedCity($existing);
+
+                return;
+            }
+        }
+
+        if ($this->pendingCityHitIndex !== $index) {
+            $this->confirmDuplicateCity = false;
+        }
+
+        $this->pendingCityHitIndex = $index;
+        $this->duplicateCityCandidates = $this->duplicateCityCandidatesFor($name);
+
+        if ($this->duplicateCityCandidates !== [] && ! $this->confirmDuplicateCity) {
+            return;
+        }
+
+        $latitude = $hit['osm_lat'] ?? null;
+        $longitude = $hit['osm_lon'] ?? null;
+
+        if ($latitude === null || $longitude === null) {
+            return;
+        }
+
         $city = City::create([
-            'name' => $validated['newCityName'],
-            'country_id' => $validated['newCityCountryId'],
-            'latitude' => $validated['newCityLatitude'],
-            'longitude' => $validated['newCityLongitude'],
-            // slug uebernimmt HasSlug auf City.
+            'country_id' => $this->newCityCountryId,
+            'name' => $name,
+            'latitude' => $latitude,
+            'longitude' => $longitude,
+            'osm_type' => $osmType,
+            'osm_id' => $osmId,
+            'osm_name' => $hit['osm_name'] ?? null,
+            'osm_address' => $hit['osm_address'] ?? null,
+            'osm_lat' => $hit['osm_lat'] ?? null,
+            'osm_lon' => $hit['osm_lon'] ?? null,
+            'wikidata' => $hit['wikidata'] ?? null,
+            'wikipedia' => $hit['wikipedia'] ?? null,
+            'population' => $hit['population'] ?? null,
             'created_by' => auth()->id(),
         ]);
 
+        $this->selectAddedCity($city);
+    }
+
+    protected function selectAddedCity(City $city): void
+    {
         $this->city_id = $city->id;
-        $this->reset(['newCityName', 'newCityCountryId', 'newCityLatitude', 'newCityLongitude', 'confirmDuplicateCity', 'duplicateCityCandidates']);
+        $this->reset([
+            'newCityQuery',
+            'newCityResults',
+            'newCitySearched',
+            'newCityFailed',
+            'confirmDuplicateCity',
+            'duplicateCityCandidates',
+            'pendingCityHitIndex',
+        ]);
 
         Flux::modal('add-city')->close();
     }
@@ -748,41 +845,24 @@ class extends Component
         </div>
     </flux:fieldset>
 
-    <!-- Add City Modal -->
+    {{-- Sits outside the form: a nested <form> is invalid HTML, and pressing Enter in the
+         search box would otherwise submit the meetup instead of searching. --}}
     <flux:modal name="add-city" variant="flyout" wire:key="add-city-modal">
-        <form wire:submit="createCity" class="space-y-6">
+        <div class="space-y-6">
             <div>
                 <flux:heading size="lg">{{ __('Stadt hinzufügen') }}</flux:heading>
-                <flux:text class="mt-2">{{ __('Füge eine neue Stadt zur Datenbank hinzu.') }}</flux:text>
+                <flux:text class="mt-2">
+                    {{ __('Such die Stadt auf OpenStreetMap — Lage und Schreibweise kommen von dort. Danach ist sie oben auswählbar.') }}
+                </flux:text>
             </div>
 
             <flux:field>
-                <flux:label>{{ __('Stadtname') }} <span class="text-red-500">*</span></flux:label>
-                <flux:input wire:model="newCityName" placeholder="{{ __('z.B. Berlin') }}" required/>
-                <flux:error name="newCityName"/>
-                {{-- Rueckfrage aus Issue #33: gleichnamige Orte existieren wirklich.
-                     Nicht verbieten, sondern zur Entscheidung machen. --}}
-                @if ($duplicateCityCandidates !== [])
-                    <div class="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
-                        <p class="font-semibold">
-                            {{ trans_choice('Es gibt in diesem Land bereits :count Ort dieses Namens.|Es gibt in diesem Land bereits :count Orte dieses Namens.', count($duplicateCityCandidates), ['count' => count($duplicateCityCandidates)]) }}
-                        </p>
-                        {{-- Issue #123: measured 16.442:1 light / 10.603:1 dark. Stays. --}}
-                        <ul class="mt-2 space-y-1 opacity-90">
-                            @foreach ($duplicateCityCandidates as $candidate)
-                                <li>#{{ $candidate['id'] }} · {{ number_format($candidate['latitude'], 4) }} / {{ number_format($candidate['longitude'], 4) }}</li>
-                            @endforeach
-                        </ul>
-                        <flux:checkbox class="mt-3" wire:model.live="confirmDuplicateCity"
-                                       label="{{ __('Trotzdem als weiteren Ort gleichen Namens anlegen') }}"/>
-                    </div>
-                @endif
-            </flux:field>
-
-            <flux:field>
-                <flux:label>{{ __('Land') }} <span class="text-red-500">*</span></flux:label>
+                <flux:label>{{ __('Land') }}</flux:label>
                 <flux:select variant="listbox" searchable wire:model="newCityCountryId"
-                             placeholder="{{ __('Land auswählen') }}">
+                             placeholder="{{ __('Land auswählen') }}" data-testid="add-city-country">
+                    <x-slot name="search">
+                        <flux:select.search class="px-4" placeholder="{{ __('Land suchen...') }}"/>
+                    </x-slot>
                     @foreach($countries as $country)
                         <flux:select.option value="{{ $country->id }}">
                             <div class="flex items-center space-x-2">
@@ -797,33 +877,67 @@ class extends Component
                 <flux:error name="newCityCountryId"/>
             </flux:field>
 
-            <div class="grid grid-cols-2 gap-4">
-                <flux:field>
-                    <flux:label>{{ __('Breitengrad') }} <span class="text-red-500">*</span></flux:label>
-                    <flux:input wire:model="newCityLatitude" type="number" step="0.000001" placeholder="52.520008"
-                                required/>
-                    <flux:error name="newCityLatitude"/>
-                </flux:field>
+            <flux:field>
+                <flux:label>{{ __('Stadt') }}</flux:label>
+                <div class="flex gap-2">
+                    <flux:input wire:model="newCityQuery" wire:keydown.enter.prevent="searchCity"
+                                placeholder="{{ __('z.B. Berlin') }}" data-testid="add-city-query"/>
+                    <flux:button type="button" class="cursor-pointer" wire:click="searchCity" data-testid="add-city-search">
+                        {{ __('Suchen') }}
+                    </flux:button>
+                </div>
+                <flux:error name="newCityQuery"/>
+            </flux:field>
 
-                <flux:field>
-                    <flux:label>{{ __('Längengrad') }} <span class="text-red-500">*</span></flux:label>
-                    <flux:input wire:model="newCityLongitude" type="number" step="0.000001" placeholder="13.404954"
-                                required/>
-                    <flux:error name="newCityLongitude"/>
-                </flux:field>
-            </div>
+            @if ($newCityFailed)
+                <flux:callout variant="danger" icon="exclamation-triangle" data-testid="add-city-unavailable">
+                    {{ __('OpenStreetMap ist gerade nicht erreichbar. Versuch es später noch einmal.') }}
+                </flux:callout>
+            @elseif ($newCityResults)
+                <div class="flex flex-col gap-1" data-testid="add-city-results">
+                    @foreach($newCityResults as $index => $hit)
+                        <button type="button" wire:click="chooseCity({{ $index }})"
+                                wire:key="city-hit-{{ $hit['osm_type'] }}-{{ $hit['osm_id'] }}"
+                                data-testid="add-city-result-{{ $index }}"
+                                class="min-h-11 rounded-md border border-zinc-200 p-2 text-start hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
+                            <div class="text-sm font-medium">{{ $hit['osm_name'] }}</div>
+                            {{-- Issue #123: was `text-xs opacity-60`. Measured 5.742:1 light and
+                                 6.364:1 dark, so it did not breach 1.4.3 — but it is the same
+                                 line as the OSM picker's, and one picker dimming its result
+                                 rows two different ways is a coin toss for the next editor.
+                                 Named colour: 7.814:1 light, 10.210:1 dark. --}}
+                            <div class="text-xs text-zinc-600 dark:text-zinc-300">{{ $hit['osm_address'] }}</div>
+                        </button>
+                    @endforeach
+                </div>
 
-            <div class="flex gap-2">
-                <flux:spacer/>
-
-                <flux:modal.close>
-                    <flux:button class="cursor-pointer" type="button"
-                                 variant="ghost">{{ __('Abbrechen') }}</flux:button>
-                </flux:modal.close>
-
-                <flux:button class="cursor-pointer" type="submit"
-                             variant="primary">{{ __('Stadt erstellen') }}</flux:button>
-            </div>
-        </form>
+                {{-- Rueckfrage aus Issue #33: gleichnamige Orte existieren wirklich.
+                     Nicht verbieten, sondern zur Entscheidung machen. --}}
+                @if ($duplicateCityCandidates !== [])
+                    <div class="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+                        <p class="font-semibold">
+                            {{ trans_choice('Es gibt in diesem Land bereits :count Ort dieses Namens.|Es gibt in diesem Land bereits :count Orte dieses Namens.', count($duplicateCityCandidates), ['count' => count($duplicateCityCandidates)]) }}
+                        </p>
+                        {{-- Issue #123: measured 16.442:1 light / 10.603:1 dark. Stays. --}}
+                        <ul class="mt-2 space-y-1 opacity-90">
+                            @foreach ($duplicateCityCandidates as $candidate)
+                                <li wire:key="dup-city-{{ $candidate['id'] }}">#{{ $candidate['id'] }} · {{ number_format($candidate['latitude'], 4) }} / {{ number_format($candidate['longitude'], 4) }}</li>
+                            @endforeach
+                        </ul>
+                        <flux:checkbox class="mt-3" wire:model.live="confirmDuplicateCity"
+                                       label="{{ __('Trotzdem als weiteren Ort gleichen Namens anlegen') }}"/>
+                        <flux:button type="button" class="mt-3 cursor-pointer" variant="primary"
+                                     wire:click="chooseCity({{ $pendingCityHitIndex }})"
+                                     :disabled="! $confirmDuplicateCity">
+                            {{ __('Stadt erstellen') }}
+                        </flux:button>
+                    </div>
+                @endif
+            @elseif ($newCitySearched)
+                <flux:callout data-testid="add-city-empty">
+                    {{ __('Keine Stadt gefunden. Prüf die Schreibweise oder das Land.') }}
+                </flux:callout>
+            @endif
+        </div>
     </flux:modal>
 </div>
