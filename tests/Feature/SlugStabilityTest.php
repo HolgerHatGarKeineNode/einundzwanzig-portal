@@ -70,8 +70,7 @@ it('generates the city slug from the HasSlug rule, not from the form', function 
     Livewire::test('cities.create')
         ->set('name', 'Würzburg Test')
         ->set('country_id', $this->country->id)
-        ->set('latitude', 49.7913)
-        ->set('longitude', 9.9534)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 49.7913, 'osm_lon' => 9.9534]))
         ->call('createCity')
         ->assertHasNoErrors();
 

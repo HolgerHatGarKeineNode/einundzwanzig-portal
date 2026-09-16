@@ -135,6 +135,43 @@ it('requires confirmDuplicateCity for a same-name hit without a matching osm id'
         ->and($form->get('city_id'))->toBe($created->id);
 })->with('meetup add-city forms');
 
+it('keeps a boundary administrative hit and creates the city from its coordinates', function (string $component) {
+    Http::fake(['*' => Http::response([[
+        'osm_type' => 'relation',
+        'osm_id' => 1792254,
+        'name' => 'Sigulda',
+        'display_name' => 'Sigulda, Siguldas novads, Vidzeme, Lettland',
+        'lat' => '57.1539',
+        'lon' => '24.8544',
+        'category' => 'boundary',
+        'type' => 'administrative',
+    ]])]);
+
+    $form = meetupAddCityForm($component)
+        ->set('newCityCountryId', $this->country->id)
+        ->set('newCityQuery', 'Sigulda')
+        ->call('searchCity')
+        ->assertCount('newCityResults', 1)
+        ->assertSet('newCityResults.0.osm_name', 'Sigulda')
+        ->assertSet('newCityResults.0.category', 'boundary')
+        ->assertSet('newCityResults.0.osm_id', 1792254);
+
+    Http::assertSent(fn ($request): bool => ($request->data()['featureType'] ?? null) === 'settlement');
+
+    $form->call('chooseCity', 0);
+
+    $city = City::query()->where('name', 'Sigulda')->first();
+
+    expect($city)->not->toBeNull()
+        ->and($form->get('city_id'))->toBe($city->id)
+        ->and((float) $city->latitude)->toBe(57.1539)
+        ->and((float) $city->longitude)->toBe(24.8544)
+        ->and($city->osm_type)->toBe('relation')
+        ->and($city->osm_id)->toBe(1792254)
+        ->and((float) $city->osm_lat)->toBe(57.1539)
+        ->and((float) $city->osm_lon)->toBe(24.8544);
+})->with('meetup add-city forms');
+
 it('discards highway category hits so a street never becomes a city', function (string $component) {
     Http::fake(['*' => Http::response([meetupPlaceHit(category: 'highway')])]);
 
@@ -201,7 +238,8 @@ it('searches when the query is 3 characters', function (string $component) {
         ->assertHasNoErrors()
         ->assertCount('newCityResults', 1);
 
-    Http::assertSent(fn ($request): bool => ($request->data()['q'] ?? null) === 'Lin');
+    Http::assertSent(fn ($request): bool => ($request->data()['q'] ?? null) === 'Lin'
+        && ($request->data()['featureType'] ?? null) === 'settlement');
 })->with('meetup add-city forms');
 
 it('narrows the geocoder query to the chosen country', function (string $component) {

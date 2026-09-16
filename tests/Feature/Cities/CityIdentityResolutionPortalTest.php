@@ -58,8 +58,7 @@ it('allows the same name in a different country via cities.create', function () 
     Livewire::test('cities.create')
         ->set('name', 'Paris')
         ->set('country_id', $us->id)
-        ->set('latitude', 33.66)
-        ->set('longitude', -95.55)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 33.66, 'osm_lon' => -95.55]))
         ->call('createCity')
         ->assertHasNoErrors();
 
@@ -77,8 +76,7 @@ it('blocks a second city of the same name in the same country via cities.create,
     Livewire::test('cities.create')
         ->set('name', 'Georgetown')
         ->set('country_id', $country->id)
-        ->set('latitude', 38.32)
-        ->set('longitude', -85.87)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 38.32, 'osm_lon' => -85.87]))
         ->call('createCity')
         ->assertHasErrors(['name' => 'unique']);
 
@@ -259,8 +257,7 @@ it('blocks without confirmation and lists distinguishable candidates via cities.
     $component = Livewire::test('cities.create')
         ->set('name', 'Georgetown')
         ->set('country_id', $country->id)
-        ->set('latitude', 41.02)
-        ->set('longitude', -85.05)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 41.02, 'osm_lon' => -85.05]))
         ->call('createCity')
         ->assertHasErrors(['name' => 'unique']);
 
@@ -291,8 +288,7 @@ it('creates via cities.create with confirmDuplicate despite an existing same-nam
     Livewire::test('cities.create')
         ->set('name', 'Georgetown')
         ->set('country_id', $country->id)
-        ->set('latitude', 38.32)
-        ->set('longitude', -85.87)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 38.32, 'osm_lon' => -85.87]))
         ->set('confirmDuplicate', true)
         ->call('createCity')
         ->assertHasNoErrors();
@@ -320,8 +316,7 @@ it('blocks "Offenburg " against an existing "Offenburg" via cities.create (N8 re
     Livewire::test('cities.create')
         ->set('name', 'Offenburg ')
         ->set('country_id', $country->id)
-        ->set('latitude', 48.4744)
-        ->set('longitude', 7.9438)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 48.4744, 'osm_lon' => 7.9438]))
         ->call('createCity')
         ->assertHasErrors(['name' => 'unique']);
 

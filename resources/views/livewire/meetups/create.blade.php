@@ -123,7 +123,7 @@ class extends Component
 
         $code = Country::find($this->newCityCountryId)?->code;
 
-        $result = app(NominatimClient::class)->trySearch($this->newCityQuery, $code);
+        $result = app(NominatimClient::class)->trySearch($this->newCityQuery, $code, featureType: 'settlement');
 
         if ($result['failed']) {
             $this->newCityResults = [];
@@ -133,7 +133,7 @@ class extends Component
         }
 
         $this->newCityResults = $result['hits']
-            ->filter(fn (array $hit): bool => ($hit['category'] ?? null) === 'place')
+            ->filter(fn (array $hit): bool => in_array($hit['category'] ?? null, ['place', 'boundary'], true))
             ->take(5)
             ->values()
             ->all();

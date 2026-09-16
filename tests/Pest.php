@@ -244,6 +244,26 @@ function actingAsUser(array $attributes = []): User
     return $user;
 }
 
+/**
+ * OSM picker payload for cities.create / cities.edit.
+ *
+ * Coordinates come from the hit. Forms no longer accept typed WGS84.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function cityOsmPlace(array $overrides = []): array
+{
+    return array_merge([
+        'osm_type' => 'relation',
+        'osm_id' => 62422,
+        'osm_name' => 'Berlin',
+        'osm_address' => 'Berlin, Deutschland',
+        'osm_lat' => 52.5173885,
+        'osm_lon' => 13.3951309,
+    ], $overrides);
+}
+
 function defaultCountrySegment(): string
 {
     return (string) config('app.domain_country', 'de');

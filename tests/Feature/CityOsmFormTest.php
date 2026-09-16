@@ -14,18 +14,10 @@ it('stores the osm reference chosen in the form', function () {
     Livewire::test('cities.create')
         ->set('name', 'Berlin OSM Test')
         ->set('country_id', $this->country->id)
-        ->set('latitude', 52.52)
-        ->set('longitude', 13.405)
-        ->set('osmPlace', [
-            'osm_type' => 'relation',
-            'osm_id' => 62422,
-            'osm_name' => 'Berlin',
-            'osm_address' => 'Berlin, Deutschland',
-            'osm_lat' => 52.5173885,
-            'osm_lon' => 13.3951309,
+        ->set('osmPlace', cityOsmPlace([
             'wikidata' => 'Q64',
             'wikipedia' => 'de:Berlin',
-        ])
+        ]))
         ->call('createCity')
         ->assertHasNoErrors();
 
@@ -38,30 +30,22 @@ it('stores the osm reference chosen in the form', function () {
         ->and($city->wikipedia_url)->toBe('https://de.wikipedia.org/wiki/Berlin');
 });
 
-it('creates a city without any osm reference exactly as before', function () {
+it('rejects city creation without an osm place', function () {
     Livewire::test('cities.create')
         ->set('name', 'Ohne OSM')
         ->set('country_id', $this->country->id)
-        ->set('latitude', 51.0)
-        ->set('longitude', 9.0)
         ->call('createCity')
-        ->assertHasNoErrors();
+        ->assertHasErrors(['osmPlace.osm_id']);
 
-    $city = City::firstWhere('name', 'Ohne OSM');
-
-    expect($city)->not->toBeNull()
-        ->and($city->osm_id)->toBeNull()
-        ->and($city->osm_url)->toBeNull();
+    expect(City::firstWhere('name', 'Ohne OSM'))->toBeNull();
 });
 
-it('fills empty coordinates from the chosen place but never overwrites entered ones', function () {
-    // Eine von Hand eingetragene Korrektur zu ueberschreiben waere die unangenehmste
-    // Art, hilfsbereit zu sein.
+it('sets coordinates from the chosen place even when latitude was previously set', function () {
     Livewire::test('cities.create')
         ->set('country_id', $this->country->id)
         ->set('latitude', 1.234)
         ->set('osmPlace', ['osm_id' => 62422, 'osm_lat' => 52.5, 'osm_lon' => 13.4, 'population' => 3769962])
-        ->assertSet('latitude', 1.234)
+        ->assertSet('latitude', 52.5)
         ->assertSet('longitude', 13.4)
         ->assertSet('population', 3769962);
 });

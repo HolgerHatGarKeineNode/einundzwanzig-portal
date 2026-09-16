@@ -22,8 +22,7 @@ it('stores the region when creating a city', function () {
         ->set('name', 'Fort Wayne')
         ->set('country_id', $this->us->id)
         ->set('region_id', $this->indiana->id)
-        ->set('latitude', 41.0793)
-        ->set('longitude', -85.1394)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 41.0793, 'osm_lon' => -85.1394]))
         ->call('createCity')
         ->assertHasNoErrors();
 
@@ -34,8 +33,7 @@ it('creates a city without a region exactly as before', function () {
     Livewire::test('cities.create')
         ->set('name', 'Salzburg Test')
         ->set('country_id', $this->austria->id)
-        ->set('latitude', 47.8095)
-        ->set('longitude', 13.0550)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 47.8095, 'osm_lon' => 13.0550]))
         ->call('createCity')
         ->assertHasNoErrors();
 
@@ -47,8 +45,7 @@ it('rejects a region that belongs to another country', function () {
         ->set('name', 'Wrong Region City')
         ->set('country_id', $this->austria->id)
         ->set('region_id', $this->indiana->id)
-        ->set('latitude', 47.8095)
-        ->set('longitude', 13.0550)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 47.8095, 'osm_lon' => 13.0550]))
         ->call('createCity')
         ->assertHasErrors('region_id');
 

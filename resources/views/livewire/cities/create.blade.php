@@ -25,9 +25,8 @@ class extends Component
     /**
      * Der aus der OSM-Suche gewaehlte Ort, oder ein leeres Array.
      *
-     * Der Picker daneben ist derselbe, den die Event-Formulare benutzen — die Suche
-     * laeuft serverseitig, weil Nominatims Policy Drosselung und einen echten
-     * User-Agent verlangt, und beides kann nur der Server garantieren.
+     * Der Picker ist derselbe wie in den Event-Formularen, laeuft aber required:
+     * die Koordinaten kommen ausschliesslich aus dem Treffer. Niemand tippt WGS84.
      *
      * @var array<string, mixed>
      */
@@ -150,17 +149,31 @@ class extends Component
                 'integer',
                 Rule::exists('regions', 'id')->where('country_id', $this->country_id),
             ],
-            'latitude' => ['required', 'numeric', 'between:-90,90'],
-            'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'osmPlace.osm_id' => ['required'],
             'population' => ['nullable', 'integer', 'min:0'],
             'population_date' => ['nullable', 'string', 'max:255'],
-        ], [], [
-            'latitude' => __('Breitengrad'),
-            'longitude' => __('Längengrad'),
+        ], [
+            'osmPlace.osm_id.required' => __('Wähle einen Ort auf OpenStreetMap. Die Koordinaten setzen wir daraus.'),
+        ], [
+            'osmPlace.osm_id' => __('OpenStreetMap'),
         ]);
 
-        if ((float) $validated['latitude'] === 0.0 && (float) $validated['longitude'] === 0.0) {
-            $this->addError('latitude', __('Breiten- und Längengrad dürfen nicht beide 0 sein.'));
+        unset($validated['osmPlace']);
+
+        $latitude = $this->osmPlace['osm_lat'] ?? null;
+        $longitude = $this->osmPlace['osm_lon'] ?? null;
+
+        if ($latitude === null || $longitude === null || ! is_numeric($latitude) || ! is_numeric($longitude)) {
+            $this->addError('osmPlace.osm_id', __('Wähle einen Ort auf OpenStreetMap. Die Koordinaten setzen wir daraus.'));
+
+            return;
+        }
+
+        $latitude = (float) $latitude;
+        $longitude = (float) $longitude;
+
+        if ($latitude === 0.0 && $longitude === 0.0) {
+            $this->addError('osmPlace.osm_id', __('Breiten- und Längengrad dürfen nicht beide 0 sein.'));
 
             return;
         }
@@ -168,6 +181,8 @@ class extends Component
         // Kein manuelles slug: HasSlug auf City ist dafuer zustaendig und erzeugt
         // 'laendercode-name'. Zwei Regeln nebeneinander liessen den Wert bei jedem
         // Speichern springen.
+        $validated['latitude'] = $latitude;
+        $validated['longitude'] = $longitude;
         $validated['created_by'] = auth()->id();
         $validated += $this->osmFields();
 
@@ -204,10 +219,11 @@ class extends Component
     }
 
     /**
-     * Uebernimmt Koordinaten und Einwohnerzahl aus dem OSM-Ort, aber nur in leere Felder.
+     * Uebernimmt Name, Koordinaten und Einwohnerzahl aus dem OSM-Ort.
      *
-     * Eine von Hand eingetragene Korrektur zu ueberschreiben waere die unangenehmste Art,
-     * hilfsbereit zu sein.
+     * Koordinaten immer aus dem Treffer — es gibt keine Zahlfelder mehr, die eine
+     * handschriftliche Korrektur tragen koennten. Name und Einwohnerzahl nur in leere
+     * Felder, damit ein schon getippter Name nicht vom OSM-Label ueberschrieben wird.
      */
     public function updatedOsmPlace(): void
     {
@@ -215,8 +231,12 @@ class extends Component
             return;
         }
 
-        $this->latitude ??= $this->osmPlace['osm_lat'] ?? null;
-        $this->longitude ??= $this->osmPlace['osm_lon'] ?? null;
+        if ($this->name === '' && filled($this->osmPlace['osm_name'] ?? null)) {
+            $this->name = (string) $this->osmPlace['osm_name'];
+        }
+
+        $this->latitude = isset($this->osmPlace['osm_lat']) ? (float) $this->osmPlace['osm_lat'] : null;
+        $this->longitude = isset($this->osmPlace['osm_lon']) ? (float) $this->osmPlace['osm_lon'] : null;
         $this->population ??= $this->osmPlace['population'] ?? null;
     }
 
@@ -331,31 +351,16 @@ class extends Component
                     </flux:field>
                 @endif
 
-                {{-- Derselbe Picker wie in den Event-Formularen. Optional: eine Stadt ohne
-                     OSM-Bezug bleibt genauso gueltig wie bisher. --}}
+                {{-- OSM ist die Quelle der Koordinaten, nicht optional. Der Picker traegt
+                     die Stadt-Kopie selbst (required=true); Events behalten die TBA-Kopie. --}}
                 <flux:field>
-                    <flux:label>{{ __('OpenStreetMap') }}</flux:label>
                     <livewire:osm.place-picker
                         wire:model.live="osmPlace"
                         :country-code="$this->pickerCountryCode"
+                        :required="true"
                     />
-                    <flux:description>
-                        {{ __('Optional. Verknüpft die Stadt mit ihrem OpenStreetMap-Eintrag und füllt leere Koordinaten.') }}
-                    </flux:description>
+                    <flux:error name="osmPlace.osm_id"/>
                 </flux:field>
-            </div>
-        </flux:fieldset>
-
-        <flux:fieldset>
-            <flux:legend>{{ __('Coordinates') }}</flux:legend>
-
-            <div class="grid grid-cols-2 gap-x-4 gap-y-6">
-                <flux:input label="{{ __('Latitude') }}" type="number" step="any" wire:model="latitude" required/>
-                <flux:input label="{{ __('Longitude') }}" type="number" step="any" wire:model="longitude" required/>
-            </div>
-
-            <div class="my-2">
-                <flux:link href="https://www.mappr.co/latitude-longitude-finder/">https://www.mappr.co/latitude-longitude-finder/</flux:link>
             </div>
         </flux:fieldset>
 

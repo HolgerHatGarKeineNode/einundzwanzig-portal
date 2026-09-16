@@ -24,9 +24,9 @@ class extends Component {
     /**
      * Der aus der OSM-Suche gewaehlte Ort, oder ein leeres Array.
      *
-     * Der Picker daneben ist derselbe, den die Event-Formulare benutzen — die Suche
-     * laeuft serverseitig, weil Nominatims Policy Drosselung und einen echten
-     * User-Agent verlangt, und beides kann nur der Server garantieren.
+     * Der Picker ist derselbe wie in den Event-Formularen, laeuft aber im Stadt-Modus:
+     * ein neuer Treffer setzt latitude/longitude. Ohne neuen Treffer bleiben die
+     * bestehenden Koordinaten auf dem Modell.
      *
      * @var array<string, mixed>
      */
@@ -149,6 +149,19 @@ class extends Component {
             __('Only the person who added this city, a city steward or an admin can change these fields.'),
         );
 
+        /*
+         * Ein neuer OSM-Treffer ist die einzige Quelle fuer Koordinaten. Ohne einen
+         * bleiben die Werte aus mount() — das Modell trug sie schon.
+         */
+        if (($this->osmPlace['osm_id'] ?? null) !== null) {
+            if (isset($this->osmPlace['osm_lat'])) {
+                $this->latitude = (float) $this->osmPlace['osm_lat'];
+            }
+            if (isset($this->osmPlace['osm_lon'])) {
+                $this->longitude = (float) $this->osmPlace['osm_lon'];
+            }
+        }
+
         $validated = $this->validate([
             // Landesbezogen statt global (Issue #33) — dieselbe Bedingung wie beim
             // Anlegen, sonst liesse sich eine Stadt anlegen, aber nicht umbenennen.
@@ -179,7 +192,7 @@ class extends Component {
         ]);
 
         if ((float) $validated['latitude'] === 0.0 && (float) $validated['longitude'] === 0.0) {
-            $this->addError('latitude', __('Breiten- und Längengrad dürfen nicht beide 0 sein.'));
+            $this->addError('osmPlace.osm_id', __('Breiten- und Längengrad dürfen nicht beide 0 sein.'));
 
             return;
         }
@@ -223,10 +236,8 @@ class extends Component {
     }
 
     /**
-     * Uebernimmt Koordinaten und Einwohnerzahl aus dem OSM-Ort, aber nur in leere Felder.
-     *
-     * Eine von Hand eingetragene Korrektur zu ueberschreiben waere die unangenehmste Art,
-     * hilfsbereit zu sein.
+     * Uebernimmt Koordinaten immer aus dem Treffer; Name und Einwohnerzahl nur in leere
+     * Felder, und Einwohnerzahl nur fuer den, der sie auch speichern duerfte (Issue #30).
      */
     public function updatedOsmPlace(): void
     {
@@ -234,8 +245,12 @@ class extends Component {
             return;
         }
 
-        $this->latitude ??= $this->osmPlace['osm_lat'] ?? null;
-        $this->longitude ??= $this->osmPlace['osm_lon'] ?? null;
+        if ($this->canEditIdentity && $this->name === '' && filled($this->osmPlace['osm_name'] ?? null)) {
+            $this->name = (string) $this->osmPlace['osm_name'];
+        }
+
+        $this->latitude = isset($this->osmPlace['osm_lat']) ? (float) $this->osmPlace['osm_lat'] : $this->latitude;
+        $this->longitude = isset($this->osmPlace['osm_lon']) ? (float) $this->osmPlace['osm_lon'] : $this->longitude;
         /*
          * Die Einwohnerzahl NUR fuer den, der sie auch speichern duerfte (Issue #30).
          *
@@ -290,9 +305,9 @@ class extends Component {
                          OSM-Treffers mit, und wer sie sucht, findet sie nicht. --}}
                     <flux:callout icon="lock-closed" variant="secondary" id="identity-lock"
                                   class="max-w-prose" class:icon="text-zinc-500 dark:text-zinc-400">
-                        <flux:callout.heading>{{ __('You can add map data and coordinates to this city') }}</flux:callout.heading>
+                        <flux:callout.heading>{{ __('You can add map data to this city') }}</flux:callout.heading>
                         <flux:callout.text>
-                            {{ __('Pick the OpenStreetMap place or correct the coordinates — both are open to everyone. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.') }}
+                            {{ __('Pick the OpenStreetMap place — we set the coordinates from it. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.') }}
                         </flux:callout.text>
                         <flux:callout.text>
                             {{ __('Found a mistake in one of those?') }}
@@ -456,31 +471,16 @@ class extends Component {
                     </flux:field>
                 @endif
 
-                {{-- Derselbe Picker wie in den Event-Formularen. Optional: eine Stadt ohne
-                     OSM-Bezug bleibt genauso gueltig wie bisher. --}}
+                {{-- Stadt-Modus: keine TBA-Kopie, trySearch bei Ausfall. Bestehende
+                     Koordinaten bleiben, bis ein (neuer) Treffer gewaehlt wird. --}}
                 <flux:field>
-                    <flux:label>{{ __('OpenStreetMap') }}</flux:label>
                     <livewire:osm.place-picker
                         wire:model.live="osmPlace"
                         :country-code="$this->pickerCountryCode"
+                        :required="true"
                     />
-                    <flux:description>
-                        {{ __('Optional. Verknüpft die Stadt mit ihrem OpenStreetMap-Eintrag und füllt leere Koordinaten.') }}
-                    </flux:description>
+                    <flux:error name="osmPlace.osm_id"/>
                 </flux:field>
-            </div>
-        </flux:fieldset>
-
-        <flux:fieldset>
-            <flux:legend>{{ __('Coordinates') }}</flux:legend>
-
-            <div class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-                <flux:input label="{{ __('Latitude') }}" type="number" step="any" wire:model="latitude" required/>
-                <flux:input label="{{ __('Longitude') }}" type="number" step="any" wire:model="longitude" required/>
-            </div>
-
-            <div class="my-2">
-                <flux:link href="https://www.mappr.co/latitude-longitude-finder/">https://www.mappr.co/latitude-longitude-finder/</flux:link>
             </div>
         </flux:fieldset>
 
