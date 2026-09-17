@@ -39,13 +39,15 @@ use Throwable;
  *
  * Measured 2026-09-17 with 1/12/40/100/250 filters in one REQ: nos.lol answered EOSE up
  * to 100 and `CLOSED … ERROR: bad req: arr too big` at 250; relay.damus.io answered 40
- * with EOSE and 503 on other attempts. {@see self::MAX_FILTERS_PER_REQUEST} keeps each
- * REQ well inside the measured bound — at 20 coordinates per filter that is 1000
- * events in one REQ, so the normal case stays one request per relay.
+ * with EOSE and 503 on other attempts. {@see self::MAX_FILTERS_PER_REQUEST} is therefore
+ * 40 and not 100: 100 is covered by ONE of the two configured relays, 40 by both, and a
+ * cap that only one relay is known to accept is a cap for that relay. At 20 coordinates
+ * per filter it still carries 800 events in one REQ, so the normal case stays one
+ * request per relay.
  */
 class NostrRelayReader
 {
-    public const MAX_FILTERS_PER_REQUEST = 50;
+    public const MAX_FILTERS_PER_REQUEST = 40;
 
     /**
      * Seconds of SILENCE before a read is abandoned. swentel applies it per receive()
@@ -75,9 +77,12 @@ class NostrRelayReader
     }
 
     /**
+     * One REQ. `protected` so a test can take the socket out of the way and still measure
+     * how a read is cut into requests.
+     *
      * @param  list<array<string, mixed>>  $filters
      */
-    private function readOnce(string $relayUrl, array $filters): NostrRelayReadResult
+    protected function readOnce(string $relayUrl, array $filters): NostrRelayReadResult
     {
         try {
             $subscriptionId = (new Subscription)->getId();

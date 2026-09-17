@@ -19,9 +19,22 @@ use Throwable;
  * author signed, and rejects a valid event. Fail-closed, so it never admits a forgery —
  * it silently drops a genuine RSVP instead (plan risk R11).
  *
- * `JSON_UNESCAPED_LINE_TERMINATORS` restores the verbatim form; everything else about
- * PHP's encoding already matches NIP-01 (backspace and form feed as short escapes, other
- * control characters as lowercase four-digit unicode escapes, DEL and non-ASCII verbatim).
+ * `JSON_UNESCAPED_LINE_TERMINATORS` restores the verbatim form. With that flag PHP's
+ * encoding matches the rule NIP-01 states — the seven named characters as short escapes,
+ * everything else verbatim — with one qualification that was measured rather than
+ * assumed: for characters NIP-01 does NOT name (0x00-0x07, 0x0B, 0x0E-0x1F) it emits
+ * lowercase four-digit unicode escapes, which the spec leaves open, so two conforming
+ * implementations can still disagree there.
+ *
+ * And they do disagree in the field. Measured 2026-09-18 against the `nak` build in this
+ * environment (fiatjaf.com/nostr): for content holding 0x08 and 0x0C it computes the id
+ * over SIX-character escapes, so its id differs from the one this class computes, which
+ * is the one the spec's own list describes; the reviewer measured nbd-wtf/go-nostr
+ * agreeing with PHP on the same input. An event signed by such a build is therefore
+ * rejected here — see tests/Unit/Support/NostrEventVerifierTest.php, where both
+ * directions are pinned. The direction is deliberate: an id that does not follow from
+ * the content under the spec's rule is an id the signature does not bind to what we
+ * would count.
  *
  * No cryptography is implemented here: the id is a SHA-256 over the canonical
  * serialisation, and the BIP-340 check is the same `mdanter/ecc` Schnorr verifier

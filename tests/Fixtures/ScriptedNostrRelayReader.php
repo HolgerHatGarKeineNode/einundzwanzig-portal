@@ -28,11 +28,30 @@ class ScriptedNostrRelayReader extends NostrRelayReader
     public array $reads = [];
 
     /**
+     * Events a relay pushes although no filter of the read asks for them — a relay is not
+     * obliged to be honest, and the ingest's validation is what has to hold then. Each is
+     * delivered ONCE per relay, on its next read, the way a push arrives once.
+     *
+     * @var array<string, list<array<string, mixed>>>
+     */
+    public array $unrequested = [];
+
+    /**
+     * Seconds the clock is moved on by every read — the cheap way to let a test reach the
+     * command's wall-clock budget without waiting for it.
+     */
+    public int $secondsPerRead = 0;
+
+    /**
      * @param  list<array<string, mixed>>  $filters
      */
     public function read(string $relayUrl, array $filters): NostrRelayReadResult
     {
         $this->reads[] = ['relay' => $relayUrl, 'filters' => $filters];
+
+        if ($this->secondsPerRead > 0) {
+            \Illuminate\Support\Carbon::setTestNow(now()->addSeconds($this->secondsPerRead));
+        }
 
         $events = $this->relays[$relayUrl] ?? null;
 
@@ -40,10 +59,16 @@ class ScriptedNostrRelayReader extends NostrRelayReader
             return NostrRelayReadResult::unknown('no EOSE for subscription');
         }
 
-        return NostrRelayReadResult::complete(array_values(array_filter(
-            $events,
-            fn (array $event): bool => array_any($filters, fn (array $filter): bool => self::matches($event, $filter)),
-        )));
+        $pushed = $this->unrequested[$relayUrl] ?? [];
+        unset($this->unrequested[$relayUrl]);
+
+        return NostrRelayReadResult::complete(array_values([
+            ...array_filter(
+                $events,
+                fn (array $event): bool => array_any($filters, fn (array $filter): bool => self::matches($event, $filter)),
+            ),
+            ...$pushed,
+        ]));
     }
 
     /**

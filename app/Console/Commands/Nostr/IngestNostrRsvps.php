@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Support\NostrCalendarEventFactory;
 use App\Support\NostrRelayReader;
 use App\Support\NostrRsvpFold;
+use App\Support\NostrRsvpFoldResult;
 use App\Support\NostrRsvpTarget;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -67,6 +68,31 @@ class IngestNostrRsvps extends Command
 
     public const FILTER_LIMIT = 500;
 
+    /**
+     * Keys whose deletions are asked for in one run. The stored keys are swept in blocks
+     * of this size, block by block across runs (`deletion_offset` in the cursor), so a
+     * table an attacker has filled costs a fixed number of filters per run instead of a
+     * growing one. A withdrawal is therefore honoured within one sweep of the table —
+     * at five-minute runs that is 500 keys / 5 min, plus the immediate second read for
+     * keys seen for the first time.
+     */
+    public const DELETION_AUTHORS_PER_RUN = 500;
+
+    /**
+     * Unlinked RSVPs stored per meetup event. "+N via Nostr" says how many strangers
+     * answered; beyond this it says "a lot", and the portal stops paying for more rows.
+     * Linked answers (a key that belongs to an account) are never refused.
+     */
+    public const MAX_UNLINKED_RSVPS_PER_EVENT = 200;
+
+    /**
+     * Wall-clock seconds one run may take. The scheduler holds a ten-minute overlap lock
+     * and ticks every five; a run that would outlive its own lock is the one case in
+     * which two runs could fold against the same snapshot and put an older answer back
+     * over a newer one. Hitting the budget makes the run INCOMPLETE: no cursor moves.
+     */
+    public const MAX_RUN_SECONDS = 240;
+
     public const CURSOR_OVERLAP_SECONDS = 3600;
 
     public const FULL_PASS_INTERVAL_SECONDS = 3600;
@@ -98,6 +124,7 @@ class IngestNostrRsvps extends Command
         }
 
         $runStartedAt = now()->getTimestamp();
+        $deadline = $runStartedAt + self::MAX_RUN_SECONDS;
         $scope = $this->eventsInScope($publisherPubkeys);
 
         if ($scope->isEmpty()) {
@@ -106,25 +133,29 @@ class IngestNostrRsvps extends Command
             return self::SUCCESS;
         }
 
-        $storedPubkeys = MeetupEventNostrRsvp::query()
-            ->whereIn('meetup_event_id', $scope->keys())
-            ->distinct()
-            ->pluck('pubkey')
-            ->all();
-
         $events = [];
         $complete = [];
         $unknown = [];
+        $outOfTime = false;
 
         foreach ($relays as $relayUrl) {
             $cursor = Cache::get($this->cursorKey($relayUrl), []);
+
+            if (now()->getTimestamp() >= $deadline) {
+                $outOfTime = true;
+                $unknown[$relayUrl] = 'run budget of '.self::MAX_RUN_SECONDS.' s spent before this relay was read';
+
+                continue;
+            }
+
             $fullPass = $this->option('full')
                 || ! isset($cursor['last_ok'])
                 || $runStartedAt - (int) ($cursor['last_full'] ?? 0) >= self::FULL_PASS_INTERVAL_SECONDS;
             $since = $fullPass ? null : max(1, (int) $cursor['last_ok'] - self::CURSOR_OVERLAP_SECONDS);
+            [$storedPubkeys, $nextDeletionOffset] = $this->deletionAuthorBlock($scope->keys()->all(), (int) ($cursor['deletion_offset'] ?? 0));
 
             $read = $reader->read($relayUrl, [
-                ...$this->rsvpFilters($scope->values()->all(), $publisherPubkeys, $since),
+                ...$this->rsvpFilters($scope->values()->all(), $since),
                 ...$this->deletionFilters($storedPubkeys, $since),
             ]);
 
@@ -160,7 +191,7 @@ class IngestNostrRsvps extends Command
             }
 
             array_push($events, ...$read->events);
-            $complete[$relayUrl] = $fullPass;
+            $complete[$relayUrl] = ['full_pass' => $fullPass, 'deletion_offset' => $nextDeletionOffset];
         }
 
         foreach ($unknown as $relayUrl => $failure) {
@@ -181,40 +212,35 @@ class IngestNostrRsvps extends Command
         $stored = $this->storedRows(collect($targets)->map->meetupEventId->merge($scope->keys())->unique()->values()->all());
 
         $result = NostrRsvpFold::fold($events, $publisherPubkeys, $targets, $stored, $runStartedAt);
-
-        DB::transaction(function () use ($result): void {
-            foreach ($result->upserts as $row) {
-                MeetupEventNostrRsvp::query()->updateOrCreate(
-                    ['meetup_event_id' => $row['meetup_event_id'], 'pubkey' => $row['pubkey']],
-                    $row,
-                );
-            }
-
-            foreach ($result->deletions as $row) {
-                MeetupEventNostrRsvp::query()
-                    ->where('meetup_event_id', $row['meetup_event_id'])
-                    ->where('pubkey', $row['pubkey'])
-                    ->delete();
-            }
-        });
-
+        $refused = $this->apply($result);
         $relinked = $this->relinkUsers();
 
-        foreach ($complete as $relayUrl => $fullPass) {
-            $cursor = Cache::get($this->cursorKey($relayUrl), []);
+        // A run that ran out of signature budget or wall clock has NOT seen everything the
+        // relays offered. Moving a cursor now would skip those events for good, so the
+        // same rule as for a relay without EOSE applies: nothing moves.
+        $incomplete = $result->verificationBudgetExhausted || $outOfTime || now()->getTimestamp() >= $deadline;
 
-            Cache::forever($this->cursorKey($relayUrl), [
-                'last_ok' => $runStartedAt,
-                'last_full' => $fullPass ? $runStartedAt : ($cursor['last_full'] ?? null),
-            ]);
+        if (! $incomplete) {
+            foreach ($complete as $relayUrl => $state) {
+                $cursor = Cache::get($this->cursorKey($relayUrl), []);
+
+                Cache::forever($this->cursorKey($relayUrl), [
+                    'last_ok' => $runStartedAt,
+                    'last_full' => $state['full_pass'] ? $runStartedAt : ($cursor['last_full'] ?? null),
+                    'deletion_offset' => $state['deletion_offset'],
+                ]);
+            }
         }
 
         $summary = [
             'relays_complete' => array_keys($complete),
             'relays_unknown' => array_keys($unknown),
             'events_read' => count($events),
+            'verifications' => $result->verifications,
+            'incomplete' => $incomplete,
             'upserts' => count($result->upserts),
             'deletions' => count($result->deletions),
+            'refused_over_cap' => $refused,
             'relinked' => $relinked,
             'dropped' => $result->dropped,
         ];
@@ -235,7 +261,111 @@ class IngestNostrRsvps extends Command
             $this->line("Dropped {$count} × {$reason}");
         }
 
+        if ($incomplete) {
+            $this->error('Run incomplete (budget spent) — no cursor was advanced.');
+
+            return self::FAILURE;
+        }
+
         return self::SUCCESS;
+    }
+
+    /**
+     * Writes what the fold decided, and refuses to store more UNLINKED answers for an
+     * event than {@see self::MAX_UNLINKED_RSVPS_PER_EVENT} (finding F4).
+     *
+     * The linkage is resolved HERE rather than left to the re-link step, because it is
+     * what decides whether a row falls under the cap: an answer that belongs to an
+     * account is never refused, a stranger's is once the event has enough of them.
+     *
+     * @return int how many rows were refused
+     */
+    private function apply(NostrRsvpFoldResult $result): int
+    {
+        $userIdByPubkey = $this->userIdsFor(array_column($result->upserts, 'pubkey'));
+        $unlinkedPerEvent = MeetupEventNostrRsvp::query()
+            ->whereIn('meetup_event_id', array_unique(array_column($result->upserts, 'meetup_event_id')))
+            ->whereNull('user_id')
+            ->selectRaw('meetup_event_id, count(*) as aggregate')
+            ->groupBy('meetup_event_id')
+            ->pluck('aggregate', 'meetup_event_id')
+            ->all();
+
+        $refused = [];
+
+        return DB::transaction(function () use ($result, $userIdByPubkey, $unlinkedPerEvent, &$refused): int {
+            foreach ($result->upserts as $row) {
+                $userId = $userIdByPubkey[$row['pubkey']] ?? null;
+                $existing = MeetupEventNostrRsvp::query()
+                    ->where('meetup_event_id', $row['meetup_event_id'])
+                    ->where('pubkey', $row['pubkey'])
+                    ->first();
+
+                if ($existing === null && $userId === null) {
+                    $stored = $unlinkedPerEvent[$row['meetup_event_id']] ?? 0;
+
+                    if ($stored >= self::MAX_UNLINKED_RSVPS_PER_EVENT) {
+                        $refused[$row['meetup_event_id']] = ($refused[$row['meetup_event_id']] ?? 0) + 1;
+
+                        continue;
+                    }
+
+                    $unlinkedPerEvent[$row['meetup_event_id']] = $stored + 1;
+                }
+
+                MeetupEventNostrRsvp::query()->updateOrCreate(
+                    ['meetup_event_id' => $row['meetup_event_id'], 'pubkey' => $row['pubkey']],
+                    $existing === null ? [...$row, 'user_id' => $userId] : $row,
+                );
+            }
+
+            foreach ($result->deletions as $row) {
+                MeetupEventNostrRsvp::query()
+                    ->where('meetup_event_id', $row['meetup_event_id'])
+                    ->where('pubkey', $row['pubkey'])
+                    ->delete();
+            }
+
+            if ($refused !== []) {
+                // Once per run, not once per event: a flood is one fact, not N facts.
+                Log::warning('nostr:ingest-rsvps: refused unlinked RSVPs over the per-event cap', [
+                    'cap' => self::MAX_UNLINKED_RSVPS_PER_EVENT,
+                    'per_meetup_event' => $refused,
+                ]);
+            }
+
+            return array_sum($refused);
+        });
+    }
+
+    /**
+     * The block of stored keys whose deletions this run asks for, and the offset the next
+     * run starts at. Bounded per run, so a table full of strangers' answers cannot turn
+     * into an unbounded filter list (finding F2).
+     *
+     * @param  list<int>  $meetupEventIds
+     * @return array{0: list<string>, 1: int}
+     */
+    private function deletionAuthorBlock(array $meetupEventIds, int $offset): array
+    {
+        $total = MeetupEventNostrRsvp::query()->whereIn('meetup_event_id', $meetupEventIds)->distinct()->count('pubkey');
+
+        if ($total === 0) {
+            return [[], 0];
+        }
+
+        $offset = $offset % max(1, $total);
+
+        $pubkeys = MeetupEventNostrRsvp::query()
+            ->whereIn('meetup_event_id', $meetupEventIds)
+            ->distinct()
+            ->orderBy('pubkey')
+            ->offset($offset)
+            ->limit(self::DELETION_AUTHORS_PER_RUN)
+            ->pluck('pubkey')
+            ->all();
+
+        return [$pubkeys, ($offset + self::DELETION_AUTHORS_PER_RUN) % $total];
     }
 
     /**
@@ -302,20 +432,23 @@ class IngestNostrRsvps extends Command
     }
 
     /**
+     * The `#a` filters, and deliberately NOTHING else (finding F3).
+     *
+     * A secondary `#p = publisher` filter used to ride along for clients that tag the
+     * calendar author. It cannot contribute a single countable RSVP: a countable one
+     * carries exactly one `a` tag pointing at a published coordinate, and every such
+     * coordinate is already in the `#a` filters above. What it did contribute was 500
+     * stranger-chosen events per relay and run, each of which had to be looked at.
+     *
      * @param  list<string>  $coordinates
-     * @param  list<string>  $publisherPubkeys
      * @return list<array<string, mixed>>
      */
-    private function rsvpFilters(array $coordinates, array $publisherPubkeys, ?int $since): array
+    private function rsvpFilters(array $coordinates, ?int $since): array
     {
-        $filters = array_map(
-            fn (array $chunk): array => ['kinds' => [NostrRsvpFold::KIND_RSVP], '#a' => $chunk],
+        return array_map(
+            fn (array $chunk): array => $this->bounded(['kinds' => [NostrRsvpFold::KIND_RSVP], '#a' => $chunk], $since),
             array_chunk($coordinates, self::COORDINATES_PER_FILTER),
         );
-
-        $filters[] = ['kinds' => [NostrRsvpFold::KIND_RSVP], '#p' => $publisherPubkeys];
-
-        return array_map(fn (array $filter): array => $this->bounded($filter, $since), $filters);
     }
 
     /**
@@ -392,10 +525,26 @@ class IngestNostrRsvps extends Command
         $targets = [];
         $windowStart = now()->subHours(self::PAST_GRACE_HOURS);
 
-        foreach (array_chunk($coordinates, 500) as $chunk) {
+        // The lookup runs over the PRIMARY KEY, not over `nostr_coordinate` (finding F2).
+        // The `d` tag of a portal event IS its id ("meetup-event-<id>"), so a coordinate
+        // that cannot be parsed into an id belongs to nobody here and is dropped before
+        // any query; the stored coordinate is compared afterwards in PHP, so the check
+        // stays exact. `nostr_coordinate` is an unindexed TEXT column, and a `whereIn`
+        // over 500 stranger-chosen strings against it was a full scan per run.
+        $idsByCoordinate = [];
+
+        foreach ($coordinates as $coordinate) {
+            $dTag = explode(':', $coordinate, 3)[2] ?? '';
+
+            if (preg_match('/^meetup-event-(\d+)$/', $dTag, $matches) === 1) {
+                $idsByCoordinate[$coordinate] = (int) $matches[1];
+            }
+        }
+
+        foreach (array_chunk(array_unique(array_values($idsByCoordinate)), 500) as $chunk) {
             MeetupEvent::query()
                 ->with('meetup:id,rsvp_enabled,attendees_public')
-                ->whereIn('nostr_coordinate', $chunk)
+                ->whereIn('id', $chunk)
                 ->get(['id', 'meetup_id', 'start', 'cancelled_at', 'nostr_coordinate'])
                 ->each(function (MeetupEvent $event) use (&$targets, $publisherPubkeys, $windowStart): void {
                     if (! in_array($event->nostr_coordinate, $this->expectedCoordinates($event, $publisherPubkeys), true)) {
@@ -450,31 +599,18 @@ class IngestNostrRsvps extends Command
      */
     private function relinkUsers(): int
     {
-        $key = new Key;
         $links = MeetupEventNostrRsvp::query()
             ->distinct()
             ->get(['pubkey', 'user_id'])
             ->groupBy('pubkey');
 
-        $npubs = $links->keys()->mapWithKeys(fn (string $pubkey): array => [$pubkey => $key->convertPublicKeyToBech32($pubkey)]);
-        $userIdByNpub = [];
-
-        foreach ($npubs->values()->chunk(500) as $chunk) {
-            User::query()
-                ->whereIn('nostr', $chunk->all())
-                ->orderBy('id')
-                ->get(['id', 'nostr'])
-                ->each(function (User $user) use (&$userIdByNpub): void {
-                    $userIdByNpub[$user->nostr] ??= $user->id;
-                });
-        }
-
+        $userIdByPubkey = $this->userIdsFor($links->keys()->all());
         $relinked = 0;
 
-        foreach ($npubs as $pubkey => $npub) {
-            $userId = $userIdByNpub[$npub] ?? null;
+        foreach ($links as $pubkey => $rows) {
+            $userId = $userIdByPubkey[$pubkey] ?? null;
 
-            if ($links[$pubkey]->every(fn (MeetupEventNostrRsvp $row): bool => $row->user_id === $userId)) {
+            if ($rows->every(fn (MeetupEventNostrRsvp $row): bool => $row->user_id === $userId)) {
                 continue;
             }
 
@@ -485,6 +621,45 @@ class IngestNostrRsvps extends Command
         }
 
         return $relinked;
+    }
+
+    /**
+     * pubkey => account id, for the keys given. Exact npub match, as the Nostr login uses
+     * it; of several accounts carrying one npub the oldest wins.
+     *
+     * @param  list<string>  $pubkeys
+     * @return array<string, int>
+     */
+    private function userIdsFor(array $pubkeys): array
+    {
+        $key = new Key;
+        $npubs = [];
+
+        foreach (array_unique($pubkeys) as $pubkey) {
+            $npubs[$pubkey] = $key->convertPublicKeyToBech32($pubkey);
+        }
+
+        $userIdByNpub = [];
+
+        foreach (array_chunk(array_values($npubs), 500) as $chunk) {
+            User::query()
+                ->whereIn('nostr', $chunk)
+                ->orderBy('id')
+                ->get(['id', 'nostr'])
+                ->each(function (User $user) use (&$userIdByNpub): void {
+                    $userIdByNpub[$user->nostr] ??= $user->id;
+                });
+        }
+
+        $userIdByPubkey = [];
+
+        foreach ($npubs as $pubkey => $npub) {
+            if (isset($userIdByNpub[$npub])) {
+                $userIdByPubkey[$pubkey] = $userIdByNpub[$npub];
+            }
+        }
+
+        return $userIdByPubkey;
     }
 
     private function cursorKey(string $relayUrl): string

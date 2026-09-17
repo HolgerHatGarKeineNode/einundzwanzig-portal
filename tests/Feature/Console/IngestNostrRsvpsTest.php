@@ -1,6 +1,7 @@
 <?php
 
 use App\Console\Commands\Nostr\IngestNostrRsvps;
+use App\Enums\NostrRsvpStatus;
 use App\Models\City;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
@@ -146,7 +147,7 @@ it('uses only the relays that answered completely, and moves only their cursors'
     expect(MeetupEventNostrRsvp::query()->pluck('nostr_event_id')->all())->toBe([$onTheGoodRelay['id']])
         ->and(MeetupEventNostrRsvp::query()->where('nostr_event_id', $onlyOnTheBrokenRelay['id'])->exists())->toBeFalse()
         ->and(Cache::get('nostr:ingest-rsvps:cursor:'.sha1(INGEST_RELAY_ONE)))->toBeNull()
-        ->and(Cache::get('nostr:ingest-rsvps:cursor:'.sha1(INGEST_RELAY_TWO)))->toBe(['last_ok' => now()->timestamp, 'last_full' => now()->timestamp]);
+        ->and(Cache::get('nostr:ingest-rsvps:cursor:'.sha1(INGEST_RELAY_TWO)))->toMatchArray(['last_ok' => now()->timestamp, 'last_full' => now()->timestamp]);
 });
 
 it('reads incrementally from the cursor minus an hour, and in full once an hour', function () {
@@ -172,7 +173,7 @@ it('reads incrementally from the cursor minus an hour, and in full once an hour'
         ->and($sinceOf($this->reader->reads[2]))->toBe([null]);
 });
 
-it('asks for the published coordinates in chunks of twenty, the publisher tag and nothing out of scope', function () {
+it('asks for the published coordinates in chunks of twenty and nothing out of scope', function () {
     config()->set('services.nostr.relays', [INGEST_RELAY_ONE]);
     $inScope = collect(range(1, 21))->map(fn () => ingestPublishedEvent());
     ingestPublishedEvent(['attendees_public' => false]);
@@ -192,11 +193,9 @@ it('asks for the published coordinates in chunks of twenty, the publisher tag an
 
     expect($asked)->toBe($inScope->pluck('nostr_coordinate')->sort()->values()->all())
         ->and(collect($filters)->pluck('#a')->filter()->map(fn (array $chunk) => count($chunk))->all())->toBe([20, 1])
-        ->and(collect($filters)->firstWhere('#p'))->toBe([
-            'kinds' => [NostrRsvpFold::KIND_RSVP],
-            '#p' => [NostrTestEvents::pubkey(NostrTestEvents::PUBLISHER_SECRET)],
-            'limit' => IngestNostrRsvps::FILTER_LIMIT,
-        ]);
+        // Finding F3: no `#p` filter any more. It could not contribute a countable RSVP
+        // and pulled 500 stranger-chosen events per relay and run into the run.
+        ->and(collect($filters)->whereNotNull('#p')->all())->toBe([]);
 });
 
 it('opens no socket when no published event accepts RSVPs', function () {
@@ -212,11 +211,11 @@ it('ignores an RSVP to an event whose attendees are not public, and says why', f
     $hidden = ingestPublishedEvent(['attendees_public' => false]);
     ingestPublishedEvent();
 
-    // Reached through the #p filter, the way a client that tags the publisher would.
-    $rsvp = NostrTestEvents::rsvp($hidden->id, 'accepted', now()->subMinute()->timestamp, extraTags: [
-        ['p', NostrTestEvents::pubkey(NostrTestEvents::PUBLISHER_SECRET)],
-    ]);
-    $this->reader->relays = [INGEST_RELAY_ONE => [$rsvp], INGEST_RELAY_TWO => []];
+    // Nobody asks for this one — the relay pushes it anyway, which is the only way such
+    // an RSVP can arrive now that the `#p` filter is gone.
+    $rsvp = NostrTestEvents::rsvp($hidden->id, 'accepted', now()->subMinute()->timestamp);
+    $this->reader->relays = [INGEST_RELAY_ONE => [], INGEST_RELAY_TWO => []];
+    $this->reader->unrequested = [INGEST_RELAY_ONE => [$rsvp]];
 
     $this->artisan('nostr:ingest-rsvps')->assertSuccessful();
 
@@ -321,6 +320,113 @@ it('fails without a publisher key and reads nothing', function () {
     $this->artisan('nostr:ingest-rsvps')->assertFailed();
 
     expect($this->reader->reads)->toBe([]);
+});
+
+it('refuses to store more unlinked RSVPs for an event than the cap, and says so once', function () {
+    Log::spy();
+    config()->set('services.nostr.relays', [INGEST_RELAY_ONE]);
+    $event = ingestPublishedEvent();
+
+    MeetupEventNostrRsvp::factory()->count(IngestNostrRsvps::MAX_UNLINKED_RSVPS_PER_EVENT)->create(['meetup_event_id' => $event->id]);
+
+    $stranger = NostrTestEvents::rsvp($event->id, 'accepted', now()->subMinute()->timestamp, NostrTestEvents::OTHER_ATTENDEE_SECRET);
+    $member = NostrTestEvents::rsvp($event->id, 'accepted', now()->subMinute()->timestamp);
+    User::factory()->create(['nostr' => ingestNpubOf(NostrTestEvents::ATTENDEE_SECRET)]);
+    $this->reader->relays = [INGEST_RELAY_ONE => [$stranger, $member]];
+
+    $this->artisan('nostr:ingest-rsvps')->assertSuccessful();
+
+    expect(MeetupEventNostrRsvp::query()->where('pubkey', NostrTestEvents::pubkey(NostrTestEvents::OTHER_ATTENDEE_SECRET))->exists())->toBeFalse()
+        // A key that belongs to an account is never refused — the cap is about strangers.
+        ->and(MeetupEventNostrRsvp::query()->where('pubkey', NostrTestEvents::pubkey(NostrTestEvents::ATTENDEE_SECRET))->exists())->toBeTrue()
+        ->and($event->fresh()->nostrAttendeesCount())->toBe(IngestNostrRsvps::MAX_UNLINKED_RSVPS_PER_EVENT);
+
+    Log::shouldHaveReceived('warning')
+        ->withArgs(fn (string $message, array $context): bool => str_contains($message, 'over the per-event cap')
+            && $context['per_meetup_event'] === [$event->id => 1])
+        ->once();
+});
+
+it('keeps an existing unlinked RSVP up to date even at the cap', function () {
+    config()->set('services.nostr.relays', [INGEST_RELAY_ONE]);
+    $event = ingestPublishedEvent();
+    MeetupEventNostrRsvp::factory()->count(IngestNostrRsvps::MAX_UNLINKED_RSVPS_PER_EVENT - 1)->create(['meetup_event_id' => $event->id]);
+
+    $first = NostrTestEvents::rsvp($event->id, 'accepted', now()->subHour()->timestamp);
+    $this->reader->relays = [INGEST_RELAY_ONE => [$first]];
+    $this->artisan('nostr:ingest-rsvps')->assertSuccessful();
+
+    $this->travel(5)->minutes();
+    $changed = NostrTestEvents::rsvp($event->id, 'declined', now()->timestamp, dTag: 'later');
+    $this->reader->relays = [INGEST_RELAY_ONE => [$first, $changed]];
+    $this->artisan('nostr:ingest-rsvps')->assertSuccessful();
+
+    expect(MeetupEventNostrRsvp::query()->where('pubkey', NostrTestEvents::pubkey(NostrTestEvents::ATTENDEE_SECRET))->sole())
+        ->nostr_event_id->toBe($changed['id'])
+        ->status->toBe(NostrRsvpStatus::Declined);
+});
+
+it('asks for the deletions of at most one block of stored keys and moves on to the next', function () {
+    config()->set('services.nostr.relays', [INGEST_RELAY_ONE]);
+    $event = ingestPublishedEvent();
+    MeetupEventNostrRsvp::factory()->count(IngestNostrRsvps::DELETION_AUTHORS_PER_RUN + 25)->create(['meetup_event_id' => $event->id]);
+    $this->reader->relays = [INGEST_RELAY_ONE => []];
+
+    $authorsOfRun = fn (int $index): array => collect($this->reader->reads[$index]['filters'])
+        ->where('kinds', [NostrRsvpFold::KIND_DELETION])
+        ->pluck('authors')
+        ->flatten()
+        ->all();
+
+    $this->artisan('nostr:ingest-rsvps')->assertSuccessful();
+    $this->travel(5)->minutes();
+    $this->artisan('nostr:ingest-rsvps')->assertSuccessful();
+
+    $first = $authorsOfRun(0);
+    $second = $authorsOfRun(1);
+
+    expect($first)->toHaveCount(IngestNostrRsvps::DELETION_AUTHORS_PER_RUN)
+        ->and($second)->toHaveCount(25)
+        ->and(array_intersect($first, $second))->toBe([])
+        ->and(count(array_unique([...$first, ...$second])))->toBe(IngestNostrRsvps::DELETION_AUTHORS_PER_RUN + 25);
+});
+
+it('stops when its wall-clock budget is spent and advances no cursor', function () {
+    $this->travelTo(now()->startOfMinute());
+    $event = ingestPublishedEvent();
+    $rsvp = NostrTestEvents::rsvp($event->id, 'accepted', now()->subMinute()->timestamp);
+    $this->reader->relays = [INGEST_RELAY_ONE => [$rsvp], INGEST_RELAY_TWO => [$rsvp]];
+    $this->reader->secondsPerRead = IngestNostrRsvps::MAX_RUN_SECONDS + 1;
+
+    $this->artisan('nostr:ingest-rsvps')->assertFailed();
+
+    expect(collect($this->reader->reads)->pluck('relay')->unique()->all())->toBe([INGEST_RELAY_ONE])
+        ->and(Cache::get('nostr:ingest-rsvps:cursor:'.sha1(INGEST_RELAY_ONE)))->toBeNull()
+        ->and(Cache::get('nostr:ingest-rsvps:cursor:'.sha1(INGEST_RELAY_TWO)))->toBeNull()
+        // What it did read is still stored: the budget bounds the run, it does not throw
+        // away work that is already proven.
+        ->and(MeetupEventNostrRsvp::query()->count())->toBe(1);
+});
+
+it('resolves a coordinate over the primary key, never over the unindexed coordinate column', function () {
+    config()->set('services.nostr.relays', [INGEST_RELAY_ONE]);
+    $event = ingestPublishedEvent();
+    $rsvp = NostrTestEvents::rsvp($event->id, 'accepted', now()->subMinute()->timestamp);
+    $stranger = NostrTestEvents::rsvp(1, 'accepted', now()->subMinute()->timestamp, NostrTestEvents::OTHER_ATTENDEE_SECRET, coordinate: '31923:'.NostrTestEvents::pubkey(NostrTestEvents::PUBLISHER_SECRET).':meetup-event-'.str_repeat('9', 40));
+    $this->reader->relays = [INGEST_RELAY_ONE => [$rsvp, $stranger]];
+
+    $coordinateLookups = [];
+    DB::listen(function ($query) use (&$coordinateLookups): void {
+        // A filter ON the column, not the column in a select list.
+        if (preg_match('/where .*"nostr_coordinate"\s*(in|=|like)/i', $query->sql) === 1) {
+            $coordinateLookups[] = $query->sql;
+        }
+    });
+
+    $this->artisan('nostr:ingest-rsvps')->assertSuccessful();
+
+    expect($coordinateLookups)->toBe([])
+        ->and(MeetupEventNostrRsvp::query()->pluck('nostr_event_id')->all())->toBe([$rsvp['id']]);
 });
 
 it('is scheduled every five minutes behind a short overlap lock', function () {

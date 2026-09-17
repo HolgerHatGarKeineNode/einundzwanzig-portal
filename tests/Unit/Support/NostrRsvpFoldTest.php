@@ -35,15 +35,38 @@ function rsvpFoldTarget(int $meetupEventId = 1, array $overrides = []): NostrRsv
  * @param  array<string, NostrRsvpTarget>|null  $targets
  * @param  array<string, array{nostr_event_id: string, d_tag: string, rsvp_created_at: int}>  $stored
  */
-function rsvpFold(array $events, ?array $targets = null, array $stored = []): App\Support\NostrRsvpFoldResult
-{
+function rsvpFold(
+    array $events,
+    ?array $targets = null,
+    array $stored = [],
+    ?callable $verify = null,
+    int $maxVerifications = NostrRsvpFold::DEFAULT_MAX_VERIFICATIONS,
+): App\Support\NostrRsvpFoldResult {
     return NostrRsvpFold::fold(
         $events,
         [NostrTestEvents::pubkey(NostrTestEvents::PUBLISHER_SECRET)],
         $targets ?? [NostrTestEvents::coordinate(1) => rsvpFoldTarget()],
         $stored,
         RSVP_FOLD_NOW,
+        $verify,
+        $maxVerifications,
     );
+}
+
+/**
+ * A verifier that counts, so "cheap checks first" is a number and not a claim.
+ *
+ * @return array{0: Closure, 1: ArrayObject<int, string>}
+ */
+function countingVerifier(): array
+{
+    $seen = new ArrayObject;
+
+    return [function (array $event) use ($seen): bool {
+        $seen[] = $event['id'];
+
+        return App\Support\NostrEventVerifier::verify($event);
+    }, $seen];
 }
 
 function rsvpFoldStoredKey(int $meetupEventId = 1, string $secret = NostrTestEvents::ATTENDEE_SECRET): string
@@ -217,21 +240,124 @@ it('honours a kind 5 by event id from the RSVP author', function () {
         ->dropped->toBe([NostrRsvpFold::DROP_DELETED => 1]);
 });
 
-it('ignores a kind 5 by a foreign key, by event id and by address', function () {
+it('never lets one key withdraw another key\'s RSVP, by event id or by address', function () {
     $rsvp = NostrTestEvents::rsvp(1, 'accepted', RSVP_FOLD_NOW - 600);
     $attendee = NostrTestEvents::pubkey(NostrTestEvents::ATTENDEE_SECRET);
+
+    // The foreign key is RELEVANT here — it has a stored row of its own, so its kind 5
+    // is verified and read. What it must not do is reach the other key's answer.
     $foreignDeletion = NostrTestEvents::deletion([
         ['e', $rsvp['id']],
         ['a', "31925:{$attendee}:rsvp-1"],
     ], RSVP_FOLD_NOW - 60, NostrTestEvents::OTHER_ATTENDEE_SECRET);
 
-    $stored = [rsvpFoldStoredKey() => ['nostr_event_id' => $rsvp['id'], 'd_tag' => 'rsvp-1', 'rsvp_created_at' => RSVP_FOLD_NOW - 600]];
+    $stored = [
+        rsvpFoldStoredKey() => ['nostr_event_id' => $rsvp['id'], 'd_tag' => 'rsvp-1', 'rsvp_created_at' => RSVP_FOLD_NOW - 600],
+        rsvpFoldStoredKey(1, NostrTestEvents::OTHER_ATTENDEE_SECRET) => ['nostr_event_id' => str_repeat('d', 64), 'd_tag' => 'other', 'rsvp_created_at' => RSVP_FOLD_NOW - 600],
+    ];
 
-    expect(rsvpFold([$rsvp, $foreignDeletion]))
-        ->upserts->toHaveCount(1)
-        ->dropped->toBe([])
-        ->and(rsvpFold([$foreignDeletion], stored: $stored))
-        ->deletions->toBe([]);
+    expect(rsvpFold([$foreignDeletion], stored: $stored))->deletions->toBe([]);
+
+    // And the same address, written by its OWN key, does remove it — otherwise the test
+    // above would pass on a fold that honours no deletion at all.
+    $ownDeletion = NostrTestEvents::deletion([['a', "31925:{$attendee}:rsvp-1"]], RSVP_FOLD_NOW - 60);
+
+    expect(rsvpFold([$ownDeletion], stored: $stored))
+        ->deletions->toBe([['meetup_event_id' => 1, 'pubkey' => $attendee]]);
+});
+
+it('does not look at a kind 5 from a key it stores nothing of', function () {
+    $stranger = NostrTestEvents::deletion([['e', str_repeat('e', 64)]], RSVP_FOLD_NOW - 60, NostrTestEvents::OTHER_ATTENDEE_SECRET);
+    [$verify, $verified] = countingVerifier();
+
+    expect(rsvpFold([$stranger], verify: $verify))
+        ->dropped->toBe([NostrRsvpFold::DROP_IRRELEVANT_DELETION => 1])
+        ->and($verified->count())->toBe(0);
+});
+
+it('decides everything it can from the tags before it verifies a signature', function () {
+    // 30 events a stranger can produce for free: foreign coordinates, unknown events,
+    // bad statuses, far-future timestamps. Exactly one of them is worth a check.
+    $noise = [];
+
+    foreach (range(1, 10) as $i) {
+        $noise[] = NostrTestEvents::rsvp(1, 'accepted', RSVP_FOLD_NOW - $i, dTag: "foreign-{$i}", coordinate: NostrTestEvents::coordinate($i, NostrTestEvents::FOREIGN_PUBLISHER_SECRET));
+        $noise[] = NostrTestEvents::rsvp(999, 'accepted', RSVP_FOLD_NOW - $i, dTag: "unknown-{$i}");
+        $noise[] = NostrTestEvents::rsvp(1, 'going', RSVP_FOLD_NOW - $i, dTag: "status-{$i}");
+    }
+
+    $real = NostrTestEvents::rsvp(1, 'accepted', RSVP_FOLD_NOW - 60, dTag: 'real');
+    [$verify, $verified] = countingVerifier();
+
+    $result = rsvpFold([...$noise, $real], verify: $verify);
+
+    expect($verified->getArrayCopy())->toBe([$real['id']])
+        ->and($result->verifications)->toBe(1)
+        ->and($result->upserts)->toHaveCount(1)
+        ->and($result->dropped)->toBe([
+            NostrRsvpFold::DROP_FOREIGN_COORDINATE => 10,
+            NostrRsvpFold::DROP_INVALID_STATUS => 10,
+            NostrRsvpFold::DROP_UNKNOWN_EVENT => 10,
+        ]);
+});
+
+it('stops verifying at its budget and says the run is incomplete', function () {
+    $events = [];
+
+    foreach (range(1, 5) as $i) {
+        $events[] = NostrTestEvents::rsvp(1, 'accepted', RSVP_FOLD_NOW - $i, dTag: "d-{$i}", secret: str_repeat((string) $i, 64));
+    }
+
+    [$verify, $verified] = countingVerifier();
+    $result = rsvpFold($events, verify: $verify, maxVerifications: 2);
+
+    expect($verified->count())->toBe(2)
+        ->and($result->verifications)->toBe(2)
+        ->and($result->verificationBudgetExhausted)->toBeTrue()
+        ->and($result->upserts)->toHaveCount(2)
+        ->and($result->dropped)->toHaveKey(NostrRsvpFold::DROP_VERIFICATION_BUDGET);
+
+    // With room for all of them nothing is left over.
+    expect(rsvpFold($events, maxVerifications: 5))
+        ->verificationBudgetExhausted->toBeFalse()
+        ->upserts->toHaveCount(5);
+});
+
+it('spends its budget on deletions before RSVPs, because deletions take counts away', function () {
+    $attendee = NostrTestEvents::pubkey(NostrTestEvents::ATTENDEE_SECRET);
+    $stored = [rsvpFoldStoredKey() => ['nostr_event_id' => str_repeat('c', 64), 'd_tag' => 'rsvp-1', 'rsvp_created_at' => RSVP_FOLD_NOW - 600]];
+    $deletion = NostrTestEvents::deletion([['a', "31925:{$attendee}:rsvp-1"]], RSVP_FOLD_NOW - 60);
+    $newRsvp = NostrTestEvents::rsvp(1, 'accepted', RSVP_FOLD_NOW - 30, NostrTestEvents::OTHER_ATTENDEE_SECRET, dTag: 'other');
+
+    $result = rsvpFold([$newRsvp, $deletion], stored: $stored, maxVerifications: 1);
+
+    expect($result->deletions)->toBe([['meetup_event_id' => 1, 'pubkey' => $attendee]])
+        ->and($result->upserts)->toBe([])
+        ->and($result->verificationBudgetExhausted)->toBeTrue();
+});
+
+it('keeps the variant of a shared id that verifies, not the one that arrived first', function () {
+    $real = NostrTestEvents::rsvp(1, 'accepted', RSVP_FOLD_NOW - 60, dTag: 'shared');
+    $forged = [...$real, 'content' => 'forged', 'sig' => str_repeat('0', 128)];
+
+    // Same id, different content: a relay that answers first with the forgery must not
+    // be able to keep the real event out.
+    expect($forged['id'])->toBe($real['id']);
+
+    $result = rsvpFold([$forged, $real]);
+
+    expect($result->upserts)->toHaveCount(1)
+        ->and($result->upserts[0]['nostr_event_id'])->toBe($real['id'])
+        ->and($result->dropped)->toBe([NostrRsvpFold::DROP_INVALID_SIGNATURE => 1]);
+});
+
+it('drops an event whose id is not 64 lowercase hex before anything else', function () {
+    $broken = [...NostrTestEvents::rsvp(1, 'accepted', RSVP_FOLD_NOW - 60), 'id' => 'nope'];
+    [$verify, $verified] = countingVerifier();
+
+    expect(rsvpFold([$broken], verify: $verify))
+        ->dropped->toBe([NostrRsvpFold::DROP_MALFORMED => 1])
+        ->and($verified->count())->toBe(0);
 });
 
 it('honours a kind 5 by address for every version up to its own time, not after', function () {

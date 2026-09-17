@@ -32,6 +32,26 @@ function readerEventJson(string $subscriptionId, string $id): string
     ]]);
 }
 
+it('cuts a read into requests of at most forty filters, the count both relays answered', function () {
+    $reader = new class extends NostrRelayReader
+    {
+        /** @var list<int> */
+        public array $filtersPerRequest = [];
+
+        protected function readOnce(string $relayUrl, array $filters): App\Support\NostrRelayReadResult
+        {
+            $this->filtersPerRequest[] = count($filters);
+
+            return App\Support\NostrRelayReadResult::complete([]);
+        }
+    };
+
+    $reader->read('wss://relay.test', array_fill(0, 95, ['kinds' => [31925]]));
+
+    expect(NostrRelayReader::MAX_FILTERS_PER_REQUEST)->toBe(40)
+        ->and($reader->filtersPerRequest)->toBe([40, 40, 15]);
+});
+
 it('is complete with the events of its own subscription once its EOSE arrived', function () {
     $result = NostrRelayReader::interpret(READER_OWN_SUB, relayFrames([
         readerEventJson(READER_OWN_SUB, str_repeat('1', 64)),
