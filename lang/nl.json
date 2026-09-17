@@ -916,5 +916,8 @@
     "Alle Sprachen tragen denselben Namen — vermutlich vom alten Picker kopiert. Lösche die Sprachen, in denen er nicht steht.": "Alle talen dragen dezelfde naam — waarschijnlijk gekopieerd door de oude kiezer. Verwijder de talen waarin hij niet zo luidt.",
     "Redaktion": "Redactie",
     "Schalte zuerst die Anmeldung ein — ohne sie gibt es keine Teilnehmerliste, die sich zeigen ließe.": "Zet eerst de aanmelding aan — zonder aanmelding is er geen deelnemerslijst om te tonen.",
-    "Nach Service-Typ filtern": "Filteren op servicetype"
+    "Nach Service-Typ filtern": "Filteren op servicetype",
+    "Termine dieses Meetups erscheinen jetzt auf Nostr": "Data van deze meetup verschijnen nu op Nostr",
+    "Sie werden öffentlich als Nostr-Kalendereinträge veröffentlicht, damit Teilnehmer auch mit Nostr zusagen können. Du kannst das in den Meetup-Einstellungen abschalten.": "Ze worden openbaar gepubliceerd als Nostr-agenda-items, zodat deelnemers zich ook via Nostr kunnen aanmelden. Je kunt dit uitschakelen in de meetup-instellingen.",
+    "Zu den Meetup-Einstellungen": "Naar de meetup-instellingen"
 }

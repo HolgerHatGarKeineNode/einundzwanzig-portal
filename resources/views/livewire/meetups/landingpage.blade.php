@@ -36,6 +36,13 @@ class extends Component
     {
         return [
             'meetup' => $this->meetup,
+            /*
+             * The update ability — leader, creator, super-admin, meetup steward — plus the
+             * leader pivot, same as the list view's "Bearbeiten". Computed once here because
+             * two places ask: the edit button and the Nostr publishing notice.
+             */
+            'canManageMeetup' => auth()->check()
+                && ($this->meetup->leadByMe || auth()->user()->can('update', $this->meetup)),
             'events' => $this->meetup
                 ->meetupEvents()
                 ->where('start', '>=', now())
@@ -56,6 +63,22 @@ class extends Component
 @endsection
 
 <div class="container mx-auto px-4 py-8">
+    {{-- Publishing became default-on on 2026-09-17 (migration 2026_09_17_200000), and
+         this notice is the one place leaders learn about it. Managers only, and only
+         while the switch is on: once a leader has switched it off, "are published"
+         would no longer be true. --}}
+    @if($canManageMeetup && $meetup->nostr_publishing_enabled)
+        <flux:callout variant="secondary" icon="information-circle" class="mb-6" data-testid="nostr-publishing-notice">
+            <flux:callout.heading>{{ __('Termine dieses Meetups erscheinen jetzt auf Nostr') }}</flux:callout.heading>
+            <flux:callout.text>{{ __('Sie werden öffentlich als Nostr-Kalendereinträge veröffentlicht, damit Teilnehmer auch mit Nostr zusagen können. Du kannst das in den Meetup-Einstellungen abschalten.') }}</flux:callout.text>
+            <x-slot name="actions">
+                <flux:button size="sm" :href="route_with_country('meetups.edit', ['meetup' => $meetup])">
+                    {{ __('Zu den Meetup-Einstellungen') }}
+                </flux:button>
+            </x-slot>
+        </flux:callout>
+    @endif
+
     {{-- Identity row: who and where, in one band. Everything a visitor needs to
          confirm they are on the right page, and nothing that delays the list. --}}
     <div class="flex flex-col sm:flex-row items-center space-x-0 sm:space-x-4 space-y-4 sm:space-y-0">
@@ -67,21 +90,19 @@ class extends Component
                 {{ $meetup->city->name }}, {{ $meetup->city->country->name }}
             </flux:subheading>
             <x-calendar-stream-picker :meetup-id="$meetup->id"/>
-            @if(auth()->check())
-                {{-- Identical condition to the list view's edit action
-                     (index.blade.php, "Bearbeiten"): the update ability —
-                     leader, creator, super-admin, meetup steward. Without
-                     this, editing a meetup was reachable only by going back
-                     to the list view. --}}
-                @if($meetup->leadByMe || auth()->user()->can('update', $meetup))
-                    <div>
-                        <flux:button
-                            :href="route_with_country('meetups.edit', ['meetup' => $meetup])"
-                            size="sm" variant="filled" icon="pencil">
-                            {{ __('Meetup bearbeiten') }}
-                        </flux:button>
-                    </div>
-                @endif
+            {{-- Identical condition to the list view's edit action
+                 (index.blade.php, "Bearbeiten"): the update ability —
+                 leader, creator, super-admin, meetup steward. Without
+                 this, editing a meetup was reachable only by going back
+                 to the list view. --}}
+            @if($canManageMeetup)
+                <div>
+                    <flux:button
+                        :href="route_with_country('meetups.edit', ['meetup' => $meetup])"
+                        size="sm" variant="filled" icon="pencil">
+                        {{ __('Meetup bearbeiten') }}
+                    </flux:button>
+                </div>
             @endif
         </div>
     </div>
