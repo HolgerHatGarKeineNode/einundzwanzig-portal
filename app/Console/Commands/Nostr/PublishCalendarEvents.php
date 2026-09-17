@@ -7,7 +7,9 @@ use App\Models\MeetupEvent;
 use App\Support\NostrCalendarEventFactory;
 use App\Support\NostrEventTransmitter;
 use App\Support\NostrPayloadFingerprint;
+use App\Support\NostrPublishFailures;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use swentel\nostr\Event\Event;
 use swentel\nostr\Key\Key;
@@ -27,6 +29,15 @@ use swentel\nostr\Sign\Sign;
  * 2 h 15 min, and the calendars in 13 runs. The load stays paced: `--sleep` spaces the
  * transmissions, the first rejected send ends the run, and RUN_BUDGET_SECONDS keeps a
  * slow relay from stretching one run across the next ticks.
+ *
+ * ENDING THE RUN AT THE FIRST REJECTION IS BOUNDED, and that bound is
+ * {@see NostrPublishFailures}. Without it the two paragraphs above work against each
+ * other: a payload no relay will accept sits at the head of an ordered queue and ends
+ * every run at the same record, and because the MeetupEvent queue is gated on
+ * `start > now()`, the events behind it do not wait — they expire unpublished. After
+ * three rejections of the same payload the record is stepped over with a warning and
+ * the batch continues. It stays in the queue and is tried again from zero as soon as
+ * its payload changes.
  */
 class PublishCalendarEvents extends Command
 {
@@ -181,13 +192,35 @@ class PublishCalendarEvents extends Command
                 break;
             }
 
+            $event = $model instanceof Meetup
+                ? NostrCalendarEventFactory::forMeetup($model)
+                : NostrCalendarEventFactory::forMeetupEvent($model, $pubkeyHex);
+
+            /*
+             * A payload the relays have already refused three times in a row is stepped
+             * over, and the batch goes on — the one thing the failure path below must not
+             * do is let a single record hold the queue. See {@see NostrPublishFailures}
+             * for why the skip is bound to the payload rather than to the record: edit
+             * the text and the next run tries again from zero.
+             *
+             * No `$result = self::FAILURE` for a skip. The run did the work it could do,
+             * and turning a known-bad record into a red exit code every five minutes
+             * teaches an operator to ignore the exit code. The warning below is the
+             * signal, and it names the record.
+             */
+            if (NostrPublishFailures::hasGivenUpOn($model, $event)) {
+                $this->reportSkipped($model, $modelName);
+
+                continue;
+            }
+
             /*
              * The first failure ends the run. The records behind it are left exactly as
              * they were — no coordinate, no fingerprint — so the next run picks them up
              * in the same order; and a relay set that rejects one event is not asked to
              * take the next 24 in the same minute.
              */
-            if (! $this->publish($model, $modelName, $hexKey, $pubkeyHex)) {
+            if (! $this->publish($model, $event, $modelName, $hexKey, $pubkeyHex)) {
                 $result = self::FAILURE;
 
                 break;
@@ -212,15 +245,39 @@ class PublishCalendarEvents extends Command
     }
 
     /**
+     * Report a record whose payload the relays have refused {@see NostrPublishFailures::MAX_ATTEMPTS}
+     * times in a row and which this run therefore steps over.
+     *
+     * TO THE LOG as well as to the console, because the run that does this is the
+     * scheduled one, whose console output nobody reads. The record is named the way an
+     * operator can act on it — model, id, and the count — and the message says the
+     * record is still in the queue, so it is not mistaken for a deletion.
+     */
+    private function reportSkipped(Meetup|MeetupEvent $model, string $modelName): void
+    {
+        $attempts = (int) $model->getAttribute(NostrPublishFailures::ATTEMPTS_COLUMN);
+
+        $message = sprintf(
+            'Skipping %s #%d after %d rejected transmissions of the same payload; the rest of the batch continues and the record is retried when its payload changes.',
+            $modelName,
+            $model->id,
+            $attempts,
+        );
+
+        $this->warn($message);
+
+        Log::warning('Nostr calendar publish skipped after repeated failures', [
+            'model' => $modelName,
+            'id' => $model->id,
+            'attempts' => $attempts,
+        ]);
+    }
+
+    /**
      * Sign and transmit one record; on acceptance store where it went and what it was.
      */
-    private function publish(Meetup|MeetupEvent $model, string $modelName, string $hexKey, string $pubkeyHex): bool
+    private function publish(Meetup|MeetupEvent $model, Event $event, string $modelName, string $hexKey, string $pubkeyHex): bool
     {
-        $event = match (true) {
-            $model instanceof Meetup => NostrCalendarEventFactory::forMeetup($model),
-            $model instanceof MeetupEvent => NostrCalendarEventFactory::forMeetupEvent($model, $pubkeyHex),
-        };
-
         $dTag = $model instanceof Meetup
             ? NostrCalendarEventFactory::calendarDTag($model)
             : NostrCalendarEventFactory::eventDTag($model);
@@ -229,7 +286,15 @@ class PublishCalendarEvents extends Command
         $signer->signEvent($event, $hexKey);
 
         if (! $this->transmit($event)) {
-            $this->error("Failed to publish calendar event for {$modelName} #{$model->id}");
+            /*
+             * Count the rejection before reporting it: this is what turns the third
+             * failure of one payload into the skip above, instead of an endless queue
+             * head. Counted per payload, so an outage that hits a different record's
+             * payload does not accumulate against this one.
+             */
+            $attempts = NostrPublishFailures::recordFailure($model, $event);
+
+            $this->error("Failed to publish calendar event for {$modelName} #{$model->id} (attempt {$attempts} with this payload)");
 
             return false;
         }
@@ -247,6 +312,14 @@ class PublishCalendarEvents extends Command
          * with that payload at all.
          */
         NostrPayloadFingerprint::remember($model, $event);
+
+        /*
+         * The failure tally is about a payload that could not go out; this one did, so
+         * there is nothing left to count. Kept honest rather than left standing: a
+         * record that failed twice and then succeeded must not carry two attempts into
+         * a later run, where one more rejection would silence it three times too early.
+         */
+        NostrPublishFailures::clear($model);
 
         $this->info("Published calendar event for {$modelName} #{$model->id}");
 
@@ -348,13 +421,26 @@ class PublishCalendarEvents extends Command
      * makes the case unlikely, not different — this list says what the query needs, not
      * what history suggests it will find.
      *
+     * THE TWO {@see NostrPublishFailures} COLUMNS ARE IN IT FOR A DIFFERENT REASON, and
+     * the difference is worth stating: the query does not gate on them, the run WRITES
+     * them, on the path taken when a transmission fails. Missing, they do not degrade
+     * quietly — the update throws — but it throws in the middle of a batch, after some
+     * records went out and while the operator is already looking at a rejected send. One
+     * line naming the column and `php artisan migrate` is a better answer than a stack
+     * trace at the worst moment, and it costs a `Schema::hasColumn()` per run.
+     *
      * @return list<string> the missing columns as `table.column`, empty when ready
      */
     private function missingGateColumns(string $modelName): array
     {
+        $failureColumns = [NostrPublishFailures::ATTEMPTS_COLUMN, NostrPublishFailures::HASH_COLUMN];
+
         $required = match ($modelName) {
-            'Meetup' => ['meetups' => ['nostr_coordinate', 'nostr_publishing_enabled']],
-            'MeetupEvent' => ['meetup_events' => ['nostr_coordinate', 'cancelled_at'], 'meetups' => ['nostr_publishing_enabled']],
+            'Meetup' => ['meetups' => ['nostr_coordinate', 'nostr_publishing_enabled', ...$failureColumns]],
+            'MeetupEvent' => [
+                'meetup_events' => ['nostr_coordinate', 'cancelled_at', ...$failureColumns],
+                'meetups' => ['nostr_publishing_enabled'],
+            ],
             default => [],
         };
 
