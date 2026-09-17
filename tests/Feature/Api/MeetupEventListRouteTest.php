@@ -85,6 +85,9 @@ it('answers the bare list path with the unchanged payload of the dated one', fun
             'tags',
             'attendees',
             'might_attendees',
+            // Hybrid RSVP (D12a): Nostr RSVPs of keys linked to no portal account.
+            'nostr_attendees',
+            'nostr_might_attendees',
             'meetup.name',
             'meetup.portalLink',
             'meetup.url',

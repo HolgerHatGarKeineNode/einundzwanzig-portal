@@ -1,4 +1,5 @@
 {
+    "+:count via Nostr": "+:count caur Nostr",
     ":count Anmeldung|:count Anmeldungen": ":count reģistrāciju|:count reģistrācija|:count reģistrācijas",
     ":count Events erfolgreich erstellt!": ":count pasākumi veiksmīgi izveidoti!",
     ":count Event|:count Events": ":count pasākumu|:count pasākums|:count pasākumi",

@@ -1,4 +1,5 @@
 {
+    "+:count via Nostr": "+:count Nostr-on keresztül",
     ":count Anmeldung|:count Anmeldungen": ":count regisztráció|:count regisztráció",
     ":count Events erfolgreich erstellt!": ":count esemény sikeresen létrehozva!",
     ":count Event|:count Events": ":count esemény|:count esemény",

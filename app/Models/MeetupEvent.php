@@ -4,17 +4,20 @@ namespace App\Models;
 
 use App\Actions\MeetupEvents\CreateMeetupEventSeries;
 use App\Enums\RecurrenceType;
+use App\Enums\NostrRsvpStatus;
 use App\Enums\RsvpStatus;
 use App\Http\Requests\Api\UpdateMeetupEventRequest;
 use App\Models\Concerns\NormalizesText;
 use App\Models\Concerns\SetsCreatedBy;
 use App\Observers\ApiChangeObserver;
 use App\Observers\MeetupEventObserver;
+use App\Support\MeetupEventAttendance;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Spatie\Tags\HasTags;
 
@@ -438,16 +441,66 @@ class MeetupEvent extends Model
     }
 
     /**
-     * Anzahl der Zusagen bzw. Vielleicht-Sagen (die Listen sind JSON-Arrays).
+     * The newest valid Nostr RSVP (kind 31925) per key for this event, as stored by
+     * `nostr:ingest-rsvps` (D12).
+     *
+     * @return HasMany<MeetupEventNostrRsvp, $this>
+     */
+    public function nostrRsvps(): HasMany
+    {
+        return $this->hasMany(MeetupEventNostrRsvp::class);
+    }
+
+    /**
+     * When signed-in users last answered through the portal (D12a).
+     *
+     * @return HasMany<MeetupEventRsvpTime, $this>
+     */
+    public function rsvpTimes(): HasMany
+    {
+        return $this->hasMany(MeetupEventRsvpTime::class);
+    }
+
+    /**
+     * Portal and Nostr answers merged into one view (D12a). Read-only: the attendee JSON
+     * is never rewritten from it.
+     */
+    public function attendance(): MeetupEventAttendance
+    {
+        return MeetupEventAttendance::for($this);
+    }
+
+    /**
+     * Anzahl der Zusagen bzw. Vielleicht-Sagen.
+     *
+     * Since D12a this counts the portal lists AND the Nostr RSVPs of linked accounts,
+     * newer answer per user wins. Unlinked Nostr RSVPs are NOT in here — they are
+     * reported apart ({@see MeetupEventAttendance::unlinkedNostrCount()}).
      */
     public function attendeesCount(): int
     {
-        return count($this->attendees ?? []);
+        return $this->attendance()->attendeesCount();
     }
 
     public function mightAttendeesCount(): int
     {
-        return count($this->might_attendees ?? []);
+        return $this->attendance()->mightAttendeesCount();
+    }
+
+    /**
+     * Nostr "accepted" RSVPs of keys linked to no portal account — "+N via Nostr" (D12a).
+     */
+    public function nostrAttendeesCount(): int
+    {
+        return $this->attendance()->unlinkedNostrCount(NostrRsvpStatus::Accepted);
+    }
+
+    /**
+     * Nostr "tentative" RSVPs of keys linked to no portal account (D12a).
+     */
+    public function nostrMightAttendeesCount(): int
+    {
+        return $this->attendance()->unlinkedNostrCount(NostrRsvpStatus::Tentative);
     }
 
     /**
@@ -470,21 +523,12 @@ class MeetupEvent extends Model
     }
 
     /**
-     * Aktueller RSVP-Status des Nutzers für diesen Termin.
+     * Aktueller RSVP-Status des Nutzers für diesen Termin — since D12a the newer of his
+     * portal answer and the Nostr RSVP of his linked key.
      */
     public function rsvpStatusFor(User $user): RsvpStatus
     {
-        $prefix = self::rsvpPrefixFor($user);
-
-        if (collect($this->attendees ?? [])->contains(fn ($entry): bool => str($entry)->startsWith($prefix))) {
-            return RsvpStatus::Attending;
-        }
-
-        if (collect($this->might_attendees ?? [])->contains(fn ($entry): bool => str($entry)->startsWith($prefix))) {
-            return RsvpStatus::Maybe;
-        }
-
-        return RsvpStatus::None;
+        return $this->attendance()->statusFor($user->id);
     }
 
     /**
@@ -511,6 +555,8 @@ class MeetupEvent extends Model
             'attendees' => $attendees->values()->all(),
             'might_attendees' => $mightAttendees->values()->all(),
         ]);
+
+        MeetupEventRsvpTime::record($this, $user->id);
     }
 
     /**

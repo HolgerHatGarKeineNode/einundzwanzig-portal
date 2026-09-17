@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\MeetupEvents\CreateMeetupEventSeries;
+use App\Enums\NostrRsvpStatus;
 use App\Enums\RsvpStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\RsvpMeetupEventRequest;
@@ -67,6 +68,10 @@ class MeetupEventController extends Controller
                 // Without this the resource's whenLoaded('tags') stays silent and the
                 // field disappears from the payload rather than showing up empty.
                 'tags',
+                // The attendee counts merge Nostr RSVPs (D12a); two queries for the whole
+                // list instead of two per event.
+                'nostrRsvps',
+                'rsvpTimes',
             ])
             ->when(
                 $date,
@@ -150,8 +155,13 @@ class MeetupEventController extends Controller
                 'locale' => $tag->displayLocale($requestedLocale),
             ])->all(),
             // null = the attendee count is not public for this meetup (attendees_public=false).
+            // Since D12a both include the Nostr RSVPs of keys linked to a portal account.
             'attendees' => $event->meetup->attendees_public ? $event->attendeesCount() : null,
             'might_attendees' => $event->meetup->attendees_public ? $event->mightAttendeesCount() : null,
+            // Nostr RSVPs (kind 31925) of keys linked to NO portal account — "+N via Nostr",
+            // counted apart and never named (D12a). Same null rule as the two above.
+            'nostr_attendees' => $event->meetup->attendees_public ? $event->nostrAttendeesCount() : null,
+            'nostr_might_attendees' => $event->meetup->attendees_public ? $event->nostrMightAttendeesCount() : null,
             'meetup.name' => $event->meetup->name,
             'meetup.portalLink' => url()->route(
                 'meetups.landingpage',
@@ -331,24 +341,32 @@ class MeetupEventController extends Controller
      * null if the attendee list is not visible to the viewer
      * (attendees_public=false and not a manager).
      *
-     * @return array{status: string, attendees: int|null, might_attendees: int|null, attendee_names: list<string>|null}
+     * Since D12a the status, the counters and the names merge the Nostr RSVPs of keys
+     * linked to a portal account (newer answer per user wins); `nostr_attendees` and
+     * `nostr_might_attendees` count the Nostr RSVPs of unlinked keys, which are never
+     * named. The write path of this endpoint is unchanged.
+     *
+     * @return array{status: string, attendees: int|null, might_attendees: int|null, attendee_names: list<string>|null, nostr_attendees: int|null, nostr_might_attendees: int|null}
      */
     private function rsvpPayload(MeetupEvent $meetupEvent, User $user): array
     {
         $countsVisible = $meetupEvent->meetup->attendeesVisibleTo($user);
+        $attendance = $meetupEvent->attendance();
 
         return [
-            'status' => $meetupEvent->rsvpStatusFor($user)->value,
-            'attendees' => $countsVisible ? $meetupEvent->attendeesCount() : null,
-            'might_attendees' => $countsVisible ? $meetupEvent->mightAttendeesCount() : null,
+            'status' => $attendance->statusFor($user->id)->value,
+            'attendees' => $countsVisible ? $attendance->attendeesCount() : null,
+            'might_attendees' => $countsVisible ? $attendance->mightAttendeesCount() : null,
             // Display names of the attendees without the `id_<userId>|` prefix. Same
             // visibility rule as the counters (attendees_public or manager).
             'attendee_names' => $countsVisible
-                ? collect($meetupEvent->attendees ?? [])
+                ? collect($attendance->attendeeEntries())
                     ->map(fn (string $entry): string => str($entry)->after('|')->toString())
                     ->values()
                     ->all()
                 : null,
+            'nostr_attendees' => $countsVisible ? $attendance->unlinkedNostrCount(NostrRsvpStatus::Accepted) : null,
+            'nostr_might_attendees' => $countsVisible ? $attendance->unlinkedNostrCount(NostrRsvpStatus::Tentative) : null,
         ];
     }
 

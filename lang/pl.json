@@ -1,4 +1,5 @@
 {
+    "+:count via Nostr": "+:count przez Nostr",
     ":count Anmeldung|:count Anmeldungen": ":count rejestracja|:count rejestracje|:count rejestracji",
     ":count Events erfolgreich erstellt!": ":count wydarzeń zostało pomyślnie utworzonych!",
     ":count Event|:count Events": ":count wydarzenie|:count wydarzenia|:count wydarzeń",

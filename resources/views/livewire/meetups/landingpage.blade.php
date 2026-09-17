@@ -38,6 +38,8 @@ class extends Component
             'meetup' => $this->meetup,
             'events' => $this->meetup
                 ->meetupEvents()
+                // The card counts merge Nostr RSVPs (D12a) — loaded once for all cards.
+                ->with(['nostrRsvps', 'rsvpTimes'])
                 ->where('start', '>=', now())
                 ->orderBy('start', 'asc')
                 ->get(),
@@ -193,10 +195,20 @@ class extends Component
 
                         @if($canSeeAttendees)
                             <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                                <div class="text-xs text-zinc-500 flex items-center gap-2">
-                                    <span>{{ trans_choice(':count Zusage|:count Zusagen', count($event->attendees ?? [])) }}</span>
+                                {{-- Counts include the Nostr RSVPs of linked accounts; RSVPs of
+                                     unlinked keys follow as "+N via Nostr", never named (D12a).
+                                     `flex-wrap` so the two extra spans break onto a second line
+                                     in a narrow card instead of running past its edge. --}}
+                                <div class="text-xs text-zinc-500 flex flex-wrap items-center gap-2">
+                                    <span>{{ trans_choice(':count Zusage|:count Zusagen', $event->attendeesCount()) }}</span>
+                                    @if($event->nostrAttendeesCount() > 0)
+                                        <span data-testid="nostr-attendees">{{ __('+:count via Nostr', ['count' => $event->nostrAttendeesCount()]) }}</span>
+                                    @endif
                                     <flux:separator vertical/>
-                                    <span>{{ trans_choice(':count Vielleicht|:count Vielleicht', count($event->might_attendees ?? [])) }}</span>
+                                    <span>{{ trans_choice(':count Vielleicht|:count Vielleicht', $event->mightAttendeesCount()) }}</span>
+                                    @if($event->nostrMightAttendeesCount() > 0)
+                                        <span data-testid="nostr-might-attendees">{{ __('+:count via Nostr', ['count' => $event->nostrMightAttendeesCount()]) }}</span>
+                                    @endif
                                 </div>
                             </flux:text>
                         @endif

@@ -403,7 +403,9 @@ class Meetup extends Model implements HasMedia
 
     protected function nextEvent(): Attribute
     {
-        $nextEvent = $this->meetupEvents()->where('start', '>=', now())->orderBy('start')->first();
+        // `withExists` rides along in the same SELECT, so an event without any Nostr RSVP
+        // costs no extra query for its attendance (MeetupEventAttendance::for()).
+        $nextEvent = $this->meetupEvents()->withExists('nostrRsvps')->where('start', '>=', now())->orderBy('start')->first();
 
         return Attribute::make(
             get: fn () => $nextEvent ? [
@@ -423,6 +425,9 @@ class Meetup extends Model implements HasMedia
                 // null = Teilnehmerzahl öffentlich verborgen (attendees_public=false).
                 'attendees' => $this->attendees_public ? $nextEvent->attendeesCount() : null,
                 'might_attendees' => $this->attendees_public ? $nextEvent->mightAttendeesCount() : null,
+                // Nostr RSVPs of keys linked to no portal account (D12a, "+N via Nostr").
+                'nostr_attendees' => $this->attendees_public ? $nextEvent->nostrAttendeesCount() : null,
+                'nostr_might_attendees' => $this->attendees_public ? $nextEvent->nostrMightAttendeesCount() : null,
                 'nostr_note' => str($nextEvent->nostr_status)->after('Sent event ')->before(' to '),
             ] : null,
         );
