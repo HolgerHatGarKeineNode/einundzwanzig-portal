@@ -45,8 +45,10 @@ class extends Component
                 && ($this->meetup->leadByMe || auth()->user()->can('update', $this->meetup)),
             'events' => $this->meetup
                 ->meetupEvents()
-                // The card counts merge Nostr RSVPs (D12a) — loaded once for all cards.
-                ->with(['nostrRsvps', 'rsvpTimes'])
+                // The card counts merge Nostr RSVPs (D12a): the linked rows once for all
+                // cards, the unlinked ones as aggregates of this very query.
+                ->with(['linkedNostrRsvps', 'rsvpTimes'])
+                ->withAttendanceCounts()
                 ->where('start', '>=', now())
                 ->orderBy('start', 'asc')
                 ->get(),

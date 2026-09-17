@@ -124,13 +124,24 @@ it('lets the portal answer win an exact tie', function () {
     expect($this->event->fresh()->rsvpStatusFor($user)->value)->toBe('maybe');
 });
 
-it('treats a portal answer from before the timestamp table as older than any Nostr answer', function () {
+it('does not let a Nostr answer overrule a portal answer whose time is unknown', function () {
+    // The state the backfill migration removes, and that an account merge can still
+    // produce: an entry on the list with no row saying when it was given. An answer of
+    // unknown age is not beaten by a Nostr answer of unknown relative age.
     $user = User::factory()->create();
     $this->event->update(['attendees' => ['id_999|Portal Pleb', "id_{$user->id}|Legacy"]]);
     storedNostrRsvp($this->event, 'declined', now()->subYear()->timestamp, $user);
 
-    expect(eventListRow($this->event)['attendees'])->toBe(1)
-        ->and($this->event->fresh()->rsvpStatusFor($user)->value)->toBe('none');
+    expect(eventListRow($this->event)['attendees'])->toBe(2)
+        ->and($this->event->fresh()->rsvpStatusFor($user)->value)->toBe('attending');
+});
+
+it('lets a Nostr answer stand when the account never answered in the portal', function () {
+    $user = User::factory()->create(['name' => 'Only Nostr']);
+    storedNostrRsvp($this->event, 'accepted', now()->subYear()->timestamp, $user);
+
+    expect(eventListRow($this->event)['attendees'])->toBe(2)
+        ->and($this->event->fresh()->rsvpStatusFor($user)->value)->toBe('attending');
 });
 
 it('stamps a REST answer, which then outranks the older Nostr answer, without changing the list format', function () {
@@ -188,24 +199,99 @@ it('carries the Nostr counts in the next event of the public meetup list', funct
     ]);
 });
 
+/**
+ * Every query that HYDRATES rows of the two RSVP tables, i.e. the work a stranger can
+ * grow by publishing more events (finding F1).
+ *
+ * @return list<string>
+ */
+function rsvpRowLoadsDuring(Closure $call): array
+{
+    $loads = [];
+
+    Illuminate\Support\Facades\DB::listen(function ($query) use (&$loads): void {
+        if (preg_match('/^select (\*|"meetup_event_nostr_rsvps"|"meetup_event_rsvp_times")/', $query->sql) === 1
+            && str_contains($query->sql, 'meetup_event_')
+            && ! str_contains($query->sql, 'count(')) {
+            $loads[] = $query->sql;
+        }
+    });
+
+    $call();
+
+    return array_values(array_filter(
+        $loads,
+        fn (string $sql): bool => str_contains($sql, 'from "meetup_event_nostr_rsvps"') || str_contains($sql, 'from "meetup_event_rsvp_times"'),
+    ));
+}
+
+it('counts unlinked RSVPs in SQL and never loads one, however many there are', function () {
+    $linkedUser = User::factory()->create(['name' => 'Linked Larissa']);
+    storedNostrRsvp($this->event, 'accepted', now()->subHour()->timestamp, $linkedUser);
+    MeetupEventNostrRsvp::factory()->count(50)->create(['meetup_event_id' => $this->event->id]);
+    MeetupEventNostrRsvp::factory()->count(20)->tentative()->create(['meetup_event_id' => $this->event->id]);
+
+    $rows = rsvpRowLoadsDuring(fn () => $row = $this->getJson('/api/meetup-events')->assertSuccessful());
+
+    // Only the LINKED rows are read, plus the answer times that decide them — never the
+    // 70 unlinked ones.
+    expect($rows)->toHaveCount(2)
+        ->and($rows[0])->toContain('"user_id" is not null')
+        ->and(eventListRow($this->event))->toMatchArray([
+            'attendees' => 2,
+            'might_attendees' => 0,
+            'nostr_attendees' => 50,
+            'nostr_might_attendees' => 20,
+        ]);
+});
+
+it('produces the same numbers through the aggregate query and through the single-event path', function () {
+    $linkedUser = User::factory()->create(['name' => 'Linked Larissa']);
+    storedNostrRsvp($this->event, 'tentative', now()->subHour()->timestamp, $linkedUser);
+    MeetupEventNostrRsvp::factory()->count(7)->create(['meetup_event_id' => $this->event->id]);
+    MeetupEventNostrRsvp::factory()->count(3)->tentative()->create(['meetup_event_id' => $this->event->id]);
+    MeetupEventNostrRsvp::factory()->count(2)->declined()->create(['meetup_event_id' => $this->event->id]);
+
+    $fromList = eventListRow($this->event);
+
+    Sanctum::actingAs(User::factory()->create());
+    $fromRsvpEndpoint = $this->getJson("/api/meetup-events/{$this->event->id}/rsvp")->assertSuccessful()->json();
+
+    expect([$fromList['attendees'], $fromList['might_attendees'], $fromList['nostr_attendees'], $fromList['nostr_might_attendees']])
+        ->toBe([1, 1, 7, 3])
+        ->and([$fromRsvpEndpoint['attendees'], $fromRsvpEndpoint['might_attendees'], $fromRsvpEndpoint['nostr_attendees'], $fromRsvpEndpoint['nostr_might_attendees']])
+        ->toBe([1, 1, 7, 3]);
+});
+
 it('loads no RSVP rows for a next event that has none, on the public meetup list', function () {
     $withRsvp = Meetup::factory()->create(['city_id' => $this->city->id]);
     $withRsvpEvent = MeetupEvent::factory()->create(['meetup_id' => $withRsvp->id, 'start' => now()->addDay()]);
     storedNostrRsvp($withRsvpEvent, 'accepted', now()->subHour()->timestamp);
 
-    $rowLoads = [];
-    Illuminate\Support\Facades\DB::listen(function ($query) use (&$rowLoads): void {
-        if (preg_match('/^select \* from "meetup_event_(nostr_rsvps|rsvp_times)"/', $query->sql) === 1) {
-            $rowLoads[] = $query->sql;
-        }
-    });
+    $rows = rsvpRowLoadsDuring(fn () => $this->getJson('/api/meetups')->assertSuccessful());
 
-    $this->getJson('/api/meetups')->assertSuccessful();
+    // Two meetups with an upcoming event, one of them with an UNLINKED RSVP: nothing is
+    // hydrated at all — the counts ride in the SELECT of the next event.
+    expect($rows)->toBe([]);
+});
 
-    // Two meetups with an upcoming event, one of them with an unlinked RSVP: exactly one
-    // row load, and no answer-time load, because nothing is linked.
-    expect($rowLoads)->toHaveCount(1)
-        ->and($rowLoads[0])->toContain('meetup_event_nostr_rsvps');
+it('builds the attendance of an event once, not once per number on the card', function () {
+    $user = User::factory()->create();
+    storedNostrRsvp($this->event, 'accepted', now()->subHour()->timestamp, $user);
+
+    $event = MeetupEvent::query()->withAttendanceCounts()->findOrFail($this->event->id);
+    $built = $event->attendance();
+
+    // A card asks four numbers of the same event; each rebuild would walk the lists and
+    // the linked rows again for an answer that cannot have changed in between.
+    expect($event->attendance())->toBe($built)
+        ->and($event->attendeesCount())->toBe(2);
+
+    // And it is dropped as soon as an answer is written, so the next read is fresh.
+    $event->setRsvpFor($user, App\Enums\RsvpStatus::None, 'Weg');
+
+    expect($event->attendance())->not->toBe($built)
+        ->and($event->fresh()->attendeesCount())->toBe(1);
 });
 
 it('shows "+N via Nostr" next to the counts on the meetup page, and nothing when there is none', function () {

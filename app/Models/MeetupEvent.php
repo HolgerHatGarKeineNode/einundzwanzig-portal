@@ -55,6 +55,12 @@ class MeetupEvent extends Model
      */
     public const MAX_LINKS = 5;
 
+    /**
+     * The merged attendance of this instance, built at most once. Not an attribute and
+     * not serialised: it is derived state over relations.
+     */
+    private ?MeetupEventAttendance $attendance = null;
+
     /** @var list<string> */
     protected array $normalizedLabels = ['title', 'location'];
 
@@ -452,6 +458,18 @@ class MeetupEvent extends Model
     }
 
     /**
+     * The Nostr RSVPs that belong to a portal account — the only ones the merge has to
+     * look at row by row, and the only ones whose number is bounded by something other
+     * than a stranger's willingness to generate keys.
+     *
+     * @return HasMany<MeetupEventNostrRsvp, $this>
+     */
+    public function linkedNostrRsvps(): HasMany
+    {
+        return $this->hasMany(MeetupEventNostrRsvp::class)->whereNotNull('user_id');
+    }
+
+    /**
      * When signed-in users last answered through the portal (D12a).
      *
      * @return HasMany<MeetupEventRsvpTime, $this>
@@ -462,12 +480,45 @@ class MeetupEvent extends Model
     }
 
     /**
+     * Everything the attendance merge needs, as aggregates in the SELECT: the two
+     * "+N via Nostr" counts and whether any linked RSVP exists at all.
+     *
+     * A list endpoint that adds this scope never hydrates an unlinked RSVP row. Without
+     * it the counts still come out right — each event then pays two COUNT queries
+     * instead — but nothing ever loads the rows themselves (see
+     * {@see MeetupEventAttendance}).
+     */
+    public function scopeWithAttendanceCounts(Builder $query): void
+    {
+        $query
+            ->withExists('linkedNostrRsvps')
+            ->withCount([
+                'nostrRsvps as nostr_unlinked_accepted_count' => fn (Builder $rsvps) => $rsvps
+                    ->whereNull('user_id')
+                    ->where('status', NostrRsvpStatus::Accepted->value),
+                'nostrRsvps as nostr_unlinked_tentative_count' => fn (Builder $rsvps) => $rsvps
+                    ->whereNull('user_id')
+                    ->where('status', NostrRsvpStatus::Tentative->value),
+            ]);
+    }
+
+    /**
      * Portal and Nostr answers merged into one view (D12a). Read-only: the attendee JSON
      * is never rewritten from it.
+     *
+     * Memoised per model instance: a card in the meetup list asks four questions of it
+     * (two counts plus the two Nostr counts), and building it four times meant four
+     * relation reads for one card. Every write path that can change the answer calls
+     * {@see self::forgetAttendance()}.
      */
     public function attendance(): MeetupEventAttendance
     {
-        return MeetupEventAttendance::for($this);
+        return $this->attendance ??= MeetupEventAttendance::for($this);
+    }
+
+    public function forgetAttendance(): void
+    {
+        $this->attendance = null;
     }
 
     /**
@@ -557,6 +608,8 @@ class MeetupEvent extends Model
         ]);
 
         MeetupEventRsvpTime::record($this, $user->id);
+
+        $this->forgetAttendance();
     }
 
     /**

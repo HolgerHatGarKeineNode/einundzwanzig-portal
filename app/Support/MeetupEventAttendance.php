@@ -21,11 +21,25 @@ use Illuminate\Support\Collection;
  * - An UNLINKED Nostr RSVP is counted apart, never named: it is "+N via Nostr", because
  *   a key is free to create and the portal cannot say who is behind it (plan risk R10).
  *
+ * ## Nothing unlinked is ever hydrated
+ *
+ * The unlinked RSVPs are exactly the part of this table a stranger can grow at will, so
+ * they are only ever COUNTED, in SQL: either as an aggregate the query already selected
+ * ({@see MeetupEvent::scopeWithAttendanceCounts()}) or as one `count()` per event. Only
+ * the LINKED rows are loaded as models, and their number is bounded by the accounts that
+ * linked a key. Measured before this split, on one event with 20 000 unlinked rows:
+ * 36 MB and 332 ms per request; the numbers after it are in the rework report.
+ *
  * ## "Newer"
  *
- * The portal side is {@see MeetupEventRsvpTime::$answered_at}; a portal
- * answer without a row predates that table and counts as older than any Nostr answer.
- * On an exact tie the portal answer wins, being the one the portal recorded itself.
+ * The portal side is {@see MeetupEventRsvpTime::$answered_at}. Since the backfill in
+ * `2026_09_18_090000_backfill_meetup_event_rsvp_times`, every portal answer visible on a
+ * list has such a row, so a MISSING row means "this account never answered in the
+ * portal" — the Nostr answer then stands unopposed. The one state that can still arise
+ * (a list entry whose row was removed, e.g. by an account merge) is resolved FOR the
+ * portal: an answer whose time is unknown is not beaten by a Nostr answer of unknown
+ * relative age. On an exact tie the portal answer wins, being the one the portal
+ * recorded itself.
  *
  * The Nostr side is the RSVP's `created_at`, CLAMPED to when the portal first stored it
  * ({@see self::nostrAnsweredAt()}). `created_at` is chosen by the author and the ingest
@@ -42,20 +56,38 @@ final class MeetupEventAttendance
      */
     private array $overrides = [];
 
+    /**
+     * The users who hold an entry on one of the portal lists — the answers that must not
+     * be overruled by a Nostr RSVP of unknown relative age.
+     *
+     * @var array<int, true>
+     */
+    private array $onPortalList = [];
+
     private function __construct(private readonly MeetupEvent $meetupEvent)
     {
+        foreach ([$meetupEvent->attendees, $meetupEvent->might_attendees] as $list) {
+            foreach ((array) ($list ?? []) as $entry) {
+                $userId = self::userIdOf((string) $entry);
+
+                if ($userId !== null) {
+                    $this->onPortalList[$userId] = true;
+                }
+            }
+        }
+
         $answeredAt = $meetupEvent->relationLoaded('rsvpTimes')
             ? $meetupEvent->rsvpTimes
                 ->mapWithKeys(fn (MeetupEventRsvpTime $time): array => [$time->user_id => $time->answered_at->getTimestamp()])
                 ->all()
             : [];
 
-        foreach ($meetupEvent->nostrRsvps as $rsvp) {
-            if ($rsvp->user_id === null) {
+        foreach ($meetupEvent->linkedNostrRsvps as $rsvp) {
+            $portalAnsweredAt = $answeredAt[$rsvp->user_id] ?? null;
+
+            if ($portalAnsweredAt === null && isset($this->onPortalList[$rsvp->user_id])) {
                 continue;
             }
-
-            $portalAnsweredAt = $answeredAt[$rsvp->user_id] ?? null;
 
             if ($portalAnsweredAt !== null && $portalAnsweredAt >= self::nostrAnsweredAt($rsvp)) {
                 continue;
@@ -66,23 +98,20 @@ final class MeetupEventAttendance
     }
 
     /**
-     * The portal answer times only matter for linked Nostr RSVPs, so they are only loaded
-     * when there is one. Measured 2026-09-17 on `GET /api/meetups` with 20 meetups, each
-     * with one upcoming event and five of them with a linked Nostr RSVP: without these two
-     * shortcuts the endpoint ran 51 queries (26 before this feature), with them 36 — the
-     * ten extra are the two loads of each of the five events that have an RSVP.
+     * Loads the linked RSVPs, and the portal answer times only when there is a linked
+     * RSVP to compare them with. A query that selected the aggregates of
+     * {@see MeetupEvent::scopeWithAttendanceCounts()} skips both loads when it already
+     * knows there is no linked RSVP.
      */
     public static function for(MeetupEvent $meetupEvent): self
     {
-        // A query that selected `withExists('nostrRsvps')` already knows there is nothing
-        // to load; every other caller loads the rows once.
-        if (! $meetupEvent->relationLoaded('nostrRsvps') && $meetupEvent->getAttribute('nostr_rsvps_exists') === false) {
-            $meetupEvent->setRelation('nostrRsvps', $meetupEvent->nostrRsvps()->getRelated()->newCollection());
+        if (! $meetupEvent->relationLoaded('linkedNostrRsvps') && $meetupEvent->getAttribute('linked_nostr_rsvps_exists') === false) {
+            $meetupEvent->setRelation('linkedNostrRsvps', $meetupEvent->linkedNostrRsvps()->getRelated()->newCollection());
         }
 
-        $meetupEvent->loadMissing('nostrRsvps');
+        $meetupEvent->loadMissing('linkedNostrRsvps');
 
-        if ($meetupEvent->nostrRsvps->contains(fn (MeetupEventNostrRsvp $rsvp): bool => $rsvp->user_id !== null)) {
+        if ($meetupEvent->linkedNostrRsvps->isNotEmpty()) {
             $meetupEvent->loadMissing('rsvpTimes');
         }
 
@@ -148,11 +177,21 @@ final class MeetupEventAttendance
 
     /**
      * Nostr RSVPs of keys that belong to no portal account ("+N via Nostr").
+     *
+     * Read from the aggregate the query selected, or counted in SQL — never by walking
+     * rows, whatever their number.
      */
     public function unlinkedNostrCount(NostrRsvpStatus $status): int
     {
-        return $this->meetupEvent->nostrRsvps
-            ->filter(fn (MeetupEventNostrRsvp $rsvp): bool => $rsvp->user_id === null && $rsvp->status === $status)
+        $selected = $this->meetupEvent->getAttribute("nostr_unlinked_{$status->value}_count");
+
+        if ($selected !== null) {
+            return (int) $selected;
+        }
+
+        return $this->meetupEvent->nostrRsvps()
+            ->whereNull('user_id')
+            ->where('status', $status->value)
             ->count();
     }
 
@@ -165,10 +204,10 @@ final class MeetupEventAttendance
         $entries = $this->portalEntries($stored)->all();
 
         if (in_array($status, $this->overrides, true)) {
-            $this->meetupEvent->loadMissing('nostrRsvps.user:id,name');
+            $this->meetupEvent->loadMissing('linkedNostrRsvps.user:id,name');
 
-            foreach ($this->meetupEvent->nostrRsvps as $rsvp) {
-                if ($rsvp->user_id !== null && ($this->overrides[$rsvp->user_id] ?? null) === $status) {
+            foreach ($this->meetupEvent->linkedNostrRsvps as $rsvp) {
+                if (($this->overrides[$rsvp->user_id] ?? null) === $status) {
                     $entries[] = 'id_'.$rsvp->user_id.'|'.($rsvp->user->name ?? '');
                 }
             }

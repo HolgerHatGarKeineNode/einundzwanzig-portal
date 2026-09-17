@@ -403,9 +403,10 @@ class Meetup extends Model implements HasMedia
 
     protected function nextEvent(): Attribute
     {
-        // `withExists` rides along in the same SELECT, so an event without any Nostr RSVP
-        // costs no extra query for its attendance (MeetupEventAttendance::for()).
-        $nextEvent = $this->meetupEvents()->withExists('nostrRsvps')->where('start', '>=', now())->orderBy('start')->first();
+        // The attendance aggregates ride along in the same SELECT, so an event without a
+        // LINKED Nostr RSVP costs no extra query at all and an unlinked RSVP is counted
+        // rather than loaded (MeetupEventAttendance).
+        $nextEvent = $this->meetupEvents()->withAttendanceCounts()->where('start', '>=', now())->orderBy('start')->first();
 
         return Attribute::make(
             get: fn () => $nextEvent ? [

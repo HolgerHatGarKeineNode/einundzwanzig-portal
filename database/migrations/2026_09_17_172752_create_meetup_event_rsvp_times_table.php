@@ -23,10 +23,13 @@ use Illuminate\Support\Facades\Schema;
  *   concurrent one, and it is written next to the existing list write without changing
  *   the list write itself ({@see MeetupEventRsvpTime::record()}).
  *
- * The "nullable timestamp" of the design is the ABSENCE of a row: an answer given before
- * this table existed has no time and counts as older than any Nostr answer. That
- * direction is deliberate — the other one would pin every pre-existing portal answer
- * forever, with no way for the user to change it from a Nostr client.
+ * The "nullable timestamp" of the design is the ABSENCE of a row. What that absence MEANS
+ * is decided one migration later: `2026_09_18_090000_backfill_meetup_event_rsvp_times`
+ * gives every answer that already sits on a list the time of its own deployment, so from
+ * then on a missing row means "this account never answered in the portal" rather than
+ * "answered at an unknown time". Without that backfill an arbitrarily old Nostr answer
+ * could overrule a portal answer given years earlier, which is not what "the newer answer
+ * wins" says.
  *
  * `answered_at` moves on every portal answer, including "none": withdrawing is an answer
  * too, and it has to be able to beat an older Nostr "accepted".

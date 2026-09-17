@@ -70,11 +70,13 @@ class MeetupEventController extends Controller
                 // Without this the resource's whenLoaded('tags') stays silent and the
                 // field disappears from the payload rather than showing up empty.
                 'tags',
-                // The attendee counts merge Nostr RSVPs (D12a); two queries for the whole
-                // list instead of two per event.
-                'nostrRsvps',
+                // The attendee counts merge Nostr RSVPs (D12a). Only the LINKED rows are
+                // loaded, in two queries for the whole list; the unlinked ones are
+                // aggregates of the query below and are never hydrated.
+                'linkedNostrRsvps',
                 'rsvpTimes',
             ])
+            ->withAttendanceCounts()
             ->when(
                 $date,
                 fn ($query) => $query
