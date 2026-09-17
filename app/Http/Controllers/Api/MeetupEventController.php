@@ -12,6 +12,7 @@ use App\Http\Resources\MeetupEventResource;
 use App\Http\Resources\TagResource;
 use App\Models\MeetupEvent;
 use App\Models\User;
+use App\Support\NostrCalendarAddress;
 use Carbon\Carbon;
 use Carbon\Exceptions\InvalidFormatException;
 use Dedoc\Scramble\Attributes\Group;
@@ -23,6 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 #[Group(name: 'Meetups', weight: 3)]
@@ -172,6 +174,14 @@ class MeetupEventController extends Controller
             'meetup.nostr' => $event->meetup->nostr,
             'meetup.logo' => $event->meetup->getFirstMediaUrl('logo'),
             'meetup.rsvp_enabled' => $event->meetup->rsvp_enabled,
+            /*
+             * The NIP-01 address of this event's kind 31923 (`31923:<pubkey hex>:<d>`),
+             * or null while it has not been published. Clients RSVP over Nostr with a
+             * kind 31925 whose `a` tag carries exactly this string; without it they
+             * fall back to the REST RSVP endpoint. Appended last, so the order of every
+             * existing key stays exactly as shipped app builds have seen it.
+             */
+            'nostr_address' => NostrCalendarAddress::timeBasedEventCoordinate($event->nostr_coordinate),
         ],
         );
     }
@@ -312,6 +322,19 @@ class MeetupEventController extends Controller
     #[ResponseAttribute(status: 422, description: 'Validation error (unknown status) or RSVP disabled for this meetup.')]
     public function rsvp(RsvpMeetupEventRequest $request, MeetupEvent $meetupEvent): JsonResponse
     {
+        /*
+         * Usage probe for the REST RSVP path. Clients move to Nostr RSVPs (kind 31925)
+         * wherever an event carries a `nostr_address`, but app builds already shipped
+         * keep calling this endpoint, and only this line can tell when they stopped.
+         * The user agent names the build; the user id is the only personal datum.
+         * Logged before the `rsvp_enabled` gate, so a rejected call still counts as a call.
+         */
+        Log::info('REST RSVP received', [
+            'meetup_event_id' => $meetupEvent->id,
+            'user_id' => $request->user()->id,
+            'user_agent' => $request->userAgent(),
+        ]);
+
         abort_if(
             ! $meetupEvent->meetup->rsvp_enabled,
             Response::HTTP_UNPROCESSABLE_ENTITY,
