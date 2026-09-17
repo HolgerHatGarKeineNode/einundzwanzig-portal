@@ -917,5 +917,8 @@
     "Alle Sprachen tragen denselben Namen — vermutlich vom alten Picker kopiert. Lösche die Sprachen, in denen er nicht steht.": "",
     "Redaktion": "",
     "Schalte zuerst die Anmeldung ein — ohne sie gibt es keine Teilnehmerliste, die sich zeigen ließe.": "Schalte zuerst die Anmeldung ein — ohne sie gibt es keine Teilnehmerliste, die sich zeigen ließe.",
-    "Nach Service-Typ filtern": "Nach Service-Typ filtern"
+    "Nach Service-Typ filtern": "Nach Service-Typ filtern",
+    "Termine dieses Meetups erscheinen jetzt auf Nostr": "",
+    "Sie werden öffentlich als Nostr-Kalendereinträge veröffentlicht, damit Teilnehmer auch mit Nostr zusagen können. Du kannst das in den Meetup-Einstellungen abschalten.": "",
+    "Zu den Meetup-Einstellungen": ""
 }

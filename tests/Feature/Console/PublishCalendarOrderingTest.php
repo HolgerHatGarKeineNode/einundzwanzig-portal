@@ -12,8 +12,11 @@ use Illuminate\Support\Carbon;
 | PublishCalendarEvents picks the most urgent record (issue #49)
 |--------------------------------------------------------------------------
 |
-| The command publishes ONE record per run, so its ordering decides which
-| record that is — and for MeetupEvent the ordering is correctness, not
+| The command publishes a bounded batch per run (`--limit`, 25 on the schedule
+| since 2026-09-17), so its ordering decides which records go first whenever the
+| backlog is larger than a batch. The runs below pass `--limit=1`: that is the
+| smallest batch, and it makes "which record comes first" directly observable.
+| For MeetupEvent the ordering is correctness, not
 | tuning. The query is gated on `start > now()`, so an event that does not
 | reach the front before it begins silently leaves the result set and is never
 | published at all. Until 2026-09-04 the order was `created_at DESC`, which is
@@ -105,7 +108,7 @@ function publishOrder(int $runs): array
     $published = [];
 
     for ($i = 0; $i < $runs; $i++) {
-        test()->artisan('nostr:publish-calendar', ['--model' => 'MeetupEvent'])->run();
+        test()->artisan('nostr:publish-calendar', ['--model' => 'MeetupEvent', '--limit' => 1])->run();
 
         $titles = MeetupEvent::query()
             ->whereNotNull('nostr_coordinate')
@@ -158,7 +161,7 @@ it('publishes the event with the earliest start first, not the newest or the old
     $meetup = orderingMeetup();
     orderingFixture($meetup);
 
-    $this->artisan('nostr:publish-calendar', ['--model' => 'MeetupEvent'])
+    $this->artisan('nostr:publish-calendar', ['--model' => 'MeetupEvent', '--limit' => 1])
         ->assertExitCode(0);
 
     $published = MeetupEvent::query()->whereNotNull('nostr_coordinate')->pluck('title')->all();
@@ -217,7 +220,7 @@ it('does not let a recently created far-off event overtake a long-planned immine
         'start' => Carbon::parse('+60 days'),
     ]);
 
-    $this->artisan('nostr:publish-calendar', ['--model' => 'MeetupEvent'])
+    $this->artisan('nostr:publish-calendar', ['--model' => 'MeetupEvent', '--limit' => 1])
         ->assertExitCode(0);
 
     expect($imminent->fresh()->nostr_coordinate)->not->toBeNull()
@@ -242,7 +245,7 @@ it('still refuses to publish an event that has already started, whatever the ord
         'start' => Carbon::parse('+3 days'),
     ]);
 
-    $this->artisan('nostr:publish-calendar', ['--model' => 'MeetupEvent'])
+    $this->artisan('nostr:publish-calendar', ['--model' => 'MeetupEvent', '--limit' => 1])
         ->assertExitCode(0);
 
     expect(MeetupEvent::query()->whereNotNull('nostr_coordinate')->pluck('title')->all())
@@ -262,7 +265,7 @@ it('publishes the longest-waiting meetup first', function () {
     orderingMeetup(['name' => 'opted in today', 'created_at' => Carbon::parse('-1 hour')]);
     orderingMeetup(['name' => 'somewhere between', 'created_at' => Carbon::parse('-30 days')]);
 
-    $this->artisan('nostr:publish-calendar', ['--model' => 'Meetup'])
+    $this->artisan('nostr:publish-calendar', ['--model' => 'Meetup', '--limit' => 1])
         ->assertExitCode(0);
 
     expect(Meetup::query()->whereNotNull('nostr_coordinate')->pluck('name')->all())
@@ -279,7 +282,7 @@ it('does not starve an old meetup when newer ones keep opting in', function () {
     // unpublished at the end; under ascending it goes first and leaves the queue.
     orderingMeetup(['name' => 'newcomer A', 'created_at' => Carbon::parse('-2 hours')]);
 
-    $this->artisan('nostr:publish-calendar', ['--model' => 'Meetup'])->assertExitCode(0);
+    $this->artisan('nostr:publish-calendar', ['--model' => 'Meetup', '--limit' => 1])->assertExitCode(0);
 
     orderingMeetup(['name' => 'newcomer B', 'created_at' => Carbon::parse('-1 hour')]);
 

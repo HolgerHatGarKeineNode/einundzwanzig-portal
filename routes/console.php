@@ -32,9 +32,24 @@ Schedule::command(PublishUnpublishedItems::class, [
 | worked. `tests/Feature/Console/NostrCalendarScheduleTest.php` is the guard
 | that keeps a third commit from leaving this file alone again.
 |
+| SINCE 2026-09-17: A BATCH OF 25 PER RUN, NOT ONE RECORD. Publishing became
+| default-on for every meetup (migration 2026_09_17_200000) so that Nostr RSVPs
+| have a kind 31923 to address, and the backlog grew to 669 upcoming events
+| (measured that day) plus every calendar. At one record per run that is 56 h
+| of drain for the events alone; at `--limit=25` it is 27 runs, about 2 h 15 min,
+| and the up to 307 calendars take 13 runs. Pacing per relay: at most 25 events
+| plus one calendar refresh per touched meetup, `--sleep=1` apart, so a peak of
+| one event per second per queue (two queues run side by side) and a sustained
+| ~10 per minute per queue while a backlog exists.
+| The command stops at the first rejected send and stops starting new records
+| after 240 s (PublishCalendarEvents::RUN_BUDGET_SECONDS), so a slow relay
+| cannot stretch one run over several ticks. The arithmetic below was written
+| for one record per run; its conclusion about the interval still holds, the
+| drain times it quotes are 25 times too long now.
+|
 | WHY EVERY FIVE MINUTES, AND NOT `hourly()` LIKE ITS SIBLING ABOVE
 |
-| PublishCalendarEvents handles exactly ONE record per run (`$query->first()`),
+| PublishCalendarEvents handled exactly ONE record per run until 2026-09-17,
 | so the interval is not a refresh rate — it is a drain rate, and a backlog of
 | N records needs N runs. Production numbers, read from the public API on
 | 2026-09-04: 307 meetups and 76 upcoming events portal-wide. Those are the
@@ -138,10 +153,12 @@ Schedule::command(PublishUnpublishedItems::class, [
 */
 Schedule::command(PublishCalendarEvents::class, [
     '--model' => 'MeetupEvent',
+    '--limit' => 25,
 ])->everyFiveMinutes();
 
 Schedule::command(PublishCalendarEvents::class, [
     '--model' => 'Meetup',
+    '--limit' => 25,
 ])->everyFiveMinutes();
 
 /*

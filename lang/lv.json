@@ -917,5 +917,8 @@
     "Alle Sprachen tragen denselben Namen — vermutlich vom alten Picker kopiert. Lösche die Sprachen, in denen er nicht steht.": "Visās valodās ir viens un tas pats nosaukums — visticamāk, to nokopēja vecais atlasītājs. Dzēs valodas, kurās tas tā neskan.",
     "Redaktion": "Redakcija",
     "Schalte zuerst die Anmeldung ein — ohne sie gibt es keine Teilnehmerliste, die sich zeigen ließe.": "Vispirms ieslēdz reģistrāciju — bez tās nav dalībnieku saraksta, ko rādīt.",
-    "Nach Service-Typ filtern": "Filtrēt pēc pakalpojuma veida"
+    "Nach Service-Typ filtern": "Filtrēt pēc pakalpojuma veida",
+    "Termine dieses Meetups erscheinen jetzt auf Nostr": "Šī meetup datumi tagad parādās Nostr",
+    "Sie werden öffentlich als Nostr-Kalendereinträge veröffentlicht, damit Teilnehmer auch mit Nostr zusagen können. Du kannst das in den Meetup-Einstellungen abschalten.": "Tie tiek publiski publicēti kā Nostr kalendāra ieraksti, lai dalībnieki varētu pieteikties arī ar Nostr. To var izslēgt meetup iestatījumos.",
+    "Zu den Meetup-Einstellungen": "Uz meetup iestatījumiem"
 }

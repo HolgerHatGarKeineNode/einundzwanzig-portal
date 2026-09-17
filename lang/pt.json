@@ -917,5 +917,8 @@
     "Alle Sprachen tragen denselben Namen — vermutlich vom alten Picker kopiert. Lösche die Sprachen, in denen er nicht steht.": "Todos os idiomas têm o mesmo nome — provavelmente copiado pelo seletor antigo. Apaga os idiomas em que não se escreve assim.",
     "Redaktion": "Redação",
     "Schalte zuerst die Anmeldung ein — ohne sie gibt es keine Teilnehmerliste, die sich zeigen ließe.": "Ativa primeiro a inscrição — sem ela não há lista de participantes para mostrar.",
-    "Nach Service-Typ filtern": "Filtrar por tipo de serviço"
+    "Nach Service-Typ filtern": "Filtrar por tipo de serviço",
+    "Termine dieses Meetups erscheinen jetzt auf Nostr": "As datas deste meetup aparecem agora no Nostr",
+    "Sie werden öffentlich als Nostr-Kalendereinträge veröffentlicht, damit Teilnehmer auch mit Nostr zusagen können. Du kannst das in den Meetup-Einstellungen abschalten.": "São publicadas publicamente como entradas de calendário do Nostr para que os participantes também possam confirmar presença com o Nostr. Podes desativar isto nas definições do meetup.",
+    "Zu den Meetup-Einstellungen": "Ir para as definições do meetup"
 }

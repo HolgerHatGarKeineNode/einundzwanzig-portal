@@ -917,5 +917,8 @@
     "Alle Sprachen tragen denselben Namen — vermutlich vom alten Picker kopiert. Lösche die Sprachen, in denen er nicht steht.": "Every language carries the same name — probably copied by the old picker. Delete the languages it is not written in.",
     "Redaktion": "Editorial",
     "Schalte zuerst die Anmeldung ein — ohne sie gibt es keine Teilnehmerliste, die sich zeigen ließe.": "Turn on registration first — without it there is no attendee list to show.",
-    "Nach Service-Typ filtern": "Filter by service type"
+    "Nach Service-Typ filtern": "Filter by service type",
+    "Termine dieses Meetups erscheinen jetzt auf Nostr": "Dates of this meetup now appear on Nostr",
+    "Sie werden öffentlich als Nostr-Kalendereinträge veröffentlicht, damit Teilnehmer auch mit Nostr zusagen können. Du kannst das in den Meetup-Einstellungen abschalten.": "They are published publicly as Nostr calendar entries so people can also RSVP with Nostr. You can switch this off in the meetup settings.",
+    "Zu den Meetup-Einstellungen": "Go to meetup settings"
 }

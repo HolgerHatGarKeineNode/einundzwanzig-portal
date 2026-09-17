@@ -102,6 +102,8 @@ it('answers the bare list path with the unchanged payload of the dated one', fun
             'meetup.nostr',
             'meetup.logo',
             'meetup.rsvp_enabled',
+            // Added 2026-09-17, appended so no existing key moved.
+            'nostr_address',
         ])
         ->and($bareRow['title'])->toBe('Einsteigerabend')
         // Both routes reach the same code, and the value comparison says so for every
