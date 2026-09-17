@@ -916,5 +916,8 @@
     "Alle Sprachen tragen denselben Namen — vermutlich vom alten Picker kopiert. Lösche die Sprachen, in denen er nicht steht.": "Wszystkie języki mają tę samą nazwę — prawdopodobnie skopiował ją stary selektor. Usuń języki, w których tak nie brzmi.",
     "Redaktion": "Redakcja",
     "Schalte zuerst die Anmeldung ein — ohne sie gibt es keine Teilnehmerliste, die sich zeigen ließe.": "Najpierw włącz zapisy — bez nich nie ma listy uczestników, którą można pokazać.",
-    "Nach Service-Typ filtern": "Filtruj według typu usługi"
+    "Nach Service-Typ filtern": "Filtruj według typu usługi",
+    "Termine dieses Meetups erscheinen jetzt auf Nostr": "Terminy tego meetupu pojawiają się teraz na Nostr",
+    "Sie werden öffentlich als Nostr-Kalendereinträge veröffentlicht, damit Teilnehmer auch mit Nostr zusagen können. Du kannst das in den Meetup-Einstellungen abschalten.": "Są publikowane publicznie jako wpisy kalendarza Nostr, aby uczestnicy mogli potwierdzać udział również przez Nostr. Możesz to wyłączyć w ustawieniach meetupu.",
+    "Zu den Meetup-Einstellungen": "Przejdź do ustawień meetupu"
 }

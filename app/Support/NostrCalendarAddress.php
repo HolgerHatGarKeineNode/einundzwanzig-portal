@@ -122,6 +122,26 @@ final class NostrCalendarAddress
     }
 
     /**
+     * The NIP-01 address of a published kind 31923 event, or null.
+     *
+     * This is the `nostr_address` field of the public event payloads: the value a
+     * client puts into the `a` tag of a kind 31925 RSVP. It is the stored coordinate
+     * as validated by {@see fromCoordinate()}, never a coordinate rebuilt from the
+     * configured key — a record published under an earlier key lives at the address
+     * it was published under, and that is the only address a relay can resolve.
+     *
+     * Null for anything that is not a well-formed 31923 address, a 31924 calendar
+     * coordinate included: a client that RSVPs against a calendar has addressed
+     * something no RSVP counter reads.
+     */
+    public static function timeBasedEventCoordinate(?string $coordinate): ?string
+    {
+        $address = self::fromCoordinate($coordinate, []);
+
+        return $address?->kind === self::KIND_TIME_BASED_EVENT ? $address->coordinate : null;
+    }
+
+    /**
      * The NIP-19 `naddr1…` form, with the configured relays as hints.
      *
      * The library reads the kind off the Event object rather than off its own `$kind`
