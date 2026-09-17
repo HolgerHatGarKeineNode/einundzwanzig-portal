@@ -48,22 +48,26 @@ use swentel\nostr\Event\Event;
  * enough that a passing outage does not consume a record's attempts, short enough that
  * a poisoned record stops holding up a queue within the same quarter of an hour.
  *
- * ## The case this does NOT cover, stated rather than implied
+ * ## An outage is not a bad payload, and this class cannot tell them apart alone
  *
- * AN OUTAGE LONGER THAN THREE RUNS GIVES UP ON RECORDS THAT ARE FINE. With every relay
- * unreachable the run fails at the head of the queue, so that head collects three
- * rejections in 15 minutes and is stepped over; the record behind it becomes the new
- * head and collects its own three. Roughly one record per three runs is marked that
- * way, and since its payload has not changed it stays marked after the relays come
- * back — waiting for an edit it does not need. Every run says so in the log, so this is
- * loud rather than silent, and clearing the two columns re-offers the record; but
- * nothing here undoes it by itself.
+ * WITHOUT A SECOND MECHANISM, AN OUTAGE LONGER THAN THREE RUNS GIVES UP ON RECORDS THAT
+ * ARE FINE. With every relay unreachable the run fails at the head of the queue, so that
+ * head collects three rejections in 15 minutes and is stepped over; the record behind it
+ * becomes the new head and collects its own three. Roughly one record per three runs is
+ * marked that way, and since its payload never changed, nothing in the counting above
+ * lifts the mark once the relays are back.
  *
- * What would: re-offering a given-up record at the END of a run in which some other
- * record WAS accepted. That acceptance is the proof the relay set works which a single
- * boolean per send cannot give. Not built — it changes the shape of the run for a case
- * that has not occurred yet — and written down here so the next reader does not have to
- * derive it from the incident.
+ * THAT SECOND MECHANISM IS {@see \App\Console\Commands\Nostr\PublishCalendarEvents::reoffer()}.
+ * A record given up on is offered once more at the end of any run in which ANOTHER
+ * record was accepted — that acceptance is the proof the relay set is up which a single
+ * boolean per send cannot give, and it is the only such proof available here. The count
+ * is cleared by {@see self::clear()} when the re-offer succeeds, and kept, with a
+ * warning saying exactly that, when it fails while another record succeeded: then it
+ * really is the payload.
+ *
+ * What remains is narrow and self-correcting: during the outage itself nothing is
+ * accepted, so nothing is re-offered, and the marks wait for the first run that
+ * publishes anything at all.
  */
 final class NostrPublishFailures
 {
