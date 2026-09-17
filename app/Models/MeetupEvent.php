@@ -4,17 +4,20 @@ namespace App\Models;
 
 use App\Actions\MeetupEvents\CreateMeetupEventSeries;
 use App\Enums\RecurrenceType;
+use App\Enums\NostrRsvpStatus;
 use App\Enums\RsvpStatus;
 use App\Http\Requests\Api\UpdateMeetupEventRequest;
 use App\Models\Concerns\NormalizesText;
 use App\Models\Concerns\SetsCreatedBy;
 use App\Observers\ApiChangeObserver;
 use App\Observers\MeetupEventObserver;
+use App\Support\MeetupEventAttendance;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Spatie\Tags\HasTags;
 
@@ -51,6 +54,12 @@ class MeetupEvent extends Model
      * away would turn a rejected request into a half-accepted one.
      */
     public const MAX_LINKS = 5;
+
+    /**
+     * The merged attendance of this instance, built at most once. Not an attribute and
+     * not serialised: it is derived state over relations.
+     */
+    private ?MeetupEventAttendance $attendance = null;
 
     /** @var list<string> */
     protected array $normalizedLabels = ['title', 'location'];
@@ -438,16 +447,111 @@ class MeetupEvent extends Model
     }
 
     /**
-     * Anzahl der Zusagen bzw. Vielleicht-Sagen (die Listen sind JSON-Arrays).
+     * The newest valid Nostr RSVP (kind 31925) per key for this event, as stored by
+     * `nostr:ingest-rsvps` (D12).
+     *
+     * @return HasMany<MeetupEventNostrRsvp, $this>
+     */
+    public function nostrRsvps(): HasMany
+    {
+        return $this->hasMany(MeetupEventNostrRsvp::class);
+    }
+
+    /**
+     * The Nostr RSVPs that belong to a portal account — the only ones the merge has to
+     * look at row by row, and the only ones whose number is bounded by something other
+     * than a stranger's willingness to generate keys.
+     *
+     * @return HasMany<MeetupEventNostrRsvp, $this>
+     */
+    public function linkedNostrRsvps(): HasMany
+    {
+        return $this->hasMany(MeetupEventNostrRsvp::class)->whereNotNull('user_id');
+    }
+
+    /**
+     * When signed-in users last answered through the portal (D12a).
+     *
+     * @return HasMany<MeetupEventRsvpTime, $this>
+     */
+    public function rsvpTimes(): HasMany
+    {
+        return $this->hasMany(MeetupEventRsvpTime::class);
+    }
+
+    /**
+     * Everything the attendance merge needs, as aggregates in the SELECT: the two
+     * "+N via Nostr" counts and whether any linked RSVP exists at all.
+     *
+     * A list endpoint that adds this scope never hydrates an unlinked RSVP row. Without
+     * it the counts still come out right — each event then pays two COUNT queries
+     * instead — but nothing ever loads the rows themselves (see
+     * {@see MeetupEventAttendance}).
+     */
+    public function scopeWithAttendanceCounts(Builder $query): void
+    {
+        $query
+            ->withExists('linkedNostrRsvps')
+            ->withCount([
+                'nostrRsvps as nostr_unlinked_accepted_count' => fn (Builder $rsvps) => $rsvps
+                    ->whereNull('user_id')
+                    ->where('status', NostrRsvpStatus::Accepted->value),
+                'nostrRsvps as nostr_unlinked_tentative_count' => fn (Builder $rsvps) => $rsvps
+                    ->whereNull('user_id')
+                    ->where('status', NostrRsvpStatus::Tentative->value),
+            ]);
+    }
+
+    /**
+     * Portal and Nostr answers merged into one view (D12a). Read-only: the attendee JSON
+     * is never rewritten from it.
+     *
+     * Memoised per model instance: a card in the meetup list asks four questions of it
+     * (two counts plus the two Nostr counts), and building it four times meant four
+     * relation reads for one card. Every write path that can change the answer calls
+     * {@see self::forgetAttendance()}.
+     */
+    public function attendance(): MeetupEventAttendance
+    {
+        return $this->attendance ??= MeetupEventAttendance::for($this);
+    }
+
+    public function forgetAttendance(): void
+    {
+        $this->attendance = null;
+    }
+
+    /**
+     * Anzahl der Zusagen bzw. Vielleicht-Sagen.
+     *
+     * Since D12a this counts the portal lists AND the Nostr RSVPs of linked accounts,
+     * newer answer per user wins. Unlinked Nostr RSVPs are NOT in here — they are
+     * reported apart ({@see MeetupEventAttendance::unlinkedNostrCount()}).
      */
     public function attendeesCount(): int
     {
-        return count($this->attendees ?? []);
+        return $this->attendance()->attendeesCount();
     }
 
     public function mightAttendeesCount(): int
     {
-        return count($this->might_attendees ?? []);
+        return $this->attendance()->mightAttendeesCount();
+    }
+
+    /**
+     * Nostr "accepted" RSVPs of keys linked to no portal account — "+N via Nostr" (D12a).
+     */
+    public function nostrAttendeesCount(): int
+    {
+        return $this->attendance()->unlinkedNostrCount(NostrRsvpStatus::Accepted);
+    }
+
+    /**
+     * Nostr "tentative" RSVPs of keys linked to no portal account (D12a).
+     */
+    public function nostrMightAttendeesCount(): int
+    {
+        return $this->attendance()->unlinkedNostrCount(NostrRsvpStatus::Tentative);
     }
 
     /**
@@ -470,21 +574,12 @@ class MeetupEvent extends Model
     }
 
     /**
-     * Aktueller RSVP-Status des Nutzers für diesen Termin.
+     * Aktueller RSVP-Status des Nutzers für diesen Termin — since D12a the newer of his
+     * portal answer and the Nostr RSVP of his linked key.
      */
     public function rsvpStatusFor(User $user): RsvpStatus
     {
-        $prefix = self::rsvpPrefixFor($user);
-
-        if (collect($this->attendees ?? [])->contains(fn ($entry): bool => str($entry)->startsWith($prefix))) {
-            return RsvpStatus::Attending;
-        }
-
-        if (collect($this->might_attendees ?? [])->contains(fn ($entry): bool => str($entry)->startsWith($prefix))) {
-            return RsvpStatus::Maybe;
-        }
-
-        return RsvpStatus::None;
+        return $this->attendance()->statusFor($user->id);
     }
 
     /**
@@ -511,6 +606,10 @@ class MeetupEvent extends Model
             'attendees' => $attendees->values()->all(),
             'might_attendees' => $mightAttendees->values()->all(),
         ]);
+
+        MeetupEventRsvpTime::record($this, $user->id);
+
+        $this->forgetAttendance();
     }
 
     /**

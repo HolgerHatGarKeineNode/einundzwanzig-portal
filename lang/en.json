@@ -1,4 +1,5 @@
 {
+    "+:count via Nostr": "+:count via Nostr",
     ":count Anmeldung|:count Anmeldungen": ":count registration|:count registrations",
     ":count Events erfolgreich erstellt!": ":count events successfully created!",
     ":count Event|:count Events": ":count event|:count events",

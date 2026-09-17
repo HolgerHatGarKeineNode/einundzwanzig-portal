@@ -1,7 +1,9 @@
 <?php
 
 use App\Attributes\SeoDataAttribute;
+use App\Enums\NostrRsvpStatus;
 use App\Models\MeetupEvent;
+use App\Models\MeetupEventRsvpTime;
 use App\Models\User;
 use App\Traits\SeoTrait;
 use Livewire\Attributes\Validate;
@@ -34,6 +36,11 @@ class extends Component {
 
     public bool $canSeeAttendees = true;
 
+    // Nostr RSVPs of keys linked to no portal account ("+N via Nostr", D12a) — counts only.
+    public int $nostrAttendees = 0;
+
+    public int $nostrMightAttendees = 0;
+
     public function mount(): void
     {
         $this->country = request()->route('country', config('app.domain_country'));
@@ -64,8 +71,10 @@ class extends Component {
     private function loadAttendees(): void
     {
         $identifier = $this->getUserIdentifier();
-        $attendees = collect($this->event->attendees ?? []);
-        $mightAttendees = collect($this->event->might_attendees ?? []);
+        // The portal lists with the Nostr RSVPs of linked accounts merged in (D12a).
+        $attendance = $this->event->attendance();
+        $attendees = collect($attendance->attendeeEntries());
+        $mightAttendees = collect($attendance->mightAttendeeEntries());
 
         // Check if user is in attendees
         $attendeeEntry = $attendees->first(fn ($v) => str($v)->startsWith($identifier));
@@ -85,6 +94,8 @@ class extends Component {
         // legen – bei verborgener Liste bleiben die Arrays leer.
         $this->attendees = $this->canSeeAttendees ? $this->mapAttendees($attendees) : [];
         $this->mightAttendees = $this->canSeeAttendees ? $this->mapAttendees($mightAttendees) : [];
+        $this->nostrAttendees = $this->canSeeAttendees ? $attendance->unlinkedNostrCount(NostrRsvpStatus::Accepted) : 0;
+        $this->nostrMightAttendees = $this->canSeeAttendees ? $attendance->unlinkedNostrCount(NostrRsvpStatus::Tentative) : 0;
     }
 
     private function mapAttendees($collection): array
@@ -165,6 +176,12 @@ class extends Component {
             'attendees' => $attendees->toArray(),
             'might_attendees' => $mightAttendees->toArray(),
         ]);
+
+        // Every portal answer of a signed-in user is timestamped, so it can outrank an
+        // older Nostr RSVP of the same person (D12a). The lists above are unchanged.
+        if (auth()->check()) {
+            MeetupEventRsvpTime::record($this->event, (int) auth()->id());
+        }
 
         $this->willShowUp = false;
         $this->perhapsShowUp = false;
@@ -344,10 +361,13 @@ class extends Component {
                     @endif
 
                     <!-- Attendees -->
-                    @if(count($attendees) > 0)
+                    @if(count($attendees) > 0 || $nostrAttendees > 0)
                         <div class="pt-4 border-t border-zinc-200 dark:border-zinc-700">
                             <flux:heading size="lg" class="mb-2">
                                 {{ __('Zusagen') }} ({{ count($attendees) }})
+                                @if($nostrAttendees > 0)
+                                    <span class="text-sm font-normal text-zinc-500 dark:text-zinc-400" data-testid="nostr-attendees">{{ __('+:count via Nostr', ['count' => $nostrAttendees]) }}</span>
+                                @endif
                             </flux:heading>
                             <div class="flex flex-wrap gap-2">
                                 @foreach($attendees as $attendee)
@@ -366,10 +386,13 @@ class extends Component {
                     @endif
 
                     <!-- Might Attend -->
-                    @if(count($mightAttendees) > 0)
+                    @if(count($mightAttendees) > 0 || $nostrMightAttendees > 0)
                         <div class="pt-4 border-t border-zinc-200 dark:border-zinc-700">
                             <flux:heading size="lg" class="mb-2">
                                 {{ __('Vielleicht') }} ({{ count($mightAttendees) }})
+                                @if($nostrMightAttendees > 0)
+                                    <span class="text-sm font-normal text-zinc-500 dark:text-zinc-400" data-testid="nostr-might-attendees">{{ __('+:count via Nostr', ['count' => $nostrMightAttendees]) }}</span>
+                                @endif
                             </flux:heading>
                             <div class="flex flex-wrap gap-2">
                                 @foreach($mightAttendees as $attendee)

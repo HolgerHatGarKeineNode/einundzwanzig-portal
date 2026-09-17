@@ -1,4 +1,5 @@
 {
+    "+:count via Nostr": "+:count přes Nostr",
     ":count Anmeldung|:count Anmeldungen": ":count přihlášený|:count přihlášení|:count přihlášených",
     ":count Events erfolgreich erstellt!": "Úspěšně vytvořeno událostí: :count",
     ":count Event|:count Events": ":count událost|:count události|:count událostí",
