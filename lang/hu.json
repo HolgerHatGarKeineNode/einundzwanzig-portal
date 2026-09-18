@@ -920,5 +920,21 @@
     "Nach Service-Typ filtern": "Szűrés szolgáltatástípus szerint",
     "Termine dieses Meetups erscheinen jetzt auf Nostr": "A meetup időpontjai mostantól megjelennek a Nostron",
     "Sie werden öffentlich als Nostr-Kalendereinträge veröffentlicht, damit Teilnehmer auch mit Nostr zusagen können. Du kannst das in den Meetup-Einstellungen abschalten.": "Nyilvános Nostr-naptárbejegyzésként jelennek meg, hogy a résztvevők Nostrral is visszajelezhessenek. Ezt a meetup beállításaiban kikapcsolhatod.",
-    "Zu den Meetup-Einstellungen": "A meetup beállításaihoz"
+    "Zu den Meetup-Einstellungen": "A meetup beállításaihoz",
+    ":count-mal verwendet": ":count alkalommal használva",
+    ":count× genutzt in den letzten 12 Monaten.": ":count× használat az elmúlt 12 hónapban.",
+    "Beschreibe im Eventtext, was für Kinder da ist — Spielplatz, Spielecke, Platz.": "Írd le az esemény szövegében, mi van a gyerekeknek — játszósarok, rajzasztal, hely.",
+    "Klebt auf :percent % aller :count Events — als Filter kaum noch brauchbar.": "A(z) :count esemény :percent %-án szerepel — szűrőként alig használható.",
+    "Sprache der Beschreibung": "A leírás nyelve",
+    "Versprechen an Besucher": "Ígéret a látogatóknak",
+    "zu breit": "túl széles",
+    "zu selten": "túl ritka",
+    "„:names“ gleichzeitig gewählt — prüfe, ob das beabsichtigt ist.": "„:names“ egyszerre kiválasztva — ellenőrizd, hogy ez szándékos-e.",
+    "„:names“ gleichzeitig? Das passt nur, wenn das Programm beides bewusst anbietet — prüfe die Format-Tags.": "„:names“ egyszerre? Csak akkor stimmel, ha a program tudatosan mindkettőt kínálja — nézd át a formátum-címkéket.",
+    "„:names“ gleichzeitig? Wähle eine Zielgruppen-Stufe oder beschreibe getrennte Programmteile im Eventtext.": "„:names“ egyszerre? Válassz egy szintet a célközönségből, vagy írd le az elkülönült programrészeket az esemény szövegében.",
+    "You can add map data to this city": "Ennek a városnak hozzáadhatsz térkép-adatokat",
+    "Pick the OpenStreetMap place — we set the coordinates from it. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.": "Válaszd ki az OpenStreetMap-helyet — a koordinátákat abból állítjuk be. A név, ország, régió és népesség annál marad, aki a várost hozzáadta, és a város gondnokainál, mert a meetup-listák és a BTC Map export ezekből épülnek.",
+    "Wähle einen Ort auf OpenStreetMap. Die Koordinaten setzen wir daraus.": "Válassz egy helyet az OpenStreetMapen. A koordinátákat abból állítjuk be.",
+    "Keine Stadt gefunden.": "Nem található város.",
+    "Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.": "Keresd meg a helyet az OpenStreetMapen. A koordinátákat a találatból állítjuk be."
 }

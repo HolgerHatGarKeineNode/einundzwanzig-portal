@@ -920,5 +920,21 @@
     "Nach Service-Typ filtern": "Filteren op servicetype",
     "Termine dieses Meetups erscheinen jetzt auf Nostr": "Data van deze meetup verschijnen nu op Nostr",
     "Sie werden öffentlich als Nostr-Kalendereinträge veröffentlicht, damit Teilnehmer auch mit Nostr zusagen können. Du kannst das in den Meetup-Einstellungen abschalten.": "Ze worden openbaar gepubliceerd als Nostr-agenda-items, zodat deelnemers zich ook via Nostr kunnen aanmelden. Je kunt dit uitschakelen in de meetup-instellingen.",
-    "Zu den Meetup-Einstellungen": "Naar de meetup-instellingen"
+    "Zu den Meetup-Einstellungen": "Naar de meetup-instellingen",
+    ":count-mal verwendet": ":count keer gebruikt",
+    ":count× genutzt in den letzten 12 Monaten.": ":count× gebruikt in de afgelopen 12 maanden.",
+    "Beschreibe im Eventtext, was für Kinder da ist — Spielplatz, Spielecke, Platz.": "Beschrijf in de eventtekst wat er voor kinderen is — speelplek, hoekje om te tekenen, ruimte.",
+    "Klebt auf :percent % aller :count Events — als Filter kaum noch brauchbar.": "Komt voor op :percent % van alle :count events — als filter nauwelijks nog bruikbaar.",
+    "Sprache der Beschreibung": "Taal van de beschrijving",
+    "Versprechen an Besucher": "Belofte aan bezoekers",
+    "zu breit": "te breed",
+    "zu selten": "te zeldzaam",
+    "„:names“ gleichzeitig gewählt — prüfe, ob das beabsichtigt ist.": "„:names“ tegelijk gekozen — controleer of dat de bedoeling is.",
+    "„:names“ gleichzeitig? Das passt nur, wenn das Programm beides bewusst anbietet — prüfe die Format-Tags.": "„:names“ tegelijk? Past alleen als het programma beide bewust aanbiedt — controleer de formattags.",
+    "„:names“ gleichzeitig? Wähle eine Zielgruppen-Stufe oder beschreibe getrennte Programmteile im Eventtext.": "„:names“ tegelijk? Kies één doelgroepniveau of beschrijf aparte programmadelen in de eventtekst.",
+    "You can add map data to this city": "Je kunt kaartdata aan deze stad toevoegen",
+    "Pick the OpenStreetMap place — we set the coordinates from it. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.": "Kies de OpenStreetMap-plek — daaruit zetten we de coördinaten. Naam, land, regio en inwonertal blijven bij wie de stad toevoegde en bij de stadshoeders, want daaruit worden meetuplijsten en de BTC Map-export gebouwd.",
+    "Wähle einen Ort auf OpenStreetMap. Die Koordinaten setzen wir daraus.": "Kies een plek op OpenStreetMap. Daaruit zetten we de coördinaten.",
+    "Keine Stadt gefunden.": "Geen stad gevonden.",
+    "Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.": "Zoek de plek op OpenStreetMap. We nemen de coördinaten uit de treffer."
 }

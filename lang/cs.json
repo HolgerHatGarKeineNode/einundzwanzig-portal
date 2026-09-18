@@ -920,5 +920,21 @@
     "Nach Service-Typ filtern": "Filtrovat podle typu služby",
     "Termine dieses Meetups erscheinen jetzt auf Nostr": "Termíny tohoto meetupu se nyní zobrazují na Nostru",
     "Sie werden öffentlich als Nostr-Kalendereinträge veröffentlicht, damit Teilnehmer auch mit Nostr zusagen können. Du kannst das in den Meetup-Einstellungen abschalten.": "Jsou veřejně zveřejňovány jako kalendářní záznamy na Nostru, aby se účastníci mohli přihlásit i přes Nostr. V nastavení meetupu to můžeš vypnout.",
-    "Zu den Meetup-Einstellungen": "Do nastavení meetupu"
+    "Zu den Meetup-Einstellungen": "Do nastavení meetupu",
+    ":count-mal verwendet": "použito :count-krát",
+    ":count× genutzt in den letzten 12 Monaten.": ":count× využito za posledních 12 měsíců.",
+    "Beschreibe im Eventtext, was für Kinder da ist — Spielplatz, Spielecke, Platz.": "Popiš v textu akce, co je tu pro děti — hřiště, koutek pro kreslení, prostor.",
+    "Klebt auf :percent % aller :count Events — als Filter kaum noch brauchbar.": "Visí na :percent % všech :count akcí — jako filtr už téměř nepoužitelné.",
+    "Sprache der Beschreibung": "Jazyk popisu",
+    "Versprechen an Besucher": "Slib návštěvníkům",
+    "zu breit": "příliš široké",
+    "zu selten": "příliš vzácné",
+    "„:names“ gleichzeitig gewählt — prüfe, ob das beabsichtigt ist.": "„:names“ vybrány současně — zkontroluj, zda je to záměr.",
+    "„:names“ gleichzeitig? Das passt nur, wenn das Programm beides bewusst anbietet — prüfe die Format-Tags.": "„:names“ současně? To dává smysl jen, když program nabízí obojí záměrně — zkontroluj tagy formátu.",
+    "„:names“ gleichzeitig? Wähle eine Zielgruppen-Stufe oder beschreibe getrennte Programmteile im Eventtext.": "„:names“ současně? Vyber jednu úroveň cílové skupiny nebo popiš samostatné části programu v textu akce.",
+    "You can add map data to this city": "K této obci můžete přidat mapová data",
+    "Pick the OpenStreetMap place — we set the coordinates from it. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.": "Vyber místo na OpenStreetMap — souřadnice z něj nastavíme. Název, země, region a počet obyvatel zůstávají u osoby, která obec přidala, a u jejích správců, protože z nich se staví seznamy srazů i export do BTC Map.",
+    "Wähle einen Ort auf OpenStreetMap. Die Koordinaten setzen wir daraus.": "Vyber místo na OpenStreetMap. Souřadnice z něj nastavíme.",
+    "Keine Stadt gefunden.": "Žádná obec nenalezena.",
+    "Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.": "Najdi místo na OpenStreetMap. Souřadnice nastavíme z výsledku."
 }

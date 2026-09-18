@@ -920,5 +920,21 @@
     "Nach Service-Typ filtern": "Filtrēt pēc pakalpojuma veida",
     "Termine dieses Meetups erscheinen jetzt auf Nostr": "Šī meetup datumi tagad parādās Nostr",
     "Sie werden öffentlich als Nostr-Kalendereinträge veröffentlicht, damit Teilnehmer auch mit Nostr zusagen können. Du kannst das in den Meetup-Einstellungen abschalten.": "Tie tiek publiski publicēti kā Nostr kalendāra ieraksti, lai dalībnieki varētu pieteikties arī ar Nostr. To var izslēgt meetup iestatījumos.",
-    "Zu den Meetup-Einstellungen": "Uz meetup iestatījumiem"
+    "Zu den Meetup-Einstellungen": "Uz meetup iestatījumiem",
+    ":count-mal verwendet": "izmantots :count reizes",
+    ":count× genutzt in den letzten 12 Monaten.": ":count× izmantots pēdējos 12 mēnešos.",
+    "Beschreibe im Eventtext, was für Kinder da ist — Spielplatz, Spielecke, Platz.": "Notikuma aprakstā norādi, kas ir bērniem — rotaļu zona, zīmēšanas stūris, vieta.",
+    "Klebt auf :percent % aller :count Events — als Filter kaum noch brauchbar.": "Pieejams :percent % no :count notikumiem — kā filtrs vairs tikpat kā noderīgs.",
+    "Sprache der Beschreibung": "Apraksta valoda",
+    "Versprechen an Besucher": "Solījums apmeklētājiem",
+    "zu breit": "pārāk plašs",
+    "zu selten": "pārāk rets",
+    "„:names“ gleichzeitig gewählt — prüfe, ob das beabsichtigt ist.": "„:names“ izvēlēti vienlaikus — pārbaudi, vai tas ir apzināti.",
+    "„:names“ gleichzeitig? Das passt nur, wenn das Programm beides bewusst anbietet — prüfe die Format-Tags.": "„:names“ vienlaikus? Der tikai tad, ja programma apzināti piedāvā abus — pārbaudi formāta tagus.",
+    "„:names“ gleichzeitig? Wähle eine Zielgruppen-Stufe oder beschreibe getrennte Programmteile im Eventtext.": "„:names“ vienlaikus? Izvēlies vienu auditorijas līmeni vai apraksti atsevišķas programmas daļas notikuma tekstā.",
+    "You can add map data to this city": "Šai pilsētai vari pievienot kartes datus",
+    "Pick the OpenStreetMap place — we set the coordinates from it. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.": "Izvēlies OpenStreetMap vietu — koordinātas ņemam no tās. Nosaukums, valsts, reģions un iedzīvotāju skaits paliek pie personas, kas pievienoja pilsētu, un tās uzraugiem, jo no tiem tiek būvēti meetup saraksti un BTC Map eksports.",
+    "Wähle einen Ort auf OpenStreetMap. Die Koordinaten setzen wir daraus.": "Izvēlies vietu OpenStreetMap. Koordinātas ņemam no tās.",
+    "Keine Stadt gefunden.": "Pilsēta nav atrasta.",
+    "Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.": "Meklē vietu OpenStreetMap. Koordinātas ņemam no atraduma."
 }

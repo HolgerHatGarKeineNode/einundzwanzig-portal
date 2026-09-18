@@ -920,5 +920,21 @@
     "Nach Service-Typ filtern": "Filtrar por tipo de servicio",
     "Termine dieses Meetups erscheinen jetzt auf Nostr": "Las fechas de este meetup ahora aparecen en Nostr",
     "Sie werden öffentlich als Nostr-Kalendereinträge veröffentlicht, damit Teilnehmer auch mit Nostr zusagen können. Du kannst das in den Meetup-Einstellungen abschalten.": "Se publican de forma pública como entradas de calendario de Nostr para que los asistentes también puedan confirmar su asistencia con Nostr. Puedes desactivarlo en los ajustes del meetup.",
-    "Zu den Meetup-Einstellungen": "Ir a los ajustes del meetup"
+    "Zu den Meetup-Einstellungen": "Ir a los ajustes del meetup",
+    ":count-mal verwendet": "usado :count veces",
+    ":count× genutzt in den letzten 12 Monaten.": ":count× usado en los últimos 12 meses.",
+    "Beschreibe im Eventtext, was für Kinder da ist — Spielplatz, Spielecke, Platz.": "Describe en el texto del evento qué hay para los niños: zona de juegos, espacio para dibujar, sitio.",
+    "Klebt auf :percent % aller :count Events — als Filter kaum noch brauchbar.": "Aparece en el :percent % de los :count eventos — como filtro ya apenas sirve.",
+    "Sprache der Beschreibung": "Idioma de la descripción",
+    "Versprechen an Besucher": "Compromiso con los asistentes",
+    "zu breit": "demasiado amplio",
+    "zu selten": "demasiado raro",
+    "„:names“ gleichzeitig gewählt — prüfe, ob das beabsichtigt ist.": "„:names“ seleccionados a la vez — comprueba si es intencionado.",
+    "„:names“ gleichzeitig? Das passt nur, wenn das Programm beides bewusst anbietet — prüfe die Format-Tags.": "„:names“ a la vez? Solo encaja si el programa ofrece ambos a propósito — revisa las etiquetas de formato.",
+    "„:names“ gleichzeitig? Wähle eine Zielgruppen-Stufe oder beschreibe getrennte Programmteile im Eventtext.": "„:names“ a la vez? Elige un nivel del público o describe partes separadas del programa en el texto del evento.",
+    "You can add map data to this city": "Puedes añadir datos del mapa a esta ciudad",
+    "Pick the OpenStreetMap place — we set the coordinates from it. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.": "Elige el lugar de OpenStreetMap — de ahí tomamos las coordenadas. El nombre, país, región y población quedan con quien añadió la ciudad y con sus custodios, porque de ahí se construyen los listados de meetups y la exportación a BTC Map.",
+    "Wähle einen Ort auf OpenStreetMap. Die Koordinaten setzen wir daraus.": "Elige un lugar en OpenStreetMap. De ahí tomamos las coordenadas.",
+    "Keine Stadt gefunden.": "No se encontró ninguna ciudad.",
+    "Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.": "Busca el lugar en OpenStreetMap. Tomamos las coordenadas del resultado."
 }
