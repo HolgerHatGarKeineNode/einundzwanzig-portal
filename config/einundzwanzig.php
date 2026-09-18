@@ -219,6 +219,8 @@ return [
         'npub17fqtu2mgf7zueq2kdusgzwr2lqwhgfl2scjsez77ddag2qx8vxaq3vnr8y',
         'npub1v4lgwjv7qfn3t7qjscpsgz9vqvspf6hecdp2ckgp0dz89uqn5slsgrhw3p',
         'npub14r770s5wrqpm8jmzur5arnm9aum9x0wasaxwczael54xhjggl7ws5lygc6',
+        // iBobik — Czech community tag editor (issue #149)
+        'npub1axq2gs86umcggn6w4sfft9l07l35kp3nm0gj7y7necx3xhwegehse6hyk6',
     ],
 
     /*

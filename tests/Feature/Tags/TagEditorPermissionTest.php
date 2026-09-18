@@ -39,11 +39,24 @@ beforeEach(function () {
 it('ships the board npubs as editors', function () {
     $editors = config('einundzwanzig.tag_editors');
 
-    expect($editors)->toHaveCount(7);
+    expect($editors)->toHaveCount(8);
 
     foreach ($editors as $npub) {
         expect($npub)->toStartWith('npub1')->toHaveLength(63);
     }
+});
+
+/*
+ * Issue #149: iBobik is the Czech community's tag editor — an extra editor who
+ * is not a board member, appended to the list on purpose. The exact string is
+ * pinned so an accidental config cleanup cannot silently revoke his access to
+ * the tags.moderation screen.
+ */
+it('ships the issue-149 editor npub in the default list', function () {
+    $npub = 'npub1axq2gs86umcggn6w4sfft9l07l35kp3nm0gj7y7necx3xhwegehse6hyk6';
+
+    expect(TagEditorGate::containsNpub($npub))->toBeTrue();
+    expect(TagEditorGate::allows(User::factory()->create(['nostr' => $npub])))->toBeTrue();
 });
 
 it('recognises a configured editor by npub', function () {
