@@ -51,8 +51,9 @@ it('sorts featured tags to the front', function () {
     $options = Livewire::test('tags.picker', ['type' => 'meetup_event'])
         ->instance()->options;
 
-    expect($options->take(7)->pluck('featured')->unique()->all())->toBe([true])
-        ->and($options->where('featured', true))->toHaveCount(7);
+    // Six featured since issue #149 (Bitcoin left the resting list).
+    expect($options->take(6)->pluck('featured')->unique()->all())->toBe([true])
+        ->and($options->where('featured', true))->toHaveCount(6);
 });
 
 it('builds search aliases across all nine locales', function () {

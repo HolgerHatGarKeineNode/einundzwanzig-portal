@@ -44,69 +44,123 @@ return [
     /*
      * Event vocabulary — new, not derived from the library set.
      * `featured` entries are what the picker offers before the user types.
+     *
+     * `description` is the issue-149 guidance: what a tag means, when to use it,
+     * and whether it is a commitment towards attendees. German is the source
+     * language, English the international fallback; the other seven locales are
+     * community contributions (Czech: iBobik) via the tags.moderation screen.
+     * The seeder fills a locale only while it is empty, so edited UI texts win.
      */
     'meetup_event' => [
         // Formats
         ['icon' => 'microphone', 'featured' => true, 'name' => [
             'de' => 'Vortrag', 'en' => 'Talk', 'cs' => 'Přednáška', 'es' => 'Charla',
             'hu' => 'Előadás', 'lv' => 'Lekcija', 'nl' => 'Lezing', 'pl' => 'Prelekcja', 'pt' => 'Palestra',
+        ], 'description' => [
+            'de' => 'Eine Präsentation ist fester Teil des Programms — jemand bereitet ein Thema vor und trägt es dem Publikum vor. Setze diesen Tag, wenn der Vortrag im Mittelpunkt steht; für ein informelles Treffen ohne Programm wähle Stammtisch.',
+            'en' => 'A presentation is a scheduled part of the programme — someone prepares a topic and presents it to the audience. Use this tag when a talk is the centrepiece; for an informal gathering without a programme choose Meetup.',
         ]],
         ['icon' => 'presentation-chart-bar', 'featured' => true, 'name' => [
             'de' => 'Workshop', 'en' => 'Workshop', 'cs' => 'Workshop', 'es' => 'Taller',
             'hu' => 'Műhely', 'lv' => 'Darbnīca', 'nl' => 'Workshop', 'pl' => 'Warsztaty', 'pt' => 'Oficina',
+        ], 'description' => [
+            'de' => 'Teilnehmende arbeiten selbst aktiv — üben, bauen oder erlernen etwas in Gruppen oder geführt. Nicht setzen, wenn nur zugehört wird; das ist ein Vortrag. Platzzahl und Anmeldung im Eventtext erwähnen.',
+            'en' => 'Participants are hands-on — practising, building or learning something in groups or guided sessions. Do not use it when the audience only listens; that is a Talk. Mention capacity and registration in the event description.',
         ]],
         ['icon' => 'chat-bubble-left-right', 'featured' => true, 'name' => [
             'de' => 'Stammtisch', 'en' => 'Meetup', 'cs' => 'Setkání', 'es' => 'Encuentro',
             'hu' => 'Törzsasztal', 'lv' => 'Tikšanās', 'nl' => 'Stamtafel', 'pl' => 'Spotkanie', 'pt' => 'Encontro',
+        ], 'description' => [
+            'de' => 'Informelles Treffen ohne festes Programm: Gespräche auf Augenhöhe, kommen und gehen, wie es passt. Nicht zusammen mit Vortrag setzen, außer das Programm bietet beides bewusst an.',
+            'en' => 'An informal gathering without a scheduled programme: conversation at eye level, drop in and leave as you like. Do not combine it with Talk unless the programme deliberately offers both.',
         ]],
         ['icon' => 'film', 'featured' => false, 'name' => [
             'de' => 'Filmabend', 'en' => 'Film night', 'cs' => 'Filmový večer', 'es' => 'Noche de cine',
             'hu' => 'Filmest', 'lv' => 'Filmu vakars', 'nl' => 'Filmavond', 'pl' => 'Wieczór filmowy', 'pt' => 'Noite de cinema',
+        ], 'description' => [
+            'de' => 'Ein Film oder eine Dokumentation steht im Mittelpunkt des Abends — nicht nur als Hintergrund eines Treffens.',
+            'en' => 'A film or documentary is the centrepiece of the evening — not just background at a gathering.',
         ]],
         ['icon' => 'users', 'featured' => false, 'name' => [
             'de' => 'Diskussionsrunde', 'en' => 'Panel discussion', 'cs' => 'Diskuse', 'es' => 'Mesa redonda',
             'hu' => 'Kerekasztal', 'lv' => 'Diskusija', 'nl' => 'Paneldiscussie', 'pl' => 'Dyskusja panelowa', 'pt' => 'Mesa redonda',
+        ], 'description' => [
+            'de' => 'Eine moderierte oder offene Runde zu einer Frage oder einem Thema; das Gespräch selbst ist das Programm. Kein Vortrag mit Publikumsfragen.',
+            'en' => 'A moderated or open round on one question or topic; the conversation itself is the programme. Not a talk with audience questions.',
         ]],
 
         // Audience
         ['icon' => 'rocket-launch', 'featured' => true, 'name' => [
             'de' => 'Einsteiger', 'en' => 'Beginners', 'cs' => 'Začátečníci', 'es' => 'Principiantes',
             'hu' => 'Kezdők', 'lv' => 'Iesācēji', 'nl' => 'Beginners', 'pl' => 'Początkujący', 'pt' => 'Iniciantes',
+        ], 'description' => [
+            'de' => 'Ein Versprechen an Neulinge: Jemand hat Zeit für Grundlagenfragen, das Thema eignet sich für Erstbesucher, und der Ort hat Platz für zusätzliche Gäste. Nicht als Werbung setzen — wer kommt, erwartet genau das. Bei fortgeschrittenem Thema oder engem Raum lieber weglassen.',
+            'en' => 'A commitment to newcomers: somebody will have time for basic questions, the topic suits first-time visitors, and the venue can absorb extra guests. Do not use it as promotion — attendees will expect exactly that. Skip it for advanced topics or tight rooms.',
         ]],
         // Between the two ends of the scale on purpose: the position in this file is
         // the seeded `order_column`, and that column is what the picker sorts by.
         ['icon' => 'book-open', 'featured' => false, 'name' => [
             'de' => 'Mittelstufe', 'en' => 'Moderate', 'cs' => 'Mírně pokročilí', 'es' => 'Intermedio',
             'hu' => 'Középhaladók', 'lv' => 'Vidēji pieredzējušiem', 'nl' => 'Halfgevorderden', 'pl' => 'Średniozaawansowani', 'pt' => 'Intermédio',
+        ], 'description' => [
+            'de' => 'Für Leute mit Grundlagen: Die Inhalte bauen auf Basiswissen auf, sind aber keine Expertsrunde.',
+            'en' => 'For people with the basics: content builds on foundational knowledge but is not an expert round.',
         ]],
         ['icon' => 'academic-cap', 'featured' => false, 'name' => [
             'de' => 'Fortgeschrittene', 'en' => 'Advanced', 'cs' => 'Pokročilí', 'es' => 'Avanzado',
             'hu' => 'Haladók', 'lv' => 'Pieredzējušiem', 'nl' => 'Gevorderden', 'pl' => 'Zaawansowani', 'pt' => 'Avançado',
+        ], 'description' => [
+            'de' => 'Technische Tiefe vorausgesetzt: Die Runde richtet sich an Menschen mit solidem Vorwissen. Nicht mit Einsteiger kombinieren — wähle eine Stufe oder beschreibe getrennte Programmteile im Eventtext.',
+            'en' => 'Technical depth assumed: this round addresses people with solid prior knowledge. Do not combine with Beginners — pick one level, or describe separate programme parts in the event description.',
         ]],
         ['icon' => 'user-group', 'featured' => false, 'name' => [
             'de' => 'Familien', 'en' => 'Families', 'cs' => 'Rodiny', 'es' => 'Familias',
             'hu' => 'Családok', 'lv' => 'Ģimenēm', 'nl' => 'Gezinnen', 'pl' => 'Rodziny', 'pt' => 'Famílias',
+        ], 'description' => [
+            'de' => 'Ein Versprechen an Eltern: Kinder sind praktisch willkommen — es gibt wirklich Platz oder etwas für sie (Spielmöglichkeit, Spielecke, Auslauf, Picknickwiese). Beschreibe im Eventtext, was für Kinder da ist. Ein voller Gasthof ohne geeigneten Platz ist keine Familienveranstaltung, nur weil Kinder nicht verboten sind.',
+            'en' => 'A commitment to parents: bringing children is genuinely practical — there is real space or something for them (play corner, room to move, outdoor area, picnic setting). Describe what is available for children in the event description. A crowded pub with no suitable space is not a family event just because children are not banned.',
         ]],
 
         // Topics
-        ['icon' => 'circle-stack', 'featured' => true, 'name' => 'Bitcoin'],
-        ['icon' => 'bolt', 'featured' => true, 'name' => 'Lightning'],
+        ['icon' => 'circle-stack', 'featured' => false, 'name' => 'Bitcoin', 'description' => [
+            'de' => 'Auf diesem Portal handelt fast jedes Event um Bitcoin — der Tag hilft beim Filtern kaum und ist meist überflüssig. Nur setzen, wenn das Event ausdrücklich Bitcoin selbst zum Thema macht und der Titel es nicht schon sagt.',
+            'en' => 'On this portal almost every event is about Bitcoin — the tag rarely helps filtering and is usually redundant. Use it only when the event is explicitly about Bitcoin itself and the title does not already say so.',
+        ]],
+        ['icon' => 'bolt', 'featured' => true, 'name' => 'Lightning', 'description' => [
+            'de' => 'Das Lightning Network ist Thema des Events — Zahlungen, Kanäle, Liquidität, Tools. Nicht setzen, nur weil der Veranstaltungsort Lightning-Zahlungen akzeptiert.',
+            'en' => 'The Lightning Network is the subject of the event — payments, channels, liquidity, tooling. Do not use it merely because the venue accepts Lightning payments.',
+        ]],
         ['icon' => 'key', 'featured' => true, 'name' => [
             'de' => 'Selbstverwahrung', 'en' => 'Self-custody', 'cs' => 'Vlastní úschova', 'es' => 'Autocustodia',
             'hu' => 'Önőrzés', 'lv' => 'Pašglabāšana', 'nl' => 'Zelfbeheer', 'pl' => 'Samodzielne przechowywanie', 'pt' => 'Auto-custódia',
+        ], 'description' => [
+            'de' => 'Selbstverwahrung steht im Fokus: eigene Keys, Wallets, Backup-Strategien. Nicht setzen, wenn das Thema nur am Rand vorkommt.',
+            'en' => 'Self-custody is the focus: your own keys, wallets, backup strategies. Do not use it when the topic only comes up in passing.',
         ]],
         ['icon' => 'eye-slash', 'featured' => false, 'name' => [
             'de' => 'Privatsphäre', 'en' => 'Privacy', 'cs' => 'Soukromí', 'es' => 'Privacidad',
             'hu' => 'Magánélet', 'lv' => 'Privātums', 'nl' => 'Privacy', 'pl' => 'Prywatność', 'pt' => 'Privacidade',
+        ], 'description' => [
+            'de' => 'Privatsphäre und Datenschutz auf der Chain oder im Alltag stehen im Mittelpunkt des Events.',
+            'en' => 'Privacy and data protection on-chain or in everyday life take centre stage at this event.',
         ]],
         ['icon' => 'server', 'featured' => false, 'name' => [
             'de' => 'Mining', 'en' => 'Mining', 'cs' => 'Těžba', 'es' => 'Minería',
             'hu' => 'Bányászat', 'lv' => 'Ieguve', 'nl' => 'Mining', 'pl' => 'Kopanie', 'pt' => 'Mineração',
+        ], 'description' => [
+            'de' => 'Mining ist Thema: Hardware, Energie, Pools, Difficulty, Wirtschaftlichkeit.',
+            'en' => 'Mining is the subject: hardware, energy, pools, difficulty, economics.',
         ]],
-        ['icon' => 'tag', 'featured' => false, 'name' => 'Nostr'],
+        ['icon' => 'tag', 'featured' => false, 'name' => 'Nostr', 'description' => [
+            'de' => 'Nostr steht im Fokus des Events — Protokoll, Clients, Relays, Anwendungen. Nicht setzen, nur weil das Event über Nostr angekündigt wird.',
+            'en' => 'Nostr is the focus of the event — protocol, clients, relays, applications. Do not use it merely because the event is announced over Nostr.',
+        ]],
         ['icon' => 'building-storefront', 'featured' => false, 'name' => [
             'de' => 'Annahmestellen', 'en' => 'Merchant adoption', 'cs' => 'Obchodníci', 'es' => 'Comercios',
             'hu' => 'Elfogadóhelyek', 'lv' => 'Tirgotāji', 'nl' => 'Acceptanten', 'pl' => 'Akceptanci', 'pt' => 'Comerciantes',
+        ], 'description' => [
+            'de' => 'Thema ist die Akzeptanz von Bitcoin als Zahlungsmittel bei Händlern und Geschäften — Karten, Onboarding, Erfahrungen.',
+            'en' => 'The subject is Bitcoin acceptance as a payment method at merchants — maps, onboarding, experience reports.',
         ]],
     ],
 

@@ -31,6 +31,18 @@ class TagSeeder extends Seeder
                     $tag->setTranslation('name', $locale, $name);
                 }
 
+                /*
+                 * Issue-149 guidance texts: fill a locale only while it carries no
+                 * description. A text edited in the tags.moderation screen must win
+                 * over the vocabulary file — the seeder tops up empty languages, it
+                 * never curates existing ones.
+                 */
+                foreach ($entry['description'] ?? [] as $locale => $description) {
+                    if (blank($tag->getTranslation('description', $locale, false))) {
+                        $tag->setTranslation('description', $locale, $description);
+                    }
+                }
+
                 $tag->type = $type;
                 $tag->icon = $entry['icon'] ?? 'tag';
                 $tag->featured = (bool) ($entry['featured'] ?? false);
