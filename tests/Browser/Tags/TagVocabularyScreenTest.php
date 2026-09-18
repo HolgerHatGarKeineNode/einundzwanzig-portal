@@ -68,7 +68,8 @@ it('walks a tag from the last position to the first with the keyboard alone', fu
         ->ordered()
         ->get();
 
-    expect($featured)->toHaveCount(7);
+    // Six featured since issue #149 (Bitcoin left the resting list).
+    expect($featured)->toHaveCount(6);
 
     $last = $featured->last();
 
@@ -87,9 +88,20 @@ it('walks a tag from the last position to the first with the keyboard alone', fu
 
     expect($focused)->toBe('move-up-'.$last->id);
 
-    foreach (range(1, 5) as $ignored) {
+    // The walk is driven by the STATUS LINE, not by a fixed number of presses:
+    // Livewire replaces the row on every move, and a keystroke that lands on the
+    // old node during the morph is dropped. Waiting for the announced position
+    // (instead of sleeping) makes the loop re-press after exactly that race —
+    // the keyboard path itself is unchanged, still no pointer involved.
+    foreach (range(1, 10) as $ignored) {
+        $status = $page->script("document.querySelector('[data-testid=reorder-status]')?.textContent.trim()");
+
+        if (str_contains((string) $status, 'Position 1 von')) {
+            break;
+        }
+
         $page->keys('#move-up-'.$last->id, 'Enter');
-        $page->wait(0.4);
+        $page->wait(0.8);
     }
 
     $page->assertNoJavaScriptErrors();
@@ -109,7 +121,7 @@ it('walks a tag from the last position to the first with the keyboard alone', fu
     // move that was made (WCAG 4.1.3).
     $status = $page->script("document.querySelector('[data-testid=reorder-status]')?.textContent.trim()");
 
-    expect($status)->toContain('Position 1 von 7');
+    expect($status)->toContain('Position 1 von 6');
 });
 
 it('shows a newly featured tag in the picker before anyone types', function () {
@@ -146,7 +158,7 @@ it('shows a newly featured tag in the picker before anyone types', function () {
     $picker->assertNoJavaScriptErrors();
 
     expect($visible)->toContain('tag-option-'.$newcomer->id)
-        ->and($visible)->toHaveCount(8);
+        ->and($visible)->toHaveCount(7);
 });
 
 it('offers the sixteen names in use at rest and the rest on typing', function () {
@@ -231,4 +243,31 @@ it('lays the nine name fields out in one column on a narrow screen', function ()
         // Nothing pushed past the viewport edge: the panel wraps instead of scrolling.
         ->and($page->script('document.documentElement.scrollWidth'))
         ->toBe($page->script('document.documentElement.clientWidth'));
+});
+
+it('shows how often each tag is used (issue #149)', function () {
+    // One event carrying one tag: the number has to be visible and honest,
+    // because the heuristic badges next to it read as judgements of it.
+    $country = Country::factory()->create(['code' => 'de', 'name' => 'Deutschland']);
+    $city = City::factory()->create(['country_id' => $country->id]);
+    $meetup = Meetup::factory()->create(['city_id' => $city->id, 'created_by' => $this->editor->id]);
+
+    $meetupEvent = \App\Models\MeetupEvent::factory()->create([
+        'meetup_id' => $meetup->id,
+    ]);
+    $talk = Tag::query()->where('type', 'meetup_event')->get()
+        ->first(fn (Tag $tag): bool => $tag->getTranslation('name', 'de') === 'Vortrag');
+    $meetupEvent->attachTag($talk);
+
+    $page = visit('/de/tags/moderation');
+    $page->wait(1);
+
+    $count = $page->script(
+        "document.querySelector('[data-testid=usage-".$talk->id."]')?.textContent.trim()"
+    );
+
+    $page->assertNoJavaScriptErrors();
+
+    // The visible glyph plus the screen-reader phrasing share the element.
+    expect($count)->toContain('1');
 });

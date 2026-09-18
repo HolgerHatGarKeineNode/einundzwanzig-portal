@@ -200,6 +200,72 @@ it('refuses to persist a tag without any name', function () {
         ->toThrow(QueryException::class);
 });
 
+it('never shows an empty description for a tag that has one in some language', function () {
+    /*
+     * The description twin of the name rule above. All sixteen event tags carry
+     * de+en only, so this fallback is the normal case for seven of nine locales —
+     * without it, a Czech organiser's definition list would be a column of blanks.
+     */
+    $tag = Tag::factory()->named(['de' => 'Vortrag'])->create();
+    $tag->setTranslation('description', 'de', 'Eine Präsentation ist fester Teil des Programms.');
+    $tag->save();
+
+    expect($tag->getTranslation('description', 'cs', false))->toBe('')
+        ->and($tag->displayDescription('cs'))->toBe('Eine Präsentation ist fester Teil des Programms.')
+        ->and($tag->displayDescriptionLocale('cs'))->toBe('de')
+        ->and($tag->isDisplayDescriptionSubstituted('cs'))->toBeTrue();
+});
+
+it('prefers the requested language for the description over any fallback', function () {
+    $tag = Tag::factory()->named(['de' => 'Vortrag', 'en' => 'Talk', 'cs' => 'Přednáška'])->create();
+    $tag->setTranslation('description', 'de', 'Deutscher Text.');
+    $tag->setTranslation('description', 'en', 'English text.');
+    $tag->setTranslation('description', 'cs', 'Český text.');
+    $tag->save();
+
+    expect($tag->displayDescription('cs'))->toBe('Český text.')
+        ->and($tag->displayDescriptionLocale('cs'))->toBe('cs')
+        ->and($tag->isDisplayDescriptionSubstituted('cs'))->toBeFalse();
+});
+
+it('falls the description back to english before the other tag locales', function () {
+    // The chain mirrors displayLocale(): app fallback first, then the configured
+    // tag locales in order. en beats cs/de/es… even though de sorts earlier in
+    // the vocabulary file.
+    $tag = Tag::factory()->named(['de' => 'Vortrag', 'en' => 'Talk'])->create();
+    $tag->setTranslation('description', 'de', 'Deutscher Text.');
+    $tag->setTranslation('description', 'en', 'English text.');
+    $tag->save();
+
+    expect($tag->displayDescription('cs'))->toBe('English text.')
+        ->and($tag->displayDescriptionLocale('cs'))->toBe('en');
+});
+
+it('resolves the description independently of the name locale', function () {
+    /*
+     * The two columns drift: iBobik can file a Czech description for a tag whose
+     * names never grew past de+en. Resolving the description through the name's
+     * locale would show the German text to a Czech reader who already has a Czech
+     * one.
+     */
+    $tag = Tag::factory()->named(['de' => 'Vortrag', 'en' => 'Talk'])->create();
+    $tag->setTranslation('description', 'en', 'English text.');
+    $tag->setTranslation('description', 'cs', 'Český text.');
+    $tag->save();
+
+    expect($tag->displayName('cs'))->toBe('Talk')                            // name: falls back to en
+        ->and($tag->displayDescription('cs'))->toBe('Český text.')           // description: has cs
+        ->and($tag->displayDescriptionLocale('cs'))->toBe('cs');
+});
+
+it('reports no description locale for a tag without any description', function () {
+    $tag = Tag::factory()->named(['de' => 'Vortrag'])->create();
+
+    expect($tag->displayDescriptionLocale('cs'))->toBeNull()
+        ->and($tag->displayDescription('cs'))->toBe('')
+        ->and($tag->isDisplayDescriptionSubstituted('cs'))->toBeTrue();
+});
+
 it('approves a pending tag', function () {
     $tag = Tag::factory()->pending()->create();
 

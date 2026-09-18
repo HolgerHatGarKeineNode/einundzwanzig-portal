@@ -35,9 +35,10 @@ it('shows only featured tags in the resting state and reveals the rest on typing
 
     $page->assertNoJavaScriptErrors();
 
-    // 16 event tags are rendered, only the 7 featured ones are visible at rest.
+    // 16 event tags are rendered, only the 6 featured ones are visible at rest
+    // (issue #149 removed Bitcoin from the resting list).
     expect($total)->toBe(16)
-        ->and($visible)->toBe(7);
+        ->and($visible)->toBe(6);
 });
 
 it('opens the panel and keeps the search working across languages', function () {
@@ -90,7 +91,7 @@ it('returns to the resting state after a selection', function () {
     $page->assertNoJavaScriptErrors();
 
     expect($searching)->toBe('false')
-        ->and($visible)->toBe(7);
+        ->and($visible)->toBe(6);
 });
 
 it('makes the chip remove button reachable and large enough', function () {
@@ -163,4 +164,101 @@ it('removes a chip with the keyboard alone', function () {
     $page->assertNoJavaScriptErrors();
 
     expect($page->script("document.querySelectorAll('ui-selected-remove').length"))->toBe(0);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Issue #149 — the picker answers the selection
+|--------------------------------------------------------------------------
+|
+| The definitions list, the commitment badge and the two soft hints are
+| server-rendered from tagIds, which only reach the server because the
+| pillbox model is .live. That combination — Flux select, Livewire commit,
+| re-rendered answer zone — exists only in a real browser; the Livewire
+| feature tests short-circuit it at set().
+|
+*/
+
+/**
+ * Opens the panel and clicks one option, addressed by tag id.
+ *
+ * By id, not by visible text: since issue #149 the option rows carry their
+ * DESCRIPTION text, so a substring like "Stammtisch" matches Vortrag's guidance
+ * ("…für ein informelles Treffen ohne Programm wähle Stammtisch") before it
+ * ever reaches the actual Stammtisch row.
+ */
+function pickEventTag(object $page, int $tagId): void
+{
+    $page->click('[data-testid="tag-picker"] input');
+    $page->wait(0.4);
+    $page->click(sprintf('[data-testid="tag-option-%d"]', $tagId));
+    $page->wait(1);
+
+    $page->script(
+        "(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));"
+        ." document.activeElement?.blur?.(); return true; })()"
+    );
+    $page->wait(0.3);
+}
+
+function eventTagId(string $germanName): int
+{
+    $tag = \App\Models\Tag::query()->where('type', 'meetup_event')->get()
+        ->first(fn (\App\Models\Tag $t): bool => $t->getTranslation('name', 'de') === $germanName);
+
+    abort_if($tag === null, 500, "seeded tag not found: {$germanName}");
+
+    return $tag->id;
+}
+
+it('answers a Familien pick with the children hint, live', function () {
+    $page = visit("/de/meetup/{$this->meetup->id}/events/create");
+    $page->wait(1);
+
+    // Familien is not featured, so typing has to reveal it first — the search
+    // path a non-featured tag actually requires.
+    $page->click('[data-testid="tag-picker"] input');
+    $page->wait(0.3);
+    $page->type('[data-testid=tag-picker] input', 'familien');
+    $page->wait(0.5);
+    $page->click(sprintf('[data-testid="tag-option-%d"]', eventTagId('Familien')));
+    $page->wait(1);
+    $page->script(
+        "(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));"
+        ." document.activeElement?.blur?.(); return true; })()"
+    );
+    $page->wait(0.3);
+
+    $page->assertNoJavaScriptErrors();
+
+    $hint = $page->script(
+        "(() => { const h = document.querySelector('[data-testid=family-hint]');
+                  return h ? h.textContent.trim() : null; })()"
+    );
+
+    expect($hint)->not()->toBeNull()
+        ->and($hint)->toContain('was für Kinder da ist');
+});
+
+it('answers a format clash with the group hint, and keeps both tags', function () {
+    $page = visit("/de/meetup/{$this->meetup->id}/events/create");
+    $page->wait(1);
+
+    // Both are featured, so both are clickable at rest.
+    pickEventTag($page, eventTagId('Vortrag'));
+    pickEventTag($page, eventTagId('Stammtisch'));
+
+    $page->assertNoJavaScriptErrors();
+
+    $hint = $page->script(
+        "(() => { const h = document.querySelector('[data-testid=group-hint-format]');
+                  const picker = window.Livewire.all().find(c => c.name === 'tags.picker');
+                  return { text: h ? h.textContent.trim() : null,
+                           tagIds: picker?.snapshot?.data?.tagIds?.[0] ?? null }; })()"
+    );
+
+    // Advice, never a block: both selections survive the hint.
+    expect($hint['text'])->toContain('Vortrag + Stammtisch')
+        ->and($hint['text'])->toContain('prüfe die Format-Tags')
+        ->and(count((array) $hint['tagIds']))->toBe(2);
 });

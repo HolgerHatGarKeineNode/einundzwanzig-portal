@@ -19,6 +19,7 @@ class Tag extends \Spatie\Tags\Tag
     /** @var array<string, string> */
     protected $casts = [
         'featured' => 'boolean',
+        'is_commitment' => 'boolean',
         'approved_at' => 'datetime',
     ];
 
@@ -127,6 +128,58 @@ class Tag extends \Spatie\Tags\Tag
         $locale ??= app()->getLocale();
 
         return $this->displayLocale($locale) !== $locale;
+    }
+
+    /**
+     * The locale whose description will be shown for a requested locale, or null if
+     * the tag carries no description at all.
+     *
+     * The same chain as displayLocale(), but over the description field — the two
+     * columns drift independently: all sixteen event tags carry a German and an
+     * English description, while their names exist in nine languages, and a
+     * community-supplied Czech description can sit on a tag whose name list never
+     * grew. Resolving the description through the name's locale would therefore
+     * show empty although a text exists.
+     */
+    public function displayDescriptionLocale(?string $locale = null): ?string
+    {
+        $locale ??= app()->getLocale();
+
+        $candidates = array_merge(
+            [$locale, config('app.fallback_locale')],
+            (array) config('einundzwanzig.tag_locales', []),
+            $this->getTranslatedLocales('description'),
+        );
+
+        foreach ($candidates as $candidate) {
+            if (is_string($candidate) && filled($this->getTranslation('description', $candidate, false))) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The description to display, never empty unless the tag has none in any language.
+     */
+    public function displayDescription(?string $locale = null): string
+    {
+        $resolved = $this->displayDescriptionLocale($locale);
+
+        return $resolved === null
+            ? ''
+            : (string) $this->getTranslation('description', $resolved, false);
+    }
+
+    /**
+     * Whether the shown description is a substitute rather than the requested language.
+     */
+    public function isDisplayDescriptionSubstituted(?string $locale = null): bool
+    {
+        $locale ??= app()->getLocale();
+
+        return $this->displayDescriptionLocale($locale) !== $locale;
     }
 
     /**

@@ -15,7 +15,9 @@ use Illuminate\Console\Command;
  * runs the same idempotent TagSeeder a fresh environment gets: a locale
  * receives its guidance text only while it carries none, so anything an editor
  * has written in tags.moderation survives. The vocabulary also restates
- * `featured`, which is how the Bitcoin tag leaves the picker's resting list.
+ * `featured`, which is how the Bitcoin tag left the picker's resting list, and
+ * `is_commitment` (Beginners/Families) — both are conventions of the curated
+ * file, not facts a moderator edits.
  */
 class SeedTagGuidance extends Command
 {

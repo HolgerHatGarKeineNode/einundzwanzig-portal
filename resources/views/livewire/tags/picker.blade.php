@@ -108,6 +108,92 @@ new class extends Component
     }
 
     /**
+     * The tags behind the current selection, in the vocabulary's own order.
+     *
+     * Filtered from `options` rather than queried by id: the options are already
+     * on the component, a second query would grow with the size of the selection
+     * (AdministrationFormPerformanceTest pins the form's query shape against
+     * exactly that), and a tag the user cannot see in the picker has no business
+     * growing an explanation under the field either — its chip is equally absent.
+     *
+     * @return Collection<int, Tag>
+     */
+    public function getSelectedTagsProperty(): Collection
+    {
+        $ids = collect(is_array($this->tagIds) ? $this->tagIds : [])
+            ->filter(fn ($id): bool => is_numeric($id))
+            ->map(fn ($id): int => (int) $id)
+            ->flip();
+
+        return $this->options->filter(fn (Tag $tag): bool => $ids->has($tag->id))->values();
+    }
+
+    /**
+     * Whether the current selection includes the Families tag, which carries its
+     * own inline hint beyond the definition.
+     *
+     * Issue #149 asked for one specific nudge: choosing "Familien" is a promise
+     * about physical reality (space, play corner), and the one place that promise
+     * is kept or broken is the event text — so the hint points there. Identified
+     * by the German source name, the same identity the seeder matches on; the
+     * name exists in all nine locales, the flag in the database.
+     */
+    public function getShowsFamilyHintProperty(): bool
+    {
+        return $this->selectedTags
+            ->contains(fn (Tag $tag): bool => $tag->is_commitment
+                && $tag->getTranslation('name', 'de', false) === 'Familien');
+    }
+
+    /**
+     * Groups the selection holds two or more members of — the soft contradiction
+     * hint of issue #149.
+     *
+     * Members are matched by German name, the vocabulary's source language (see
+     * config('einundzwanzig.tag_groups')). The message is chosen by group key so
+     * the phrasing can say WHAT is odd about this particular combination; a group
+     * the config knows but no text does gets the generic phrasing rather than
+     * silence — a hint that only fires for some groups would look broken, not
+     * careful.
+     *
+     * @return Collection<int, array{group: string, tags: Collection<int, Tag>, message: string}>
+     */
+    public function getGroupConflictsProperty(): Collection
+    {
+        return collect((array) config('einundzwanzig.tag_groups', []))
+            ->map(fn (array $members, string $group): array => [
+                'group' => $group,
+                'tags' => $this->selectedTags->filter(
+                    fn (Tag $tag): bool => in_array(
+                        (string) $tag->getTranslation('name', 'de', false),
+                        $members,
+                        true,
+                    ),
+                )->values(),
+            ])
+            ->filter(fn (array $conflict): bool => $conflict['tags']->count() >= 2)
+            ->values()
+            ->map(function (array $conflict): array {
+                $names = $conflict['tags']
+                    ->map(fn (Tag $tag): string => $tag->displayName())
+                    ->join(' + ');
+
+                $conflict['message'] = match ($conflict['group']) {
+                    /*
+                     * "beides" is safe in the format text: the group has exactly two
+                     * members. The niveau text stays count-neutral because all three
+                     * levels can be picked at once.
+                     */
+                    'format' => __('„:names“ gleichzeitig? Das passt nur, wenn das Programm beides bewusst anbietet — prüfe die Format-Tags.', ['names' => $names]),
+                    'niveau' => __('„:names“ gleichzeitig? Wähle eine Zielgruppen-Stufe oder beschreibe getrennte Programmteile im Eventtext.', ['names' => $names]),
+                    default => __('„:names“ gleichzeitig gewählt — prüfe, ob das beabsichtigt ist.', ['names' => $names]),
+                };
+
+                return $conflict;
+            });
+    }
+
+    /**
      * Create the tag the user typed, or select the existing one it duplicates.
      *
      * `approved_at` follows the `create` ability, which follows the approval gate: with
@@ -237,12 +323,21 @@ new class extends Component
         {{-- `multiple` ist der Unterschied zwischen Mehrfach- und Einfachauswahl.
              Ohne das Attribut tauschte die Pillbox die Wahl bei jedem Klick aus, statt
              sie zu ergaenzen — gemeldet am 2026-08-23 mit Bildschirmfoto. Jedes
-             Beispiel der Flux-Dokumentation fuehrt es, hier fehlte es. --}}
+             Beispiel der Flux-Dokumentation fuehrt es, hier fehlte es.
+
+             `.live` (issue #149): ein plaines wire:model ist deferred — die Auswahl
+             geht NICHT zum Server, bis irgendeine andere Aktion committet. Gemessen
+             im Browser: null Fetches nach dem Klick, der Chip erschien rein
+             clientseitig. Die Antwortzone (Definitionen, Hinweise) muesste bis zum
+             Speichern stumm bleiben. Eine Auswahl ist ein seltener, bewusster Klick;
+             ein Roundtrip pro Wahl ist der Preis fuer eine Oberflaeche, die auf die
+             Wahl antwortet — dasselbe Argument, das der Featured-Switch in
+             tags.moderation schon fuer sich entschieden hat. --}}
         <div x-data="{ q: '' }" x-bind:data-searching="q.length > 0 ? 'true' : 'false'">
             <flux:pillbox
                 variant="combobox"
                 multiple
-                wire:model="tagIds"
+                wire:model.live="tagIds"
                 :placeholder="__('Tags wählen')"
                 data-testid="tag-picker"
             >
@@ -282,6 +377,21 @@ new class extends Component
                                 ])
 
                                 <span>{{ $tag->displayName() }}</span>
+
+                                {{-- Issue #149: the commitment badge. Flux's default (zinc)
+                                     badge measured on the composited pairs — 12px/500 is NOT
+                                     WCAG large text, so 4.5:1 applies:
+                                     light  zinc-700 #3f3f46 on zinc-400/15 over white  = #f1f1f2 → 9.3:1
+                                     dark   zinc-200 #e4e4e7 on zinc-400/40 over zinc-800 = #58585d → 5.6:1
+                                     Monochrome on purpose: a promise is information, not a
+                                     warning — amber here read as caution and measured 4.4:1
+                                     light, under the limit (same failure mode as issue #98). --}}
+                                @if ($tag->is_commitment)
+                                    <flux:badge size="sm" icon="hand-raised"
+                                                data-testid="commitment-badge-{{ $tag->id }}">
+                                        {{ __('Versprechen an Besucher') }}
+                                    </flux:badge>
+                                @endif
                                 {{-- Only while the approval gate is on (issue #143). With it off a
                                      NULL approved_at is provenance — "arrived as a suggestion" — and
                                      no longer says anything about whether the tag may be used, so
@@ -304,6 +414,22 @@ new class extends Component
                                 <span class="flex items-center gap-1 ps-5 text-xs text-zinc-600 dark:text-zinc-300">
                                     <span aria-hidden="true">└</span>
                                     <span>{{ __('nur auf :lang vorhanden', ['lang' => mb_strtoupper($tag->displayLocale())]) }}</span>
+                                </span>
+                            @endif
+
+                            @php $optionDescription = $tag->displayDescription(); @endphp
+                            @if ($optionDescription !== '')
+                                {{-- Issue #149: the meaning travels with the choice, not with a
+                                     manual. Two lines are enough to decide "is this my tag?";
+                                     the full text waits below the field once it is picked.
+
+                                     Deliberately visible, not a hidden alias span: Flux's
+                                     matcher reads textContent, so the words of a description
+                                     now also find their tag - typing "kinder" finds "Familien"
+                                     even before the name itself matches. That widens the
+                                     search, and for a guidance feature that is the point. --}}
+                                <span class="line-clamp-2 ps-5 text-xs text-zinc-600 dark:text-zinc-300">
+                                    {{ $optionDescription }}
                                 </span>
                             @endif
                         </span>
@@ -347,6 +473,89 @@ new class extends Component
                 {{ __('Optional — hilft Besuchern, dein Event zu finden.') }}
             @endif
         </flux:description>
+
+        {{--
+            Issue #149: the answer zone. The static line above explains what the field
+            is for; everything here is a REACTION to what the organiser just picked —
+            the meaning of every selected tag, plus the two soft hints (families,
+            contradicting groups). It appears below the static hint so the hint itself
+            never jumps when a tag is added or removed; changing content grows downward,
+            stable content stays put.
+
+            A tag without a description in ANY language gets no row at all: a term with
+            nothing under it is exactly the blank line the fallback chain exists to
+            prevent, and it would read as "this tag was refused an explanation".
+        --}}
+        {{-- Pre-filtered, not @continue'd per row: with every chosen tag
+             unexplained (fresh community tags) the loop would otherwise leave
+             an empty <dl> behind — a container that announces a list and then
+             lists nothing. --}}
+        @php $explainedTags = $this->selectedTags->filter(fn (Tag $tag): bool => $tag->displayDescription() !== ''); @endphp
+        @if ($explainedTags->isNotEmpty())
+            <dl class="flex flex-col gap-2" data-testid="tag-definitions">
+                @foreach ($explainedTags as $tag)
+                    <div class="flex flex-col gap-0.5" data-testid="tag-definition-{{ $tag->id }}">
+                        <dt class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
+                            {{ $tag->displayName() }}
+
+                            {{-- Same badge, same measured pairs, as on the option row above. --}}
+                            @if ($tag->is_commitment)
+                                <flux:badge size="sm" icon="hand-raised"
+                                            data-testid="definition-commitment-{{ $tag->id }}">
+                                    {{ __('Versprechen an Besucher') }}
+                                </flux:badge>
+                            @endif
+                        </dt>
+                        <dd class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-300">
+                            @if ($tag->isDisplayDescriptionSubstituted())
+                                {{-- Same provenance vocabulary the option rows use, so both
+                                     surfaces say "this text is not in your language" the same
+                                     way. One line: marker, then the text itself. --}}
+                                <span class="me-1" aria-hidden="true">└</span>{{ __('nur auf :lang vorhanden', ['lang' => mb_strtoupper($tag->displayDescriptionLocale())]) }}:
+                            @endif
+                            {{ $tag->displayDescription() }}
+                        </dd>
+                    </div>
+                @endforeach
+            </dl>
+        @endif
+
+        {{--
+            The advisory part of the answer zone, announced politely: these two
+            hints can appear without anything else on the page changing, and a
+            screen-reader organiser should hear that their selection carries a
+            caveat — not discover it after the visitor did. The definitions
+            above are deliberately not live: they are reference for an action
+            the user just took, and re-announcing them on every pick would be
+            noise.
+        --}}
+        <div aria-live="polite">
+            @if ($this->showsFamilyHint)
+                {{--
+                    Soft by design: it names where the promise is kept (the event text),
+                    it never blocks, and it repeats on every render while the tag stays
+                    selected — the organiser may edit the description long after picking.
+                --}}
+                <p class="flex items-start gap-1 text-xs text-zinc-600 dark:text-zinc-300"
+                   data-testid="family-hint">
+                    <span aria-hidden="true">└</span>
+                    <span>{{ __('Beschreibe im Eventtext, was für Kinder da ist — Spielplatz, Spielecke, Platz.') }}</span>
+                </p>
+            @endif
+
+            @foreach ($this->groupConflicts as $conflict)
+                {{--
+                    Issue #149: two tags of one group are usually a mistake, not a
+                    plan — but sometimes they are a plan, so this says what to check,
+                    never that saving is refused.
+                --}}
+                <p class="flex items-start gap-1 text-xs text-zinc-600 dark:text-zinc-300"
+                   data-testid="group-hint-{{ $conflict['group'] }}">
+                    <span aria-hidden="true">└</span>
+                    <span>{{ $conflict['message'] }}</span>
+                </p>
+            @endforeach
+        </div>
 
         <flux:error name="tagIds" />
     </flux:field>

@@ -50,6 +50,11 @@ return [
      * language, English the international fallback; the other seven locales are
      * community contributions (Czech: iBobik) via the tags.moderation screen.
      * The seeder fills a locale only while it is empty, so edited UI texts win.
+     *
+     * `is_commitment` marks tags that are promises to visitors, not labels —
+     * seeded on exactly Beginners and Families. Written like `featured`
+     * (unconditionally): the flag encodes the vocabulary's convention, not a
+     * per-tag fact a moderator would edit.
      */
     'meetup_event' => [
         // Formats
@@ -90,7 +95,7 @@ return [
         ]],
 
         // Audience
-        ['icon' => 'rocket-launch', 'featured' => true, 'name' => [
+        ['icon' => 'rocket-launch', 'featured' => true, 'is_commitment' => true, 'name' => [
             'de' => 'Einsteiger', 'en' => 'Beginners', 'cs' => 'Začátečníci', 'es' => 'Principiantes',
             'hu' => 'Kezdők', 'lv' => 'Iesācēji', 'nl' => 'Beginners', 'pl' => 'Początkujący', 'pt' => 'Iniciantes',
         ], 'description' => [
@@ -113,7 +118,7 @@ return [
             'de' => 'Technische Tiefe vorausgesetzt: Die Runde richtet sich an Menschen mit solidem Vorwissen. Nicht mit Einsteiger kombinieren — wähle eine Stufe oder beschreibe getrennte Programmteile im Eventtext.',
             'en' => 'Technical depth assumed: this round addresses people with solid prior knowledge. Do not combine with Beginners — pick one level, or describe separate programme parts in the event description.',
         ]],
-        ['icon' => 'user-group', 'featured' => false, 'name' => [
+        ['icon' => 'user-group', 'featured' => false, 'is_commitment' => true, 'name' => [
             'de' => 'Familien', 'en' => 'Families', 'cs' => 'Rodiny', 'es' => 'Familias',
             'hu' => 'Családok', 'lv' => 'Ģimenēm', 'nl' => 'Gezinnen', 'pl' => 'Rodziny', 'pt' => 'Famílias',
         ], 'description' => [

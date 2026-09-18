@@ -46,6 +46,7 @@ class TagSeeder extends Seeder
                 $tag->type = $type;
                 $tag->icon = $entry['icon'] ?? 'tag';
                 $tag->featured = (bool) ($entry['featured'] ?? false);
+                $tag->is_commitment = (bool) ($entry['is_commitment'] ?? false);
                 $tag->approved_at ??= now();
 
                 $tag->save();

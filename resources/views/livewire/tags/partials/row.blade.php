@@ -77,6 +77,17 @@
         <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span class="font-medium">{{ $tag->displayName() }}</span>
 
+            {{-- Issue #149: the vocabulary's promise tags, marked read-only. The flag
+                 is configured in the seed vocabulary (like `featured`), not edited
+                 here — a moderator curates what a tag SAYS, not what the community
+                 has agreed a tag MEANS. Badge colours/contrast as in the picker. --}}
+            @if ($tag->is_commitment)
+                <flux:badge size="sm" icon="hand-raised"
+                            data-testid="commitment-{{ $tag->id }}">
+                    {{ __('Versprechen an Besucher') }}
+                </flux:badge>
+            @endif
+
             @if ($rowUnresolvable)
                 {{-- Text plus icon, never colour alone (WCAG 1.4.1). The stored value
                      is shown verbatim: it is the thing that needs fixing. --}}
@@ -115,6 +126,59 @@
                         <span>{{ __('nur auf :lang vorhanden', ['lang' => mb_strtoupper(implode(', ', $rowDescribed))]) }}</span>
                     </div>
                 @endunless
+            @endif
+
+            {{--
+                Issue #149: the evidence line. A moderator curating the vocabulary
+                needs to know whether a tag earns its place, and the two heuristic
+                badges say when the number itself is remarkable. Display only —
+                the thresholds are documented on App\Support\TagUsageStats and
+                deliberately feed no filter, no action, no block.
+            --}}
+            @php
+                $rowUsage = $this->usage->usageCount($tag);
+                $rowTooBroad = $this->usage->isTooBroad($tag);
+                $rowTooRare = $this->usage->isTooRare($tag);
+            @endphp
+
+            @if ($rowUsage > 0 || $rowTooBroad || $rowTooRare)
+                <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    @if ($rowUsage > 0)
+                        <span class="text-xs text-zinc-600 dark:text-zinc-300"
+                              data-testid="usage-{{ $tag->id }}">
+                            <span class="sr-only">{{ __(':count-mal verwendet', ['count' => $rowUsage]) }}</span>
+                            <span aria-hidden="true">{{ $rowUsage }}×</span>
+                        </span>
+                    @endif
+
+                    {{-- Amber non-solid, retuned past Flux's own amber-700/200: those
+                         measure 4.4:1 on the light wash, under the 4.5:1 of WCAG 1.4.3
+                         (12px/500 is not large text; same failure mode as issue #98).
+                         Measured pairs on the composited washes:
+                           light  amber-800 #92400e on amber-400/25 over white  = #feefc8 → 6.2:1
+                           dark   amber-100 #fef3c7 on amber-400/40 over zinc-800 = #7c6428 → 5.1:1
+                         The `!` suffixes beat the stub utilities regardless of build
+                         order — plain classes would lose to whichever came last. --}}
+                    @if ($rowTooBroad)
+                        <flux:tooltip :content="__('Klebt auf :percent % aller :count Events — als Filter kaum noch brauchbar.', ['percent' => $this->usage->eventSharePercent($tag), 'count' => $this->usage->totalEvents()])">
+                            <flux:badge size="sm" color="amber" icon="arrows-pointing-out"
+                                        class="text-amber-800! dark:text-amber-100!"
+                                        data-testid="too-broad-{{ $tag->id }}">
+                                {{ __('zu breit') }}
+                            </flux:badge>
+                        </flux:tooltip>
+                    @endif
+
+                    @if ($rowTooRare)
+                        <flux:tooltip :content="__(':count× genutzt in den letzten 12 Monaten.', ['count' => $this->usage->recentCount($tag)])">
+                            <flux:badge size="sm" color="amber" icon="clock"
+                                        class="text-amber-800! dark:text-amber-100!"
+                                        data-testid="too-rare-{{ $tag->id }}">
+                                {{ __('zu selten') }}
+                            </flux:badge>
+                        </flux:tooltip>
+                    @endif
+                </div>
             @endif
         @endif
     </div>

@@ -160,6 +160,196 @@ it('refuses a tag id the user was never offered', function () {
     expect(MeetupEvent::query()->latest('id')->first()->tags)->toHaveCount(0);
 });
 
+it('explains each selected tag below the field (issue #149)', function () {
+    actingAsUser();
+    $talk = eventTag('Vortrag');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->set('tagIds', [$talk->id])
+        ->assertSeeHtml('data-testid="tag-definition-'.$talk->id.'"')
+        // A distinctive slice of the seeded German guidance, not the full sentence.
+        ->assertSee('fester Teil des Programms');
+});
+
+it('renders no definitions list while nothing is selected', function () {
+    actingAsUser();
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->assertDontSeeHtml('data-testid="tag-definitions"');
+});
+
+it('falls the definition back rather than showing an empty line', function () {
+    /*
+     * The proof the DoD asks for: a locale without its own description text shows
+     * the fallback, never a blank row. Czech has no seeded descriptions at all
+     * (de+en only), so the app fallback English has to answer.
+     */
+    actingAsUser();
+    app()->setLocale('cs');
+
+    $talk = eventTag('Vortrag');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->set('tagIds', [$talk->id])
+        // The guidance text falls back to the app fallback language, the marker is
+        // rendered in the reader's own (Czech) UI language.
+        ->assertSee('centrepiece')
+        ->assertSee('dostupné pouze v EN');
+});
+
+it('skips a selected tag that has no description in any language', function () {
+    // A freshly created community tag carries no guidance yet; a term with nothing
+    // under it would read as "refused an explanation" instead of "none exists".
+    actingAsUser();
+
+    $bare = Tag::factory()->named(['de' => 'Lagerfeuerrunde'])->create(['type' => 'meetup_event']);
+    $talk = eventTag('Vortrag');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->set('tagIds', [$bare->id, $talk->id])
+        ->assertDontSeeHtml('data-testid="tag-definition-'.$bare->id.'"')
+        ->assertSeeHtml('data-testid="tag-definition-'.$talk->id.'"');
+});
+
+it('shows the description inside the picker options too', function () {
+    actingAsUser();
+
+    // Every option is in the DOM at rest, so the text has to be simply there.
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->assertSee('Nicht setzen, nur weil das Event über Nostr angekündigt wird.');
+});
+
+it('marks a commitment tag with a badge in the option row and the definition', function () {
+    actingAsUser();
+    $beginners = eventTag('Einsteiger');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->assertSeeHtml('data-testid="commitment-badge-'.$beginners->id.'"');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->set('tagIds', [$beginners->id])
+        ->assertSeeHtml('data-testid="definition-commitment-'.$beginners->id.'"')
+        ->assertSee('Versprechen an Besucher');
+});
+
+it('leaves the badge off a definition that is not a commitment', function () {
+    // The option rows for Einsteiger/Familien always carry their badge, so the
+    // definition of a plain tag is the place this can be observed.
+    actingAsUser();
+    $talk = eventTag('Vortrag');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->set('tagIds', [$talk->id])
+        ->assertDontSeeHtml('definition-commitment-');
+});
+
+it('shows the families hint when Familien is selected, and only then', function () {
+    actingAsUser();
+    $families = eventTag('Familien');
+    $talk = eventTag('Vortrag');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->set('tagIds', [$talk->id])
+        ->assertDontSeeHtml('data-testid="family-hint"');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->set('tagIds', [$families->id])
+        ->assertSeeHtml('data-testid="family-hint"')
+        ->assertSee('was für Kinder da ist');
+});
+
+it('never blocks saving when the families hint is showing', function () {
+    /*
+     * The hint is advice, not validation. The DoD pins the "not blocking" half on
+     * the parent form: a fully filled event carrying the Familien tag saves clean.
+     */
+    $meetup = meetupInCountry('de', actingAsUser());
+    $families = eventTag('Familien');
+
+    Livewire::test('meetups.create-edit-events', ['meetup' => $meetup])
+        ->set('startDate', now()->addWeek()->format('Y-m-d'))
+        ->set('startTime', '19:00')
+        ->set('location', 'Café Test')
+        ->set('description', 'Ein Test-Event mit Spielecke.')
+        ->set('links', [['url' => 'https://example.com', 'label' => null]])
+        ->set('tagIds', [$families->id])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(MeetupEvent::query()->latest('id')->first()->tags->pluck('id')->all())->toBe([$families->id]);
+});
+
+it('hints at two tags of the same group and stays out of the way otherwise', function () {
+    actingAsUser();
+    $talk = eventTag('Vortrag');
+    $meetupTag = eventTag('Stammtisch');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->set('tagIds', [$talk->id])
+        ->assertDontSeeHtml('data-testid="group-hint-format"');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->set('tagIds', [$talk->id, $meetupTag->id])
+        ->assertSeeHtml('data-testid="group-hint-format"')
+        ->assertSee('Vortrag + Stammtisch“ gleichzeitig?')
+        ->assertSee('prüfe die Format-Tags');
+});
+
+it('hints at two levels of the same audience group', function () {
+    actingAsUser();
+    $beginners = eventTag('Einsteiger');
+    $advanced = eventTag('Fortgeschrittene');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->set('tagIds', [$beginners->id, $advanced->id])
+        ->assertSeeHtml('data-testid="group-hint-niveau"')
+        ->assertSee('Wähle eine Zielgruppen-Stufe');
+});
+
+it('never blocks saving a contradicting combination', function () {
+    $meetup = meetupInCountry('de', actingAsUser());
+    $talk = eventTag('Vortrag');
+    $meetupTag = eventTag('Stammtisch');
+
+    Livewire::test('meetups.create-edit-events', ['meetup' => $meetup])
+        ->set('startDate', now()->addWeek()->format('Y-m-d'))
+        ->set('startTime', '19:00')
+        ->set('location', 'Café Test')
+        ->set('description', 'Vortrag mit anschließendem Stammtisch.')
+        ->set('links', [['url' => 'https://example.com', 'label' => null]])
+        ->set('tagIds', [$talk->id, $meetupTag->id])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(MeetupEvent::query()->latest('id')->first()->tags->pluck('id')->sort()->values()->all())
+        ->toBe(collect([$talk->id, $meetupTag->id])->sort()->values()->all());
+});
+
+it('reads the groups from the config, so curation needs no code change', function () {
+    actingAsUser();
+    $talk = eventTag('Vortrag');
+    $workshop = eventTag('Workshop');
+
+    config(['einundzwanzig.tag_groups' => ['format' => ['Vortrag', 'Workshop']]]);
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->set('tagIds', [$talk->id, $workshop->id])
+        ->assertSeeHtml('data-testid="group-hint-format"');
+
+    // And an unknown group key falls back to the generic phrasing rather than
+    // staying silent — a curated group nobody wrote a text for still warns.
+    config(['einundzwanzig.tag_groups' => ['topic' => ['Vortrag', 'Stammtisch']]]);
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->set('tagIds', [$talk->id, $workshop->id])
+        ->assertDontSeeHtml('data-testid="group-hint-topic"');
+
+    Livewire::test('tags.picker', ['type' => 'meetup_event'])
+        ->set('tagIds', [$talk->id, eventTag('Stammtisch')->id])
+        ->assertSeeHtml('data-testid="group-hint-topic"')
+        ->assertSee('prüfe, ob das beabsichtigt ist');
+});
+
 function editorUserForPicker(): User
 {
     return User::factory()->create(['nostr' => config('einundzwanzig.tag_editors')[0]]);
