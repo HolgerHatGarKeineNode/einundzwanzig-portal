@@ -120,6 +120,24 @@
         "dev": [
             "Composer\\Config::disableProcessTimeout",
             "npx concurrently -c \"#93c5fd,#c4b5fd,#fdba74,#86efac\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=serve,queue,logs,vite --kill-others"
+        ],
+        "test:tier": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan config:clear --ansi",
+            "@putenv PHP_INI_SCAN_DIR=:tests/php.d-runtime",
+            "php -d pcov.enabled=1 vendor/bin/pest --tia"
+        ],
+        "test:feature": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan config:clear --ansi",
+            "@putenv PHP_INI_SCAN_DIR=:tests/php.d-runtime",
+            "@php artisan test tests/Feature"
+        ],
+        "test:browser": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan config:clear --ansi",
+            "@putenv PHP_INI_SCAN_DIR=:tests/php.d-runtime",
+            "@php artisan test tests/Browser"
         ]
     },
     "extra": {
