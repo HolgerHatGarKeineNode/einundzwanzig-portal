@@ -68,7 +68,7 @@ function pickBeginnersTag(object $page, int $tagId): void
     // already reached the server by now anyway.
     $page->script(
         "(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));"
-        ." document.activeElement?.blur?.(); return true; })()"
+        .' document.activeElement?.blur?.(); return true; })()'
     );
     $page->wait(0.3);
 }

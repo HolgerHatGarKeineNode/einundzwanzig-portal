@@ -19,7 +19,9 @@ use swentel\nostr\Sign\Sign as NostrSign;
 function makeSignedMobileNostrEvent(string $challenge): array
 {
     $keyGen = new NostrKey;
-    $privateKey = $keyGen->generatePrivateKey();
+    // elliptic's toString('hex') drops leading zero bytes, which hits ~1 in 300
+    // keys and makes SchnorrSigner reject the key as "not a 32-byte hex string".
+    $privateKey = str_pad($keyGen->generatePrivateKey(), 64, '0', STR_PAD_LEFT);
     $publicKey = $keyGen->getPublicKey($privateKey);
 
     $event = new NostrEvent;

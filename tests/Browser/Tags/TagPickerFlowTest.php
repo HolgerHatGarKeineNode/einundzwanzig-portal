@@ -196,7 +196,7 @@ function pickEventTag(object $page, int $tagId): void
 
     $page->script(
         "(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));"
-        ." document.activeElement?.blur?.(); return true; })()"
+        .' document.activeElement?.blur?.(); return true; })()'
     );
     $page->wait(0.3);
 }
@@ -225,7 +225,7 @@ it('answers a Familien pick with the children hint, live', function () {
     $page->wait(1);
     $page->script(
         "(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));"
-        ." document.activeElement?.blur?.(); return true; })()"
+        .' document.activeElement?.blur?.(); return true; })()'
     );
     $page->wait(0.3);
 

@@ -2,7 +2,6 @@
 
 use App\Models\Tag;
 use Database\Seeders\TagSeeder;
-use Illuminate\Support\Facades\Artisan;
 
 it('fills empty descriptions when run against an existing set', function () {
     // A production-like start: the vocabulary exists, the descriptions do not.

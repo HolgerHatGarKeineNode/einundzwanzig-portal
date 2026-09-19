@@ -65,7 +65,7 @@ class TagUsageStats
      */
     public static function load(): self
     {
-        $stats = new self();
+        $stats = new self;
         $cutoff = Date::now()->subMonths(self::TOO_RARE_WINDOW_MONTHS);
 
         /** @var array<string, array<int, string|null>> $created type => id => created_at */
