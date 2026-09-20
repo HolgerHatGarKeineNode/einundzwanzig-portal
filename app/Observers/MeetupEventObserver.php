@@ -20,19 +20,6 @@ class MeetupEventObserver
      */
     private static array $pending = [];
 
-
-    /**
-     * Jev-Schatten-Screening (Produkt-Pilot 2026-09-20): titel+beschreibung
-     * vorsortieren und protokollieren — blockt NICHT, faillt offen, laeuft nur
-     * mit services.jev.enabled=true. Kalibrierung auf echtem Traffic, bevor
-     * ueber irgendeine Sperre auch nur diskutiert wird.
-     */
-    public function created(MeetupEvent $meetupEvent): void
-    {
-        app(\App\Services\JevModeration::class)
-            ->screen((string) $meetupEvent->title, (string) $meetupEvent->description);
-    }
-
     public function saved(MeetupEvent $meetupEvent): void
     {
         $this->recalculate($meetupEvent);

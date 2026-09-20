@@ -80,12 +80,4 @@ return [
         'token' => env('VEREIN_GATE_TOKEN'),
     ],
 
-
-    'jev' => [
-        // Product pilot (plan 2026-09-19T1335): shadow screening of meetup
-        // content via classifier.dev. OFF by default — enable per environment.
-        'enabled' => env('JEV_MODERATION', false),
-        'url' => env('JEV_MODERATION_URL', 'https://classifier.dev'),
-    ],
-
 ];
