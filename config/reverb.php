@@ -126,6 +126,42 @@ return [
                     'terminate_on_limit' => env('REVERB_APP_RATE_LIMIT_TERMINATE', false),
                 ],
             ],
+
+            /*
+             * Second app on the same server: TWENTY ONE Esports
+             * (esports.einundzwanzig.space) — live chess moves, clocks and
+             * presence. Only registered when REVERB_ESPORTS_APP_ID is set, so
+             * the portal runs unchanged without it. Esports clients are
+             * browsers and always send an Origin header, so the origin list
+             * can be narrow here; server-side publishing uses the HTTP API,
+             * which does not check Origin.
+             */
+            ...(filled(env('REVERB_ESPORTS_APP_ID')) ? [[
+                'key' => env('REVERB_ESPORTS_APP_KEY'),
+                'secret' => env('REVERB_ESPORTS_APP_SECRET'),
+                'app_id' => env('REVERB_ESPORTS_APP_ID'),
+                'options' => [
+                    'host' => env('REVERB_HOST'),
+                    'port' => env('REVERB_PORT', 443),
+                    'scheme' => env('REVERB_SCHEME', 'https'),
+                    'useTLS' => env('REVERB_SCHEME', 'https') === 'https',
+                ],
+                'allowed_origins' => array_values(array_filter(array_map(
+                    'trim',
+                    explode(',', (string) env('REVERB_ESPORTS_ALLOWED_ORIGINS', 'esports.einundzwanzig.space'))
+                ))) ?: ['esports.einundzwanzig.space'],
+                'ping_interval' => env('REVERB_ESPORTS_PING_INTERVAL', 60),
+                'activity_timeout' => env('REVERB_ESPORTS_ACTIVITY_TIMEOUT', 30),
+                'max_connections' => env('REVERB_ESPORTS_MAX_CONNECTIONS'),
+                'max_message_size' => env('REVERB_ESPORTS_MAX_MESSAGE_SIZE', 10_000),
+                'accept_client_events_from' => 'members',
+                'rate_limiting' => [
+                    'enabled' => env('REVERB_ESPORTS_RATE_LIMITING_ENABLED', false),
+                    'max_attempts' => env('REVERB_ESPORTS_RATE_LIMIT_MAX_ATTEMPTS', 60),
+                    'decay_seconds' => env('REVERB_ESPORTS_RATE_LIMIT_DECAY_SECONDS', 60),
+                    'terminate_on_limit' => false,
+                ],
+            ]] : []),
         ],
 
     ],
