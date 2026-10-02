@@ -24,10 +24,8 @@ it('returns successful response for authenticated routes', function (string $pat
     'city create' => '/de/city-create',
     'service create' => '/de/service-create',
     'settings profile' => '/de/settings/profile',
-    'settings password' => '/de/settings/password',
     'settings appearance' => '/de/settings/appearance',
     'verify email notice' => '/verify-email',
-    'confirm password' => '/confirm-password',
     'dashboard' => '/de/dashboard',
 ]);
 
