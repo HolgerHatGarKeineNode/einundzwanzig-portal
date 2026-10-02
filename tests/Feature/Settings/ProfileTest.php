@@ -52,3 +52,20 @@ it('keeps email_verified_at when email is unchanged', function () {
 
     expect($user->refresh()->email_verified_at)->not->toBeNull();
 });
+
+it('shows the npub of a nostr account so it can be shared', function () {
+    $user = User::factory()->withNostr()->create();
+    $this->actingAs($user);
+
+    Livewire::test('settings.profile')
+        ->assertSee($user->nostr)
+        ->assertDontSee(__('Nostr-Schlüssel verbinden'));
+});
+
+it('offers to connect a nostr key when the account has none', function () {
+    actingAsUser(['nostr' => null]);
+
+    Livewire::test('settings.profile')
+        ->assertSee(__('Nostr-Schlüssel verbinden'))
+        ->assertDontSee('npub1');
+});

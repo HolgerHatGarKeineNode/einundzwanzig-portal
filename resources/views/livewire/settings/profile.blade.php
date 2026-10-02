@@ -6,6 +6,7 @@ use App\Traits\SeoTrait;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 new
@@ -24,6 +25,20 @@ class extends Component {
     {
         $this->name = Auth::user()->name;
         $this->email = Auth::user()->email;
+    }
+
+    /**
+     * The npub the user signs in with, so they can hand it to a meetup leader
+     * (issue #151). Accounts created through Google sign-in (nostr-mill's
+     * pomegranate) have no nsec anywhere, so the portal is the only place they
+     * can look it up. Null for Lightning-only accounts.
+     */
+    #[Computed]
+    public function npub(): ?string
+    {
+        $npub = Auth::user()->nostr;
+
+        return is_string($npub) && str_starts_with($npub, 'npub1') ? $npub : null;
     }
 
     /**
@@ -115,6 +130,17 @@ class extends Component {
                 </x-action-message>
             </div>
         </form>
+
+        <div class="mb-6">
+            <flux:heading size="lg" class="mb-4">{{ __('Dein Nostr-Schlüssel') }}</flux:heading>
+            @if ($this->npub)
+                <flux:subheading class="mb-4">{{ __('Dein öffentlicher Schlüssel (npub) — gefahrlos teilbar, zum Beispiel wenn dich jemand als Leader eines Meetups einsetzen möchte.') }}</flux:subheading>
+                <flux:input :value="$this->npub" readonly copyable :aria-label="__('Dein Nostr-Schlüssel')" class="font-mono"/>
+            @else
+                <flux:subheading class="mb-4">{{ __('Mit deinem Konto ist noch kein Nostr-Schlüssel verbunden.') }}</flux:subheading>
+                <flux:button :href="route('settings.link-identity', ['country' => str(session('lang_country', 'de'))->after('-')->lower()])" wire:navigate icon="key">{{ __('Nostr-Schlüssel verbinden') }}</flux:button>
+            @endif
+        </div>
 
         <div>
             <flux:heading size="lg" class="mb-4">{{ __('Zeitzone') }}</flux:heading>
