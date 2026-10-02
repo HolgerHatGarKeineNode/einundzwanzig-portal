@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Country;
 use App\Models\User;
 use Livewire\Livewire;
 
@@ -69,3 +70,25 @@ it('offers to connect a nostr key when the account has none', function () {
         ->assertSee(__('Nostr-Schlüssel verbinden'))
         ->assertDontSee('npub1');
 });
+
+it('shows the shortened npub and a copy action in the user menu', function () {
+    Country::factory()->create(['code' => 'de']);
+    $npub = 'npub1'.str_repeat('q', 54).'wxyz';
+    actingAsUser(['nostr' => $npub]);
+
+    $this->get('/de/settings/profile')
+        ->assertOk()
+        ->assertSee('npub1qqqq…wxyz')
+        ->assertSee('data-testid="user-menu-copy-npub"', false)
+        ->assertSee("x-copy-to-clipboard=\"'{$npub}'\"", false);
+});
+
+it('shows no npub in the user menu of an account without one', function (?string $nostr) {
+    Country::factory()->create(['code' => 'de']);
+    actingAsUser(['nostr' => $nostr]);
+
+    $this->get('/de/settings/profile')
+        ->assertOk()
+        ->assertDontSee('data-testid="user-menu-npub"', false)
+        ->assertDontSee('data-testid="user-menu-copy-npub"', false);
+})->with(['lightning only' => null, 'not an npub' => 'deadbeef']);

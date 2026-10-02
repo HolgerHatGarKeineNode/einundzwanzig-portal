@@ -701,6 +701,7 @@
     "Wähle dein Land...": "Válaszd ki országod...",
     "Wähle deine Zeitzone aus...": "Válaszd ki időzónádat...",
     "Dein Nostr-Schlüssel": "A Nostr-kulcsod",
+    "npub kopieren": "npub másolása",
     "Dein öffentlicher Schlüssel (npub) — gefahrlos teilbar, zum Beispiel wenn dich jemand als Leader eines Meetups einsetzen möchte.": "A nyilvános kulcsod (npub) — nyugodtan megoszthatod, például ha valaki egy meetup vezetőjévé szeretne tenni.",
     "Mit deinem Konto ist noch kein Nostr-Schlüssel verbunden.": "A fiókodhoz még nincs Nostr-kulcs csatlakoztatva.",
     "Nostr-Schlüssel verbinden": "Nostr-kulcs csatlakoztatása",

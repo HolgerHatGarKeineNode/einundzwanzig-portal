@@ -703,6 +703,7 @@
     "Wähle dein Land...": "Choose your country...",
     "Wähle deine Zeitzone aus...": "Select your timezone...",
     "Dein Nostr-Schlüssel": "Your Nostr key",
+    "npub kopieren": "Copy npub",
     "Dein öffentlicher Schlüssel (npub) — gefahrlos teilbar, zum Beispiel wenn dich jemand als Leader eines Meetups einsetzen möchte.": "Your public key (npub) — safe to share, for example when someone wants to make you a leader of a meetup.",
     "Mit deinem Konto ist noch kein Nostr-Schlüssel verbunden.": "No Nostr key is connected to your account yet.",
     "Nostr-Schlüssel verbinden": "Connect a Nostr key",

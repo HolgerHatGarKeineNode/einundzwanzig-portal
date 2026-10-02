@@ -310,14 +310,9 @@
 
                             <div class="grid flex-1 text-start text-sm leading-tight">
                                 <span class="truncate font-semibold">{{ auth()->user()?->name }}</span>
-                                <span class="truncate text-xs">
-                                        @if(strlen(auth()->user()?->name) > 12)
-                                        {{ Str::substr(auth()->user()?->name, 0, 4) }}
-                                        ...{{ Str::substr(auth()->user()?->name, -4) }}
-                                    @else
-                                        {{ auth()->user()?->name }}
-                                    @endif
-                                    </span>
+                                @if(auth()->user()->npub())
+                                    <span class="truncate font-mono text-xs" data-testid="user-menu-npub">{{ auth()->user()->shortNpub() }}</span>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -326,6 +321,10 @@
                 <flux:menu.separator/>
 
                 <flux:menu.radio.group>
+                    @if(auth()->user()->npub())
+                        <flux:menu.item x-copy-to-clipboard="'{{ auth()->user()->npub() }}'" icon="clipboard-document"
+                                        class="cursor-pointer" data-testid="user-menu-copy-npub">{{ __('npub kopieren') }}</flux:menu.item>
+                    @endif
                     <flux:menu.item
                         :href="route('settings.profile', ['country' => str(session('lang_country', 'de'))->after('-')->lower()])"
                         icon="cog"

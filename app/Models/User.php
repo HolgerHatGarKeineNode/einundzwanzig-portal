@@ -138,6 +138,28 @@ class User extends Authenticatable implements CipherSweetEncrypted
     }
 
     /**
+     * The npub the user signs in with, or null for a Lightning-only account.
+     *
+     * Shown in the user menu and on the profile so it can be handed to a meetup
+     * leader (issue #151): accounts from Google sign-in have no nsec anywhere and
+     * no other place to look it up.
+     */
+    public function npub(): ?string
+    {
+        return is_string($this->nostr) && str_starts_with($this->nostr, 'npub1') ? $this->nostr : null;
+    }
+
+    /**
+     * The npub shortened for tight spaces, e.g. `npub1abcd…wxyz`.
+     */
+    public function shortNpub(): ?string
+    {
+        $npub = $this->npub();
+
+        return $npub === null ? null : Str::substr($npub, 0, 9).'…'.Str::substr($npub, -4);
+    }
+
+    /**
      * Zwei verschluesselte Felder, zwei Blind-Indizes — mehr hat der Nutzer nicht.
      *
      * Bis P6 standen hier zusaetzlich `lightning_address`, `lnurl`, `node_id`, `paynym`
