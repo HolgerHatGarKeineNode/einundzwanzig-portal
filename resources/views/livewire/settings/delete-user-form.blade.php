@@ -18,20 +18,12 @@ class extends Component {
      */
     private const CONFIRMATION_WORD = 'DELETE';
 
-    public string $password = '';
-
-    public string $confirmation = '';
-
     /**
-     * Accounts are created through Nostr or LNURL login and carry no password
-     * (issue #150). Only a legacy account that still has one is asked for it;
-     * every other account confirms by typing the confirmation word.
+     * Accounts sign in through Nostr or LNURL and never with a password; a value in
+     * `users.password` is only a placeholder for Laravel's auth. Every account
+     * therefore confirms by typing the confirmation word (issue #150).
      */
-    #[Computed]
-    public function requiresPassword(): bool
-    {
-        return Auth::user()->password !== null;
-    }
+    public string $confirmation = '';
 
     #[Computed]
     public function confirmationWord(): string
@@ -44,19 +36,13 @@ class extends Component {
      */
     public function deleteUser(Logout $logout): void
     {
-        if ($this->requiresPassword) {
-            $this->validate([
-                'password' => ['required', 'string', 'current_password'],
-            ]);
-        } else {
-            $this->validate([
-                'confirmation' => ['required', 'string', function (string $attribute, mixed $value, \Closure $fail): void {
-                    if (! $this->isConfirmationWord($value)) {
-                        $fail(__('Please type :word to confirm.', ['word' => $this->confirmationWord]));
-                    }
-                }],
-            ]);
-        }
+        $this->validate([
+            'confirmation' => ['required', 'string', function (string $attribute, mixed $value, \Closure $fail): void {
+                if (! $this->isConfirmationWord($value)) {
+                    $fail(__('Please type :word to confirm.', ['word' => $this->confirmationWord]));
+                }
+            }],
+        ]);
 
         tap(Auth::user(), $logout(...))->delete();
 
@@ -94,13 +80,8 @@ class extends Component {
                 </flux:subheading>
             </div>
 
-            @if ($this->requiresPassword)
-                <flux:input wire:model="password" :label="__('Password')" type="password"
-                            :description="__('Please enter your password to confirm you would like to permanently delete your account.')"/>
-            @else
-                <flux:input wire:model="confirmation" :label="__('Confirm')" autocomplete="off"
-                            :description="__('Type :word to confirm you would like to permanently delete your account.', ['word' => $this->confirmationWord])"/>
-            @endif
+            <flux:input wire:model="confirmation" :label="__('Confirm')" autocomplete="off"
+                        :description="__('Type :word to confirm you would like to permanently delete your account.', ['word' => $this->confirmationWord])"/>
 
             <div class="flex justify-end space-x-2 rtl:space-x-reverse">
                 <flux:modal.close>
