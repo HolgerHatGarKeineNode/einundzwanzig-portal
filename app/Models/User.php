@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
@@ -128,6 +129,39 @@ class User extends Authenticatable implements CipherSweetEncrypted
     /**
      * Get the user's initials
      */
+    /**
+     * Tables keyed by a plain `user_id` without a foreign key: sign-in state and
+     * badges that belong to the account and nothing else. A foreign key would have
+     * cascaded them; without one they outlive the user.
+     *
+     * @var list<string>
+     */
+    private const ACCOUNT_ONLY_TABLES = [
+        'sessions', 'login_keys', 'oauth_access_tokens', 'oauth_auth_codes', 'oauth_device_codes', 'user_badges',
+    ];
+
+    /**
+     * Deleting an account takes its credentials with it, whichever path deletes it.
+     *
+     * An orphaned token no longer authenticates — its user is gone — but it is still
+     * data about a person who asked to be removed. Refresh tokens hang off the access
+     * token, not the user, so they go first.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (User $user): void {
+            $user->tokens()->delete();
+
+            DB::table('oauth_refresh_tokens')
+                ->whereIn('access_token_id', DB::table('oauth_access_tokens')->where('user_id', $user->id)->select('id'))
+                ->delete();
+
+            foreach (self::ACCOUNT_ONLY_TABLES as $table) {
+                DB::table($table)->where('user_id', $user->id)->delete();
+            }
+        });
+    }
+
     public function initials(): string
     {
         return Str::of($this->name)
