@@ -701,6 +701,7 @@
     "Wähle dein Land...": "Elige tu país...",
     "Wähle deine Zeitzone aus...": "Selecciona tu zona horaria...",
     "Dein Nostr-Schlüssel": "Tu clave de Nostr",
+    "npub kopieren": "Copiar npub",
     "Dein öffentlicher Schlüssel (npub) — gefahrlos teilbar, zum Beispiel wenn dich jemand als Leader eines Meetups einsetzen möchte.": "Tu clave pública (npub): puedes compartirla sin riesgo, por ejemplo cuando alguien quiere nombrarte líder de un meetup.",
     "Mit deinem Konto ist noch kein Nostr-Schlüssel verbunden.": "Tu cuenta aún no tiene ninguna clave de Nostr conectada.",
     "Nostr-Schlüssel verbinden": "Conectar clave de Nostr",

@@ -701,6 +701,7 @@
     "Wähle dein Land...": "Izvēlies savu valsti...",
     "Wähle deine Zeitzone aus...": "Izvēlies savu laika joslu...",
     "Dein Nostr-Schlüssel": "Tava Nostr atslēga",
+    "npub kopieren": "Kopēt npub",
     "Dein öffentlicher Schlüssel (npub) — gefahrlos teilbar, zum Beispiel wenn dich jemand als Leader eines Meetups einsetzen möchte.": "Tava publiskā atslēga (npub) — to droši var kopīgot, piemēram, ja kāds vēlas tevi iecelt par meetupa līderi.",
     "Mit deinem Konto ist noch kein Nostr-Schlüssel verbunden.": "Tavam kontam vēl nav pievienota Nostr atslēga.",
     "Nostr-Schlüssel verbinden": "Pievienot Nostr atslēgu",
