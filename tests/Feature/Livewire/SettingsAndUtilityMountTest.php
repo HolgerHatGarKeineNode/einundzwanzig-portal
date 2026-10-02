@@ -7,11 +7,6 @@ it('mounts settings.profile when authenticated', function () {
     Livewire::test('settings.profile')->assertStatus(200);
 });
 
-it('mounts settings.password when authenticated', function () {
-    actingAsUser();
-    Livewire::test('settings.password')->assertStatus(200);
-});
-
 it('mounts settings.appearance when authenticated', function () {
     actingAsUser();
     Livewire::test('settings.appearance')->assertStatus(200);

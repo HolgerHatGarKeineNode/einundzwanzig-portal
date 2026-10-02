@@ -11,12 +11,6 @@ Route::middleware('guest')
         Route::livewire('/login', 'auth.login')
             ->name('login');
 
-        Route::livewire('/forgot-password', 'auth.forgot-password')
-            ->name('password.request');
-
-        Route::livewire('/reset-password/{token}', 'auth.reset-password')
-            ->name('password.reset');
-
         Route::get('/auth/complete-lightning/{k1}', [LnurlAuthController::class, 'completeLogin'])
             ->where('k1', '[a-f0-9]{64}')
             ->name('auth.ln.complete');
@@ -30,9 +24,6 @@ Route::middleware('auth')
         Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
             ->middleware(['signed', 'throttle:6,1'])
             ->name('verification.verify');
-
-        Route::livewire('/confirm-password', 'auth.confirm-password')
-            ->name('password.confirm');
     });
 
 /*

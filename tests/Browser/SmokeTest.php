@@ -18,7 +18,6 @@ it('loads all listed public pages without console errors or JS errors', function
     $pages = visit([
         '/welcome',
         '/login',
-        '/forgot-password',
         '/de/meetups',
         '/de/courses',
         '/de/lecturers',
