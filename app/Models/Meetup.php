@@ -412,6 +412,10 @@ class Meetup extends Model implements HasMedia
             get: fn () => $nextEvent ? [
                 'id' => $nextEvent->id,
                 'start' => $nextEvent->start,
+                // The event's own title, null when it has none (issue #157). Not the
+                // displayTitle() fallback: every reader of this array sits next to the
+                // meetup's name already.
+                'title' => $nextEvent->title,
                 'portalLink' => url()->route('meetups.landingpage-event',
                     ['country' => $this->city->country, 'meetup' => $this, 'event' => $nextEvent]),
                 'location' => $nextEvent->location,

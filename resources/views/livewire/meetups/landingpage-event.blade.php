@@ -191,7 +191,7 @@ class extends Component {
 @section('meta')
     @php
         $SEOData = SeoDataAttribute::getData('meetups_landingpage');
-        $SEOData->title = $this->event->meetup->name;
+        $SEOData->title = $this->event->displayTitle();
         $SEOData->description = $this->event->meetup->intro ? str($this->event->meetup->intro)->limit(50) : $SEOData->description;
         $SEOData->image = $this->event->meetup->getFirstMediaUrl('logo');
     @endphp
@@ -207,7 +207,7 @@ class extends Component {
                 {{ $event->meetup->name }}
             </a>
             <span class="mx-2">/</span>
-            <span>{{ $event->start->asDate() }}</span>
+            <span>{{ $event->title ?: $event->start->asDate() }}</span>
         </flux:text>
     </div>
 
@@ -215,10 +215,16 @@ class extends Component {
         <div class="md:w-2/3">
             <!-- Event Details -->
             <flux:card class="max-w-3xl">
-                <flux:heading size="xl" class="mb-4">
-                    <flux:icon.calendar class="inline w-6 h-6 mr-2"/>
-                    {{ $event->start->asDateTime() }}
+                {{-- Title first, date beneath it (issue #157). Without its own title an
+                     event carries its meetup's name, so the heading never falls back to a
+                     bare date — the date keeps its own line either way. --}}
+                <flux:heading size="xl" class="mb-1 wrap-anywhere" data-testid="event-title">
+                    {{ $event->displayTitle() }}
                 </flux:heading>
+                <flux:subheading class="mb-4 flex items-center">
+                    <flux:icon.calendar class="inline w-5 h-5 mr-2 shrink-0" aria-hidden="true"/>
+                    {{ $event->start->asDateTime() }}
+                </flux:subheading>
 
                 {{-- Series marker (issue #43). `recurrence_group` is the only reliable
                      series identity: the 2026_08_25_194948 migration backfilled that

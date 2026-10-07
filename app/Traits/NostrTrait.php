@@ -63,7 +63,11 @@ trait NostrTrait
                  * so a future change to the formatters will alter published note text
                  * again with no test going red.
                  */
-                'start' => $model->start->asDateTime(),
+                // The event's own title leads the date line when it has one (issue
+                // #157). Folded into `start` rather than given a placeholder of its
+                // own, so the nine translated templates stay untouched and an untitled
+                // event's note comes out byte for byte as before.
+                'start' => ($model->title ? $model->title.' — ' : '').$model->start->asDateTime(),
                 'location' => $model->location,
                 'url' => $this->getUrl($model, $countryCode),
             ]),

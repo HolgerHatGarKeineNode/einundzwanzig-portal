@@ -374,6 +374,19 @@ class MeetupEvent extends Model
     }
 
     /**
+     * The name this event goes by wherever a single line has to stand for it (issue #157).
+     *
+     * An event's own `title` is optional — see the migration that added it — and an
+     * event without one has always carried its meetup's name. The calendar feed has
+     * applied that fallback since the column exists; this is the same rule, in one place,
+     * for the views.
+     */
+    public function displayTitle(): string
+    {
+        return $this->title ?: $this->meetup->name;
+    }
+
+    /**
      * Was this event called off?
      *
      * Cancelling and deleting are two different operations from #56 on, and the
