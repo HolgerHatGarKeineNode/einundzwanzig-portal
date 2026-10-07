@@ -182,6 +182,9 @@ class extends Component
                             <a href="{{ route('meetups.landingpage-event', ['meetup' => $meetup, 'event' => $meetup->nextEvent['id'], 'country' => $country]) }}"
                                aria-label="{{ __('Event am :date öffnen', ['date' => $meetup->nextEvent['start']->asDateTime()]) }}">
                                 <div class="flex flex-col gap-1">
+                                    @if($meetup->nextEvent['title'])
+                                        <span class="text-sm font-medium wrap-anywhere" data-testid="event-title">{{ $meetup->nextEvent['title'] }}</span>
+                                    @endif
                                     <flux:badge color="green" size="sm" icon="calendar-days">
                                         {{ $meetup->nextEvent['start']->asDateTime() }}
                                     </flux:badge>

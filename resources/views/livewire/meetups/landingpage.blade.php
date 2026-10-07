@@ -291,7 +291,7 @@ class extends Component
                                         <div>
                                             <flux:heading size="lg">{{ __('Event löschen?') }}</flux:heading>
                                             <flux:subheading>
-                                                {{ __('Möchtest du das Event vom') }} {{ $event->start->asDate() }} {{ __('wirklich löschen?') }}
+                                                {{ __('Möchtest du das Event vom') }} {{ $event->start->asDate() }}@if($event->title) ("{{ $event->title }}")@endif {{ __('wirklich löschen?') }}
                                             </flux:subheading>
                                             <flux:subheading class="mt-2">
                                                 {{ __('Diese Aktion kann nicht rückgängig gemacht werden.') }}
