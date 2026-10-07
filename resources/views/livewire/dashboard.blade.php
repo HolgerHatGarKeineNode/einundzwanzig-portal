@@ -105,6 +105,9 @@ class extends Component {
                                                 width="24" height="12"
                                             />
                                         </div>
+                                        @if($event->title)
+                                            <div class="text-sm wrap-anywhere" data-testid="event-title">{{ $event->title }}</div>
+                                        @endif
                                         <div class="text-sm text-zinc-500">
                                             {{ $event->meetup->city->name }}, {{ $event->meetup->city->country->name }}
                                         </div>

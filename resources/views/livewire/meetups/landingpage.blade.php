@@ -176,8 +176,16 @@ class extends Component
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 @foreach($events as $event)
                     <flux:card size="sm" class="h-full flex flex-col">
+                        {{-- An event's own title leads the card when it has one (issue #157);
+                             the date then moves into the time line below. Without a title the
+                             card stays as it was: the meetup's name is already the page
+                             heading, so repeating it on every card would say nothing. --}}
                         <flux:heading class="flex items-center gap-2">
-                            {{ $event->start->asDate() }}
+                            @if($event->title)
+                                <span class="wrap-anywhere" data-testid="event-title">{{ $event->title }}</span>
+                            @else
+                                {{ $event->start->asDate() }}
+                            @endif
                             {{-- Series marker (issue #43). `recurrence_group` is the only
                                  reliable series identity: the 2026_08_25_194948 migration
                                  backfilled that column alone, so events of pre-P5 series
@@ -198,6 +206,9 @@ class extends Component
 
                         <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
                             <flux:icon.clock class="inline w-4 h-4"/>
+                            @if($event->title)
+                                {{ $event->start->asDate() }},
+                            @endif
                             {{ __(':time Uhr', ['time' => $event->start->asTime()]) }}
                         </flux:text>
 
