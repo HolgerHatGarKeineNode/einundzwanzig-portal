@@ -47,11 +47,9 @@ class MeetupFactory extends Factory
      * Ersteller ohne npub — für Tests rund um das Vereinsmitglied-Gate.
      *
      * {@see Meetup::booted()} hängt created_by automatisch als Leader in die
-     * meetup_user-Pivot. Da UserFactory den npub zu 70 % aus der 18 Einträge
-     * langen {@see NostrHelper::realNpubs()}-Liste zieht — derselben, aus der
-     * die Gate-Tests ihre Vereinsmitglieder nehmen — kollidiert dieser
-     * ungewollte Leader gelegentlich mit einem gefakten Mitglied und gatet das
-     * Meetup fälschlich. Dieser State nimmt den Zufall aus der Gleichung.
+     * meetup_user-Pivot. Factory-npubs sind synthetisch ({@see NostrHelper::randomNpub()})
+     * und kollidieren nicht mehr mit den festen npubs der Gate-Tests; der State
+     * bleibt, damit diese Tests ausdrücklich ohne npub des Erstellers laufen.
      */
     public function creatorWithoutNostr(): static
     {
