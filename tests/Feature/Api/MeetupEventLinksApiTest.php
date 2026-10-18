@@ -272,7 +272,7 @@ it('serves the list on the public month endpoint, which builds its payload by ha
         ],
     ]);
 
-    $this->getJson('/api/meetup-events')
+    $this->getJson('/api/meetup-events?from=2000-01-01')
         ->assertSuccessful()
         ->assertJsonPath('0.links', [
             ['url' => 'https://www.meetup.com/bitcoin-berlin/', 'label' => 'Meetup.com'],

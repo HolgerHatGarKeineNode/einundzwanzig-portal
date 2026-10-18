@@ -45,9 +45,9 @@ Route::middleware([SetApiLocale::class, 'throttle:60,1'])
         // Zwei Routen statt `meetup-events/{date?}`, damit der nackte Pfad in der
         // API-Referenz ueberhaupt auftaucht: Scramble kollabiert einen optionalen
         // Pfad-Parameter und dokumentiert nur die Variante MIT ihm (Issue #57).
-        // Gleiches Verhalten wie vorher — index() delegiert an __invoke().
+        // Gleiches Verhalten wie vorher — index() und month() teilen sich listEvents().
         Route::get('meetup-events', [MeetupEventController::class, 'index']);
-        Route::get('meetup-events/{date}', MeetupEventController::class);
+        Route::get('meetup-events/{date}', [MeetupEventController::class, 'month']);
         Route::get('btc-map-communities', BtcMapCommunityController::class);
         // Der Resync-Weg fuer Konsumenten (Issue #29): alle Aenderungen ab einem
         // Cursor, inklusive der Loeschungen, die sonst nirgends sichtbar sind.

@@ -99,7 +99,7 @@ it('emits the same start_iso for one event through the resource and through the 
     $event = meetupEventForResource();
 
     $resource = $this->getJson("/api/my-meetup-events/{$event->id}")->assertOk()->json('data');
-    $listRow = collect($this->getJson('/api/meetup-events')->assertOk()->json())
+    $listRow = collect($this->getJson('/api/meetup-events?from=2000-01-01')->assertOk()->json())
         ->firstWhere('id', $event->id);
 
     expect($resource['start_iso'])->toBe($listRow['start_iso'])
@@ -113,7 +113,7 @@ it('states one instant in exactly two spellings per endpoint, and the new one is
     $event = meetupEventForResource();
 
     $resource = $this->getJson("/api/my-meetup-events/{$event->id}")->assertOk()->json('data');
-    $listRow = collect($this->getJson('/api/meetup-events')->assertOk()->json())
+    $listRow = collect($this->getJson('/api/meetup-events?from=2000-01-01')->assertOk()->json())
         ->firstWhere('id', $event->id);
 
     expect([$resource['start'], $listRow['start']])

@@ -6,6 +6,7 @@ use App\Actions\MeetupEvents\CreateMeetupEventSeries;
 use App\Enums\NostrRsvpStatus;
 use App\Enums\RsvpStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\ListMeetupEventsRequest;
 use App\Http\Requests\Api\RsvpMeetupEventRequest;
 use App\Http\Requests\Api\StoreMeetupEventRequest;
 use App\Http\Requests\Api\UpdateMeetupEventRequest;
@@ -45,14 +46,30 @@ class MeetupEventController extends Controller
      * List meetup events
      *
      * Returns upcoming/past meetup events. With an optional date, the result is filtered
-     * to the month of that date.
+     * to the month of that date. The query filters of the bare list path apply here too.
      *
      * @return Collection<int, array<string, mixed>>
      */
     #[PathParameter(name: 'date', description: 'Optional date (Y-m-d); filters to the month of that date.', required: false, type: 'string')]
     #[QueryParameter(name: 'locale', description: self::LOCALE_PARAMETER_DESCRIPTION, required: false, type: 'string')]
     #[ResponseAttribute(status: 400, description: 'The given date cannot be parsed (Y-m-d is expected).')]
-    public function __invoke(Request $request, ?string $date = null): Collection
+    #[ResponseAttribute(status: 422, description: 'Invalid filter value, or an unknown query parameter.')]
+    public function month(ListMeetupEventsRequest $request, string $date): Collection
+    {
+        return $this->listEvents($request, $date);
+    }
+
+    /**
+     * The one implementation behind `month()` and `index()`.
+     *
+     * Neither public method calls the other: when `index()` delegated to the dated
+     * action, Scramble reused that action's inferred definition and then failed on the
+     * dated route itself ("Scope is not initialized for route", GEN001), which dropped
+     * every parameter of `/meetup-events/{date}` from the API reference.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function listEvents(ListMeetupEventsRequest $request, ?string $date): Collection
     {
         $requestedLocale = $this->resolveRequestedLocale($request);
 
@@ -82,6 +99,32 @@ class MeetupEventController extends Controller
                 fn ($query) => $query
                     ->where('start', '>=', $date)
                     ->where('start', '<=', $date->copy()->endOfMonth()),
+            )
+            // Issue #163 — the filters of ListMeetupEventsRequest, combined with AND.
+            ->when(
+                $request->meetupIds(),
+                fn ($query, array $meetupIds) => $query->whereIn('meetup_id', $meetupIds),
+            )
+            ->when(
+                $request->country(),
+                fn ($query, string $country) => $query->whereHas(
+                    'meetup.city.country',
+                    fn ($countryQuery) => $countryQuery->whereRaw('LOWER(code) = ?', [$country]),
+                ),
+            )
+            // An event still running on `from` belongs to it: compared by its end, or by
+            // its start when it has none.
+            ->when(
+                $request->from(withDefaultWindow: $date === null),
+                fn ($query, $from) => $query->where(
+                    fn ($rangeQuery) => $rangeQuery
+                        ->where('end', '>=', $from)
+                        ->orWhere(fn ($noEndQuery) => $noEndQuery->whereNull('end')->where('start', '>=', $from)),
+                ),
+            )
+            ->when(
+                $request->to(),
+                fn ($query, $to) => $query->where('start', '<=', $to),
             )
             ->get();
 
@@ -194,6 +237,11 @@ class MeetupEventController extends Controller
              * existing key stays exactly as shipped app builds have seen it.
              */
             'nostr_address' => NostrCalendarAddress::timeBasedEventCoordinate($event->nostr_coordinate),
+            // Issue #163, appended for the same reason: the meetup's ID, under both the
+            // key MeetupEventResource and the webhook payloads use and the dotted
+            // `meetup.*` spelling of this list.
+            'meetup_id' => $event->meetup_id,
+            'meetup.id' => $event->meetup_id,
         ],
         );
     }
@@ -201,8 +249,9 @@ class MeetupEventController extends Controller
     /**
      * List meetup events
      *
-     * Returns every upcoming/past meetup event, unfiltered. The same list
-     * `GET /meetup-events/{date}` returns when no date is given.
+     * Returns the meetup events that ended at most 7 days ago or are still to come. Pass an
+     * older `from` for the history. Optional query filters narrow it by meetup, country
+     * and date range; they combine with AND, and an unknown parameter is rejected with 422.
      *
      * EXISTS FOR THE API REFERENCE, NOT FOR THE BEHAVIOUR (issue #57). The route used
      * to be `meetup-events/{date?}` alone, and Scramble collapses an optional path
@@ -211,17 +260,19 @@ class MeetupEventController extends Controller
      * for the path consumers actually call. A route of its own is the only way to get
      * that path generated rather than synthesised into the document afterwards.
      *
-     * A SEPARATE METHOD rather than a second route onto `__invoke()`: the attributes
+     * A SEPARATE METHOD rather than a second route onto `month()`: the attributes
      * are per method, so sharing one would put `#[PathParameter(name: 'date')]` on a
-     * path that has no `{date}` placeholder — invalid OpenAPI, measured. The body
-     * delegates, so there is exactly one implementation and the two paths cannot drift.
+     * path that has no `{date}` placeholder — invalid OpenAPI, measured. Both delegate
+     * to `listEvents()`, so there is exactly one implementation and the two paths
+     * cannot drift.
      *
      * @return Collection<int, array<string, mixed>>
      */
     #[QueryParameter(name: 'locale', description: self::LOCALE_PARAMETER_DESCRIPTION, required: false, type: 'string')]
-    public function index(Request $request): Collection
+    #[ResponseAttribute(status: 422, description: 'Invalid filter value, or an unknown query parameter.')]
+    public function index(ListMeetupEventsRequest $request): Collection
     {
-        return $this->__invoke($request);
+        return $this->listEvents($request, null);
     }
 
     /**

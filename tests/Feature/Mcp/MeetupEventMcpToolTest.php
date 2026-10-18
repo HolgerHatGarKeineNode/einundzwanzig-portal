@@ -102,7 +102,7 @@ it('hands an agent the same start_iso over MCP as GET /api/meetup-events does ov
         'start' => '2026-08-01 18:00:00',
     ]);
 
-    $listRow = collect($this->getJson('/api/meetup-events')->assertOk()->json())
+    $listRow = collect($this->getJson('/api/meetup-events?from=2000-01-01')->assertOk()->json())
         ->firstWhere('id', $event->id);
 
     expect($listRow['start_iso'])->toBe('2026-08-01T18:00:00+00:00');
