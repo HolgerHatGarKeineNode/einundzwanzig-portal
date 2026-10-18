@@ -67,7 +67,7 @@ class extends Component
     #[Validate('nullable|string|max:255|required_without:osmPlace.osm_id')]
     public ?string $location = null;
 
-    #[Validate('required|url|max:255')]
+    #[Validate('required|url|max:2048')]
     public ?string $link = null;
 
     /**
@@ -223,7 +223,7 @@ class extends Component
             // A structured OSM place is an equally valid answer to "where" — only reject
             // when the event has neither a text location nor a picked map place.
             'location' => ['nullable', 'string', 'max:255', 'required_without:osmPlace.osm_id'],
-            'link' => 'required|url|max:255',
+            'link' => 'required|url|max:2048',
             ...($this->tagsRequired ? ['tagIds' => 'required|array|min:1'] : []),
         ], [
             'location.required_without' => __('Gib entweder einen Ort als Text ein oder wähle einen Ort auf der Karte.'),

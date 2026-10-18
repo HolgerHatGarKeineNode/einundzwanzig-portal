@@ -70,7 +70,7 @@ class UpdateCourseEventRequest extends FormRequest
              *
              * @example https://einundzwanzig.space/courses/bitcoin-basics
              */
-            'link' => ['sometimes', 'required', 'url', 'max:255'],
+            'link' => ['sometimes', 'required', 'url', 'max:2048'],
         ];
     }
 

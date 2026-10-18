@@ -335,7 +335,7 @@ class extends Component
             // The COUNT is where the limit bites, and it bites with a message — a sixth
             // link must not be swallowed quietly.
             'links' => ['array', 'max:'.MeetupEvent::MAX_LINKS],
-            'links.*.url' => ['nullable', 'url', 'max:255'],
+            'links.*.url' => ['nullable', 'url', 'max:2048'],
             'links.*.label' => ['nullable', 'string', 'max:100'],
             // Both optional: existing events have neither, and a meetup event without
             // its own title simply carries the meetup's name.
