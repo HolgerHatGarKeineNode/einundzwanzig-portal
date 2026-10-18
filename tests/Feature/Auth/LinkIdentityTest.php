@@ -9,6 +9,7 @@ use Livewire\Livewire;
 use swentel\nostr\Event\Event as NostrEvent;
 use swentel\nostr\Key\Key as NostrKey;
 use swentel\nostr\Sign\Sign as NostrSign;
+use Tests\Fixtures\NostrTestKeys;
 
 /**
  * Sign a kind-22242 event against the challenge the wizard put in the session.
@@ -18,7 +19,7 @@ use swentel\nostr\Sign\Sign as NostrSign;
 function makeSignedMergeEvent(?string $content = null): array
 {
     $keyGen = new NostrKey;
-    $privateKey = $keyGen->generatePrivateKey();
+    $privateKey = NostrTestKeys::generatePrivateKey();
     $publicKey = $keyGen->getPublicKey($privateKey);
 
     // Must match the wizard's required merge intent, or proveNostr rejects it.

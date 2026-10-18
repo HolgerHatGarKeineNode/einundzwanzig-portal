@@ -8,6 +8,7 @@ use Livewire\Livewire;
 use swentel\nostr\Event\Event as NostrEvent;
 use swentel\nostr\Key\Key as NostrKey;
 use swentel\nostr\Sign\Sign as NostrSign;
+use Tests\Fixtures\NostrTestKeys;
 
 /**
  * Build a NIP-42-style signed login event using the challenge that the
@@ -19,7 +20,7 @@ use swentel\nostr\Sign\Sign as NostrSign;
 function makeSignedNostrLoginEvent(): array
 {
     $keyGen = new NostrKey;
-    $privateKey = $keyGen->generatePrivateKey();
+    $privateKey = NostrTestKeys::generatePrivateKey();
     $publicKey = $keyGen->getPublicKey($privateKey);
 
     $challenge = Session::get('nostr_login_challenge');
