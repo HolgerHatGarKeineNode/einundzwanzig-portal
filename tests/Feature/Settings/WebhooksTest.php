@@ -2,7 +2,6 @@
 
 use App\Models\User;
 use App\Models\WebhookSubscription;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Livewire\Livewire;
 
 /*
@@ -152,12 +151,11 @@ it('never lets another user edit, delete or see the secret of someones elses sub
     $component = Livewire::test('settings.webhooks');
     $component->assertDontSee($subscription->secret);
 
-    expect(fn () => $component->call('edit', $subscription->id))
-        ->toThrow(ModelNotFoundException::class);
-    expect(fn () => Livewire::test('settings.webhooks')->call('toggleActive', $subscription->id))
-        ->toThrow(ModelNotFoundException::class);
-    expect(fn () => Livewire::test('settings.webhooks')->call('deleteSubscription', $subscription->id))
-        ->toThrow(ModelNotFoundException::class);
+    // Livewire 4.4.6 renders a ModelNotFoundException of a component call as the 404 it is in production
+    // (RequestBroker keeps it with the exceptions the handler renders); before, the call rethrew it.
+    $component->call('edit', $subscription->id)->assertNotFound();
+    Livewire::test('settings.webhooks')->call('toggleActive', $subscription->id)->assertNotFound();
+    Livewire::test('settings.webhooks')->call('deleteSubscription', $subscription->id)->assertNotFound();
 
     expect(WebhookSubscription::query()->find($subscription->id))
         ->not->toBeNull()
