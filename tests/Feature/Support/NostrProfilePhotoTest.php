@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 it('refuses private, loopback and metadata addresses (SSRF)', function (string $url) {
-    Http::fake();
+    Http::fake([]);
 
     expect(NostrProfilePhoto::store($url))->toBeNull();
 
@@ -20,7 +20,7 @@ it('refuses private, loopback and metadata addresses (SSRF)', function (string $
 ]);
 
 it('refuses non-http schemes', function () {
-    Http::fake();
+    Http::fake([]);
 
     expect(NostrProfilePhoto::store('file:///etc/passwd'))->toBeNull()
         ->and(NostrProfilePhoto::store('gopher://1.2.3.4/'))->toBeNull();
