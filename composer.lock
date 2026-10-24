@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "977279578ea10567cf443ff70107bdc2",
+    "content-hash": "bc36951232e4eadd18c082bf0f1d8ab8",
     "packages": [
         {
             "name": "akuechler/laravel-geoly",
@@ -151,28 +151,29 @@
         },
         {
             "name": "bacon/bacon-qr-code",
-            "version": "2.0.8",
+            "version": "v3.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Bacon/BaconQrCode.git",
-                "reference": "8674e51bb65af933a5ffaf1c308a660387c35c22"
+                "reference": "4da2233e72eeecd9be3b62e0dc2cc9ed8e2e31c2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Bacon/BaconQrCode/zipball/8674e51bb65af933a5ffaf1c308a660387c35c22",
-                "reference": "8674e51bb65af933a5ffaf1c308a660387c35c22",
+                "url": "https://api.github.com/repos/Bacon/BaconQrCode/zipball/4da2233e72eeecd9be3b62e0dc2cc9ed8e2e31c2",
+                "reference": "4da2233e72eeecd9be3b62e0dc2cc9ed8e2e31c2",
                 "shasum": ""
             },
             "require": {
                 "dasprid/enum": "^1.0.3",
                 "ext-iconv": "*",
-                "php": "^7.1 || ^8.0"
+                "php": "^8.1"
             },
             "require-dev": {
-                "phly/keep-a-changelog": "^2.1",
-                "phpunit/phpunit": "^7 | ^8 | ^9",
-                "spatie/phpunit-snapshot-assertions": "^4.2.9",
-                "squizlabs/php_codesniffer": "^3.4"
+                "phly/keep-a-changelog": "^2.12",
+                "phpunit/phpunit": "^10.5.11 || ^11.0.4",
+                "spatie/phpunit-snapshot-assertions": "^5.1.5",
+                "spatie/pixelmatch-php": "^1.2.0",
+                "squizlabs/php_codesniffer": "^3.9"
             },
             "suggest": {
                 "ext-imagick": "to generate QR code images"
@@ -199,9 +200,9 @@
             "homepage": "https://github.com/Bacon/BaconQrCode",
             "support": {
                 "issues": "https://github.com/Bacon/BaconQrCode/issues",
-                "source": "https://github.com/Bacon/BaconQrCode/tree/2.0.8"
+                "source": "https://github.com/Bacon/BaconQrCode/tree/v3.1.1"
             },
-            "time": "2022-12-07T17:46:57+00:00"
+            "time": "2026-04-05T21:06:35+00:00"
         },
         {
             "name": "bitwasp/bech32",
@@ -650,16 +651,16 @@
         },
         {
             "name": "composer/semver",
-            "version": "3.5.1",
+            "version": "3.5.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/composer/semver.git",
-                "reference": "528948210cc46f967a4b98e83b19e76f2b504993"
+                "reference": "9dfce66f1e97360ea5e6d3e38ab14277e4cc591e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/composer/semver/zipball/528948210cc46f967a4b98e83b19e76f2b504993",
-                "reference": "528948210cc46f967a4b98e83b19e76f2b504993",
+                "url": "https://api.github.com/repos/composer/semver/zipball/9dfce66f1e97360ea5e6d3e38ab14277e4cc591e",
+                "reference": "9dfce66f1e97360ea5e6d3e38ab14277e4cc591e",
                 "shasum": ""
             },
             "require": {
@@ -711,7 +712,7 @@
             "support": {
                 "irc": "ircs://irc.libera.chat:6697/composer",
                 "issues": "https://github.com/composer/semver/issues",
-                "source": "https://github.com/composer/semver/tree/3.5.1"
+                "source": "https://github.com/composer/semver/tree/3.5.2"
             },
             "funding": [
                 {
@@ -723,7 +724,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-10-05T13:12:12+00:00"
+            "time": "2026-10-22T15:37:26+00:00"
         },
         {
             "name": "dasprid/enum",
@@ -2679,16 +2680,16 @@
         },
         {
             "name": "laravel/mcp",
-            "version": "v1.1.0",
+            "version": "v1.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/mcp.git",
-                "reference": "a40cc388c11d5629977d159fd11ddda84885f639"
+                "reference": "e77af70cd009aaa31455626bd463b0e7e39cfcf9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/mcp/zipball/a40cc388c11d5629977d159fd11ddda84885f639",
-                "reference": "a40cc388c11d5629977d159fd11ddda84885f639",
+                "url": "https://api.github.com/repos/laravel/mcp/zipball/e77af70cd009aaa31455626bd463b0e7e39cfcf9",
+                "reference": "e77af70cd009aaa31455626bd463b0e7e39cfcf9",
                 "shasum": ""
             },
             "require": {
@@ -2750,7 +2751,7 @@
                 "issues": "https://github.com/laravel/mcp/issues",
                 "source": "https://github.com/laravel/mcp"
             },
-            "time": "2026-10-20T13:58:04+00:00"
+            "time": "2026-10-21T11:50:42+00:00"
         },
         {
             "name": "laravel/nightwatch",
@@ -4165,16 +4166,16 @@
         },
         {
             "name": "livewire/flux",
-            "version": "v2.20.1",
+            "version": "v2.21.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/livewire/flux.git",
-                "reference": "ee9ad7f91087ea117a2c80993a14cb25bb902f70"
+                "reference": "7ab277f7da3be4ffd26111b01e3b0766052f4472"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/livewire/flux/zipball/ee9ad7f91087ea117a2c80993a14cb25bb902f70",
-                "reference": "ee9ad7f91087ea117a2c80993a14cb25bb902f70",
+                "url": "https://api.github.com/repos/livewire/flux/zipball/7ab277f7da3be4ffd26111b01e3b0766052f4472",
+                "reference": "7ab277f7da3be4ffd26111b01e3b0766052f4472",
                 "shasum": ""
             },
             "require": {
@@ -4225,25 +4226,25 @@
             ],
             "support": {
                 "issues": "https://github.com/livewire/flux/issues",
-                "source": "https://github.com/livewire/flux/tree/v2.20.1"
+                "source": "https://github.com/livewire/flux/tree/v2.21.0"
             },
-            "time": "2026-09-28T18:14:53+00:00"
+            "time": "2026-10-21T14:45:58+00:00"
         },
         {
             "name": "livewire/flux-pro",
-            "version": "2.20.1",
+            "version": "2.21.0",
             "dist": {
                 "type": "zip",
-                "url": "https://composer.fluxui.dev/download/a2dc9093-2404-4b69-b9c2-0c048a514fb4/flux-pro-2.20.1.zip",
-                "reference": "232083c1edeb3e45e4adcc5928d21b555f8e74a8",
-                "shasum": "c39c5a68e28141345a3d69cdb1f5c73bb4548877"
+                "url": "https://composer.fluxui.dev/download/a3091cbb-3fdd-4b0c-b0d0-89a18aea0032/flux-pro-2.21.0.zip",
+                "reference": "83167b21c2bba5adbba6088c241beec95cca2670",
+                "shasum": "3f960923911a88d6218686bd3321449dcf288d00"
             },
             "require": {
                 "illuminate/console": "^10.0|^11.0|^12.0|^13.0",
                 "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
                 "illuminate/view": "^10.0|^11.0|^12.0|^13.0",
                 "laravel/prompts": "^0.1.24|^0.2|^0.3",
-                "livewire/flux": "2.20.1|dev-main",
+                "livewire/flux": "2.21.0|dev-main",
                 "livewire/livewire": "^3.7.4|^4.0|dev-main",
                 "php": "^8.1",
                 "symfony/console": "^6.0|^7.0|^8.0"
@@ -4300,20 +4301,20 @@
                 "livewire",
                 "ui"
             ],
-            "time": "2026-09-29T11:40:21+00:00"
+            "time": "2026-10-21T15:08:41+00:00"
         },
         {
             "name": "livewire/livewire",
-            "version": "v4.4.7",
+            "version": "v4.4.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/livewire/livewire.git",
-                "reference": "5976d18b1c808287017a17337d9e68dc1ca64ca2"
+                "reference": "8d7f8fc6138274a2f3384c9db354ca012215a259"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/livewire/livewire/zipball/5976d18b1c808287017a17337d9e68dc1ca64ca2",
-                "reference": "5976d18b1c808287017a17337d9e68dc1ca64ca2",
+                "url": "https://api.github.com/repos/livewire/livewire/zipball/8d7f8fc6138274a2f3384c9db354ca012215a259",
+                "reference": "8d7f8fc6138274a2f3384c9db354ca012215a259",
                 "shasum": ""
             },
             "require": {
@@ -4368,7 +4369,7 @@
             "description": "A front-end framework for Laravel.",
             "support": {
                 "issues": "https://github.com/livewire/livewire/issues",
-                "source": "https://github.com/livewire/livewire/tree/v4.4.7"
+                "source": "https://github.com/livewire/livewire/tree/v4.4.8"
             },
             "funding": [
                 {
@@ -4376,7 +4377,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-09-28T18:12:51+00:00"
+            "time": "2026-10-21T12:53:46+00:00"
         },
         {
             "name": "lwwcas/laravel-countries",
@@ -4765,16 +4766,16 @@
         },
         {
             "name": "nette/schema",
-            "version": "v1.3.7",
+            "version": "v1.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nette/schema.git",
-                "reference": "c1162897273bf9499ca57924c4688a19d82c9310"
+                "reference": "af9fa8a86bfca9b02b10346220db26e62ef942ec"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nette/schema/zipball/c1162897273bf9499ca57924c4688a19d82c9310",
-                "reference": "c1162897273bf9499ca57924c4688a19d82c9310",
+                "url": "https://api.github.com/repos/nette/schema/zipball/af9fa8a86bfca9b02b10346220db26e62ef942ec",
+                "reference": "af9fa8a86bfca9b02b10346220db26e62ef942ec",
                 "shasum": ""
             },
             "require": {
@@ -4782,16 +4783,16 @@
                 "php": "8.1 - 8.6"
             },
             "require-dev": {
-                "nette/phpstan-rules": "^1.0",
+                "nette/phpstan-rules": "^1.0.7",
                 "nette/tester": "^2.6",
                 "phpstan/extension-installer": "^1.4@stable",
-                "phpstan/phpstan": "^2.1.39@stable",
+                "phpstan/phpstan": "^2.3@stable",
                 "tracy/tracy": "^2.8"
             },
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "1.3-dev"
+                    "dev-master": "1.4-dev"
                 }
             },
             "autoload": {
@@ -4812,23 +4813,23 @@
                 {
                     "name": "David Grudl",
                     "homepage": "https://davidgrudl.com"
-                },
-                {
-                    "name": "Nette Community",
-                    "homepage": "https://nette.org/contributors"
                 }
             ],
-            "description": "📐 Nette Schema: validating data structures against a given Schema.",
-            "homepage": "https://nette.org",
+            "description": "📐 Nette Schema: validates and normalizes data such as configuration or API input against a schema described in a few readable lines of PHP, with precise error messages.",
+            "homepage": "https://doc.nette.org/schema",
             "keywords": [
-                "config",
-                "nette"
+                "configuration",
+                "data validation",
+                "nette",
+                "normalization",
+                "schema",
+                "validation"
             ],
             "support": {
                 "issues": "https://github.com/nette/schema/issues",
-                "source": "https://github.com/nette/schema/tree/v1.3.7"
+                "source": "https://github.com/nette/schema/tree/v1.4.0"
             },
-            "time": "2026-10-20T15:46:50+00:00"
+            "time": "2026-10-22T02:12:50+00:00"
         },
         {
             "name": "nette/utils",
@@ -8030,74 +8031,6 @@
             "time": "2024-06-11T12:45:25+00:00"
         },
         {
-            "name": "simplesoftwareio/simple-qrcode",
-            "version": "4.2.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/SimpleSoftwareIO/simple-qrcode.git",
-                "reference": "916db7948ca6772d54bb617259c768c9cdc8d537"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/SimpleSoftwareIO/simple-qrcode/zipball/916db7948ca6772d54bb617259c768c9cdc8d537",
-                "reference": "916db7948ca6772d54bb617259c768c9cdc8d537",
-                "shasum": ""
-            },
-            "require": {
-                "bacon/bacon-qr-code": "^2.0",
-                "ext-gd": "*",
-                "php": ">=7.2|^8.0"
-            },
-            "require-dev": {
-                "mockery/mockery": "~1",
-                "phpunit/phpunit": "~9"
-            },
-            "suggest": {
-                "ext-imagick": "Allows the generation of PNG QrCodes.",
-                "illuminate/support": "Allows for use within Laravel."
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "aliases": {
-                        "QrCode": "SimpleSoftwareIO\\QrCode\\Facades\\QrCode"
-                    },
-                    "providers": [
-                        "SimpleSoftwareIO\\QrCode\\QrCodeServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "SimpleSoftwareIO\\QrCode\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Simple Software LLC",
-                    "email": "support@simplesoftware.io"
-                }
-            ],
-            "description": "Simple QrCode is a QR code generator made for Laravel.",
-            "homepage": "https://www.simplesoftware.io/#/docs/simple-qrcode",
-            "keywords": [
-                "Simple",
-                "generator",
-                "laravel",
-                "qrcode",
-                "wrapper"
-            ],
-            "support": {
-                "issues": "https://github.com/SimpleSoftwareIO/simple-qrcode/issues",
-                "source": "https://github.com/SimpleSoftwareIO/simple-qrcode/tree/4.2.0"
-            },
-            "time": "2021-02-08T20:43:55+00:00"
-        },
-        {
             "name": "simplito/bigint-wrapper-php",
             "version": "1.0.0",
             "source": {
@@ -9685,16 +9618,16 @@
         },
         {
             "name": "stefro/laravel-lang-country",
-            "version": "4.2.1",
+            "version": "4.2.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/stefro/laravel-lang-country.git",
-                "reference": "481bf78d173af5455daeba8a5c8b9fdad14e4553"
+                "reference": "e8eae36062a9d1ad5f491034a12e95d5fa3a6b52"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/stefro/laravel-lang-country/zipball/481bf78d173af5455daeba8a5c8b9fdad14e4553",
-                "reference": "481bf78d173af5455daeba8a5c8b9fdad14e4553",
+                "url": "https://api.github.com/repos/stefro/laravel-lang-country/zipball/e8eae36062a9d1ad5f491034a12e95d5fa3a6b52",
+                "reference": "e8eae36062a9d1ad5f491034a12e95d5fa3a6b52",
                 "shasum": ""
             },
             "require": {
@@ -9743,9 +9676,9 @@
             ],
             "support": {
                 "issues": "https://github.com/stefro/laravel-lang-country/issues",
-                "source": "https://github.com/stefro/laravel-lang-country/tree/4.2.1"
+                "source": "https://github.com/stefro/laravel-lang-country/tree/4.2.2"
             },
-            "time": "2026-09-06T06:51:00+00:00"
+            "time": "2026-10-22T18:23:26+00:00"
         },
         {
             "name": "swentel/nostr-php",
@@ -14099,16 +14032,16 @@
         },
         {
             "name": "brianium/paratest",
-            "version": "v7.27.2",
+            "version": "v7.27.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/paratestphp/paratest.git",
-                "reference": "3b1189e2e36ac3e958d8cb362433862123eb7566"
+                "reference": "6d73b615611a2da7af85637d99d1b0efac9fcd00"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/paratestphp/paratest/zipball/3b1189e2e36ac3e958d8cb362433862123eb7566",
-                "reference": "3b1189e2e36ac3e958d8cb362433862123eb7566",
+                "url": "https://api.github.com/repos/paratestphp/paratest/zipball/6d73b615611a2da7af85637d99d1b0efac9fcd00",
+                "reference": "6d73b615611a2da7af85637d99d1b0efac9fcd00",
                 "shasum": ""
             },
             "require": {
@@ -14122,7 +14055,7 @@
                 "phpunit/php-code-coverage": "^14.4.1",
                 "phpunit/php-file-iterator": "^7.0.2",
                 "phpunit/php-timer": "^9",
-                "phpunit/phpunit": "^13.4.2",
+                "phpunit/phpunit": "^13.4.3",
                 "sebastian/environment": "^9.3.3",
                 "symfony/console": "^7.4.20 || ^8.1.8",
                 "symfony/process": "^7.4.19 || ^8.1.7"
@@ -14176,7 +14109,7 @@
             ],
             "support": {
                 "issues": "https://github.com/paratestphp/paratest/issues",
-                "source": "https://github.com/paratestphp/paratest/tree/v7.27.2"
+                "source": "https://github.com/paratestphp/paratest/tree/v7.27.4"
             },
             "funding": [
                 {
@@ -14188,7 +14121,7 @@
                     "type": "paypal"
                 }
             ],
-            "time": "2026-10-16T12:01:22+00:00"
+            "time": "2026-10-22T06:15:12+00:00"
         },
         {
             "name": "daverandom/libdns",
@@ -17226,28 +17159,28 @@
         },
         {
             "name": "sebastian/git-state",
-            "version": "1.0.0",
+            "version": "1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/git-state.git",
-                "reference": "792a952e0eba55b6960a48aeceb9f371aad1f76b"
+                "reference": "31a565f463686f0eefa85f899549256bf5805985"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/git-state/zipball/792a952e0eba55b6960a48aeceb9f371aad1f76b",
-                "reference": "792a952e0eba55b6960a48aeceb9f371aad1f76b",
+                "url": "https://api.github.com/repos/sebastianbergmann/git-state/zipball/31a565f463686f0eefa85f899549256bf5805985",
+                "reference": "31a565f463686f0eefa85f899549256bf5805985",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.4"
             },
             "require-dev": {
-                "phpunit/phpunit": "^13.0"
+                "phpunit/phpunit": "^13.4.3"
             },
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-main": "1.0-dev"
+                    "dev-main": "1.1-dev"
                 }
             },
             "autoload": {
@@ -17271,7 +17204,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/git-state/issues",
                 "security": "https://github.com/sebastianbergmann/git-state/security/policy",
-                "source": "https://github.com/sebastianbergmann/git-state/tree/1.0.0"
+                "source": "https://github.com/sebastianbergmann/git-state/tree/1.1.0"
             },
             "funding": [
                 {
@@ -17291,7 +17224,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-03-21T12:54:28+00:00"
+            "time": "2026-10-21T05:59:52+00:00"
         },
         {
             "name": "sebastian/global-state",
@@ -17787,7 +17720,7 @@
         },
         {
             "name": "squirephp/model",
-            "version": "v3.11.1",
+            "version": "v3.12.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/squirephp/model.git",
@@ -17841,7 +17774,7 @@
         },
         {
             "name": "squirephp/regions",
-            "version": "v3.11.1",
+            "version": "v3.12.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/squirephp/regions.git",
@@ -17895,7 +17828,7 @@
         },
         {
             "name": "squirephp/regions-en",
-            "version": "v3.11.1",
+            "version": "v3.12.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/squirephp/regions-en.git",
@@ -17949,7 +17882,7 @@
         },
         {
             "name": "squirephp/repository",
-            "version": "v3.11.1",
+            "version": "v3.12.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/squirephp/repository.git",
@@ -18004,7 +17937,7 @@
         },
         {
             "name": "squirephp/rule",
-            "version": "v3.11.1",
+            "version": "v3.12.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/squirephp/rule.git",

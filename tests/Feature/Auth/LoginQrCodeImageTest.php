@@ -1,6 +1,6 @@
 <?php
 
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use App\Support\LoginQrCode;
 
 /*
  * Beide Login-Seiten bauen ihren QR-Code seit 2026-08-25 ueber
@@ -28,13 +28,7 @@ function extractLnurlFromHtml(string $html): string
 
 function qrCodePngBase64(string $lnurl, string $imagePathRelativeToPublic): string
 {
-    return base64_encode(
-        QrCode::format('png')
-            ->size(300)
-            ->merge('/public/'.$imagePathRelativeToPublic, .3)
-            ->errorCorrection('H')
-            ->generate($lnurl)
-    );
+    return base64_encode(LoginQrCode::png($lnurl, public_path($imagePathRelativeToPublic)));
 }
 
 it('embeds the twenty-one motif in the desktop login QR code for a language without its own image (regression)', function () {

@@ -3,6 +3,7 @@
 use App\Attributes\SeoDataAttribute;
 use App\Jobs\FetchNostrProfileJob;
 use App\Models\LoginKey;
+use App\Support\LoginQrCode;
 use App\Support\NostrLogin;
 use App\Traits\SeoTrait;
 use eza\lnurl;
@@ -13,7 +14,6 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 new #[Layout('components.layouts.auth')]
 class extends Component {
@@ -96,11 +96,7 @@ class extends Component {
             // Dieselbe Auswahl wie Kopfbereich und Social-Media-Vorschau: eine Fassung
             // ohne eigenes Motiv bekommt TWENTY ONE, nicht mehr das deutsche Bild.
             $image = 'public/'.domain_image_path();
-            $this->qrCode = base64_encode(QrCode::format('png')
-                ->size(300)
-                ->merge('/'.$image, .3)
-                ->errorCorrection('H')
-                ->generate($this->lnurl));
+            $this->qrCode = base64_encode(LoginQrCode::png($this->lnurl, base_path($image)));
         }
     }
 

@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.4",
         "akuechler/laravel-geoly": "^1.0",
+        "bacon/bacon-qr-code": "^3.1",
         "dedoc/scramble": "^0.13.26",
         "druc/laravel-langscanner": "dev-master",
         "ezadr/lnurl-php": "^1.0",
@@ -29,7 +30,6 @@
         "lwwcas/laravel-countries": "^4.12",
         "outhebox/blade-flags": "^1.5",
         "ralphjsmit/laravel-seo": "^1.7",
-        "simplesoftwareio/simple-qrcode": "^4.2",
         "spatie/icalendar-generator": "^3.1",
         "spatie/laravel-ciphersweet": "^1.7",
         "spatie/laravel-feed": "^4.4",
