@@ -136,6 +136,7 @@
                         <div class="flex items-center space-x-2">
                             <img alt="{{ mb_strtolower($option->code) }}"
                                  src="{{ asset('vendor/blade-flags/country-'.mb_strtolower($option->code).'.svg') }}"
+                                 loading="lazy" decoding="async"
                                  width="24" height="12"/>
                             <span>{{ $option->name }} ({{ strtoupper($option->code) }})</span>
                         </div>
@@ -163,6 +164,7 @@
                             @if($flagCode !== '')
                                 <img alt="{{ $flagCode }}"
                                      src="{{ asset('vendor/blade-flags/country-'.$flagCode.'.svg') }}"
+                                     loading="lazy" decoding="async"
                                      width="24" height="12"/>
                             @endif
                             <span>{{ $data['name'] }}</span>

@@ -298,3 +298,49 @@ it('keeps its test ids across a Livewire re-render of the meetups search field',
 
     expect($after)->toBe($before);
 });
+
+/*
+ * The picker renders one flag <img> per country (243 of them on /de/meetups, in
+ * every picker on the page). Without loading="lazy" they were all requested on
+ * the first load — through the single-threaded in-process server, 7.3 s for a
+ * reload against 0.7 s with it (measured 2026-10-25) — and a reload under host
+ * load timed out CalendarStreamPickerTest. The flags are inside a closed
+ * dropdown, so the browser may defer them; this pins that it does, and that
+ * they still render once the dropdown is open.
+ */
+it('defers the country flags until the dropdown is open, and then renders them', function () {
+    $page = visit('/de/meetups');
+    $page->resize(1280, 900);
+
+    $flagsRequested = $page->script('performance.getEntriesByType("resource").filter((entry) => entry.name.includes("blade-flags")).length');
+
+    // Not 243: only what is on screen without opening anything.
+    expect($flagsRequested)->toBeLessThan(20);
+
+    $page->click('[data-testid^="calendar-stream-"][data-testid$="-trigger"]');
+    $page->click('[data-testid^="calendar-stream-"][data-testid$="-country"]');
+
+    // Wait on the artifact: visible flags that finished loading.
+    $rendered = $page->script(<<<'JS'
+        (async () => {
+            for (let frame = 0; frame < 300; frame++) {
+                const flags = Array.from(document.querySelectorAll('img[src*="blade-flags"]'))
+                    .filter((img) => img.offsetParent !== null);
+
+                if (flags.length > 0 && flags.every((img) => img.complete && img.naturalWidth > 0)) {
+                    return { visible: flags.length, broken: 0 };
+                }
+
+                await new Promise((resolve) => requestAnimationFrame(resolve));
+            }
+
+            const flags = Array.from(document.querySelectorAll('img[src*="blade-flags"]'))
+                .filter((img) => img.offsetParent !== null);
+
+            return { visible: flags.length, broken: flags.filter((img) => ! (img.complete && img.naturalWidth > 0)).length };
+        })()
+    JS);
+
+    expect($rendered['visible'])->toBeGreaterThan(0)
+        ->and($rendered['broken'])->toBe(0);
+});
