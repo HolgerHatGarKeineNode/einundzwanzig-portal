@@ -217,6 +217,18 @@ passage disappearing, and the passage reappearing inside the block.
 
   Browser assertions stay available on purpose — run them deliberately through `vendor/bin/pest --testsuite=Browser`, never as a side effect of a full run.
 
+- **The whole suite has exactly one sanctioned command, and it carries its own time limit:**
+
+  ```
+  composer test:all          # = bash scripts/test-all.sh
+  ```
+
+  It runs Unit, Feature, Components and Browser in parallel (`vendor/bin/pest --parallel`, 24 workers for the non-browser half, 8 for Browser — at 24 browser workers six extra tests time out) under `timeout 600`. A run still going after 600 s is killed with everything it started and exits 124 with "TEST BUDGET EXCEEDED"; `TEST_BUDGET_SECONDS=5 composer test:all` proves it. The limit is the user's rule of 2026-10-23: the whole suite stays under ten minutes. Measured 2026-10-24 on 24 threads: 441 s end-to-end, 2588 + 144 tests green (107 s Unit+Feature, 330 s Browser; the same suite ran ~25 min serial: 646 s without Browser, 868 s Browser). Other processes on the host move that number by tens of seconds. Over budget is a bug before it is a feature: profile, then optimise, merge or delete tests.
+
+- **Every browser test is watched by `tests/Browser/Support/BrowserLatch.php`**, installed from `tests/Pest.php`: any console message, uncaught error, rejected promise, failed resource, response >= 400 (Livewire roundtrips included) or request to another origin fails the test that caused it. `OfflineBrowser` answers third-party images, tile servers and the font files locally, so the browser suite does not touch the internet. Pages therefore render in the monospace fallback, never in Inconsolata (APP_URL is not the test server). `tests/Browser/BrowserLatchTest.php` provokes each channel. A test that provokes a complaint on purpose takes it out with `BrowserLatch::drain()`.
+
+- **Outgoing HTTP is blocked in every test** (`Http::preventStrayRequests()` in `tests/TestCase.php`). Fake with `Http::fake([...])` or `Http::fake([])`, never a bare `Http::fake()`: that one answers every URL with 200 and defeats the guard.
+
 ## Code Formatting
 
 - **`vendor/bin/pint --dirty --format agent` never sees a Livewire single-file component.** Pint drops `*.blade.php` from its finder unless the `Pint/laravel_blade` rule is on (`ConfigurationFactory::notName()` in `vendor/laravel/pint/builds/pint`), and `--dirty` filters that same walk. Measured 2026-09-06 for issue #132: with `resources/views/livewire/dashboard.blade.php` modified **and** unformatted, `--dirty --test` reported `{"tool":"pint","result":"passed"}`. The rule in the Boost block above is necessary but not sufficient.

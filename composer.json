@@ -133,6 +133,11 @@
             "@putenv PHP_INI_SCAN_DIR=:tests/php.d-runtime",
             "@php artisan test tests/Feature"
         ],
+        "test:all": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan config:clear --ansi",
+            "bash scripts/test-all.sh"
+        ],
         "test:browser": [
             "Composer\\Config::disableProcessTimeout",
             "@php artisan config:clear --ansi",
