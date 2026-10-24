@@ -96,16 +96,18 @@ function measureRevealSecretField(object $page, int $width, int $height): array
 }
 
 /**
- * The `/en/` in the path is the route's `{country:code}` segment, not the
+ * The `/de/` in the path is the route's `{country:code}` segment, not the
  * interface language — measured 2026-09-05, `/en/settings/webhooks` renders
- * German. The language comes from `session('lang_country')`, which only the
+ * German. It is `de` and not `en` because the sidebar builds the flag from that
+ * segment (vendor/blade-flags/country-<segment>.svg): `en` is no country, the
+ * file does not exist, and the BrowserLatch reports the 404. The language comes from `session('lang_country')`, which only the
  * switch route sets.
  */
 function visitWebhookSettingsIn(string $langCountry): object
 {
     visit('/change_lang_country/'.$langCountry)->wait(1.0);
 
-    return visit('/en/settings/webhooks')->wait(1.2);
+    return visit('/de/settings/webhooks')->wait(1.2);
 }
 
 beforeEach(function () {

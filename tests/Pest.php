@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Browser\Support\BrowserLatch;
 use Tests\TestCase;
 
 /*
@@ -129,6 +130,11 @@ pest()->extend(TestCase::class)
     ->beforeEach(function () {
         config()->set('database.connections.sqlite.database', database_path('testing.sqlite'));
         config()->set('permission.testing', true);
+
+        BrowserLatch::install();
+    })
+    ->afterEach(function () {
+        BrowserLatch::assertSilent();
     })
     ->in('Browser');
 
