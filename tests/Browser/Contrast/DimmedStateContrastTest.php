@@ -529,7 +529,7 @@ it('leaves the opacity-90 duplicate lists alone, and says with what number', fun
     // the chosen hit shares its name with a city already in the country (since
     // a77ffed; before it the modal had a createCity action and a typed name).
     // The server runs in this process, so this fake answers the search for it.
-    Http::fake(['*' => Http::response([[
+    Http::fake(['nominatim.openstreetmap.org/*' => Http::response([[
         'osm_type' => 'relation',
         'osm_id' => 4711,
         'name' => 'Neuenkirchen',

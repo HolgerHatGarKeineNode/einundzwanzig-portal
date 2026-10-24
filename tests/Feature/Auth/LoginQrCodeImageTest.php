@@ -81,3 +81,23 @@ it('embeds the twenty-one motif in the mobile login QR code for a language witho
     expect($actualQrCode)->toBe(qrCodePngBase64($lnurl, 'img/domains/twenty-one.png'))
         ->and($actualQrCode)->not->toBe(qrCodePngBase64($lnurl, 'img/domains/de-DE.jpg'));
 });
+
+/*
+ * Every test above compares LoginQrCode with ITSELF, so changing its size,
+ * error correction or merge would leave them all green. This one compares it
+ * with an image LoginQrCode did not make: the output of
+ * simplesoftwareio/simple-qrcode 4.2.0
+ * (`format('png')->size(300)->merge($image, .3)->errorCorrection('H')`),
+ * the package it replaced, for the content below with
+ * public/img/domains/twenty-one.png in the centre. The class promises to
+ * reproduce that byte for byte; this is where the promise is checked.
+ *
+ * Mutation measured 2026-10-25: SIZE 300 -> 200 turns this test red.
+ */
+it('renders the login QR code byte for byte like simple-qrcode 4.2.0 did', function () {
+    $lnurl = 'LNURL1DP68GURN8GHJ7MRWW4EXCTNXD9SHG6NPVCHXXMMD9AKXUATJDSKHQCTE8AEK2UMND9HKU0'.'0';
+
+    $png = LoginQrCode::png($lnurl, public_path('img/domains/twenty-one.png'));
+
+    expect(sha1($png))->toBe(sha1_file(base_path('tests/Fixtures/login-qr-simple-qrcode-4.2.0.png')));
+});

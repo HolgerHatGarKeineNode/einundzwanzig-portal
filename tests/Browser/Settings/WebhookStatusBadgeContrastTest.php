@@ -11,8 +11,9 @@ use App\Models\WebhookSubscription;
 | `flux:badge size="sm"` sets 12px at weight 500. That is not large text
 | (WCAG 1.4.3 draws the line at 18pt, or 14pt bold), so the pair has to reach
 | 4.5:1. The amber it used to carry measured 4.340:1 on the light page —
-| amber-700 #BB4D00 on amber-400/25 composited to #FFEDBF. Dark mode was never
-| the problem (4.764:1). Blue measures 7.347:1 light and 5.234:1 dark.
+| amber-700 #BB4D00 on amber-400/25 composited to #FFEDBF when it was
+| measured on 2026-09-05 (#FFEEBF in the current build, see the control
+| below). Dark mode was never the problem (4.764:1). Blue measures 7.347:1 light and 5.234:1 dark.
 |
 | Why this test screenshots instead of computing: the badge fill is an alpha
 | colour (`bg-blue-400/20`), so the pair that reaches the eye exists only after
