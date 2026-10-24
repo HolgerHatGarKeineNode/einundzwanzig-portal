@@ -44,7 +44,7 @@ it('sets coordinates from the chosen place even when latitude was previously set
     Livewire::test('cities.create')
         ->set('country_id', $this->country->id)
         ->set('latitude', 1.234)
-        ->set('osmPlace', ['osm_id' => 62422, 'osm_lat' => 52.5, 'osm_lon' => 13.4, 'population' => 3769962])
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 52.5, 'osm_lon' => 13.4, 'population' => 3769962]))
         ->assertSet('latitude', 52.5)
         ->assertSet('longitude', 13.4)
         ->assertSet('population', 3769962);
