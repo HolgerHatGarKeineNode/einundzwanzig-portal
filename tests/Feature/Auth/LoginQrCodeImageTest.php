@@ -90,14 +90,30 @@ it('embeds the twenty-one motif in the mobile login QR code for a language witho
  * (`format('png')->size(300)->merge($image, .3)->errorCorrection('H')`),
  * the package it replaced, for the content below with
  * public/img/domains/twenty-one.png in the centre. The class promises to
- * reproduce that byte for byte; this is where the promise is checked.
+ * reproduce that output; this is where the promise is checked.
  *
- * Mutation measured 2026-10-25: SIZE 300 -> 200 turns this test red.
+ * Compared as decoded pixels, not as PNG bytes: the bytes also carry the
+ * libpng/Imagick build's compression choices, and another build must not turn
+ * this red without a code change. (On this build the bytes are identical too,
+ * measured 2026-10-25.) Mutation: SIZE 300 -> 200 turns it red.
  */
-it('renders the login QR code byte for byte like simple-qrcode 4.2.0 did', function () {
+it('renders the login QR code pixel for pixel like simple-qrcode 4.2.0 did', function () {
     $lnurl = 'LNURL1DP68GURN8GHJ7MRWW4EXCTNXD9SHG6NPVCHXXMMD9AKXUATJDSKHQCTE8AEK2UMND9HKU0'.'0';
 
-    $png = LoginQrCode::png($lnurl, public_path('img/domains/twenty-one.png'));
+    $actual = imagecreatefromstring(LoginQrCode::png($lnurl, public_path('img/domains/twenty-one.png')));
+    $golden = imagecreatefromstring((string) file_get_contents(base_path('tests/Fixtures/login-qr-simple-qrcode-4.2.0.png')));
 
-    expect(sha1($png))->toBe(sha1_file(base_path('tests/Fixtures/login-qr-simple-qrcode-4.2.0.png')));
+    expect([imagesx($actual), imagesy($actual)])->toBe([imagesx($golden), imagesy($golden)]);
+
+    $differing = 0;
+
+    for ($y = 0; $y < imagesy($golden); $y++) {
+        for ($x = 0; $x < imagesx($golden); $x++) {
+            if (imagecolorat($actual, $x, $y) !== imagecolorat($golden, $x, $y)) {
+                $differing++;
+            }
+        }
+    }
+
+    expect($differing)->toBe(0);
 });

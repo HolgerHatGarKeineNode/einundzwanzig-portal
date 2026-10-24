@@ -12,7 +12,6 @@ use BaconQrCode\Renderer\RendererStyle\EyeFill;
 use BaconQrCode\Renderer\RendererStyle\Fill;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
-use InvalidArgumentException;
 
 /**
  * The LNURL login QR code: 300 px PNG, error correction H, the domain image
@@ -47,10 +46,6 @@ class LoginQrCode
 
     private static function merge(string $qrCode, string $mergeImage, float $percentage): string
     {
-        if ($percentage > 1) {
-            throw new InvalidArgumentException('$percentage must be less than 1');
-        }
-
         $source = imagecreatefromstring($qrCode);
         $overlay = imagecreatefromstring($mergeImage);
 
