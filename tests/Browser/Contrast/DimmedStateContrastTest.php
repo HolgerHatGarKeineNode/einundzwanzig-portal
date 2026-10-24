@@ -3,6 +3,7 @@
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
+use Illuminate\Support\Facades\Http;
 
 require_once __DIR__.'/../Support/PixelContrast.php';
 
@@ -524,6 +525,20 @@ it('leaves the opacity-90 duplicate lists alone, and says with what number', fun
     $meetup = Meetup::factory()->create(['city_id' => $this->city->id, 'created_by' => $user->id]);
     $countryId = $this->country->id;
 
+    // The add-city modal searches Nominatim and the duplicate list appears when
+    // the chosen hit shares its name with a city already in the country (since
+    // a77ffed; before it the modal had a createCity action and a typed name).
+    // The server runs in this process, so this fake answers the search for it.
+    Http::fake(['*' => Http::response([[
+        'osm_type' => 'relation',
+        'osm_id' => 4711,
+        'name' => 'Neuenkirchen',
+        'display_name' => 'Neuenkirchen, Landkreis Osnabrück, Niedersachsen, Deutschland',
+        'lat' => '52.2874',
+        'lon' => '8.2038',
+        'category' => 'place',
+    ]])]);
+
     $pages = [
         // site, url, livewire component, the JS that produces the candidates
         ['cities-create-duplicates', '/de/city-create', 'cities.create', <<<JS
@@ -536,22 +551,24 @@ it('leaves the opacity-90 duplicate lists alone, and says with what number', fun
         })()
         JS],
         ['meetups-create-duplicates', '/de/meetup-create', 'meetups.create', <<<JS
-        (() => {
+        (async () => {
           Flux.modal('add-city').show();
           const c = Livewire.getByName('meetups.create')[0];
-          c.set('newCityCountryId', {$countryId});
-          c.set('newCityName', 'Neuenkirchen');
-          c.call('createCity');
+          await c.set('newCityCountryId', {$countryId});
+          await c.set('newCityQuery', 'Neuenkirchen');
+          await c.call('searchCity');
+          await c.call('chooseCity', 0);
           return true;
         })()
         JS],
         ['meetups-edit-duplicates', '/de/meetup-edit/'.$meetup->id, 'meetups.edit', <<<JS
-        (() => {
+        (async () => {
           Flux.modal('add-city').show();
           const c = Livewire.getByName('meetups.edit')[0];
-          c.set('newCityCountryId', {$countryId});
-          c.set('newCityName', 'Neuenkirchen');
-          c.call('createCity');
+          await c.set('newCityCountryId', {$countryId});
+          await c.set('newCityQuery', 'Neuenkirchen');
+          await c.call('searchCity');
+          await c.call('chooseCity', 0);
           return true;
         })()
         JS],

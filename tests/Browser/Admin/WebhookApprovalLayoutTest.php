@@ -159,9 +159,19 @@ it('reproduces the reported overflow when the sentence is put back into the badg
     // the fix, at this exact viewport.
     expect($reproduced['overhangPastCard'])->toBeGreaterThan(150);
 
-    // And the reason nobody saw it: a nowrap child overflowing its block does
-    // not grow the document, so no scrollbar ever appears.
-    expect($reproduced['documentOverflow'])->toBe(0);
+    // The reason nobody saw it used to be that this overflow never grew the
+    // document. That was not a property of the layout: the layout loaded
+    // window.nostr.js from cdn.jsdelivr.net, whose widget injects
+    // `html, body { overflow: auto; height: 100% }` and so moved the scroll
+    // container down to <body> (f456728, the last commit with the script: html
+    // and body both `overflow: auto`, and this assertion held at 0). 8b7e34e
+    // removed the script, and the same injected sentence now grows the
+    // document by the full overhang: scrollWidth 541 against clientWidth 375,
+    // i.e. 166px, on Chromium 156 (the test also fails on 154 and 155). The
+    // reproduction therefore reads "a horizontal scrollbar appears", which is
+    // stricter than before, not weaker. Pinned only as "greater than zero":
+    // the exact value is the badge's width, not a contract.
+    expect($reproduced['documentOverflow'])->toBeGreaterThan(0);
 });
 
 /*

@@ -176,8 +176,14 @@ it('reproduces the split when the description is moved back after the switch', f
 
     $broken = $page->script(ISSUE_115_MEASURE);
 
-    // The very things the test asserts above have to come apart again.
-    expect($broken['description']['left'] - $broken['label']['left'])->toBeGreaterThan(50.0)
+    // The very things the test asserts above have to come apart again. The
+    // left-edge bound is the one assertion 1 above uses (0.5px), not a size of
+    // the original failure: the reported offset was 83.59px, but since f456728
+    // put `overflow-wrap: anywhere` on <html> the label can shrink below its
+    // longest word, the collapsed track is wider, and the same reordered DOM
+    // measures 16.41px. 16.41 is still about 33x the tolerance that separates "one
+    // unit" from "two blocks", which is what this control has to prove.
+    expect($broken['description']['left'] - $broken['label']['left'])->toBeGreaterThan(0.5)
         ->and($broken['labelLines'])->toBeGreaterThan($healthy['labelLines'])
         ->and($broken['label']['width'])->toBeLessThan($healthy['label']['width'] / 2);
 });
