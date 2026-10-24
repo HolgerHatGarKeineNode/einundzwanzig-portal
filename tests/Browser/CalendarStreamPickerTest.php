@@ -3,6 +3,7 @@
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
+use Tests\Browser\Support\Ready;
 
 /*
  * Issue e5233554: the country/language/timezone dropdown next to the calendar-stream
@@ -19,6 +20,7 @@ beforeEach(function () {
 
 it('is usable at 360px width with visible labels and 44px touch targets, in light and dark mode', function () {
     $page = visit('/de/meetups');
+    Ready::alpine($page, '[data-testid^="calendar-stream-"][data-testid$="-trigger"]');
 
     $page->resize(360, 740)
         ->assertNoJavaScriptErrors()
@@ -71,6 +73,7 @@ it('is usable at 360px width with visible labels and 44px touch targets, in ligh
     // Force light mode and confirm the same panel still renders without errors.
     $page->script("localStorage.setItem('flux.appearance', 'light')");
     $page = $page->navigate($page->url());
+    Ready::alpine($page, '[data-testid^="calendar-stream-"][data-testid$="-trigger"]');
     $page->resize(360, 740)
         ->assertNoJavaScriptErrors();
     expect($page->script("document.documentElement.classList.contains('dark')"))->toBeFalse();
