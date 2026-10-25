@@ -13,9 +13,9 @@ beforeEach(function () {
     Country::factory()->create(['code' => 'DE', 'name' => 'Deutschland']);
 });
 
-it('serves a country segment that a country carries, in any case', function () {
-    $this->get('/de/meetups')->assertOk()->assertSee("country: 'de'", false);
-});
+it('serves a country segment that a country carries, in any case', function (string $path) {
+    $this->get($path)->assertOk();
+})->with(['lower case' => '/de/meetups', 'upper case' => '/DE/meetups']);
 
 it('answers 404 for a country segment that no country carries', function (string $path) {
     $this->get($path)->assertNotFound();

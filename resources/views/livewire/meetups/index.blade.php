@@ -73,7 +73,20 @@ class extends Component
             {{-- Der Einstieg in die Regions-Ansicht. Zeigt sich nur, wenn das Land
                  Regionen hat — sonst bleibt die Leiste wie bisher. --}}
             <livewire:region.chooser/>
-            <x-calendar-stream-picker/>
+            {{-- Deferred: the picker carries ~430 timezone and ~250 country options,
+                 about 1 MB of HTML and half the render time of this page (measured
+                 2026-10-25 with production volume: 129 of 285 ms). The island loads it
+                 in its own request after the page is up, and keeps it out of every
+                 search-field re-render. The placeholder holds the trigger's place. --}}
+            @island(name: 'calendar-stream-picker', defer: true)
+                @placeholder
+                    <flux:button class="min-h-11" icon="calendar-date-range" disabled
+                                 data-testid="calendar-stream-placeholder">
+                        {{ __('Kalender abonnieren') }}
+                    </flux:button>
+                @endplaceholder
+                <x-calendar-stream-picker/>
+            @endisland
             <flux:input
                 wire:model.live="search"
                 :placeholder="__('Suche nach Meetups...')"

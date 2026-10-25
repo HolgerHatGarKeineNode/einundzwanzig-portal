@@ -48,19 +48,26 @@ beforeEach(function () {
     ]);
 });
 
-it('renders the same calendar-stream test ids on two requests for the meetups index', function () {
-    $first = issue55CalendarStreamTestIds(
-        $this->get(route('meetups.index', ['country' => 'de']))->assertSuccessful()->getContent()
-    );
+it('renders the same calendar-stream test ids on two requests for a meetup landing page', function () {
+    $url = route('meetups.landingpage', ['country' => 'de', 'meetup' => $this->meetup]);
 
-    $second = issue55CalendarStreamTestIds(
-        $this->get(route('meetups.index', ['country' => 'de']))->assertSuccessful()->getContent()
-    );
+    $first = issue55CalendarStreamTestIds($this->get($url)->assertSuccessful()->getContent());
+    $second = issue55CalendarStreamTestIds($this->get($url)->assertSuccessful()->getContent());
 
-    // Seven ids per instance: trigger, panel, three selects, two copy buttons.
-    // Without this the comparison below would pass on two empty arrays.
-    expect($first)->toHaveCount(7)
+    // Seven ids per instance (trigger, panel, three selects, two copy buttons), two
+    // instances. Without the count the comparison would pass on two empty arrays.
+    expect($first)->toHaveCount(14)
         ->and($second)->toBe($first);
+});
+
+it('defers the picker on the meetups index into an island, so the page ships only its placeholder', function () {
+    $html = $this->get(route('meetups.index', ['country' => 'de']))->assertSuccessful()->getContent();
+
+    // The picker's ~430 timezone options are about 1 MB of HTML (measured 2026-10-25);
+    // the index loads them in the island's own request after the page is up.
+    expect($html)->toContain('data-testid="calendar-stream-placeholder"')
+        ->and(issue55CalendarStreamTestIds($html))->toBe(['calendar-stream-placeholder'])
+        ->and(substr_count($html, 'Europe/'))->toBeLessThan(5);
 });
 
 it('gives the two picker instances on one meetup landing page different test ids', function () {
