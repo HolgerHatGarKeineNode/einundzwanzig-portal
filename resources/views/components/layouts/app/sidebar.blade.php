@@ -62,6 +62,18 @@
         $navAllMeetupCount = \App\Models\Meetup::query()->count();
 
         /*
+         * The other four badges, counted here once. Written inline in the badge
+         * attribute, each count ran twice per page (measured 2026-10-25 on /de/meetups).
+         */
+        $navServiceCount = \App\Models\SelfHostedService::query()->count();
+        $navCourseCount = \App\Models\Course::query()->whereHas('courseEvents.city.country', fn ($query) => $query->matchingCode($navCountry))->count();
+        $navLecturerCount = \App\Models\Lecturer::query()->whereHas('coursesEvents.city.country', fn ($query) => $query->matchingCode($navCountry))->count();
+        $navCityCount = \App\Models\City::query()
+            ->whereHas('country', fn ($query) => $query->matchingCode($navCountry))
+            ->when($navRegionId, fn ($query) => $query->where('cities.region_id', $navRegionId))
+            ->count();
+
+        /*
          * Die Meetups, die der angemeldete Nutzer als Leader fuehrt (Issue #45): ohne sie
          * kommt ein Organisator nur ueber die Laenderliste an sein eigenes Meetup.
          * Weil diese Sidebar auch die mobile Navigation ist (flux:sidebar.toggle unten),
@@ -171,7 +183,7 @@
             <flux:navlist.item icon="server" :href="route_with_country('services.index')"
                                :current="request()->routeIs('services.index')"
                                wire:navigate
-                               badge="{{ \App\Models\SelfHostedService::query()->count() }}">
+                               badge="{{ $navServiceCount }}">
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Self Hosted Services') }}</span>
                 </div>
@@ -182,7 +194,7 @@
             <flux:navlist.item icon="academic-cap" :href="route_with_country('courses.index')"
                                :current="request()->routeIs('courses.index')"
                                wire:navigate
-                               badge="{{ \App\Models\Course::query()->whereHas('courseEvents.city.country', fn($query) => $query->matchingCode($navCountry))->count() }}">
+                               badge="{{ $navCourseCount }}">
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Kurse') }}</span>
                     <img alt="{{ request()->route('country') }}"
@@ -193,7 +205,7 @@
             <flux:navlist.item icon="user" :href="route_with_country('lecturers.index')"
                                :current="request()->routeIs('lecturers.index')"
                                wire:navigate
-                               badge="{{ \App\Models\Lecturer::query()->whereHas('coursesEvents.city.country', fn($query) => $query->matchingCode($navCountry))->count() }}">
+                               badge="{{ $navLecturerCount }}">
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Dozenten') }}</span>
                     <img alt="{{ request()->route('country') }}"
@@ -209,10 +221,7 @@
             <flux:navlist.item icon="building-office-2" :href="country_or_region_route('cities.index')"
                                :current="request()->routeIs('cities.index', 'cities.index-region')"
                                wire:navigate
-                               badge="{{ \App\Models\City::query()
-                                   ->whereHas('country', fn($query) => $query->matchingCode($navCountry))
-                                   ->when($navRegionId, fn($query) => $query->where('cities.region_id', $navRegionId))
-                                   ->count() }}">
+                               badge="{{ $navCityCount }}">
                 {{ __('Städte/Gebiete') }}
             </flux:navlist.item>
         </flux:navlist.group>

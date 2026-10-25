@@ -40,7 +40,7 @@ class extends Component
     public function with(): array
     {
         return [
-            'meetups' => Meetup::with(['city.country', 'city.region', 'createdBy'])
+            'meetups' => Meetup::with(['city.country', 'city.region', 'createdBy', 'media', 'upcomingEvent'])
                 ->withExists([
                     'meetupEvents as has_future_events' => fn ($query) => $query->where('start', '>=', now()),
                 ])

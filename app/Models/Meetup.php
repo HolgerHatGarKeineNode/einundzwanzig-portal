@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -411,7 +412,7 @@ class Meetup extends Model implements HasMedia
                 // The attendance aggregates ride along in the same SELECT, so an event
                 // without a LINKED Nostr RSVP costs no extra query at all and an unlinked
                 // RSVP is counted rather than loaded (MeetupEventAttendance).
-                $nextEvent = $this->meetupEvents()->withAttendanceCounts()->where('start', '>=', now())->orderBy('start')->first();
+                $nextEvent = $this->upcomingEvent;
 
                 return $nextEvent ? [
                     'id' => $nextEvent->id,
@@ -449,6 +450,18 @@ class Meetup extends Model implements HasMedia
             get: fn () => DB::table('meetup_user')->where('meetup_id', $this->id)->where('user_id',
                 auth()->id())->exists(),
         )->shouldCache();
+    }
+
+    /**
+     * The next event that has not started yet, with the attendance aggregates in the
+     * same SELECT. A relation rather than a query in {@see nextEvent()}, so a list can
+     * eager-load it for a whole page in one query instead of one per meetup.
+     */
+    public function upcomingEvent(): HasOne
+    {
+        return $this->hasOne(MeetupEvent::class)
+            ->ofMany(['start' => 'min', 'id' => 'min'], fn (Builder $query) => $query->where('start', '>=', now()))
+            ->withAttendanceCounts();
     }
 
     public function meetupEvents(): HasMany

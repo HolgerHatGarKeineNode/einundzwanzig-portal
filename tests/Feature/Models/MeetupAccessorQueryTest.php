@@ -42,3 +42,28 @@ it('queries the next event once, however often it is read', function () {
 
     expect($count)->toBe(1);
 });
+
+it('picks the earliest event that has not started yet', function () {
+    MeetupEvent::factory()->create(['meetup_id' => $this->meetup->id, 'start' => now()->subDay()]);
+    $soonest = MeetupEvent::factory()->create(['meetup_id' => $this->meetup->id, 'start' => now()->addHour()]);
+
+    expect(Meetup::query()->findOrFail($this->meetup->id)->nextEvent['id'])->toBe($soonest->id);
+});
+
+it('renders the meetup list with the same number of queries for 3 and for 20 meetups', function () {
+    $countFor = function (int $meetups): int {
+        $city = City::factory()->create(['country_id' => portalCountry()->id]);
+        Meetup::factory()->count($meetups)->create(['city_id' => $city->id])
+            ->each(fn (Meetup $meetup) => MeetupEvent::factory()->create(['meetup_id' => $meetup->id, 'start' => now()->addDays(2)]));
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->get('/de/meetups')->assertOk();
+        $count = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        return $count;
+    };
+
+    expect($countFor(3))->toBe($countFor(17));
+});
