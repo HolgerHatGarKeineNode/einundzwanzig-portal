@@ -65,11 +65,14 @@ class extends Component
 }; ?>
 
 <div>
-    <div class="flex items-center justify-between flex-col md:flex-row mb-6">
-        <flux:heading size="xl">
+    {{-- The controls wrap instead of squeezing: in one non-wrapping row a
+         logged-in visitor's extra "Meetup erstellen" button shrank the search
+         field to 54px at 1100px and broke the heading mid-word. --}}
+    <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6">
+        <flux:heading size="xl" class="shrink-0 max-xl:text-center">
             {{ $regionName ? __('Meetups in :region', ['region' => $regionName]) : __('Meetups') }}
         </flux:heading>
-        <div class="flex flex-col md:flex-row items-center gap-4">
+        <div class="flex flex-wrap items-center justify-center xl:justify-end gap-4">
             {{-- Der Einstieg in die Regions-Ansicht. Zeigt sich nur, wenn das Land
                  Regionen hat — sonst bleibt die Leiste wie bisher. --}}
             <livewire:region.chooser/>
@@ -91,6 +94,7 @@ class extends Component
                 wire:model.live="search"
                 :placeholder="__('Suche nach Meetups...')"
                 clearable
+                class="w-full sm:w-64"
             />
             @auth
                 <flux:button class="cursor-pointer" :href="route_with_country('meetups.create')" icon="plus"
@@ -108,10 +112,11 @@ class extends Component
          next event) wrap and the short ones keep `nowrap`, so no header or
          "Log in" breaks mid-word; `table-auto` sizes the columns by content
          rather than in equal fifths, and below
-         `md` each row stacks into a card, because five columns do not fit a
-         phone at any wrap. MeetupTableFitsWidthTest measures both widths. --}}
+         `xl` each row stacks into a card: with the sidebar open, 1100px left
+         733px for a table whose narrowest layout needs 821px (production,
+         2026-10-25). MeetupTableFitsWidthTest measures both widths. --}}
     <flux:table :paginate="$meetups"
-                class="mt-6 !table-auto max-md:block max-md:[&_thead]:hidden max-md:[&_tbody]:block max-md:[&_tbody>tr]:flex max-md:[&_tbody>tr]:flex-col max-md:[&_tbody>tr]:py-3 max-md:[&_td]:!px-0 max-md:[&_td]:!py-1">
+                class="mt-6 !table-auto max-xl:block max-xl:[&_thead]:hidden max-xl:[&_tbody]:block max-xl:[&_tbody>tr]:flex max-xl:[&_tbody>tr]:flex-col max-xl:[&_tbody>tr]:py-3 max-xl:[&_td]:!px-0 max-xl:[&_td]:!py-1">
         <flux:table.columns>
             <flux:table.column>{{ __('Name') }}
             </flux:table.column>
@@ -233,7 +238,10 @@ class extends Component
                                 ['value' => $meetup->signal, 'href' => $meetup->signal, 'icon' => 'shield-check', 'title' => __('Signal')],
                             ];
                         @endphp
-                        <div class="flex gap-2">
+                        {{-- Four icons per row at most: seven in a line were the
+                             widest fixed content in the row next to the leader's
+                             buttons, 59px too wide at 1280px. --}}
+                        <div class="flex flex-wrap gap-2 xl:w-28">
                             @foreach($socialLinks as $socialLink)
                                 @if($socialLink['value'])
                                     <flux:link :href="$socialLink['href']" external variant="subtle"

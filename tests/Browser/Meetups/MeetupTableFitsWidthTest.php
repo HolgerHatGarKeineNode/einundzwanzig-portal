@@ -12,8 +12,10 @@ use App\Models\Region;
  * column ("Log in") out of view behind a horizontal scrollbar — reported on
  * production at desktop width, 2026-10-25.
  *
- * Geometry, not classes: the scroll area and the document are measured at a
- * phone width and at desktop width with the sidebar open.
+ * Geometry, not classes: the scroll area and the document are measured from a
+ * phone up to wide desktop, with the sidebar open, for a guest and for the
+ * meetup's leader, whose action buttons are the widest content in the row.
+ * 820 and 1100 are the widths that still scrolled after the first fix.
  */
 
 beforeEach(function () {
@@ -25,7 +27,7 @@ beforeEach(function () {
         'name' => 'Neumarkt in der Oberpfalz an der Sulz',
     ]);
 
-    $meetup = Meetup::factory()->active()->create([
+    $this->meetup = $meetup = Meetup::factory()->active()->create([
         'city_id' => $city->id,
         'name' => 'Einundzwanzig Neumarkt in der Oberpfalz und Umgebung',
         'telegram_link' => 'https://t.me/einundzwanzig',
@@ -64,10 +66,14 @@ beforeEach(function () {
     };
 });
 
-it('fits the meetup table into the viewport without horizontal scrolling', function () {
+it('fits the meetup table into the viewport without horizontal scrolling', function (bool $asLeader) {
+    if ($asLeader) {
+        $this->actingAs($this->meetup->createdBy);
+    }
+
     $page = visit(route('meetups.index', ['country' => 'de'], absolute: false));
 
-    foreach ([[390, 844], [1280, 900], [1600, 1000]] as [$width, $height]) {
+    foreach ([[390, 844], [820, 1000], [1100, 900], [1280, 900], [1600, 1000]] as [$width, $height]) {
         $m = ($this->measure)($page, $width, $height);
 
         expect($m['found'])->toBeTrue();
@@ -80,4 +86,4 @@ it('fits the meetup table into the viewport without horizontal scrolling', funct
     }
 
     $page->assertSee('PlebWalk')->assertNoJavaScriptErrors();
-});
+})->with(['guest' => false, 'leader' => true]);
