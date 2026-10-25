@@ -170,6 +170,21 @@
         min-width: 0;
         overflow-wrap: anywhere;
     }
+
+    /* Flux draws the row divider as a top border on every cell of every row
+       but the first; stacked, that put a line between each field of a card.
+       The card carries the divider instead. */
+    [data-table-stack="md"] > tbody > tr > td {
+        border-top-width: 0;
+    }
+
+    [data-table-stack="md"] > tbody > tr:not(:first-child) {
+        border-top: 1px solid color-mix(in oklab, var(--color-zinc-800) 10%, transparent);
+    }
+
+    .dark [data-table-stack="md"] > tbody > tr:not(:first-child) {
+        border-top-color: color-mix(in oklab, var(--color-white) 20%, transparent);
+    }
 }
 
 @media (width < 80rem) {
@@ -200,6 +215,21 @@
         padding-block: 0.25rem;
         min-width: 0;
         overflow-wrap: anywhere;
+    }
+
+    /* Flux draws the row divider as a top border on every cell of every row
+       but the first; stacked, that put a line between each field of a card.
+       The card carries the divider instead. */
+    [data-table-stack="xl"] > tbody > tr > td {
+        border-top-width: 0;
+    }
+
+    [data-table-stack="xl"] > tbody > tr:not(:first-child) {
+        border-top: 1px solid color-mix(in oklab, var(--color-zinc-800) 10%, transparent);
+    }
+
+    .dark [data-table-stack="xl"] > tbody > tr:not(:first-child) {
+        border-top-color: color-mix(in oklab, var(--color-white) 20%, transparent);
     }
 }
 

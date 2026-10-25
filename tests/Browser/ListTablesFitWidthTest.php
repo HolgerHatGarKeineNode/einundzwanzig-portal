@@ -118,6 +118,15 @@ it('fits the api token table into the viewport without horizontal scrolling', fu
 
     $page = visit('/de/settings/api-tokens')->assertSee('Volkshochschule');
 
+    // Stacked, Flux' per-cell divider drew a line between every field of the
+    // second card; the divider belongs to the card.
+    $page->resize(390, 844)->wait(1.0);
+    $cellDividers = $page->script(<<<'JS'
+        [...document.querySelectorAll('[data-table-stack] > tbody > tr > td')]
+          .filter((td) => parseFloat(getComputedStyle(td).borderTopWidth) > 0).length
+    JS);
+    expect($cellDividers)->toBe(0, "{$cellDividers} stacked cells draw their own divider");
+
     foreach ([390, 820, 1100, 1280, 1600] as $width) {
         $m = ($this->measure)($page, $width);
 
