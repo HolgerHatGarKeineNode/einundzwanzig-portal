@@ -125,7 +125,7 @@ class extends Component {
                         {{ __('Du hast noch keine API Tokens erstellt.') }}
                     </flux:text>
                 @else
-                    <flux:table>
+                    <flux:table data-table-stack="md">
                         <flux:table.columns>
                             <flux:table.column>{{ __('Name') }}</flux:table.column>
                             <flux:table.column>{{ __('Zuletzt verwendet') }}</flux:table.column>
@@ -143,7 +143,16 @@ class extends Component {
                                             <flux:badge size="sm" color="zinc">{{ __('Nie') }}</flux:badge>
                                         @endif
                                     </flux:table.cell>
-                                    <flux:table.cell>{{ $token->created_at->asDateTime() }}</flux:table.cell>
+                                    <flux:table.cell>
+                                        {{-- One break at most, between the day and the clock: the column is
+                                             narrow (the settings pane is 512px at 820px), and a free wrap split
+                                             "2026-10-25" at its hyphens over three lines. --}}
+                                        @php
+                                            [$createdDay, $createdClock] = explode(' ', $token->created_at->asDateTime(), 2);
+                                        @endphp
+                                        <span class="whitespace-nowrap">{{ $createdDay }}</span>
+                                        <span class="whitespace-nowrap">{{ $createdClock }}</span>
+                                    </flux:table.cell>
                                     <flux:table.cell align="end">
                                         <flux:tooltip :content="__('Widerrufen')">
                                             <flux:button variant="danger" size="sm" icon="trash"

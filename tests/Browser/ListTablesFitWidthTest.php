@@ -110,3 +110,25 @@ it('fits the list table into the viewport without horizontal scrolling', functio
     'cities' => ['cities', 'Neumarkt in der Oberpfalz'],
     'services' => ['services', 'Mempool Explorer'],
 ])->with(['guest' => false, 'creator' => true]);
+
+it('fits the api token table into the viewport without horizontal scrolling', function () {
+    $this->actingAs($this->creator);
+    $this->creator->createToken('Externer Kurs-Sync für die Volkshochschule Paderborn und Umgebung');
+    $this->creator->createToken('Laptop');
+
+    $page = visit('/de/settings/api-tokens')->assertSee('Volkshochschule');
+
+    foreach ([390, 820, 1100, 1280, 1600] as $width) {
+        $m = ($this->measure)($page, $width);
+
+        expect($m['found'])->toBeTrue("api-tokens at {$width}px: no table");
+        expect($m['areaScroll'])->toBeLessThanOrEqual($m['areaClient'], sprintf(
+            'api-tokens at %spx: the table scrolls sideways (%s > %s)', $width, $m['areaScroll'], $m['areaClient']
+        ));
+        expect($m['docScroll'])->toBeLessThanOrEqual($m['docClient'], sprintf(
+            'api-tokens at %spx: the page scrolls sideways (%s > %s)', $width, $m['docScroll'], $m['docClient']
+        ));
+    }
+
+    $page->assertNoJavaScriptErrors();
+});
