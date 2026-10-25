@@ -56,7 +56,7 @@ class extends Component
         </div>
     </div>
 
-    <flux:table :paginate="$courses" class="mt-6">
+    <flux:table :paginate="$courses" class="mt-6" data-table-stack="xl">
         <flux:table.columns>
             <flux:table.column>
                 {{ __('Name') }}

@@ -105,18 +105,13 @@ class extends Component
         </div>
     </div>
 
-    {{-- Flux sets its table to `whitespace-nowrap` inside an `overflow-auto`
-         scroll area, so one long event title or region name stretched its
-         column and pushed "Log in" behind a horizontal scrollbar (production,
-         desktop width, 2026-10-25). Here the two cells with free text (name,
-         next event) wrap and the short ones keep `nowrap`, so no header or
-         "Log in" breaks mid-word; `table-auto` sizes the columns by content
-         rather than in equal fifths, and below
-         `xl` each row stacks into a card: with the sidebar open, 1100px left
-         733px for a table whose narrowest layout needs 821px (production,
-         2026-10-25). MeetupTableFitsWidthTest measures both widths. --}}
-    <flux:table :paginate="$meetups"
-                class="mt-6 !table-auto max-xl:block max-xl:[&_thead]:hidden max-xl:[&_tbody]:block max-xl:[&_tbody>tr]:flex max-xl:[&_tbody>tr]:flex-col max-xl:[&_tbody>tr]:py-3 max-xl:[&_td]:!px-0 max-xl:[&_td]:!py-1">
+    {{-- data-table-stack (resources/css/app.css): no sideways scrolling at any
+         width. Only the two cells with free text (name, next event) wrap above
+         `xl`; the short ones keep Flux' `nowrap`, so no header or "Log in"
+         breaks mid-word. Below `xl` the rows stack: with the sidebar open,
+         1100px left 733px for a table whose narrowest layout needs 821px
+         (production, 2026-10-25). MeetupTableFitsWidthTest measures it. --}}
+    <flux:table :paginate="$meetups" class="mt-6" data-table-stack="xl">
         <flux:table.columns>
             <flux:table.column>{{ __('Name') }}
             </flux:table.column>

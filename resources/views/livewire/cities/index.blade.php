@@ -70,7 +70,7 @@ class extends Component
         </div>
     </div>
 
-    <flux:table :paginate="$cities" class="mt-6">
+    <flux:table :paginate="$cities" class="mt-6" data-table-stack="xl">
         <flux:table.columns>
             <flux:table.column>{{ __('Name') }}</flux:table.column>
             <flux:table.column>{{ __('Country') }}</flux:table.column>
