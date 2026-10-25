@@ -156,8 +156,12 @@ class extends Component
                                      meetup and says what opening it does. --}}
                                 <flux:link
                                     :href="route('meetups.landingpage', ['meetup' => $meetup, 'country' => $country])"
-                                    :aria-label="__('Meetup :name öffnen', ['name' => $meetup->name])">
-                                    {{ $meetup->name }}
+                                    :aria-label="__('Meetup :name öffnen', ['name' => $meetup->name])"
+                                    :title="$meetup->name">
+                                    {{-- short_name: "Einundzwanzig" would repeat in nearly
+                                         every row. The aria-label and the title keep the
+                                         full name. --}}
+                                    {{ $meetup->short_name }}
                                 </flux:link>
                                 {{-- zinc-600/300 statt zinc-500: letzteres misst auf dem
                                      dunklen Body 3,19:1 und reisst damit WCAG 1.4.3.
