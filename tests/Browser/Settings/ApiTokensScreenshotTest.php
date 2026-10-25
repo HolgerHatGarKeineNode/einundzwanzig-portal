@@ -1,5 +1,9 @@
 <?php
 
+beforeEach(function () {
+    portalCountry();
+});
+
 it('shows the api token management UI and the one-time token reveal', function () {
     // `is_lecturer` stand hier ohne Wirkung: die Token-Seite fragt es nirgends ab, und
     // seit dem Abbau der Pruefung gatet das Flag auch keine Policy mehr. Der Name bleibt.

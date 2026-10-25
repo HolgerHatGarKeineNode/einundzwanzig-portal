@@ -3,23 +3,25 @@
 use App\Models\Country;
 
 /*
- * The router accepts any {country} segment, so /en/meetups renders. The picker
- * used to hand that segment to Flux's country listbox as its x-model, and Flux
- * throws "Could not find option for value "en"" in the visitor's console for a
- * value that is not among the options (measured on production 2026-10-25).
+ * The router used to accept any {country} segment: /en/meetups rendered, the
+ * sidebar requested a flag that does not exist (404), and the calendar picker
+ * handed "en" to Flux's country listbox, which threw "Could not find option for
+ * value "en"" in the visitor's console (measured on production 2026-10-25). The
+ * route binder in AppServiceProvider now answers such a segment with 404.
  */
 beforeEach(function () {
-    Country::factory()->create(['code' => 'de', 'name' => 'Deutschland']);
-    Country::factory()->create(['code' => 'at', 'name' => 'Österreich']);
+    Country::factory()->create(['code' => 'DE', 'name' => 'Deutschland']);
 });
 
-it('keeps the route country as the picker default when it is a listed country', function () {
-    $this->get('/at/meetups')->assertOk()->assertSee("country: 'at'", false);
+it('serves a country segment that a country carries, in any case', function () {
+    $this->get('/de/meetups')->assertOk()->assertSee("country: 'de'", false);
 });
 
-it('falls back to a listed country for an unknown country segment', function () {
-    $this->get('/en/meetups')
-        ->assertOk()
-        ->assertDontSee("country: 'en'", false)
-        ->assertSee("country: '".mb_strtolower(config('app.domain_country', 'de'))."'", false);
-});
+it('answers 404 for a country segment that no country carries', function (string $path) {
+    $this->get($path)->assertNotFound();
+})->with([
+    'list page' => '/en/meetups',
+    'map' => '/en/map',
+    'optional-prefix group' => '/en/dashboard',
+    'legacy redirect' => '/en/meetup/overview',
+]);

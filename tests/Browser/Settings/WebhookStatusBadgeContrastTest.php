@@ -146,6 +146,7 @@ const CANVAS_READBACK = <<<'JS'
 JS;
 
 beforeEach(function () {
+    portalCountry();
     $owner = User::factory()->create();
     $this->actingAs($owner);
 

@@ -190,6 +190,7 @@ it('rejects a signed event carrying the wrong intent (phishing relay)', function
 it('renders the full wizard page through the app layout (SEO data present)', function () {
     $this->actingAs(User::factory()->create(['nostr' => null, 'public_key' => 'aa'.str_repeat('0', 62)]));
 
+    portalCountry();
     $this->get('/de/settings/link-identity')->assertOk();
 });
 

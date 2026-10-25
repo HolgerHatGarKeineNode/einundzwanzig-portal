@@ -111,6 +111,7 @@ function visitWebhookSettingsIn(string $langCountry): object
 }
 
 beforeEach(function () {
+    portalCountry();
     $this->actingAs(User::factory()->create());
 });
 

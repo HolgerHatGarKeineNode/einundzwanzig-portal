@@ -1,11 +1,14 @@
 <?php
 
 use App\Models\City;
-use App\Models\Country;
+
+beforeEach(function () {
+    portalCountry();
+});
 
 it('lets an authenticated user open the meetup-create page', function () {
     actingAsUser();
-    $country = Country::factory()->create(['code' => 'de']);
+    $country = portalCountry();
     City::factory()->create(['country_id' => $country->id]);
 
     $page = visit('/de/meetup-create');

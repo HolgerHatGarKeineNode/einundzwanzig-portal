@@ -263,6 +263,30 @@ expect()->extend('toBeOne', function () {
 |--------------------------------------------------------------------------
 */
 
+/**
+ * The country behind the `/de/...` segment every page test visits.
+ *
+ * Country-prefixed routes answer 404 for a segment no country carries, so a test
+ * that visits a page needs this row. It reuses an existing "de" instead of adding a
+ * second one, so a test that also builds its own Germany sees exactly one.
+ *
+ * @param  array<string, mixed>  $attributes
+ */
+function portalCountry(array $attributes = []): Country
+{
+    $country = Country::query()->matchingCode('de')->first();
+
+    if ($country === null) {
+        return Country::factory()->create(['code' => 'de', ...$attributes]);
+    }
+
+    if ($attributes !== []) {
+        $country->update($attributes);
+    }
+
+    return $country;
+}
+
 function actingAsUser(array $attributes = []): User
 {
     $user = User::factory()->create($attributes);

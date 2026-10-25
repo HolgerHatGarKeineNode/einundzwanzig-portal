@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Country;
 use App\Support\Carbon;
 use App\Support\SushiCache;
 use Dedoc\Scramble\DocumentTransformers\AddDocumentTags;
@@ -48,6 +49,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureRateLimiting();
+
+        $this->rejectUnknownCountrySegments();
 
         Gate::define('viewApiDocs', fn (?Authenticatable $user = null): bool => true);
 
@@ -180,6 +183,22 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Configure the rate limiters for the application.
      */
+    /**
+     * The `{country:code}` prefixes never bound a model: no component type-hints
+     * Country, so any segment rendered (`/en/meetups` → a flag 404 and a Flux
+     * listbox error in the visitor's console). The binder answers 404 for a code no
+     * country carries and hands the segment back unchanged, so every reader of
+     * `route('country')` keeps getting the string it always got.
+     */
+    protected function rejectUnknownCountrySegments(): void
+    {
+        Route::bind('country', function (string $value): string {
+            abort_unless(Country::query()->matchingCode($value)->exists(), 404);
+
+            return $value;
+        });
+    }
+
     protected function configureRateLimiting(): void
     {
         RateLimiter::for('calendar', function (Request $request) {

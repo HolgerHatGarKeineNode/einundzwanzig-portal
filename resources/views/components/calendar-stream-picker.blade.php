@@ -16,15 +16,6 @@
 
     $defaultCountry = mb_strtolower((string) request()->route('country', config('app.domain_country', 'de')));
 
-    // The router accepts any {country} segment (/en/meetups). Flux's listbox throws
-    // "Could not find option for value" in the visitor's console for a value that is
-    // not among its options, so an unknown segment falls back like the language does.
-    $countryCodes = $countries->map(fn ($country) => mb_strtolower($country->code));
-    if (! $countryCodes->contains($defaultCountry)) {
-        $domainCountry = mb_strtolower((string) config('app.domain_country', 'de'));
-        $defaultCountry = $countryCodes->contains($domainCountry) ? $domainCountry : (string) $countryCodes->first();
-    }
-
     $langCountry = (string) session('lang_country', config('lang-country.fallback', 'en-GB'));
     $defaultLanguage = str($langCountry)->before('-')->lower()->value();
 

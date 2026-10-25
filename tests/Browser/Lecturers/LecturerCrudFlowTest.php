@@ -2,6 +2,10 @@
 
 use App\Models\Lecturer;
 
+beforeEach(function () {
+    portalCountry();
+});
+
 it('creates a new lecturer end-to-end with valid data', function () {
     actingAsUser();
 

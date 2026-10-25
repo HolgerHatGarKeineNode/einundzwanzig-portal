@@ -8,6 +8,7 @@ use App\Models\User;
 // Disclaimer-String in en.json leer war, fiel Laravel auf den deutschen Key zurück
 // und die Assertions waren zufällig grün — mit echter englischer Übersetzung nicht.
 beforeEach(function () {
+    portalCountry();
     $this->withSession(['lang_country' => 'de-DE', 'locale' => 'de']);
 });
 

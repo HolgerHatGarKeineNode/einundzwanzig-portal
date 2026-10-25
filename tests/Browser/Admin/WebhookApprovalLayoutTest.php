@@ -25,6 +25,7 @@ use App\Models\WebhookSubscription;
 |
 */
 beforeEach(function () {
+    portalCountry();
     $this->board = User::factory()->create(['nostr' => config('einundzwanzig.board_members')[0]]);
     $this->actingAs($this->board);
 

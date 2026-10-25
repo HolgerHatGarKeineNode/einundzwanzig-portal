@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\City;
-use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\Tag;
 use Database\Seeders\TagSeeder;
@@ -36,6 +35,7 @@ use Database\Seeders\TagSeeder;
 */
 
 beforeEach(function () {
+    portalCountry();
     $this->seed(TagSeeder::class);
 
     $this->editor = actingAsUser(['nostr' => config('einundzwanzig.tag_editors')[0]]);
@@ -125,7 +125,7 @@ it('walks a tag from the last position to the first with the keyboard alone', fu
 });
 
 it('shows a newly featured tag in the picker before anyone types', function () {
-    $country = Country::factory()->create(['code' => 'de', 'name' => 'Deutschland']);
+    $country = portalCountry(['name' => 'Deutschland']);
     $city = City::factory()->create(['country_id' => $country->id]);
     $meetup = Meetup::factory()->create(['city_id' => $city->id, 'created_by' => $this->editor->id]);
 
@@ -248,7 +248,7 @@ it('lays the nine name fields out in one column on a narrow screen', function ()
 it('shows how often each tag is used (issue #149)', function () {
     // One event carrying one tag: the number has to be visible and honest,
     // because the heuristic badges next to it read as judgements of it.
-    $country = Country::factory()->create(['code' => 'de', 'name' => 'Deutschland']);
+    $country = portalCountry(['name' => 'Deutschland']);
     $city = City::factory()->create(['country_id' => $country->id]);
     $meetup = Meetup::factory()->create(['city_id' => $city->id, 'created_by' => $this->editor->id]);
 
