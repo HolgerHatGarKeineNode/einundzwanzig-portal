@@ -101,7 +101,17 @@ class extends Component
         </div>
     </div>
 
-    <flux:table :paginate="$meetups" class="mt-6">
+    {{-- Flux sets its table to `whitespace-nowrap` inside an `overflow-auto`
+         scroll area, so one long event title or region name stretched its
+         column and pushed "Log in" behind a horizontal scrollbar (production,
+         desktop width, 2026-10-25). Here the two cells with free text (name,
+         next event) wrap and the short ones keep `nowrap`, so no header or
+         "Log in" breaks mid-word; `table-auto` sizes the columns by content
+         rather than in equal fifths, and below
+         `md` each row stacks into a card, because five columns do not fit a
+         phone at any wrap. MeetupTableFitsWidthTest measures both widths. --}}
+    <flux:table :paginate="$meetups"
+                class="mt-6 !table-auto max-md:block max-md:[&_thead]:hidden max-md:[&_tbody]:block max-md:[&_tbody>tr]:flex max-md:[&_tbody>tr]:flex-col max-md:[&_tbody>tr]:py-3 max-md:[&_td]:!px-0 max-md:[&_td]:!py-1">
         <flux:table.columns>
             <flux:table.column>{{ __('Name') }}
             </flux:table.column>
@@ -127,7 +137,7 @@ class extends Component
                      only one of the three that cost legibility. --}}
                 <flux:table.row :key="$meetup->id" data-testid="meetup-row"
                                 :data-active="$meetup->is_active ? 'true' : 'false'">
-                    <flux:table.cell variant="strong" class="flex items-center gap-3">
+                    <flux:table.cell variant="strong" class="flex items-center gap-3 whitespace-normal min-w-56">
                         <flux:avatar
                             class="[:where(&)]:size-24 [:where(&)]:text-base {{ $meetup->is_active ? '' : 'grayscale' }}" size="xl"
                             :href="route('meetups.landingpage', ['meetup' => $meetup, 'country' => $country])"
@@ -153,7 +163,7 @@ class extends Component
                                      dunklen Body 3,19:1 und reisst damit WCAG 1.4.3.
                                      Der Fehler ist Bestand, sitzt aber genau da, wo
                                      jetzt Text dazukommt. --}}
-                                <div class="text-xs text-zinc-600 dark:text-zinc-300 flex items-center space-x-2">
+                                <div class="text-xs text-zinc-600 dark:text-zinc-300 flex flex-wrap items-center gap-x-2">
                                     <div>{{ $meetup->city->name }}</div>
                                     @if($meetup->city->country)
                                         <flux:separator vertical/>
@@ -169,7 +179,7 @@ class extends Component
                     </flux:table.cell>
 
                     <flux:table.cell>
-                        <div class="flex flex-col gap-1">
+                        <div class="flex flex-col items-start gap-1">
                             @if($meetup->is_active)
                                 <flux:badge color="green" size="sm">{{ __('Aktiv') }}</flux:badge>
                             @else
@@ -185,7 +195,7 @@ class extends Component
                         </div>
                     </flux:table.cell>
 
-                    <flux:table.cell>
+                    <flux:table.cell class="whitespace-normal min-w-56">
                         @if($meetup->nextEvent && $meetup->nextEvent['start']->isFuture())
                             {{-- The calendar icon and the aria-label are what keep this
                                  apart from the meetup link in the name column: the
@@ -194,7 +204,7 @@ class extends Component
                                  status, not a destination. --}}
                             <a href="{{ route('meetups.landingpage-event', ['meetup' => $meetup, 'event' => $meetup->nextEvent['id'], 'country' => $country]) }}"
                                aria-label="{{ __('Event am :date öffnen', ['date' => $meetup->nextEvent['start']->asDateTime()]) }}">
-                                <div class="flex flex-col gap-1">
+                                <div class="flex flex-col items-start gap-1">
                                     @if($meetup->nextEvent['title'])
                                         <span class="text-sm font-medium wrap-anywhere" data-testid="event-title">{{ $meetup->nextEvent['title'] }}</span>
                                     @endif
