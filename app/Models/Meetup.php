@@ -382,60 +382,65 @@ class Meetup extends Model implements HasMedia
 
     protected function logoSquare(): Attribute
     {
-        $media = $this->getFirstMedia('logo');
-        if ($media) {
-            $path = str($media->getPath())->after('storage/app/');
-        } else {
-            $path = 'img/einundzwanzig.png';
-        }
-
         return Attribute::make(
-            get: fn () => url()->route('img',
-                [
-                    'path' => $path,
+            get: function (): string {
+                $media = $this->getFirstMedia('logo');
+
+                return url()->route('img', [
+                    'path' => $media ? str($media->getPath())->after('storage/app/') : 'img/einundzwanzig.png',
                     'w' => 900,
                     'h' => 900,
                     'fit' => 'crop',
                     'fm' => 'webp',
-                ]),
-        );
+                ]);
+            },
+        )->shouldCache();
     }
 
+    /**
+     * The query lives INSIDE the getter, and the result is cached. Eloquent calls this
+     * method again on every access, cached or not (mergeAttributeFromAttributeCasts()
+     * looks for a setter), so a query in the method body re-ran each time:
+     * meetups/index reads `$meetup->nextEvent[...]` up to eight times per card, 81
+     * queries for ten meetups (measured 2026-10-25). logoSquare() had the same shape.
+     */
     protected function nextEvent(): Attribute
     {
-        // The attendance aggregates ride along in the same SELECT, so an event without a
-        // LINKED Nostr RSVP costs no extra query at all and an unlinked RSVP is counted
-        // rather than loaded (MeetupEventAttendance).
-        $nextEvent = $this->meetupEvents()->withAttendanceCounts()->where('start', '>=', now())->orderBy('start')->first();
-
         return Attribute::make(
-            get: fn () => $nextEvent ? [
-                'id' => $nextEvent->id,
-                'start' => $nextEvent->start,
-                // The event's own title, null when it has none (issue #157). Not the
-                // displayTitle() fallback: every reader of this array sits next to the
-                // meetup's name already.
-                'title' => $nextEvent->title,
-                'portalLink' => url()->route('meetups.landingpage-event',
-                    ['country' => $this->city->country, 'meetup' => $this, 'event' => $nextEvent]),
-                'location' => $nextEvent->location,
-                // Der praezise Kartenort, wenn einer gewaehlt wurde — das Popup zeigt
-                // ihn ueber dem Freitext, statt ihn zu ersetzen.
-                'osm_name' => $nextEvent->osm_name,
-                'osm_type' => $nextEvent->osm_type,
-                'osm_id' => $nextEvent->osm_id,
-                'osm_address' => $nextEvent->osm_address,
-                'description' => $nextEvent->description,
-                'link' => $nextEvent->link,
-                // null = Teilnehmerzahl öffentlich verborgen (attendees_public=false).
-                'attendees' => $this->attendees_public ? $nextEvent->attendeesCount() : null,
-                'might_attendees' => $this->attendees_public ? $nextEvent->mightAttendeesCount() : null,
-                // Nostr RSVPs of keys linked to no portal account (D12a, "+N via Nostr").
-                'nostr_attendees' => $this->attendees_public ? $nextEvent->nostrAttendeesCount() : null,
-                'nostr_might_attendees' => $this->attendees_public ? $nextEvent->nostrMightAttendeesCount() : null,
-                'nostr_note' => str($nextEvent->nostr_status)->after('Sent event ')->before(' to '),
-            ] : null,
-        );
+            get: function (): ?array {
+                // The attendance aggregates ride along in the same SELECT, so an event
+                // without a LINKED Nostr RSVP costs no extra query at all and an unlinked
+                // RSVP is counted rather than loaded (MeetupEventAttendance).
+                $nextEvent = $this->meetupEvents()->withAttendanceCounts()->where('start', '>=', now())->orderBy('start')->first();
+
+                return $nextEvent ? [
+                    'id' => $nextEvent->id,
+                    'start' => $nextEvent->start,
+                    // The event's own title, null when it has none (issue #157). Not the
+                    // displayTitle() fallback: every reader of this array sits next to the
+                    // meetup's name already.
+                    'title' => $nextEvent->title,
+                    'portalLink' => url()->route('meetups.landingpage-event',
+                        ['country' => $this->city->country, 'meetup' => $this, 'event' => $nextEvent]),
+                    'location' => $nextEvent->location,
+                    // Der praezise Kartenort, wenn einer gewaehlt wurde — das Popup zeigt
+                    // ihn ueber dem Freitext, statt ihn zu ersetzen.
+                    'osm_name' => $nextEvent->osm_name,
+                    'osm_type' => $nextEvent->osm_type,
+                    'osm_id' => $nextEvent->osm_id,
+                    'osm_address' => $nextEvent->osm_address,
+                    'description' => $nextEvent->description,
+                    'link' => $nextEvent->link,
+                    // null = Teilnehmerzahl öffentlich verborgen (attendees_public=false).
+                    'attendees' => $this->attendees_public ? $nextEvent->attendeesCount() : null,
+                    'might_attendees' => $this->attendees_public ? $nextEvent->mightAttendeesCount() : null,
+                    // Nostr RSVPs of keys linked to no portal account (D12a, "+N via Nostr").
+                    'nostr_attendees' => $this->attendees_public ? $nextEvent->nostrAttendeesCount() : null,
+                    'nostr_might_attendees' => $this->attendees_public ? $nextEvent->nostrMightAttendeesCount() : null,
+                    'nostr_note' => str($nextEvent->nostr_status)->after('Sent event ')->before(' to '),
+                ] : null;
+            },
+        )->shouldCache();
     }
 
     protected function belongsToMe(): Attribute
@@ -443,7 +448,7 @@ class Meetup extends Model implements HasMedia
         return Attribute::make(
             get: fn () => DB::table('meetup_user')->where('meetup_id', $this->id)->where('user_id',
                 auth()->id())->exists(),
-        );
+        )->shouldCache();
     }
 
     public function meetupEvents(): HasMany
