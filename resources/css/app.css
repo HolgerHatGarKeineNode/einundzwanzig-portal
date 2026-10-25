@@ -161,9 +161,14 @@
         padding-block: 0.75rem;
     }
 
+    /* A card has a fixed width, so here a long token (a bare URL in a course
+       description) may break anywhere again; `min-width: 0` lets the flex
+       item shrink below that token. */
     [data-table-stack="md"] > tbody > tr > td {
         padding-inline: 0;
         padding-block: 0.25rem;
+        min-width: 0;
+        overflow-wrap: anywhere;
     }
 }
 
@@ -187,9 +192,14 @@
         padding-block: 0.75rem;
     }
 
+    /* A card has a fixed width, so here a long token (a bare URL in a course
+       description) may break anywhere again; `min-width: 0` lets the flex
+       item shrink below that token. */
     [data-table-stack="xl"] > tbody > tr > td {
         padding-inline: 0;
         padding-block: 0.25rem;
+        min-width: 0;
+        overflow-wrap: anywhere;
     }
 }
 

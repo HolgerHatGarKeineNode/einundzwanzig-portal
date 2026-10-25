@@ -19,7 +19,8 @@ use App\Models\User;
  *   cities            597   167   191    11
  *   services          692   262   286   106
  *
- * Every page gets long content, and the logged-in creator sees the edit
+ * Every page gets long content (the course description is a bare URL: one
+ * stuck out 19px at 390px on production after the first fix), and the logged-in creator sees the edit
  * buttons, which are the widest fixed content in a row. The meetup list has
  * its own test (MeetupTableFitsWidthTest).
  */
@@ -43,7 +44,7 @@ beforeEach(function () {
     $course = Course::factory()->create([
         'lecturer_id' => $lecturer->id,
         'name' => 'Bitcoin für Fortgeschrittene: Lightning, Multisig und Verwahrung',
-        'description' => 'Ein ganzer Tag über Schlüsselverwaltung, Kanäle und die Frage, wem man vertraut.',
+        'description' => 'https://vhskurse.paderborn.de/webbasys/index.php?kathaupt=11&knr=bitcoin',
         'created_by' => $this->creator->id,
     ]);
     CourseEvent::factory()->create([
