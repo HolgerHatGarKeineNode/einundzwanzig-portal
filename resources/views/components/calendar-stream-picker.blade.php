@@ -72,9 +72,16 @@
      button instead, where it actually applies — hence `scopedCopyTemplate`,
      whose `:country` placeholder is filled client-side so it follows the select
      without a round trip. --}}
+{{-- The flags carry data-src, not src, until the first click on the picker.
+     loading="lazy" alone did not hold: on the meetups index this component
+     arrives in a deferred island, and the morph inserts the ~260 option images
+     before Flux hides their listbox, so the browser fetched all of them right
+     away (224 flag requests on a fresh production load, 2026-10-25). Copies Flux
+     makes of the selected option keep the attribute and are swapped too. --}}
 <flux:dropdown
     position="bottom"
     align="start"
+    x-on:click.once="$el.querySelectorAll('img[data-src]').forEach((img) => { img.src = img.dataset.src; img.removeAttribute('data-src'); })"
     x-data="{
         country: {!! \Illuminate\Support\Js::from($defaultCountry)->toHtml() !!},
         language: {!! \Illuminate\Support\Js::from($defaultLanguage)->toHtml() !!},
@@ -135,7 +142,7 @@
                     <flux:select.option value="{{ mb_strtolower($option->code) }}">
                         <div class="flex items-center space-x-2">
                             <img alt="{{ mb_strtolower($option->code) }}"
-                                 src="{{ asset('vendor/blade-flags/country-'.mb_strtolower($option->code).'.svg') }}"
+                                 data-src="{{ asset('vendor/blade-flags/country-'.mb_strtolower($option->code).'.svg') }}"
                                  loading="lazy" decoding="async"
                                  width="24" height="12"/>
                             <span>{{ $option->name }} ({{ strtoupper($option->code) }})</span>
@@ -163,7 +170,7 @@
                             @endphp
                             @if($flagCode !== '')
                                 <img alt="{{ $flagCode }}"
-                                     src="{{ asset('vendor/blade-flags/country-'.$flagCode.'.svg') }}"
+                                     data-src="{{ asset('vendor/blade-flags/country-'.$flagCode.'.svg') }}"
                                      loading="lazy" decoding="async"
                                      width="24" height="12"/>
                             @endif

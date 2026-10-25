@@ -330,10 +330,28 @@ it('keeps its test ids across a Livewire re-render of the meetups search field',
  * they still render once the dropdown is open.
  */
 it('defers the country flags until the dropdown is open, and then renders them', function () {
+    // Enough countries that eager loading cannot hide under the threshold below:
+    // with the single fixture country the count could never reach 20.
+    foreach (['at', 'ch', 'fr', 'it', 'es', 'pt', 'nl', 'be', 'lu', 'dk', 'se', 'no', 'fi', 'pl', 'cz', 'sk', 'hu', 'si', 'hr', 'ro', 'bg', 'gr', 'ie', 'gb', 'us', 'ca', 'mx', 'br', 'ar', 'cl'] as $code) {
+        Country::query()->create(['code' => $code, 'name' => 'Land '.$code, 'english_name' => 'Country '.$code, 'language_codes' => ['en'], 'longitude' => 0, 'latitude' => 0]);
+    }
+
     $page = visit('/de/meetups');
     $page->resize(1280, 900);
 
-    $flagsRequested = $page->script('performance.getEntriesByType("resource").filter((entry) => entry.name.includes("blade-flags")).length');
+    // Count only after the deferred island has delivered the picker, and give
+    // the browser a few frames to start whatever it is going to fetch. Counting
+    // before the island arrived is how 224 eager flag requests stayed green.
+    Ready::alpine($page, '[data-testid^="calendar-stream-"][data-testid$="-trigger"]');
+    $flagsRequested = $page->script(<<<'JS'
+        (async () => {
+            for (let frame = 0; frame < 30; frame++) {
+                await new Promise((resolve) => requestAnimationFrame(resolve));
+            }
+
+            return performance.getEntriesByType('resource').filter((entry) => entry.name.includes('blade-flags')).length;
+        })()
+    JS);
 
     // Not 243: only what is on screen without opening anything.
     expect($flagsRequested)->toBeLessThan(20);
