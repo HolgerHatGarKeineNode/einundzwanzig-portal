@@ -376,6 +376,24 @@ class Meetup extends Model implements HasMedia
         )->shouldCache();
     }
 
+    /**
+     * The name without a leading "Einundzwanzig" ("EINUNDZWANZIG WÜRZBURG" →
+     * "WÜRZBURG"), for lists where every entry would repeat the brand. Display
+     * only: the stored name keeps the prefix. A name that is nothing but the
+     * prefix, or carries it inside a word ("Einundzwanzigste"), stays as it is.
+     */
+    protected function shortName(): Attribute
+    {
+        return Attribute::make(
+            get: function (): string {
+                $name = (string) $this->name;
+                $shortened = preg_replace('/^einundzwanzig(?:[\s\-–:|·]+)/iu', '', $name);
+
+                return $shortened === null || trim($shortened) === '' ? $name : $shortened;
+            }
+        );
+    }
+
     public function city(): BelongsTo
     {
         return $this->belongsTo(City::class);

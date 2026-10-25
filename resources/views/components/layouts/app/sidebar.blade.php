@@ -123,7 +123,7 @@
                                :current="request()->routeIs('dashboard')"
                                wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
         </flux:navlist.group>
-        <flux:navlist.group :heading="__('Meetups')" class="grid">
+        <flux:navlist.group :heading="__('Meetups')" class="grid [&>div]:min-w-0">
             <flux:navlist.item icon="user-group" :href="country_or_region_route('meetups.index')"
                                :current="request()->routeIs('meetups.index', 'meetups.index-region')"
                                wire:navigate
@@ -168,13 +168,20 @@
                 </div>
             </flux:navlist.item>
 
+            {{-- Short name, ellipsis, full name in the title: nearly every name
+                 repeats "Einundzwanzig", and a long one ran out of the sidebar
+                 ("Einundzwanzig Neumarkt in de", cut off without a mark).
+                 `leading-normal` because `truncate` clips, and Flux' `leading-none`
+                 would cut off descenders. --}}
             @foreach ($myMeetups as $myMeetup)
                 <flux:navlist.item icon="star"
+                                   class="min-w-0 [&_[data-content]]:min-w-0 [&_[data-content]]:truncate [&_[data-content]]:leading-normal"
+                                   :title="$myMeetup->name"
                                    :href="route_with_country('meetups.landingpage', ['meetup' => $myMeetup, 'country' => $navMeetupCountry($myMeetup)])"
                                    :current="request()->routeIs('meetups.landingpage') && $navCurrentMeetupSlug === $myMeetup->slug"
                                    wire:navigate
                                    data-testid="sidebar-my-meetup">
-                    {{ $myMeetup->name }}
+                    {{ $myMeetup->short_name }}
                 </flux:navlist.item>
             @endforeach
         </flux:navlist.group>
