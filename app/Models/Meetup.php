@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -167,6 +168,113 @@ class Meetup extends Model implements HasMedia
                 ]);
             }
         });
+
+        /*
+         * Issue #167: the slug may change, the URLs it was shared under may not stop
+         * working. Recorded here and not in the edit form, so a change through the
+         * REST API, an MCP tool or a restore point leaves the same trail.
+         */
+        static::updating(function (Meetup $model): void {
+            if (! $model->isDirty('slug')) {
+                return;
+            }
+
+            $retiredSlug = $model->getOriginal('slug');
+            $currentSlug = $model->slug;
+
+            // Taking back a slug it gave up earlier: that slug is live again, not a redirect.
+            MeetupSlugRedirect::query()
+                ->where('meetup_id', $model->getKey())
+                ->where('slug', $currentSlug)
+                ->delete();
+
+            if (filled($retiredSlug) && $retiredSlug !== $currentSlug) {
+                MeetupSlugRedirect::query()->updateOrCreate(
+                    ['slug' => $retiredSlug],
+                    ['meetup_id' => $model->getKey()],
+                );
+            }
+        });
+    }
+
+    /**
+     * Slugs this meetup used to have, each answered with a redirect (issue #167).
+     *
+     * @return HasMany<MeetupSlugRedirect, $this>
+     */
+    public function slugRedirects(): HasMany
+    {
+        return $this->hasMany(MeetupSlugRedirect::class);
+    }
+
+    /**
+     * The first slug this meetup ever had, if it has changed since.
+     *
+     * @return HasOne<MeetupSlugRedirect, $this>
+     */
+    public function originalSlugRedirect(): HasOne
+    {
+        return $this->hasOne(MeetupSlugRedirect::class)->oldestOfMany();
+    }
+
+    /**
+     * The slug the meetup was created with, which stays stable across renames.
+     *
+     * For consumers that use the slug as a foreign identifier rather than as a URL —
+     * BTC Map keys its communities by it — a changed slug would read as a new record.
+     */
+    public function stableSlug(): string
+    {
+        return $this->originalSlugRedirect?->slug ?? (string) $this->slug;
+    }
+
+    /**
+     * Resolve `{meetup:slug}` and send a retired slug on to the current URL.
+     *
+     * A GET for a slug the meetup gave up is answered with a 301 to the same URL
+     * under the current slug; any other method resolves to the meetup directly, since
+     * a redirect would turn a POST into a GET.
+     *
+     * @param  mixed  $value
+     * @param  string|null  $field
+     */
+    public function resolveRouteBinding($value, $field = null): ?Model
+    {
+        $meetup = parent::resolveRouteBinding($value, $field);
+
+        if ($meetup !== null || ($field ?? $this->getRouteKeyName()) !== 'slug' || ! is_string($value)) {
+            return $meetup;
+        }
+
+        $meetup = MeetupSlugRedirect::query()->where('slug', $value)->first()?->meetup;
+
+        if ($meetup === null) {
+            return null;
+        }
+
+        $request = request();
+
+        if ($request->isMethod('GET') || $request->isMethod('HEAD')) {
+            // Anchored on "meetup/" so a country code that happens to equal the slug stays put.
+            $path = preg_replace(
+                '#(^|/)meetup/'.preg_quote($value, '#').'(?=/|$)#',
+                '${1}meetup/'.$meetup->slug,
+                $request->path(),
+                1,
+            );
+
+            if ($path === null || $path === $request->path()) {
+                return $meetup;
+            }
+
+            $query = $request->getQueryString();
+
+            throw new HttpResponseException(
+                redirect()->to(url($path).($query !== null ? '?'.$query : ''), 301)
+            );
+        }
+
+        return $meetup;
     }
 
     public function getSlugOptions(): SlugOptions
@@ -183,8 +291,10 @@ class Meetup extends Model implements HasMedia
              */
             ->usingLanguage(config('app.locale'))
             /*
-             * Der Slug ist Route-Key (/{country}/meetup/{meetup:slug}), er darf sich nie mehr aendern.
-             * Ohne diese Zeile erzeugt HasSlug den Slug bei JEDEM Update neu.
+             * Der Slug ist Route-Key (/{country}/meetup/{meetup:slug}): HasSlug darf ihn nie
+             * von sich aus neu erzeugen, sonst wandert die URL bei JEDER Namensaenderung.
+             * Aendern darf ihn seit Issue #167 nur noch jemand ausdruecklich (Bearbeiten-
+             * Formular); die alte URL leitet dann ueber meetup_slug_redirects weiter.
              */
             ->doNotGenerateSlugsOnUpdate();
     }

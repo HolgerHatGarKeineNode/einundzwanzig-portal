@@ -928,5 +928,17 @@
     "Pick the OpenStreetMap place — we set the coordinates from it. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.": "Pick the OpenStreetMap place — we set the coordinates from it. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.",
     "Wähle einen Ort auf OpenStreetMap. Die Koordinaten setzen wir daraus.": "Pick a place on OpenStreetMap. We set the coordinates from it.",
     "Keine Stadt gefunden.": "No city found.",
-    "Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.": "Search for the place on OpenStreetMap. We take the coordinates from the match."
+    "Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.": "Search for the place on OpenStreetMap. We take the coordinates from the match.",
+    "Nur Kleinbuchstaben (a–z), Ziffern und einzelne Bindestriche, ohne Bindestrich am Anfang oder Ende.": "Only lowercase letters (a–z), digits and single hyphens, with no hyphen at the start or end.",
+    "Diese Adresse ist für das Portal reserviert.": "This address is reserved by the portal.",
+    "Diese Adresse gehört bereits zum Meetup :name.": "This address already belongs to the meetup :name.",
+    "Diese Adresse hat früher das Meetup :name verwendet und leitet noch dorthin weiter.": "This address was used earlier by the meetup :name and still redirects there.",
+    "Neue Adresse gespeichert. Links auf die alte Adresse /meetup/:old leiten automatisch hierher weiter.": "New address saved. Links to the old address /meetup/:old now redirect here automatically.",
+    "Adresse (URL)": "Address (URL)",
+    "Vollständige Adresse": "Full address",
+    "Erlaubt sind Kleinbuchstaben, Ziffern und Bindestriche; Umlaute und Leerzeichen werden beim Verlassen des Feldes umgewandelt. Jede Adresse gibt es nur einmal. Änderst du sie, leitet die bisherige Adresse automatisch weiter — bereits geteilte Links funktionieren weiter.": "Lowercase letters, digits and hyphens are allowed; accents and spaces are converted when you leave the field. Each address exists only once. If you change it, the previous address redirects automatically — links already shared keep working.",
+    "Aus dem Namen erzeugen": "Generate from name",
+    "Zurücksetzen": "Reset",
+    "Noch nicht gespeichert — bisher /meetup/:slug": "Not saved yet — currently /meetup/:slug",
+    "Frühere Adressen, die hierher weiterleiten": "Earlier addresses that redirect here"
 }

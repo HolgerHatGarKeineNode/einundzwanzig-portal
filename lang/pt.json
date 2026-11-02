@@ -928,5 +928,17 @@
     "Pick the OpenStreetMap place — we set the coordinates from it. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.": "Escolha o local no OpenStreetMap — daí extraímos as coordenadas. Nome, país, região e população ficam com quem adicionou a cidade e com os seus guardiões, porque deles se constroem as listas de meetups e a exportação para o BTC Map.",
     "Wähle einen Ort auf OpenStreetMap. Die Koordinaten setzen wir daraus.": "Escolha um local no OpenStreetMap. Daí extraímos as coordenadas.",
     "Keine Stadt gefunden.": "Nenhuma cidade encontrada.",
-    "Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.": "Procure o local no OpenStreetMap. Tiramos as coordenadas do resultado."
+    "Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.": "Procure o local no OpenStreetMap. Tiramos as coordenadas do resultado.",
+    "Nur Kleinbuchstaben (a–z), Ziffern und einzelne Bindestriche, ohne Bindestrich am Anfang oder Ende.": "Apenas letras minúsculas (a–z), dígitos e hífenes simples, sem hífen no início ou no fim.",
+    "Diese Adresse ist für das Portal reserviert.": "Este endereço está reservado pelo portal.",
+    "Diese Adresse gehört bereits zum Meetup :name.": "Este endereço já pertence ao meetup :name.",
+    "Diese Adresse hat früher das Meetup :name verwendet und leitet noch dorthin weiter.": "Este endereço foi usado antes pelo meetup :name e ainda redireciona para lá.",
+    "Neue Adresse gespeichert. Links auf die alte Adresse /meetup/:old leiten automatisch hierher weiter.": "Novo endereço guardado. Os links para o endereço antigo /meetup/:old redirecionam automaticamente para aqui.",
+    "Adresse (URL)": "Endereço (URL)",
+    "Vollständige Adresse": "Endereço completo",
+    "Erlaubt sind Kleinbuchstaben, Ziffern und Bindestriche; Umlaute und Leerzeichen werden beim Verlassen des Feldes umgewandelt. Jede Adresse gibt es nur einmal. Änderst du sie, leitet die bisherige Adresse automatisch weiter — bereits geteilte Links funktionieren weiter.": "São permitidas letras minúsculas, dígitos e hífenes; acentos e espaços são convertidos ao sair do campo. Cada endereço existe apenas uma vez. Se o alterares, o endereço anterior redireciona automaticamente — os links já partilhados continuam a funcionar.",
+    "Aus dem Namen erzeugen": "Gerar a partir do nome",
+    "Zurücksetzen": "Repor",
+    "Noch nicht gespeichert — bisher /meetup/:slug": "Ainda não guardado — até agora /meetup/:slug",
+    "Frühere Adressen, die hierher weiterleiten": "Endereços anteriores que redirecionam para aqui"
 }

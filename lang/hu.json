@@ -928,5 +928,17 @@
     "Pick the OpenStreetMap place — we set the coordinates from it. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.": "Válaszd ki az OpenStreetMap-helyet — a koordinátákat abból állítjuk be. A név, ország, régió és népesség annál marad, aki a várost hozzáadta, és a város gondnokainál, mert a meetup-listák és a BTC Map export ezekből épülnek.",
     "Wähle einen Ort auf OpenStreetMap. Die Koordinaten setzen wir daraus.": "Válassz egy helyet az OpenStreetMapen. A koordinátákat abból állítjuk be.",
     "Keine Stadt gefunden.": "Nem található város.",
-    "Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.": "Keresd meg a helyet az OpenStreetMapen. A koordinátákat a találatból állítjuk be."
+    "Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.": "Keresd meg a helyet az OpenStreetMapen. A koordinátákat a találatból állítjuk be.",
+    "Nur Kleinbuchstaben (a–z), Ziffern und einzelne Bindestriche, ohne Bindestrich am Anfang oder Ende.": "Csak kisbetűk (a–z), számjegyek és egyes kötőjelek, kötőjel nélkül az elején vagy a végén.",
+    "Diese Adresse ist für das Portal reserviert.": "Ezt a címet a portál fenntartja.",
+    "Diese Adresse gehört bereits zum Meetup :name.": "Ez a cím már a(z) :name meetuphoz tartozik.",
+    "Diese Adresse hat früher das Meetup :name verwendet und leitet noch dorthin weiter.": "Ezt a címet korábban a(z) :name meetup használta, és még mindig oda irányít át.",
+    "Neue Adresse gespeichert. Links auf die alte Adresse /meetup/:old leiten automatisch hierher weiter.": "Új cím elmentve. A régi /meetup/:old címre mutató linkek automatikusan ide irányítanak át.",
+    "Adresse (URL)": "Cím (URL)",
+    "Vollständige Adresse": "Teljes cím",
+    "Erlaubt sind Kleinbuchstaben, Ziffern und Bindestriche; Umlaute und Leerzeichen werden beim Verlassen des Feldes umgewandelt. Jede Adresse gibt es nur einmal. Änderst du sie, leitet die bisherige Adresse automatisch weiter — bereits geteilte Links funktionieren weiter.": "Kisbetűk, számjegyek és kötőjelek engedélyezettek; az ékezetek és szóközök a mező elhagyásakor átalakulnak. Minden cím csak egyszer létezhet. Ha megváltoztatod, a korábbi cím automatikusan átirányít — a már megosztott linkek továbbra is működnek.",
+    "Aus dem Namen erzeugen": "Létrehozás a névből",
+    "Zurücksetzen": "Visszaállítás",
+    "Noch nicht gespeichert — bisher /meetup/:slug": "Még nincs mentve — eddig /meetup/:slug",
+    "Frühere Adressen, die hierher weiterleiten": "Korábbi címek, amelyek ide irányítanak át"
 }

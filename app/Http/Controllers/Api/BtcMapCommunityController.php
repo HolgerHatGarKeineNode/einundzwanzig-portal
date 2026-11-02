@@ -22,6 +22,8 @@ class BtcMapCommunityController extends Controller
                 ->with([
                     'media',
                     'city.country',
+                    // stableSlug(): BTC Map keys communities by this id, a renamed slug must not read as a new one (#167).
+                    'originalSlugRedirect',
                 ])
                 ->where('community', '=', 'einundzwanzig')
                 ->when(
@@ -36,7 +38,7 @@ class BtcMapCommunityController extends Controller
                 )
                 ->get()
                 ->map(fn ($meetup) => [
-                    'id' => $meetup->slug,
+                    'id' => $meetup->stableSlug(),
                     'tags' => [
                         'type' => 'community',
                         'name' => $meetup->name,

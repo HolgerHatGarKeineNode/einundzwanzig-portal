@@ -928,5 +928,17 @@
     "Pick the OpenStreetMap place — we set the coordinates from it. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.": "Wybierz miejsce z OpenStreetMap — stąd bierzemy współrzędne. Nazwa, kraj, region i liczba mieszkańców zostają przy osobie, która dodała miasto, i przy jego opiekunach, bo z nich budowane są listy meetupów i eksport do BTC Map.",
     "Wähle einen Ort auf OpenStreetMap. Die Koordinaten setzen wir daraus.": "Wybierz miejsce na OpenStreetMap. Stąd bierzemy współrzędne.",
     "Keine Stadt gefunden.": "Nie znaleziono miasta.",
-    "Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.": "Wyszukaj miejsce na OpenStreetMap. Współrzędne bierzemy z wyniku."
+    "Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.": "Wyszukaj miejsce na OpenStreetMap. Współrzędne bierzemy z wyniku.",
+    "Nur Kleinbuchstaben (a–z), Ziffern und einzelne Bindestriche, ohne Bindestrich am Anfang oder Ende.": "Tylko małe litery (a–z), cyfry i pojedyncze myślniki, bez myślnika na początku ani na końcu.",
+    "Diese Adresse ist für das Portal reserviert.": "Ten adres jest zarezerwowany przez portal.",
+    "Diese Adresse gehört bereits zum Meetup :name.": "Ten adres należy już do meetupu :name.",
+    "Diese Adresse hat früher das Meetup :name verwendet und leitet noch dorthin weiter.": "Tego adresu używał wcześniej meetup :name i nadal przekierowuje on tam.",
+    "Neue Adresse gespeichert. Links auf die alte Adresse /meetup/:old leiten automatisch hierher weiter.": "Nowy adres zapisany. Linki do starego adresu /meetup/:old automatycznie przekierowują tutaj.",
+    "Adresse (URL)": "Adres (URL)",
+    "Vollständige Adresse": "Pełny adres",
+    "Erlaubt sind Kleinbuchstaben, Ziffern und Bindestriche; Umlaute und Leerzeichen werden beim Verlassen des Feldes umgewandelt. Jede Adresse gibt es nur einmal. Änderst du sie, leitet die bisherige Adresse automatisch weiter — bereits geteilte Links funktionieren weiter.": "Dozwolone są małe litery, cyfry i myślniki; znaki diakrytyczne i spacje są zamieniane po opuszczeniu pola. Każdy adres istnieje tylko raz. Jeśli go zmienisz, dotychczasowy adres automatycznie przekieruje — już udostępnione linki nadal działają.",
+    "Aus dem Namen erzeugen": "Utwórz z nazwy",
+    "Zurücksetzen": "Przywróć",
+    "Noch nicht gespeichert — bisher /meetup/:slug": "Jeszcze nie zapisano — dotąd /meetup/:slug",
+    "Frühere Adressen, die hierher weiterleiten": "Wcześniejsze adresy przekierowujące tutaj"
 }

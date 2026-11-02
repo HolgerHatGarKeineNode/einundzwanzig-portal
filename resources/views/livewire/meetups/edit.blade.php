@@ -6,12 +6,14 @@ use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\User;
 use App\Rules\UniqueMeetupName;
+use App\Rules\UniqueMeetupSlug;
 use App\Rules\ValidNpub;
 use App\Services\Osm\NominatimClient;
 use App\Support\NostrLogin;
 use App\Traits\SeoTrait;
 use Flux\Flux;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
@@ -35,6 +37,10 @@ class extends Component
 
     public ?int $city_id = null;
 
+    /**
+     * The URL slug (issue #167). Editable; the slug it replaces keeps redirecting,
+     * see {@see Meetup::resolveRouteBinding()}.
+     */
     public string $slug = '';
 
     public ?string $intro = null;
@@ -331,6 +337,70 @@ class extends Component
     }
 
     /**
+     * Validation rules for the slug — none while it is unchanged.
+     *
+     * A meetup created before #167 may carry a slug the format rule would reject
+     * today; checking an untouched slug would lock its leaders out of saving
+     * anything else.
+     *
+     * @return array<int, mixed>
+     */
+    protected function slugRules(): array
+    {
+        if ($this->slug === $this->meetup->slug) {
+            return [];
+        }
+
+        return ['required', 'string', 'max:255', new UniqueMeetupSlug($this->meetup->id)];
+    }
+
+    /**
+     * The same transliteration HasSlug uses on create (fixed app locale, not the
+     * visitor's), so "Köln" becomes "koeln" here exactly as it would there.
+     */
+    protected function slugify(string $value): string
+    {
+        return Str::slug($value, '-', config('app.locale'));
+    }
+
+    /**
+     * Normalise what was typed and say at once whether the address is free —
+     * the user should not learn about a collision only after pressing save.
+     */
+    public function updatedSlug(): void
+    {
+        $this->slug = $this->slugify($this->slug);
+        $this->resetValidation('slug');
+
+        if ($this->slugRules() !== []) {
+            $this->validateOnly('slug', ['slug' => $this->slugRules()]);
+        }
+    }
+
+    public function slugFromName(): void
+    {
+        $this->slug = $this->slugify($this->name);
+        $this->updatedSlug();
+    }
+
+    public function resetSlug(): void
+    {
+        $this->slug = (string) $this->meetup->slug;
+        $this->resetValidation('slug');
+    }
+
+    /**
+     * Earlier addresses of this meetup, all still redirecting here.
+     *
+     * @return \Illuminate\Support\Collection<int, string>
+     */
+    #[Computed]
+    public function retiredSlugs()
+    {
+        return $this->meetup->slugRedirects()->latest('id')->pluck('slug');
+    }
+
+    /**
      * Whitelist the keys allowed inside github_data and coerce types so a
      * tampered payload cannot smuggle arbitrary keys into the stored JSON.
      */
@@ -411,6 +481,7 @@ class extends Component
 
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255', new UniqueMeetupName($this->meetup->id)],
+            'slug' => $this->slugRules(),
             'city_id' => ['nullable', 'exists:cities,id'],
             'intro' => ['nullable', 'string'],
             'telegram_link' => ['nullable', 'url', 'max:2048'],
@@ -437,6 +508,14 @@ class extends Component
 
         $validated['github_data'] = $this->sanitizeGithubData($validated['github_data'] ?? null);
 
+        $previousSlug = $this->meetup->slug;
+        $slugChanged = $this->slug !== $previousSlug;
+        unset($validated['slug']);
+
+        if ($slugChanged) {
+            $validated['slug'] = $this->slug;
+        }
+
         $this->meetup->update($validated);
 
         if ($this->logo) {
@@ -452,6 +531,13 @@ class extends Component
         $this->dispatch('meetup-updated', name: $this->meetup->name);
 
         session()->flash('status', __('Meetup erfolgreich aktualisiert!'));
+
+        if ($slugChanged) {
+            unset($this->retiredSlugs);
+            session()->flash('slugStatus', __('Neue Adresse gespeichert. Links auf die alte Adresse /meetup/:old leiten automatisch hierher weiter.', [
+                'old' => $previousSlug,
+            ]));
+        }
     }
 
     public function with(): array
@@ -521,7 +607,7 @@ class extends Component
 
                 <flux:field>
                     <flux:label>{{ __('Name') }} <span class="text-red-500">*</span></flux:label>
-                    <flux:input wire:model="name" required/>
+                    <flux:input wire:model.live.blur="name" required/>
                     <flux:description>{{ __('Der Anzeigename für dieses Meetup') }}</flux:description>
                     <flux:error name="name"/>
                 </flux:field>
@@ -561,6 +647,75 @@ class extends Component
                     <flux:error name="visible_on_map"/>
                 </flux:field>
             </div>
+
+            {{-- Issue #167: the URL slug was frozen at creation, so a test name or a typo
+                 stayed in the address for good. It is editable now; every slug the meetup
+                 gives up keeps redirecting (meetup_slug_redirects), which is why the
+                 description says so in plain words — the fear of breaking shared links is
+                 the reason someone would hesitate to fix it. --}}
+            @php
+                $slugCountry = $meetup->city?->country?->code ?? 'de';
+                $slugBase = url($slugCountry.'/meetup').'/';
+                $slugMatchesName = $slug === \Illuminate\Support\Str::slug($name, '-', config('app.locale'));
+                $slugChanged = $slug !== $meetup->slug;
+            @endphp
+            <flux:field data-testid="meetup-slug-field">
+                <flux:label>{{ __('Adresse (URL)') }}</flux:label>
+                <flux:input.group>
+                    <flux:input.group.prefix>/meetup/</flux:input.group.prefix>
+                    <flux:input wire:model.live.blur="slug" autocomplete="off" spellcheck="false"
+                                aria-describedby="meetup-slug-preview"/>
+                </flux:input.group>
+                <flux:error name="slug"/>
+
+                <p id="meetup-slug-preview" class="mt-2 text-sm text-zinc-600 dark:text-zinc-300 break-all"
+                   data-testid="meetup-slug-preview">
+                    {{ __('Vollständige Adresse') }}:
+                    <span class="font-medium text-zinc-800 dark:text-zinc-100">{{ $slugBase }}{{ $slug }}</span>
+                </p>
+
+                <flux:description>
+                    {{ __('Erlaubt sind Kleinbuchstaben, Ziffern und Bindestriche; Umlaute und Leerzeichen werden beim Verlassen des Feldes umgewandelt. Jede Adresse gibt es nur einmal. Änderst du sie, leitet die bisherige Adresse automatisch weiter — bereits geteilte Links funktionieren weiter.') }}
+                </flux:description>
+
+                <div class="mt-3 flex flex-wrap items-center gap-2">
+                    @unless ($slugMatchesName)
+                        <flux:button class="cursor-pointer" size="sm" variant="filled" icon="arrow-path"
+                                     wire:click="slugFromName" data-testid="meetup-slug-from-name">
+                            {{ __('Aus dem Namen erzeugen') }}
+                        </flux:button>
+                    @endunless
+                    @if ($slugChanged)
+                        <flux:button class="cursor-pointer" size="sm" variant="ghost" icon="arrow-uturn-left"
+                                     wire:click="resetSlug" data-testid="meetup-slug-reset">
+                            {{ __('Zurücksetzen') }}
+                        </flux:button>
+                        {{-- The current slug lives here and not on the button: Flux buttons are
+                             whitespace-nowrap, and a long slug on one pushed the whole field past
+                             a 375px viewport. --}}
+                        <flux:text class="min-w-0 text-sm text-amber-700 dark:text-amber-300 break-all" data-testid="meetup-slug-pending">
+                            {{ __('Noch nicht gespeichert — bisher /meetup/:slug', ['slug' => $meetup->slug]) }}
+                        </flux:text>
+                    @endif
+                </div>
+
+                @if (session('slugStatus'))
+                    <flux:text class="mt-3 font-medium text-green-600 dark:text-green-400" data-testid="meetup-slug-status">
+                        {{ session('slugStatus') }}
+                    </flux:text>
+                @endif
+
+                @if ($this->retiredSlugs->isNotEmpty())
+                    <div class="mt-3 text-sm text-zinc-600 dark:text-zinc-300" data-testid="meetup-slug-retired">
+                        {{ __('Frühere Adressen, die hierher weiterleiten') }}:
+                        <ul class="mt-1 list-disc ps-5 break-all">
+                            @foreach ($this->retiredSlugs as $retiredSlug)
+                                <li>/meetup/{{ $retiredSlug }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+            </flux:field>
 
             <flux:field>
                 <flux:label>{{ __('Einführung') }}</flux:label>

@@ -928,5 +928,17 @@
     "Pick the OpenStreetMap place — we set the coordinates from it. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.": "Vyber místo na OpenStreetMap — souřadnice z něj nastavíme. Název, země, region a počet obyvatel zůstávají u osoby, která obec přidala, a u jejích správců, protože z nich se staví seznamy srazů i export do BTC Map.",
     "Wähle einen Ort auf OpenStreetMap. Die Koordinaten setzen wir daraus.": "Vyber místo na OpenStreetMap. Souřadnice z něj nastavíme.",
     "Keine Stadt gefunden.": "Žádná obec nenalezena.",
-    "Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.": "Najdi místo na OpenStreetMap. Souřadnice nastavíme z výsledku."
+    "Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.": "Najdi místo na OpenStreetMap. Souřadnice nastavíme z výsledku.",
+    "Nur Kleinbuchstaben (a–z), Ziffern und einzelne Bindestriche, ohne Bindestrich am Anfang oder Ende.": "Pouze malá písmena (a–z), číslice a jednotlivé pomlčky, bez pomlčky na začátku nebo na konci.",
+    "Diese Adresse ist für das Portal reserviert.": "Tuto adresu si vyhrazuje portál.",
+    "Diese Adresse gehört bereits zum Meetup :name.": "Tato adresa už patří meetupu :name.",
+    "Diese Adresse hat früher das Meetup :name verwendet und leitet noch dorthin weiter.": "Tuto adresu dříve používal meetup :name a stále na něj přesměrovává.",
+    "Neue Adresse gespeichert. Links auf die alte Adresse /meetup/:old leiten automatisch hierher weiter.": "Nová adresa uložena. Odkazy na starou adresu /meetup/:old se sem automaticky přesměrují.",
+    "Adresse (URL)": "Adresa (URL)",
+    "Vollständige Adresse": "Úplná adresa",
+    "Erlaubt sind Kleinbuchstaben, Ziffern und Bindestriche; Umlaute und Leerzeichen werden beim Verlassen des Feldes umgewandelt. Jede Adresse gibt es nur einmal. Änderst du sie, leitet die bisherige Adresse automatisch weiter — bereits geteilte Links funktionieren weiter.": "Povolena jsou malá písmena, číslice a pomlčky; diakritika a mezery se převedou, jakmile pole opustíš. Každá adresa existuje jen jednou. Když ji změníš, dosavadní adresa automaticky přesměruje — již sdílené odkazy budou dál fungovat.",
+    "Aus dem Namen erzeugen": "Vytvořit z názvu",
+    "Zurücksetzen": "Obnovit",
+    "Noch nicht gespeichert — bisher /meetup/:slug": "Zatím neuloženo — dosud /meetup/:slug",
+    "Frühere Adressen, die hierher weiterleiten": "Dřívější adresy, které sem přesměrovávají"
 }

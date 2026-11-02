@@ -928,5 +928,17 @@
     "Pick the OpenStreetMap place — we set the coordinates from it. The name, country, region and population figures stay with the person who added this city and with its stewards, because meetup listings and the BTC Map export are built from them.": "Kies de OpenStreetMap-plek — daaruit zetten we de coördinaten. Naam, land, regio en inwonertal blijven bij wie de stad toevoegde en bij de stadshoeders, want daaruit worden meetuplijsten en de BTC Map-export gebouwd.",
     "Wähle einen Ort auf OpenStreetMap. Die Koordinaten setzen wir daraus.": "Kies een plek op OpenStreetMap. Daaruit zetten we de coördinaten.",
     "Keine Stadt gefunden.": "Geen stad gevonden.",
-    "Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.": "Zoek de plek op OpenStreetMap. We nemen de coördinaten uit de treffer."
+    "Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.": "Zoek de plek op OpenStreetMap. We nemen de coördinaten uit de treffer.",
+    "Nur Kleinbuchstaben (a–z), Ziffern und einzelne Bindestriche, ohne Bindestrich am Anfang oder Ende.": "Alleen kleine letters (a–z), cijfers en enkele koppeltekens, zonder koppelteken aan het begin of einde.",
+    "Diese Adresse ist für das Portal reserviert.": "Dit adres is gereserveerd door het portaal.",
+    "Diese Adresse gehört bereits zum Meetup :name.": "Dit adres hoort al bij de meetup :name.",
+    "Diese Adresse hat früher das Meetup :name verwendet und leitet noch dorthin weiter.": "Dit adres werd eerder gebruikt door de meetup :name en verwijst daar nog steeds naartoe.",
+    "Neue Adresse gespeichert. Links auf die alte Adresse /meetup/:old leiten automatisch hierher weiter.": "Nieuw adres opgeslagen. Links naar het oude adres /meetup/:old verwijzen automatisch hierheen.",
+    "Adresse (URL)": "Adres (URL)",
+    "Vollständige Adresse": "Volledig adres",
+    "Erlaubt sind Kleinbuchstaben, Ziffern und Bindestriche; Umlaute und Leerzeichen werden beim Verlassen des Feldes umgewandelt. Jede Adresse gibt es nur einmal. Änderst du sie, leitet die bisherige Adresse automatisch weiter — bereits geteilte Links funktionieren weiter.": "Kleine letters, cijfers en koppeltekens zijn toegestaan; accenten en spaties worden omgezet zodra je het veld verlaat. Elk adres bestaat maar één keer. Als je het wijzigt, verwijst het vorige adres automatisch door — al gedeelde links blijven werken.",
+    "Aus dem Namen erzeugen": "Uit de naam genereren",
+    "Zurücksetzen": "Terugzetten",
+    "Noch nicht gespeichert — bisher /meetup/:slug": "Nog niet opgeslagen — tot nu toe /meetup/:slug",
+    "Frühere Adressen, die hierher weiterleiten": "Eerdere adressen die hierheen verwijzen"
 }
