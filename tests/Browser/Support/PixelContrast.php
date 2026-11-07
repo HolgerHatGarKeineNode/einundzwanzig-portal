@@ -305,8 +305,11 @@ function pixelParkPointer(object $page): void
 
       // An open <dialog> lives in the top layer, which no z-index on a
       // body-level element can reach: Playwright then reports the dot as
-      // covered and hover() times out. Park inside the dialog instead.
-      const host = document.querySelector('dialog[open]') || document.body;
+      // covered and hover() times out. Park inside the dialog instead. An open
+      // popover (a Flux listbox) is in the same top layer, with the same fix.
+      const host = document.querySelector('dialog[open]')
+        || [...document.querySelectorAll('[popover]')].find((p) => p.matches(':popover-open'))
+        || document.body;
 
       const dot = document.createElement('div');
       dot.id = 'pixel-pointer-park';

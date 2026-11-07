@@ -105,7 +105,7 @@ class extends Component {
                                                 width="24" height="12"
                                             />
                                         </div>
-                                        <div class="text-sm text-zinc-500">
+                                        <div data-testid="dashboard-event-place" class="text-sm text-zinc-600 dark:text-zinc-300">
                                             {{ $event->meetup->city->name }}, {{ $event->meetup->city->country->name }}
                                         </div>
                                         <flux:badge color="green" size="sm" class="mt-1">
@@ -117,7 +117,7 @@ class extends Component {
                         @endforeach
                     </div>
                 @else
-                    <div class="text-sm text-zinc-500">{{ __('Keine bevorstehenden Termine') }}</div>
+                    <div data-testid="dashboard-no-events" class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('Keine bevorstehenden Termine') }}</div>
                 @endif
             </div>
         </div>
@@ -140,7 +140,7 @@ class extends Component {
                                 <div>
                                     <span class="font-medium">{{ $meetup->name }}</span>
                                     @if($meetup->city)
-                                        <span class="text-xs text-zinc-500">- {{ $meetup->city->name }}</span>
+                                        <span data-testid="dashboard-available-meetup-city" class="text-xs text-zinc-600 dark:text-zinc-300">- {{ $meetup->city->name }}</span>
                                     @endif
                                 </div>
                             </div>
@@ -236,7 +236,7 @@ class extends Component {
                         @endforeach
                     </div>
                 @else
-                    <div class="text-sm text-zinc-500 mt-4">{{ __('Keine Meetups zugeordnet') }}</div>
+                    <div data-testid="dashboard-no-meetups" class="text-sm text-zinc-600 dark:text-zinc-300 mt-4">{{ __('Keine Meetups zugeordnet') }}</div>
                 @endif
             </div>
         </div>
