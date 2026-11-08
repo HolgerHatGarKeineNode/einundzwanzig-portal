@@ -68,7 +68,7 @@ class extends Component {
             <div class="relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700">
                 <div class="p-6">
                     <flux:heading size="lg" class="mb-4">{{ __('Top Meetups') }}</flux:heading>
-                    <flux:text class="text-sm text-zinc-500 mb-4">{{ __('Meetups mit den meisten Usern') }}</flux:text>
+                    <flux:text class="text-sm text-zinc-600 dark:text-zinc-300 mb-4">{{ __('Meetups mit den meisten Usern') }}</flux:text>
                     <flux:separator class="my-4"/>
                     <div class="flex items-center justify-center py-8">
                         <flux:icon.arrow-path class="animate-spin size-6 text-zinc-400" />
@@ -82,7 +82,7 @@ class extends Component {
 <div class="relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700">
     <div class="p-6">
         <flux:heading size="lg" class="mb-4">{{ __('Top Meetups') }}</flux:heading>
-        <flux:text class="text-sm text-zinc-500 mb-4">{{ __('Meetups mit den meisten Usern') }}</flux:text>
+        <flux:text data-testid="dashboard-top-meetups-subtitle" class="text-sm text-zinc-600 dark:text-zinc-300 mb-4">{{ __('Meetups mit den meisten Usern') }}</flux:text>
 
         @if($topMeetups->count() > 0)
             <flux:separator class="my-4"/>
@@ -128,7 +128,7 @@ class extends Component {
                 @endforeach
             </div>
         @else
-            <div class="text-sm text-zinc-500">{{ __('Keine Daten verfügbar') }}</div>
+            <div data-testid="dashboard-no-top-meetups" class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('Keine Daten verfügbar') }}</div>
         @endif
     </div>
 </div>

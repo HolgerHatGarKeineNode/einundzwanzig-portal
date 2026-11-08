@@ -73,7 +73,7 @@ class extends Component {
         <div class="relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700">
             <div class="p-6">
                 <flux:heading size="lg" class="mb-4">{{ __('Top Länder') }}</flux:heading>
-                <flux:text class="text-sm text-zinc-500 mb-4">{{ __('Länder mit den meisten Usern') }}</flux:text>
+                <flux:text class="text-sm text-zinc-600 dark:text-zinc-300 mb-4">{{ __('Länder mit den meisten Usern') }}</flux:text>
                 <flux:separator class="my-4"/>
                 <div class="flex items-center justify-center py-8">
                     <flux:icon.arrow-path class="animate-spin size-6 text-zinc-400" />
@@ -87,7 +87,7 @@ class extends Component {
 <div class="relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700">
     <div class="p-6">
         <flux:heading size="lg" class="mb-4">{{ __('Top Länder') }}</flux:heading>
-        <flux:text class="text-sm text-zinc-500 mb-4">{{ __('Länder mit den meisten Usern') }}</flux:text>
+        <flux:text data-testid="dashboard-top-countries-subtitle" class="text-sm text-zinc-600 dark:text-zinc-300 mb-4">{{ __('Länder mit den meisten Usern') }}</flux:text>
 
         @if($topCountries->count() > 0)
             <flux:separator class="my-4"/>
@@ -102,7 +102,7 @@ class extends Component {
                                      width="24" height="12"/>
                                 <div class="flex-1">
                                     <div class="font-medium">{{ $country->name }}</div>
-                                    <div class="text-xs text-zinc-500">{{ trans_choice(':count Nutzer|:count Nutzer', $country->user_count) }}</div>
+                                    <div data-testid="dashboard-top-country-members" class="text-xs text-zinc-600 dark:text-zinc-300">{{ trans_choice(':count Nutzer|:count Nutzer', $country->user_count) }}</div>
                                 </div>
                             </div>
                         </a>
@@ -117,7 +117,7 @@ class extends Component {
                 @endforeach
             </div>
         @else
-            <div class="text-sm text-zinc-500">{{ __('Keine Daten verfügbar') }}</div>
+            <div data-testid="dashboard-no-top-countries" class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('Keine Daten verfügbar') }}</div>
         @endif
     </div>
 </div>
