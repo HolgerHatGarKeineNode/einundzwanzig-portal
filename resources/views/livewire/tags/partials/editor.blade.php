@@ -93,6 +93,62 @@
     <flux:field>
         <flux:label>{{ __('Beschreibung (:lang)', ['lang' => mb_strtoupper($this->editLocale)]) }}</flux:label>
 
+        {{--
+            The language switch for the description field (issue #149, P8).
+
+            Codes, not full names: every other label on this screen already
+            speaks in upper-case codes ("Name (CS)"), and a switch of nine
+            full names would wrap into a form of its own. The full language
+            name rides along as a title for the pointer.
+
+            Flags are decoration, not information — a language is not a country,
+            and the flag shown is simply the FIRST country the portal maps to
+            the language (config/lang-country.php). alt="" + aria-hidden keep
+            that honest for screen readers; the button's text label carries the
+            meaning. A language with no mapping gets no flag rather than a
+            guessed one.
+        --}}
+        <div class="flex flex-wrap gap-1" role="group"
+             aria-label="{{ __('Sprache der Beschreibung') }}"
+             data-testid="description-locale-switch">
+            @foreach (\App\Support\TagLocales::all() as $switchLocale)
+                @php
+                    // First mapped country wins. The code is the part AFTER the
+                    // hyphen ("cs-CZ" → "cz"), exactly how the portal's language
+                    // selector resolves the same list — the file names are
+                    // country-<code>.svg, not country-<locale>.svg.
+                    $switchLanguage = config("lang-country.languages.{$switchLocale}");
+                    [$switchLang, $switchCountry] = array_pad(
+                        explode('-', (string) ($switchLanguage['countries'][0] ?? '')),
+                        2,
+                        '',
+                    );
+                    $switchFlag = $switchCountry !== '' ? strtolower($switchCountry) : null;
+                @endphp
+
+                <button type="button"
+                        wire:click="$set('editLocale', '{{ $switchLocale }}')"
+                        title="{{ $switchLanguage['name'] ?? null }}"
+                        aria-pressed="{{ $this->editLocale === $switchLocale ? 'true' : 'false' }}"
+                        class="flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-xs transition-colors {{ $this->editLocale === $switchLocale
+                            ? 'border-blue-500 bg-blue-50 text-zinc-800 dark:border-blue-400 dark:bg-blue-950 dark:text-white'
+                            : 'border-zinc-200 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800' }}"
+                        data-testid="locale-button-{{ $switchLocale }}">
+                    @if ($switchFlag !== null)
+                        {{-- Same asset pattern as the portal's language selector;
+                             ring + rounded-sm keeps the flag legible on both the
+                             light and the dark surface without touching the SVG. --}}
+                        <img src="{{ asset('vendor/blade-flags/country-'.strtolower($switchFlag).'.svg') }}"
+                             alt=""
+                             aria-hidden="true"
+                             class="inline h-3 w-[18px] rounded-[2px] object-cover ring-1 ring-black/10 dark:ring-white/20" />
+                    @endif
+
+                    <span>{{ mb_strtoupper($switchLocale) }}</span>
+                </button>
+            @endforeach
+        </div>
+
         <flux:textarea wire:model="editDescription"
                        rows="3"
                        maxlength="280"

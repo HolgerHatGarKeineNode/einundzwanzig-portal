@@ -3,6 +3,7 @@
 use App\Console\Commands\Database\CleanupLoginKeys;
 use App\Console\Commands\Database\PruneApiChanges;
 use App\Console\Commands\Database\UpdateMeetupActivity;
+use App\Console\Commands\Nostr\IngestNostrRsvps;
 use App\Console\Commands\Nostr\PublishCalendarEvents;
 use App\Console\Commands\Nostr\PublishUnpublishedItems;
 use App\Console\Commands\Nostr\RepublishCalendarEvents;
@@ -31,9 +32,24 @@ Schedule::command(PublishUnpublishedItems::class, [
 | worked. `tests/Feature/Console/NostrCalendarScheduleTest.php` is the guard
 | that keeps a third commit from leaving this file alone again.
 |
+| SINCE 2026-09-17: A BATCH OF 25 PER RUN, NOT ONE RECORD. Publishing became
+| default-on for every meetup (migration 2026_09_17_200000) so that Nostr RSVPs
+| have a kind 31923 to address, and the backlog grew to 669 upcoming events
+| (measured that day) plus every calendar. At one record per run that is 56 h
+| of drain for the events alone; at `--limit=25` it is 27 runs, about 2 h 15 min,
+| and the up to 307 calendars take 13 runs. Pacing per relay: at most 25 events
+| plus one calendar refresh per touched meetup, `--sleep=1` apart, so a peak of
+| one event per second per queue (two queues run side by side) and a sustained
+| ~10 per minute per queue while a backlog exists.
+| The command stops at the first rejected send and stops starting new records
+| after 240 s (PublishCalendarEvents::RUN_BUDGET_SECONDS), so a slow relay
+| cannot stretch one run over several ticks. The arithmetic below was written
+| for one record per run; its conclusion about the interval still holds, the
+| drain times it quotes are 25 times too long now.
+|
 | WHY EVERY FIVE MINUTES, AND NOT `hourly()` LIKE ITS SIBLING ABOVE
 |
-| PublishCalendarEvents handles exactly ONE record per run (`$query->first()`),
+| PublishCalendarEvents handled exactly ONE record per run until 2026-09-17,
 | so the interval is not a refresh rate — it is a drain rate, and a backlog of
 | N records needs N runs. Production numbers, read from the public API on
 | 2026-09-04: 307 meetups and 76 upcoming events portal-wide. Those are the
@@ -137,10 +153,12 @@ Schedule::command(PublishUnpublishedItems::class, [
 */
 Schedule::command(PublishCalendarEvents::class, [
     '--model' => 'MeetupEvent',
+    '--limit' => 25,
 ])->everyFiveMinutes();
 
 Schedule::command(PublishCalendarEvents::class, [
     '--model' => 'Meetup',
+    '--limit' => 25,
 ])->everyFiveMinutes();
 
 /*
@@ -233,6 +251,31 @@ Schedule::command(RepublishCalendarEvents::class, [
     '--force',
     '--limit' => 10,
 ])->hourly();
+
+/*
+|--------------------------------------------------------------------------
+| NIP-52 RSVP ingest (hybrid RSVP, D12)
+|--------------------------------------------------------------------------
+|
+| Reads the kind 31925 answers to the events published above back from the same
+| relays. Five minutes because an RSVP is something a person checks right after
+| giving it; the command decides per relay whether a run is incremental or the
+| hourly full pass, so this line does not need a second, hourly entry.
+|
+| WITH `withoutOverlapping()`, unlike every publisher entry above, and the
+| reasoning there does not carry over. The publishers write an idempotent,
+| replaceable event: an overlap sends the same thing twice. This command READS
+| the stored rows, folds relay answers against them and writes the result — two
+| overlapping runs can each fold against the same snapshot, and the one that
+| finishes last may put an older answer back over a newer one until the next
+| full pass. The lock carries an explicit ten-minute expiry, never the 24 h
+| default, so a hard-killed run stops ingest for minutes rather than a day: a
+| run is bounded by ~15 s of silence per relay read, and the idle case opens no
+| socket at all.
+*/
+Schedule::command(IngestNostrRsvps::class)
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10);
 
 Schedule::command(UpdateMeetupActivity::class)->dailyAt('03:30');
 

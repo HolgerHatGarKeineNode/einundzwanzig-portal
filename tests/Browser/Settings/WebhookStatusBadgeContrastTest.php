@@ -11,8 +11,9 @@ use App\Models\WebhookSubscription;
 | `flux:badge size="sm"` sets 12px at weight 500. That is not large text
 | (WCAG 1.4.3 draws the line at 18pt, or 14pt bold), so the pair has to reach
 | 4.5:1. The amber it used to carry measured 4.340:1 on the light page —
-| amber-700 #BB4D00 on amber-400/25 composited to #FFEDBF. Dark mode was never
-| the problem (4.764:1). Blue measures 7.347:1 light and 5.234:1 dark.
+| amber-700 #BB4D00 on amber-400/25 composited to #FFEDBF when it was
+| measured on 2026-09-05 (#FFEEBF in the current build, see the control
+| below). Dark mode was never the problem (4.764:1). Blue measures 7.347:1 light and 5.234:1 dark.
 |
 | Why this test screenshots instead of computing: the badge fill is an alpha
 | colour (`bg-blue-400/20`), so the pair that reaches the eye exists only after
@@ -145,6 +146,7 @@ const CANVAS_READBACK = <<<'JS'
 JS;
 
 beforeEach(function () {
+    portalCountry();
     $owner = User::factory()->create();
     $this->actingAs($owner);
 
@@ -227,8 +229,12 @@ it('renders the awaiting-approval badge above 4.5:1 on the dark page', function 
         ->and($measured['canvas']['fg'])->toBe($measured['gd']['fg'])
         ->and($measured['canvas']['ratio'])->toBe($measured['gd']['ratio']);
 
-    // blue-400/40 over the dark page, which in this build is zinc-800.
-    expect($measured['gd']['bg'])->toBe('#36577E');
+    // blue-400/40 over the dark page, which in this build is zinc-800. The same
+    // composite is pinned as #37587F in ServiceTypeFilterChipContrastTest (the
+    // mempool chip, written six hours later on 2026-09-05) and measures
+    // #37587F here; the #36577E that stood in this line is one unit off in
+    // every channel, and it fails the same way on Chromium 154, 155 and 156.
+    expect($measured['gd']['bg'])->toBe('#37587F');
     expect($measured['gd']['fgCount'])->toBeGreaterThan(100);
 
     // Measured 5.234:1; 4.9 is the floor, above amber's 4.764 so a silent
@@ -262,8 +268,10 @@ it('reproduces the amber failure when the old colour is put back', function () {
 
     expect($measured['canvas']['ratio'])->toBe($measured['gd']['ratio']);
 
-    // The pair issue #98 reported: #BB4D00 on #FFEDBF.
-    expect($measured['gd']['bg'])->toBe('#FFEDBF')
+    // The pair issue #98 reported: #BB4D00 on #FFEDBF. The ground measures
+    // #FFEEBF in this build (green one unit up, same quantisation as the dark
+    // badge above); the foreground and the failing ratio are unchanged.
+    expect($measured['gd']['bg'])->toBe('#FFEEBF')
         ->and($measured['gd']['fg'])->toBe('#BB4D00')
         ->and($measured['gd']['ratio'])->toBeLessThan(4.5);
 });

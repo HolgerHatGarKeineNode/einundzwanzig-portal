@@ -42,7 +42,7 @@ it('leaves population untouched for a stranger who picks an osm place with a pop
     $this->actingAs(User::factory()->create());
 
     Livewire::test('cities.edit', ['city' => $city])
-        ->set('osmPlace', ['osm_id' => 62422, 'osm_lat' => 52.5, 'osm_lon' => 13.4, 'population' => 3769962])
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 52.5, 'osm_lon' => 13.4, 'population' => 3769962]))
         ->assertSet('population', null)
         ->call('updateCity')
         ->assertHasNoErrors();
@@ -62,7 +62,7 @@ it('still prefills population from the osm place for the creator', function () {
     $this->actingAs($creator);
 
     Livewire::test('cities.edit', ['city' => $city])
-        ->set('osmPlace', ['osm_id' => 62422, 'osm_lat' => 52.5, 'osm_lon' => 13.4, 'population' => 3769962])
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 52.5, 'osm_lon' => 13.4, 'population' => 3769962]))
         ->assertSet('population', 3769962);
 });
 

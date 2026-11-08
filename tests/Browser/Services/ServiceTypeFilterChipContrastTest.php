@@ -368,6 +368,10 @@ function assertEveryChipIsReadable(object $page, string $theme): array
     return $measured;
 }
 
+beforeEach(function () {
+    portalCountry();
+});
+
 it('keeps all ten type chips above 4.5:1 on the light page, selected and not', function () {
     $page = visit('/de/services');
     $page->resize(1280, 900)->wait(1.2);

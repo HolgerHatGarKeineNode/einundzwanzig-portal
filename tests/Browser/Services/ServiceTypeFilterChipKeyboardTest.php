@@ -64,6 +64,10 @@ function readChipSemantics(object $page, string $type): array
     })()');
 }
 
+beforeEach(function () {
+    portalCountry();
+});
+
 it('makes every chip a real button that reports its own pressed state', function () {
     $page = visit('/de/services');
     $page->resize(1280, 900)->wait(1.5);

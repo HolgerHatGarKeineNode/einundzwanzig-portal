@@ -62,6 +62,18 @@
         $navAllMeetupCount = \App\Models\Meetup::query()->count();
 
         /*
+         * The other four badges, counted here once. Written inline in the badge
+         * attribute, each count ran twice per page (measured 2026-10-25 on /de/meetups).
+         */
+        $navServiceCount = \App\Models\SelfHostedService::query()->count();
+        $navCourseCount = \App\Models\Course::query()->whereHas('courseEvents.city.country', fn ($query) => $query->matchingCode($navCountry))->count();
+        $navLecturerCount = \App\Models\Lecturer::query()->whereHas('coursesEvents.city.country', fn ($query) => $query->matchingCode($navCountry))->count();
+        $navCityCount = \App\Models\City::query()
+            ->whereHas('country', fn ($query) => $query->matchingCode($navCountry))
+            ->when($navRegionId, fn ($query) => $query->where('cities.region_id', $navRegionId))
+            ->count();
+
+        /*
          * Die Meetups, die der angemeldete Nutzer als Leader fuehrt (Issue #45): ohne sie
          * kommt ein Organisator nur ueber die Laenderliste an sein eigenes Meetup.
          * Weil diese Sidebar auch die mobile Navigation ist (flux:sidebar.toggle unten),
@@ -111,7 +123,7 @@
                                :current="request()->routeIs('dashboard')"
                                wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
         </flux:navlist.group>
-        <flux:navlist.group :heading="__('Meetups')" class="grid">
+        <flux:navlist.group :heading="__('Meetups')" class="grid [&>div]:min-w-0">
             <flux:navlist.item icon="user-group" :href="country_or_region_route('meetups.index')"
                                :current="request()->routeIs('meetups.index', 'meetups.index-region')"
                                wire:navigate
@@ -156,13 +168,20 @@
                 </div>
             </flux:navlist.item>
 
+            {{-- Short name, ellipsis, full name in the title: nearly every name
+                 repeats "Einundzwanzig", and a long one ran out of the sidebar
+                 ("Einundzwanzig Neumarkt in de", cut off without a mark).
+                 `leading-normal` because `truncate` clips, and Flux' `leading-none`
+                 would cut off descenders. --}}
             @foreach ($myMeetups as $myMeetup)
                 <flux:navlist.item icon="star"
+                                   class="min-w-0 [&_[data-content]]:min-w-0 [&_[data-content]]:truncate [&_[data-content]]:leading-normal"
+                                   :title="$myMeetup->name"
                                    :href="route_with_country('meetups.landingpage', ['meetup' => $myMeetup, 'country' => $navMeetupCountry($myMeetup)])"
                                    :current="request()->routeIs('meetups.landingpage') && $navCurrentMeetupSlug === $myMeetup->slug"
                                    wire:navigate
                                    data-testid="sidebar-my-meetup">
-                    {{ $myMeetup->name }}
+                    {{ $myMeetup->short_name }}
                 </flux:navlist.item>
             @endforeach
         </flux:navlist.group>
@@ -171,7 +190,7 @@
             <flux:navlist.item icon="server" :href="route_with_country('services.index')"
                                :current="request()->routeIs('services.index')"
                                wire:navigate
-                               badge="{{ \App\Models\SelfHostedService::query()->count() }}">
+                               badge="{{ $navServiceCount }}">
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Self Hosted Services') }}</span>
                 </div>
@@ -182,7 +201,7 @@
             <flux:navlist.item icon="academic-cap" :href="route_with_country('courses.index')"
                                :current="request()->routeIs('courses.index')"
                                wire:navigate
-                               badge="{{ \App\Models\Course::query()->whereHas('courseEvents.city.country', fn($query) => $query->matchingCode($navCountry))->count() }}">
+                               badge="{{ $navCourseCount }}">
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Kurse') }}</span>
                     <img alt="{{ request()->route('country') }}"
@@ -193,7 +212,7 @@
             <flux:navlist.item icon="user" :href="route_with_country('lecturers.index')"
                                :current="request()->routeIs('lecturers.index')"
                                wire:navigate
-                               badge="{{ \App\Models\Lecturer::query()->whereHas('coursesEvents.city.country', fn($query) => $query->matchingCode($navCountry))->count() }}">
+                               badge="{{ $navLecturerCount }}">
                 <div class="flex items-center space-x-2">
                     <span>{{ __('Dozenten') }}</span>
                     <img alt="{{ request()->route('country') }}"
@@ -209,10 +228,7 @@
             <flux:navlist.item icon="building-office-2" :href="country_or_region_route('cities.index')"
                                :current="request()->routeIs('cities.index', 'cities.index-region')"
                                wire:navigate
-                               badge="{{ \App\Models\City::query()
-                                   ->whereHas('country', fn($query) => $query->matchingCode($navCountry))
-                                   ->when($navRegionId, fn($query) => $query->where('cities.region_id', $navRegionId))
-                                   ->count() }}">
+                               badge="{{ $navCityCount }}">
                 {{ __('Städte/Gebiete') }}
             </flux:navlist.item>
         </flux:navlist.group>
@@ -310,14 +326,9 @@
 
                             <div class="grid flex-1 text-start text-sm leading-tight">
                                 <span class="truncate font-semibold">{{ auth()->user()?->name }}</span>
-                                <span class="truncate text-xs">
-                                        @if(strlen(auth()->user()?->name) > 12)
-                                        {{ Str::substr(auth()->user()?->name, 0, 4) }}
-                                        ...{{ Str::substr(auth()->user()?->name, -4) }}
-                                    @else
-                                        {{ auth()->user()?->name }}
-                                    @endif
-                                    </span>
+                                @if(auth()->user()->npub())
+                                    <span class="truncate font-mono text-xs" data-testid="user-menu-npub">{{ auth()->user()->shortNpub() }}</span>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -326,6 +337,10 @@
                 <flux:menu.separator/>
 
                 <flux:menu.radio.group>
+                    @if(auth()->user()->npub())
+                        <flux:menu.item x-copy-to-clipboard="'{{ auth()->user()->npub() }}'" icon="clipboard-document"
+                                        class="cursor-pointer" data-testid="user-menu-copy-npub">{{ __('npub kopieren') }}</flux:menu.item>
+                    @endif
                     <flux:menu.item
                         :href="route('settings.profile', ['country' => str(session('lang_country', 'de'))->after('-')->lower()])"
                         icon="cog"
@@ -370,25 +385,6 @@
     }
 </script>
 @include('partials.clipboard-toast-messages')
-<script>
-    window.wnjParams = {
-        position: 'bottom',
-        // The only accepted value is 'bottom', default is top
-        accent: 'orange',
-        // Supported values: cyan (default), green, purple, red, orange, neutral, stone
-        startHidden: false,
-        // If the host page has a button that call `getPublicKey` to start a
-        // login procedure, the minimized widget can be hidden until connected
-        compactMode: false,
-        // Show the minimized widget in a compact form
-        disableOverflowFix: false,
-        // If the host page on mobile has an horizontal scrolling, the floating
-        // element/modal are pushed to the extreme right/bottom and exit the
-        // viewport. A style is injected in the html/body elements fix this.
-        // This option permit to disable this default behavior
-    }
-</script>
-<script src="https://cdn.jsdelivr.net/npm/window.nostr.js/dist/window.nostr.min.js"></script>
 
 </body>
 </html>

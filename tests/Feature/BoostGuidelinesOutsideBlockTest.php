@@ -58,13 +58,28 @@ const CODE_FORMATTING_NEEDLES = [
 ];
 
 /**
+ * The budgeted full-suite command and the two guards that keep the browser suite
+ * off the internet and the console silent (2026-10-24). Lose the first and the
+ * next agent runs `php artisan test` and waits 25 minutes for a hang; lose the
+ * others and the guards read as optional.
+ *
+ * @var array<int, string>
+ */
+const SUITE_BUDGET_NEEDLES = [
+    'composer test:all',
+    'TEST_BUDGET_SECONDS=5 composer test:all',
+    'Every browser test is watched by `tests/Browser/Support/BrowserLatch.php`',
+    'Outgoing HTTP is blocked in every test',
+];
+
+/**
  * Every hand-written passage that must survive the next `boost:install`.
  *
  * @return array<int, string>
  */
 function handWrittenClaudeMdNeedles(): array
 {
-    return array_merge(BROWSER_SUITE_WARNING_NEEDLES, CODE_FORMATTING_NEEDLES);
+    return array_merge(BROWSER_SUITE_WARNING_NEEDLES, CODE_FORMATTING_NEEDLES, SUITE_BUDGET_NEEDLES);
 }
 
 /**

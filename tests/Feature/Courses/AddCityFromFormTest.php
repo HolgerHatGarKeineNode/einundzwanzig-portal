@@ -114,6 +114,39 @@ it('ignores hits that are not populated places', function () {
     expect(City::query()->count())->toBe(0);
 });
 
+it('keeps a boundary administrative hit and creates the city from it', function () {
+    Http::fake(['*' => Http::response([[
+        'osm_type' => 'relation',
+        'osm_id' => 1792254,
+        'name' => 'Sigulda',
+        'display_name' => 'Sigulda, Siguldas novads, Vidzeme, Lettland',
+        'lat' => '57.1539',
+        'lon' => '24.8544',
+        'category' => 'boundary',
+        'type' => 'administrative',
+    ]])]);
+
+    courseEventForm()
+        ->set('newCityCountryId', $this->country->id)
+        ->set('newCityQuery', 'Sigulda')
+        ->call('searchCity')
+        ->assertCount('newCityResults', 1)
+        ->assertSet('newCityResults.0.osm_name', 'Sigulda')
+        ->assertSet('newCityResults.0.category', 'boundary')
+        ->assertSet('newCityResults.0.osm_id', 1792254)
+        ->call('useCity', 0)
+        ->assertSet('newCityQuery', '');
+
+    $city = City::query()->where('name', 'Sigulda')->first();
+
+    expect($city)->not->toBeNull()
+        ->and($city->country_id)->toBe($this->country->id)
+        ->and((float) $city->latitude)->toBe(57.1539)
+        ->and((float) $city->longitude)->toBe(24.8544)
+        ->and($city->osm_type)->toBe('relation')
+        ->and($city->osm_id)->toBe(1792254);
+});
+
 it('demands a country before searching', function () {
     Http::fake(['*' => Http::response(cityResponse())]);
 
@@ -143,6 +176,7 @@ it('narrows the geocoder query to the chosen country', function () {
 
     // Without the country filter, "Berlin" would offer the one in Maryland just as readily.
     Http::assertSent(fn ($request): bool => str_contains($request->url(), 'countrycodes=de'));
+    Http::assertSent(fn ($request): bool => str_contains($request->url(), 'featureType=settlement'));
 });
 
 it('survives a geocoder outage without breaking the form', function () {

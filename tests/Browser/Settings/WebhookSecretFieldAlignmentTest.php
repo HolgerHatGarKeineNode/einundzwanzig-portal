@@ -96,19 +96,22 @@ function measureRevealSecretField(object $page, int $width, int $height): array
 }
 
 /**
- * The `/en/` in the path is the route's `{country:code}` segment, not the
+ * The `/de/` in the path is the route's `{country:code}` segment, not the
  * interface language — measured 2026-09-05, `/en/settings/webhooks` renders
- * German. The language comes from `session('lang_country')`, which only the
+ * German. It is `de` and not `en` because the sidebar builds the flag from that
+ * segment (vendor/blade-flags/country-<segment>.svg): `en` is no country, the
+ * file does not exist, and the BrowserLatch reports the 404. The language comes from `session('lang_country')`, which only the
  * switch route sets.
  */
 function visitWebhookSettingsIn(string $langCountry): object
 {
     visit('/change_lang_country/'.$langCountry)->wait(1.0);
 
-    return visit('/en/settings/webhooks')->wait(1.2);
+    return visit('/de/settings/webhooks')->wait(1.2);
 }
 
 beforeEach(function () {
+    portalCountry();
     $this->actingAs(User::factory()->create());
 });
 
@@ -176,8 +179,14 @@ it('reproduces the split when the description is moved back after the switch', f
 
     $broken = $page->script(ISSUE_115_MEASURE);
 
-    // The very things the test asserts above have to come apart again.
-    expect($broken['description']['left'] - $broken['label']['left'])->toBeGreaterThan(50.0)
+    // The very things the test asserts above have to come apart again. The
+    // left-edge bound is the one assertion 1 above uses (0.5px), not a size of
+    // the original failure: the reported offset was 83.59px, but since f456728
+    // put `overflow-wrap: anywhere` on <html> the label can shrink below its
+    // longest word, the collapsed track is wider, and the same reordered DOM
+    // measures 16.41px. 16.41 is still about 33x the tolerance that separates "one
+    // unit" from "two blocks", which is what this control has to prove.
+    expect($broken['description']['left'] - $broken['label']['left'])->toBeGreaterThan(0.5)
         ->and($broken['labelLines'])->toBeGreaterThan($healthy['labelLines'])
         ->and($broken['label']['width'])->toBeLessThan($healthy['label']['width'] / 2);
 });

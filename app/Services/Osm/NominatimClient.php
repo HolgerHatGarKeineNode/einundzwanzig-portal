@@ -48,15 +48,34 @@ class NominatimClient
     /**
      * Search for a place. Returns an empty collection on any failure.
      *
+     * Fail-soft wrapper around {@see trySearch()}. Callers that must tell an
+     * outage from a genuine zero-hit response should use trySearch() instead.
+     *
      * @param  string|null  $featureType  Nominatims featureType: country, state, city, settlement
      * @return Collection<int, array<string, mixed>>
      */
     public function search(string $query, ?string $countryCode = null, int $limit = 5, ?string $featureType = null): Collection
     {
+        return $this->trySearch($query, $countryCode, $limit, $featureType)['hits'];
+    }
+
+    /**
+     * Search that distinguishes an outage from zero hits.
+     *
+     * Successful responses (including an empty list) are cached for 30 days, as
+     * the Nominatim usage policy requires. Failures — HTTP errors, timeouts,
+     * connection drops — are not cached: an empty collection for 30 days would
+     * make an outage look like "no city found".
+     *
+     * @param  string|null  $featureType  Nominatims featureType: country, state, city, settlement
+     * @return array{hits: Collection<int, array<string, mixed>>, failed: bool}
+     */
+    public function trySearch(string $query, ?string $countryCode = null, int $limit = 5, ?string $featureType = null): array
+    {
         $query = trim($query);
 
         if (mb_strlen($query) < 3) {
-            return collect();
+            return ['hits' => collect(), 'failed' => false];
         }
 
         $params = array_filter([
@@ -83,25 +102,36 @@ class NominatimClient
 
         $cacheKey = 'osm:search:'.md5(json_encode($params));
 
-        return Cache::remember($cacheKey, now()->addDays(30), function () use ($params): Collection {
-            $response = $this->get('/search', $params);
+        if (Cache::has($cacheKey)) {
+            $cached = Cache::get($cacheKey);
 
-            if ($response === null) {
-                return collect();
-            }
+            return [
+                'hits' => $cached instanceof Collection ? $cached : collect($cached),
+                'failed' => false,
+            ];
+        }
 
-            /*
-             * Rueckgabetyp `?array`, nicht `array`: normalise() liefert null fuer eine
-             * Zeile ohne osm_type/osm_id, und Nominatim schickt solche Zeilen. Mit dem
-             * strengeren Typ starb der Aufruf an einem TypeError, bevor das filter()
-             * dahinter die Nullen wegwerfen konnte — aufgefallen am 2026-08-23, als der
-             * Laenderlauf nach 136 von 249 Laendern abbrach.
-             */
-            return collect($response)
-                ->map(fn (array $row): ?array => $this->normalise($row))
-                ->filter()
-                ->values();
-        });
+        $response = $this->get('/search', $params);
+
+        if ($response === null) {
+            return ['hits' => collect(), 'failed' => true];
+        }
+
+        /*
+         * Rueckgabetyp `?array`, nicht `array`: normalise() liefert null fuer eine
+         * Zeile ohne osm_type/osm_id, und Nominatim schickt solche Zeilen. Mit dem
+         * strengeren Typ starb der Aufruf an einem TypeError, bevor das filter()
+         * dahinter die Nullen wegwerfen konnte — aufgefallen am 2026-08-23, als der
+         * Laenderlauf nach 136 von 249 Laendern abbrach.
+         */
+        $hits = collect($response)
+            ->map(fn (array $row): ?array => $this->normalise($row))
+            ->filter()
+            ->values();
+
+        Cache::put($cacheKey, $hits, now()->addDays(30));
+
+        return ['hits' => $hits, 'failed' => false];
     }
 
     /**

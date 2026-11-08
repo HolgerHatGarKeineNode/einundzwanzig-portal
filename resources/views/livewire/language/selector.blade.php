@@ -131,6 +131,7 @@ new class extends Component
                 <div class="flex items-center space-x-2">
                     <img alt="{{ str($option['value'])->after('-')->lower() }}"
                          src="{{ asset('vendor/blade-flags/country-'.str($option['value'])->after('-')->lower().'.svg') }}"
+                         loading="lazy" decoding="async"
                          width="24" height="12"/>
                     <span>{{ $option['label'] }}</span>
                 </div>

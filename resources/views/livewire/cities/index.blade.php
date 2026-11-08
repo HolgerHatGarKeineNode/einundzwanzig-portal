@@ -70,7 +70,7 @@ class extends Component
         </div>
     </div>
 
-    <flux:table :paginate="$cities" class="mt-6">
+    <flux:table :paginate="$cities" class="mt-6" data-table-stack="xl">
         <flux:table.columns>
             <flux:table.column>{{ __('Name') }}</flux:table.column>
             <flux:table.column>{{ __('Country') }}</flux:table.column>
@@ -103,7 +103,7 @@ class extends Component
                         @if($city->population)
                             {{ number_format($city->population) }}
                             @if($city->population_date)
-                                <span class="text-xs text-zinc-500">({{ $city->population_date }})</span>
+                                <span class="text-xs text-zinc-500 whitespace-nowrap">({{ $city->population_date }})</span>
                             @endif
                         @endif
                     </flux:table.cell>

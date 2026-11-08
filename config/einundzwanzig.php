@@ -194,6 +194,37 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Tag groups that rarely make sense together
+    |--------------------------------------------------------------------------
+    |
+    | Issue #149: groups of tags where picking two or more of the same group is
+    | usually a mistake rather than a plan. The event form answers with a soft
+    | inline hint — never validation, never a block (deliberate decision in the
+    | plan: explanations are the safer first step; a real hybrid event must
+    | stay possible).
+    |
+    | Members are matched by their GERMAN name — the source language of the seed
+    | vocabulary in database/seeders/data/tags.php, and the one name every
+    | seeded tag carries in all circumstances. Locales and slugs drift; the
+    | German name is the identity the seeder itself matches on.
+    |
+    | Deliberately open-ended groups are NOT listed: Workshop, Film night and
+    | Panel discussion combine legitimately with either format, and adding them
+    | would make the hint fire on normal events.
+    |
+    | The hint text per group key lives in the picker component. A group added
+    | here without a matching text falls back to the generic phrasing, so
+    | curating this list never requires a code change for the members.
+    |
+    */
+
+    'tag_groups' => [
+        'format' => ['Vortrag', 'Stammtisch'],
+        'niveau' => ['Einsteiger', 'Mittelstufe', 'Fortgeschrittene'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Tag editors
     |--------------------------------------------------------------------------
     |
@@ -219,6 +250,8 @@ return [
         'npub17fqtu2mgf7zueq2kdusgzwr2lqwhgfl2scjsez77ddag2qx8vxaq3vnr8y',
         'npub1v4lgwjv7qfn3t7qjscpsgz9vqvspf6hecdp2ckgp0dz89uqn5slsgrhw3p',
         'npub14r770s5wrqpm8jmzur5arnm9aum9x0wasaxwczael54xhjggl7ws5lygc6',
+        // iBobik — Czech community tag editor (issue #149)
+        'npub1axq2gs86umcggn6w4sfft9l07l35kp3nm0gj7y7necx3xhwegehse6hyk6',
     ],
 
     /*

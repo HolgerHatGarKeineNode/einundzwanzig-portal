@@ -3,33 +3,21 @@
 use App\Attributes\SeoDataAttribute;
 use App\Jobs\FetchNostrProfileJob;
 use App\Models\LoginKey;
+use App\Support\LoginQrCode;
 use App\Support\NostrLogin;
 use App\Traits\SeoTrait;
 use eza\lnurl;
-use Illuminate\Auth\Events\Lockout;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
-use Livewire\Attributes\Validate;
 use Livewire\Component;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 new #[Layout('components.layouts.auth')]
 class extends Component {
     use SeoTrait;
-
-    #[Validate('required|string|email')]
-    public string $email = '';
-
-    #[Validate('required|string')]
-    public string $password = '';
-
-    public bool $remember = false;
 
     public ?string $k1 = null;
 
@@ -108,11 +96,7 @@ class extends Component {
             // Dieselbe Auswahl wie Kopfbereich und Social-Media-Vorschau: eine Fassung
             // ohne eigenes Motiv bekommt TWENTY ONE, nicht mehr das deutsche Bild.
             $image = 'public/'.domain_image_path();
-            $this->qrCode = base64_encode(QrCode::format('png')
-                ->size(300)
-                ->merge('/'.$image, .3)
-                ->errorCorrection('H')
-                ->generate($this->lnurl));
+            $this->qrCode = base64_encode(LoginQrCode::png($this->lnurl, base_path($image)));
         }
     }
 
@@ -160,35 +144,6 @@ class extends Component {
         Session::forget(['nostr_login_challenge', 'nostr_login_challenge_expires_at']);
 
         return $npub;
-    }
-
-    /**
-     * Ensure the authentication request is not rate limited.
-     */
-    protected function ensureIsNotRateLimited(): void
-    {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
-            return;
-        }
-
-        event(new Lockout(request()));
-
-        $seconds = RateLimiter::availableIn($this->throttleKey());
-
-        throw ValidationException::withMessages([
-            'email' => __('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
-        ]);
-    }
-
-    /**
-     * Get the authentication rate limiting throttle key.
-     */
-    protected function throttleKey(): string
-    {
-        return Str::transliterate(Str::lower($this->email).'|'.request()->ip());
     }
 
     public function checkAuth(): void
@@ -266,10 +221,18 @@ class extends Component {
 
             <div class="flex flex-col gap-6">
 
+                <flux:button variant="filled"
+                             @click="loginWithGoogle"
+                             icon="globe-alt"
+                             x-bind:disabled="nostrLoginInProgress || millOpen"
+                             class="w-full cursor-pointer">
+                    {{ __('Log in mit Google') }}
+                </flux:button>
+
                 <flux:button variant="primary"
-                             @click="openNostrLogin"
+                             @click="loginWithNostr"
                              icon="cursor-arrow-ripple"
-                             x-bind:disabled="nostrLoginInProgress"
+                             x-bind:disabled="nostrLoginInProgress || millOpen"
                              x-bind:aria-busy="nostrLoginInProgress"
                              class="w-full cursor-pointer">
                     <span x-show="!nostrLoginInProgress">{{ __('Log in mit Nostr') }}</span>
@@ -279,6 +242,14 @@ class extends Component {
                     </span>
                 </flux:button>
 
+                <flux:button variant="outline"
+                             @click="lightningOpen = !lightningOpen"
+                             icon="bolt"
+                             x-bind:disabled="nostrLoginInProgress || millOpen"
+                             class="w-full cursor-pointer">
+                    {{ __('Log in mit Lightning') }}
+                </flux:button>
+
                 <flux:callout variant="warning" icon="bolt" class="text-start">
                     <flux:callout.heading>{{ __('Lightning-Login wird abgelöst') }}</flux:callout.heading>
                     <flux:callout.text>
@@ -286,8 +257,7 @@ class extends Component {
                     </flux:callout.text>
                 </flux:callout>
 
-                <flux:accordion>
-                    <flux:accordion.item :heading="__('Lightning-Login anzeigen')">
+                <div x-show="lightningOpen" x-cloak class="flex flex-col gap-4">
                         <div class="flex flex-col gap-4 pt-2">
                             <div class="flex justify-center" wire:key="qrcode">
                                 <a href="lightning:{{ $this->lnurl }}">
@@ -320,8 +290,7 @@ class extends Component {
                                 </div>
                             </div>
                         </div>
-                    </flux:accordion.item>
-                </flux:accordion>
+                </div>
             </div>
 
             <livewire:language.selector/>

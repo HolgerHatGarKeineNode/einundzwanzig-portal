@@ -245,7 +245,7 @@ class NostrCalendarEventFactory
             $event->addTag(['a', $coordinate]);
         }
 
-        return $event;
+        return self::withoutLineSeparators($event);
     }
 
     /**
@@ -406,7 +406,59 @@ class NostrCalendarEventFactory
             self::calendarDTag($meetupEvent->meetup)
         )]);
 
-        return $event;
+        return self::withoutLineSeparators($event);
+    }
+
+    /**
+     * The last stop before a payload can be signed: no U+2028/U+2029 in content or tags.
+     *
+     * WHY HERE AND NOT ONLY IN {@see TextNormalizer::withoutLineSeparators()}, which is
+     * where the repair itself lives. That one runs when a record is SAVED, so it covers
+     * what an organiser writes from now on; it does not touch a row that has been in the
+     * database since before it existed, and those rows are the whole of the current
+     * backlog. A single such description would otherwise be signed with a non-canonical
+     * NIP-01 id, rejected by every relay, and — being at the head of a `start`-ordered
+     * queue — hold up the records behind it (see `nostr:publish-calendar`).
+     *
+     * ONLY these two characters, and no other normalisation: this pass must not change
+     * a payload that is already publishable. Collapsing whitespace or trimming here
+     * would move the {@see NostrPayloadFingerprint} of records that are perfectly fine
+     * and send the whole back catalogue through `nostr:republish-calendar --changed`.
+     *
+     * Applied INSIDE the factory rather than in the command, so that the fingerprint of
+     * a built payload and the bytes that get signed are the same thing. Sanitising after
+     * the factory would leave the staleness scan comparing against a payload nobody ever
+     * sends, and every record would read as permanently stale.
+     *
+     * A NEW EVENT INSTEAD OF EDITING THE ONE PASSED IN, and that is not a style choice:
+     * `swentel\nostr\Event\Event::setTags()` APPENDS — it loops over its argument and
+     * pushes each tag onto the existing list (read 2026-09-17, version 1.9.4). Writing
+     * the cleaned list back onto the same event therefore doubles every tag, which the
+     * event id says nothing about because it is computed over whatever is there. A fresh
+     * event starts with an empty tag list, so the same call means what it reads like.
+     * `NostrCanonicalEventIdTest` pins the tag list for exactly this reason.
+     *
+     * Kind, created_at, tags and content are the whole of an unsigned event this class
+     * builds; `id`, `sig` and `pubkey` are set by the signer afterwards.
+     */
+    private static function withoutLineSeparators(Event $event): Event
+    {
+        $clean = new Event;
+        $clean->setKind($event->getKind());
+        $clean->setCreatedAt($event->getCreatedAt());
+        $clean->setContent(TextNormalizer::withoutLineSeparators($event->getContent()));
+
+        $clean->setTags(array_map(
+            static fn (array $tag): array => array_map(
+                static fn (mixed $value): mixed => is_string($value)
+                    ? TextNormalizer::withoutLineSeparators($value)
+                    : $value,
+                $tag,
+            ),
+            $event->getTags(),
+        ));
+
+        return $clean;
     }
 
     /**

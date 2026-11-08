@@ -22,7 +22,7 @@ class UpdateLecturerRequest extends FormRequest
             'intro' => ['sometimes', 'nullable', 'string'],
             'description' => ['sometimes', 'nullable', 'string'],
             'active' => ['sometimes', 'boolean'],
-            'website' => ['sometimes', 'nullable', 'url', 'max:255'],
+            'website' => ['sometimes', 'nullable', 'url', 'max:2048'],
             'twitter_username' => ['sometimes', 'nullable', 'string', 'max:255'],
             'nostr' => ['sometimes', 'nullable', 'string', 'max:255'],
             'lightning_address' => ['sometimes', 'nullable', 'string', 'max:255'],

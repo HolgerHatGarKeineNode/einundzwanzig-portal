@@ -68,7 +68,7 @@ class extends Component {
             'intro' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
             'active' => ['boolean'],
-            'website' => ['nullable', 'url', 'max:255'],
+            'website' => ['nullable', 'url', 'max:2048'],
             'twitter_username' => ['nullable', 'string', 'max:255'],
             'nostr' => ['nullable', 'string', 'max:255'],
             'lightning_address' => ['nullable', 'string'],

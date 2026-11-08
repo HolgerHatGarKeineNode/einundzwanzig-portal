@@ -115,6 +115,9 @@ class extends Component {
                                         />
                                     </div>
                                     <div class="font-medium mt-1">{{ $event->meetup->name }}</div>
+                                    @if($event->title)
+                                        <div class="text-sm wrap-anywhere" data-testid="event-title">{{ $event->title }}</div>
+                                    @endif
                                     <div data-testid="dashboard-activity-event-start" class="text-xs text-zinc-600 dark:text-zinc-300">
                                         {{ $event->start->asDateTime() }}
                                     </div>

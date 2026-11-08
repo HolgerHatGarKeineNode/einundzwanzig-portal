@@ -147,6 +147,7 @@ it('answers the moderation route instead of erroring on the layout', function ()
         'nostr' => config('einundzwanzig.tag_editors')[0],
     ]));
 
+    portalCountry();
     $this->get('/de/tags/moderation')->assertOk();
 
     $this->actingAs(User::factory()->create(['nostr' => null]));
@@ -164,6 +165,7 @@ it('shows a stored icon it cannot resolve instead of dying on it', function () {
         'nostr' => config('einundzwanzig.tag_editors')[0],
     ]));
 
+    portalCountry();
     $response = $this->get('/de/tags/moderation')->assertOk();
 
     // Named, not swallowed — a fallback nobody is told about is how ten Font Awesome

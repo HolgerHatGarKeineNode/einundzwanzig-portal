@@ -117,11 +117,13 @@ class extends Component {
                                 </div>
                             </div>
                         </div>
-                        <flux:chart :value="$meetup->sparkline" class="w-[5rem] aspect-[3/1]">
-                            <flux:chart.svg gutter="0">
-                                <flux:chart.line class="text-green-500 dark:text-green-400"/>
-                            </flux:chart.svg>
-                        </flux:chart>
+                        @if(count($meetup->sparkline) > 1)
+                            <flux:chart :value="$meetup->sparkline" class="w-[5rem] aspect-[3/1]">
+                                <flux:chart.svg gutter="0">
+                                    <flux:chart.line class="text-green-500 dark:text-green-400"/>
+                                </flux:chart.svg>
+                            </flux:chart>
+                        @endif
                     </a>
                 @endforeach
             </div>

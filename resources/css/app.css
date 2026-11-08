@@ -106,6 +106,133 @@
     @apply !mb-0 !leading-tight;
 }
 
+/*
+ * List tables that must never scroll sideways.
+ *
+ * Flux renders every table `whitespace-nowrap` and `table-fixed` inside an
+ * `overflow-auto` scroll area, so one long name pushed the last column behind
+ * a horizontal scrollbar (production, 2026-10-25: up to 692px of overflow on
+ * the services list at 390px, 106px still at 1280px). A table carrying
+ * `data-table-stack` sizes its columns by content and, below the breakpoint it
+ * names, stacks each row into a card: `md` (48rem) for tables that fit a
+ * tablet, `xl` (80rem) for those that need the room the open sidebar takes.
+ *
+ * Unlayered on purpose: Tailwind v4 puts Flux's utilities in a cascade layer,
+ * and unlayered rules win over layered ones without `!important`.
+ * MeetupTableFitsWidthTest and ListTablesFitWidthTest measure the result.
+ */
+[data-table-stack] {
+    table-layout: auto;
+    white-space: normal;
+}
+
+/*
+ * Wrap at spaces only. The html-wide `overflow-wrap: anywhere` (base layer
+ * above) lowers a cell's min-content to one glyph, and an auto-sized column
+ * squeezed that far broke headers and "Log in" letter by letter (measured on
+ * the meetup list, 2026-10-25). `break-word` keeps min-content at the longest
+ * word. Headers stay on one line.
+ */
+[data-table-stack] td {
+    overflow-wrap: break-word;
+}
+
+[data-table-stack] th {
+    white-space: nowrap;
+}
+
+@media (width < 48rem) {
+    [data-table-stack="md"] {
+        display: block;
+        white-space: normal;
+    }
+
+    [data-table-stack="md"] > thead {
+        display: none;
+    }
+
+    [data-table-stack="md"] > tbody {
+        display: block;
+    }
+
+    [data-table-stack="md"] > tbody > tr {
+        display: flex;
+        flex-direction: column;
+        padding-block: 0.75rem;
+    }
+
+    /* A card has a fixed width, so here a long token (a bare URL in a course
+       description) may break anywhere again; `min-width: 0` lets the flex
+       item shrink below that token. */
+    [data-table-stack="md"] > tbody > tr > td {
+        padding-inline: 0;
+        padding-block: 0.25rem;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    /* Flux draws the row divider as a top border on every cell of every row
+       but the first; stacked, that put a line between each field of a card.
+       The card carries the divider instead. */
+    [data-table-stack="md"] > tbody > tr > td {
+        border-top-width: 0;
+    }
+
+    [data-table-stack="md"] > tbody > tr:not(:first-child) {
+        border-top: 1px solid color-mix(in oklab, var(--color-zinc-800) 10%, transparent);
+    }
+
+    .dark [data-table-stack="md"] > tbody > tr:not(:first-child) {
+        border-top-color: color-mix(in oklab, var(--color-white) 20%, transparent);
+    }
+}
+
+@media (width < 80rem) {
+    [data-table-stack="xl"] {
+        display: block;
+        white-space: normal;
+    }
+
+    [data-table-stack="xl"] > thead {
+        display: none;
+    }
+
+    [data-table-stack="xl"] > tbody {
+        display: block;
+    }
+
+    [data-table-stack="xl"] > tbody > tr {
+        display: flex;
+        flex-direction: column;
+        padding-block: 0.75rem;
+    }
+
+    /* A card has a fixed width, so here a long token (a bare URL in a course
+       description) may break anywhere again; `min-width: 0` lets the flex
+       item shrink below that token. */
+    [data-table-stack="xl"] > tbody > tr > td {
+        padding-inline: 0;
+        padding-block: 0.25rem;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    /* Flux draws the row divider as a top border on every cell of every row
+       but the first; stacked, that put a line between each field of a card.
+       The card carries the divider instead. */
+    [data-table-stack="xl"] > tbody > tr > td {
+        border-top-width: 0;
+    }
+
+    [data-table-stack="xl"] > tbody > tr:not(:first-child) {
+        border-top: 1px solid color-mix(in oklab, var(--color-zinc-800) 10%, transparent);
+    }
+
+    .dark [data-table-stack="xl"] > tbody > tr:not(:first-child) {
+        border-top-color: color-mix(in oklab, var(--color-white) 20%, transparent);
+    }
+}
+
 input:focus[data-flux-control],
 textarea:focus[data-flux-control],
 select:focus[data-flux-control] {
@@ -138,4 +265,30 @@ select:focus[data-flux-control] {
 
 .leaflet-container a {
     color: unset !important;
+}
+
+/*
+ * mill (nostr-signer) lives in Shadow DOM. Tokens are also passed via
+ * MILL.open({ theme }), but the host element must carry the same map so a
+ * late-upgraded custom element never flashes mill's purple/Space-Grotesk
+ * defaults. Inconsolata is loaded by @googlefonts on this origin.
+ */
+nostr-signer {
+    --mill-bg: #09090b;
+    --mill-surface: #18181b;
+    --mill-card: #27272a;
+    --mill-card-hover: #3f3f46;
+    --mill-overlay: rgba(9, 9, 11, 0.72);
+    --mill-border: #3f3f46;
+    --mill-border-light: #52525b;
+    --mill-accent: #f59e0b;
+    --mill-accent-hover: #fbbf24;
+    --mill-accent-dim: rgba(245, 158, 11, 0.13);
+    --mill-text: #fafafa;
+    --mill-text-secondary: #a1a1aa;
+    --mill-muted: #71717a;
+    --mill-radius: 8px;
+    --mill-font: "Inconsolata", ui-monospace, monospace;
+    --mill-font-mono: "Inconsolata", ui-monospace, monospace;
+    --mill-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
 }

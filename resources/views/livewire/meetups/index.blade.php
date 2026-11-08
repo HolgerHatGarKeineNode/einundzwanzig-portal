@@ -40,7 +40,7 @@ class extends Component
     public function with(): array
     {
         return [
-            'meetups' => Meetup::with(['city.country', 'city.region', 'createdBy'])
+            'meetups' => Meetup::with(['city.country', 'city.region', 'createdBy', 'media', 'upcomingEvent'])
                 ->withExists([
                     'meetupEvents as has_future_events' => fn ($query) => $query->where('start', '>=', now()),
                 ])
@@ -65,19 +65,36 @@ class extends Component
 }; ?>
 
 <div>
-    <div class="flex items-center justify-between flex-col md:flex-row mb-6">
-        <flux:heading size="xl">
+    {{-- The controls wrap instead of squeezing: in one non-wrapping row a
+         logged-in visitor's extra "Meetup erstellen" button shrank the search
+         field to 54px at 1100px and broke the heading mid-word. --}}
+    <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6">
+        <flux:heading size="xl" class="shrink-0 max-xl:text-center">
             {{ $regionName ? __('Meetups in :region', ['region' => $regionName]) : __('Meetups') }}
         </flux:heading>
-        <div class="flex flex-col md:flex-row items-center gap-4">
+        <div class="flex flex-wrap items-center justify-center xl:justify-end gap-4">
             {{-- Der Einstieg in die Regions-Ansicht. Zeigt sich nur, wenn das Land
                  Regionen hat — sonst bleibt die Leiste wie bisher. --}}
             <livewire:region.chooser/>
-            <x-calendar-stream-picker/>
+            {{-- Deferred: the picker carries ~430 timezone and ~250 country options,
+                 about 1 MB of HTML and half the render time of this page (measured
+                 2026-10-25 with production volume: 129 of 285 ms). The island loads it
+                 in its own request after the page is up, and keeps it out of every
+                 search-field re-render. The placeholder holds the trigger's place. --}}
+            @island(name: 'calendar-stream-picker', defer: true)
+                @placeholder
+                    <flux:button class="min-h-11" icon="calendar-date-range" disabled
+                                 data-testid="calendar-stream-placeholder">
+                        {{ __('Kalender abonnieren') }}
+                    </flux:button>
+                @endplaceholder
+                <x-calendar-stream-picker/>
+            @endisland
             <flux:input
                 wire:model.live="search"
                 :placeholder="__('Suche nach Meetups...')"
                 clearable
+                class="w-full sm:w-64"
             />
             @auth
                 <flux:button class="cursor-pointer" :href="route_with_country('meetups.create')" icon="plus"
@@ -88,7 +105,13 @@ class extends Component
         </div>
     </div>
 
-    <flux:table :paginate="$meetups" class="mt-6">
+    {{-- data-table-stack (resources/css/app.css): no sideways scrolling at any
+         width. Only the two cells with free text (name, next event) wrap above
+         `xl`; the short ones keep Flux' `nowrap`, so no header or "Log in"
+         breaks mid-word. Below `xl` the rows stack: with the sidebar open,
+         1100px left 733px for a table whose narrowest layout needs 821px
+         (production, 2026-10-25). MeetupTableFitsWidthTest measures it. --}}
+    <flux:table :paginate="$meetups" class="mt-6" data-table-stack="xl">
         <flux:table.columns>
             <flux:table.column>{{ __('Name') }}
             </flux:table.column>
@@ -114,7 +137,7 @@ class extends Component
                      only one of the three that cost legibility. --}}
                 <flux:table.row :key="$meetup->id" data-testid="meetup-row"
                                 :data-active="$meetup->is_active ? 'true' : 'false'">
-                    <flux:table.cell variant="strong" class="flex items-center gap-3">
+                    <flux:table.cell variant="strong" class="flex items-center gap-3 whitespace-normal min-w-56">
                         <flux:avatar
                             class="[:where(&)]:size-24 [:where(&)]:text-base {{ $meetup->is_active ? '' : 'grayscale' }}" size="xl"
                             :href="route('meetups.landingpage', ['meetup' => $meetup, 'country' => $country])"
@@ -133,14 +156,18 @@ class extends Component
                                      meetup and says what opening it does. --}}
                                 <flux:link
                                     :href="route('meetups.landingpage', ['meetup' => $meetup, 'country' => $country])"
-                                    :aria-label="__('Meetup :name öffnen', ['name' => $meetup->name])">
-                                    {{ $meetup->name }}
+                                    :aria-label="__('Meetup :name öffnen', ['name' => $meetup->name])"
+                                    :title="$meetup->name">
+                                    {{-- short_name: "Einundzwanzig" would repeat in nearly
+                                         every row. The aria-label and the title keep the
+                                         full name. --}}
+                                    {{ $meetup->short_name }}
                                 </flux:link>
                                 {{-- zinc-600/300 statt zinc-500: letzteres misst auf dem
                                      dunklen Body 3,19:1 und reisst damit WCAG 1.4.3.
                                      Der Fehler ist Bestand, sitzt aber genau da, wo
                                      jetzt Text dazukommt. --}}
-                                <div class="text-xs text-zinc-600 dark:text-zinc-300 flex items-center space-x-2">
+                                <div class="text-xs text-zinc-600 dark:text-zinc-300 flex flex-wrap items-center gap-x-2">
                                     <div>{{ $meetup->city->name }}</div>
                                     @if($meetup->city->country)
                                         <flux:separator vertical/>
@@ -156,7 +183,7 @@ class extends Component
                     </flux:table.cell>
 
                     <flux:table.cell>
-                        <div class="flex flex-col gap-1">
+                        <div class="flex flex-col items-start gap-1">
                             @if($meetup->is_active)
                                 <flux:badge color="green" size="sm">{{ __('Aktiv') }}</flux:badge>
                             @else
@@ -172,7 +199,7 @@ class extends Component
                         </div>
                     </flux:table.cell>
 
-                    <flux:table.cell>
+                    <flux:table.cell class="whitespace-normal min-w-56">
                         @if($meetup->nextEvent && $meetup->nextEvent['start']->isFuture())
                             {{-- The calendar icon and the aria-label are what keep this
                                  apart from the meetup link in the name column: the
@@ -181,7 +208,10 @@ class extends Component
                                  status, not a destination. --}}
                             <a href="{{ route('meetups.landingpage-event', ['meetup' => $meetup, 'event' => $meetup->nextEvent['id'], 'country' => $country]) }}"
                                aria-label="{{ __('Event am :date öffnen', ['date' => $meetup->nextEvent['start']->asDateTime()]) }}">
-                                <div class="flex flex-col gap-1">
+                                <div class="flex flex-col items-start gap-1">
+                                    @if($meetup->nextEvent['title'])
+                                        <span class="text-sm font-medium wrap-anywhere" data-testid="event-title">{{ $meetup->nextEvent['title'] }}</span>
+                                    @endif
                                     <flux:badge color="green" size="sm" icon="calendar-days">
                                         {{ $meetup->nextEvent['start']->asDateTime() }}
                                     </flux:badge>
@@ -207,7 +237,10 @@ class extends Component
                                 ['value' => $meetup->signal, 'href' => $meetup->signal, 'icon' => 'shield-check', 'title' => __('Signal')],
                             ];
                         @endphp
-                        <div class="flex gap-2">
+                        {{-- Four icons per row at most: seven in a line were the
+                             widest fixed content in the row next to the leader's
+                             buttons, 59px too wide at 1280px. --}}
+                        <div class="flex flex-wrap gap-2 xl:w-28">
                             @foreach($socialLinks as $socialLink)
                                 @if($socialLink['value'])
                                     <flux:link :href="$socialLink['href']" external variant="subtle"

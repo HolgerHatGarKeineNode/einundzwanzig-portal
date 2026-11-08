@@ -22,7 +22,7 @@ Register MCP servers in `routes/ai.php`:
 ```php
 use Laravel\Mcp\Facades\Mcp;
 
-Mcp::web();
+Mcp::web('/mcp/demo', \App\Mcp\Servers\AppServer::class);
 ```
 
 ### Creating MCP Primitives

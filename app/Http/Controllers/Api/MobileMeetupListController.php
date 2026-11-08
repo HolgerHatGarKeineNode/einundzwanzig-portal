@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
+use App\Support\NostrCalendarAddress;
 use Dedoc\Scramble\Attributes\Group;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -36,12 +38,9 @@ class MobileMeetupListController extends Controller
         return Meetup::query()
             ->where('visible_on_map', true)
             ->select(['id', 'name', 'slug', 'city_id'])
-            ->addSelect(['next_event_start' => MeetupEvent::query()
-                ->select('start')
-                ->whereColumn('meetup_id', 'meetups.id')
-                ->where('start', '>=', now())
-                ->orderBy('start')
-                ->limit(1),
+            ->addSelect([
+                'next_event_start' => $this->nextEvent()->select('start'),
+                'next_event_nostr_coordinate' => $this->nextEvent()->select('nostr_coordinate'),
             ])
             ->with([
                 'city:id,name,country_id,longitude,latitude',
@@ -105,6 +104,31 @@ class MobileMeetupListController extends Controller
                 'next_event_start_iso' => $meetup->next_event_start
                     ? Carbon::parse($meetup->next_event_start, 'UTC')->toIso8601String()
                     : null,
+                /*
+                 * The NIP-01 address of that same next event's kind 31923, or null while
+                 * it is unpublished (or there is no next event). Flat and prefixed like
+                 * the two fields above, because this payload has no nested `next_event`
+                 * object and inventing one would be a second shape for the same record.
+                 */
+                'next_event_nostr_address' => NostrCalendarAddress::timeBasedEventCoordinate($meetup->next_event_nostr_coordinate),
             ]);
+    }
+
+    /**
+     * The correlated subquery for a meetup's next event, one column selected per use.
+     *
+     * Two subqueries have to name the SAME row, so the order is total: `id` breaks a tie
+     * between two events starting at the same instant, which `start` alone leaves to the
+     * database — and then the start could come from one event and the Nostr address from
+     * the other. The tie-break cannot change `next_event_start`, since tied rows share it.
+     */
+    private function nextEvent(): Builder
+    {
+        return MeetupEvent::query()
+            ->whereColumn('meetup_id', 'meetups.id')
+            ->where('start', '>=', now())
+            ->orderBy('start')
+            ->orderBy('id')
+            ->limit(1);
     }
 }

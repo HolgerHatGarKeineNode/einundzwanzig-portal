@@ -21,16 +21,16 @@ class ServiceForm extends Form
     #[Validate('nullable|string')]
     public ?string $intro = null;
 
-    #[Validate('nullable|url|max:255')]
+    #[Validate('nullable|url|max:2048')]
     public ?string $url_clearnet = null;
 
-    #[Validate('nullable|string|max:255')]
+    #[Validate('nullable|string|max:2048')]
     public ?string $url_onion = null;
 
-    #[Validate('nullable|string|max:255')]
+    #[Validate('nullable|string|max:2048')]
     public ?string $url_i2p = null;
 
-    #[Validate('nullable|string|max:255')]
+    #[Validate('nullable|string|max:2048')]
     public ?string $url_pkdns = null;
 
     #[Validate('nullable|ip|max:45')]
@@ -54,10 +54,10 @@ class ServiceForm extends Form
                 'in:'.collect(SelfHostedServiceType::cases())->map(fn ($c) => $c->value)->implode(','),
             ],
             'intro' => ['nullable', 'string'],
-            'url_clearnet' => ['nullable', 'url', 'max:255'],
-            'url_onion' => ['nullable', 'string', 'max:255'],
-            'url_i2p' => ['nullable', 'string', 'max:255'],
-            'url_pkdns' => ['nullable', 'string', 'max:255'],
+            'url_clearnet' => ['nullable', 'url', 'max:2048'],
+            'url_onion' => ['nullable', 'string', 'max:2048'],
+            'url_i2p' => ['nullable', 'string', 'max:2048'],
+            'url_pkdns' => ['nullable', 'string', 'max:2048'],
             'ip' => ['nullable', 'ip', 'max:45'],
             'contact' => ['nullable', 'string'],
             'anonymous' => ['boolean'],

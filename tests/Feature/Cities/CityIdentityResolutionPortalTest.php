@@ -3,7 +3,7 @@
 /*
 |--------------------------------------------------------------------------
 | Issue #33 — Portal-Verdrahtung (cities/create, cities/edit,
-| meetups/create::createCity, meetups/edit::createCity)
+| meetups/create::chooseCity, meetups/edit::chooseCity)
 |--------------------------------------------------------------------------
 |
 | STAND 2026-08-25 (staedte-identitaet P4), NICHT mehr der Stand, den diese
@@ -38,6 +38,9 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\Region;
+use App\Services\Osm\NominatimClient;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 
 dataset('mit und ohne Regionen', [
@@ -55,8 +58,7 @@ it('allows the same name in a different country via cities.create', function () 
     Livewire::test('cities.create')
         ->set('name', 'Paris')
         ->set('country_id', $us->id)
-        ->set('latitude', 33.66)
-        ->set('longitude', -95.55)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 33.66, 'osm_lon' => -95.55]))
         ->call('createCity')
         ->assertHasNoErrors();
 
@@ -74,8 +76,7 @@ it('blocks a second city of the same name in the same country via cities.create,
     Livewire::test('cities.create')
         ->set('name', 'Georgetown')
         ->set('country_id', $country->id)
-        ->set('latitude', 38.32)
-        ->set('longitude', -85.87)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 38.32, 'osm_lon' => -85.87]))
         ->call('createCity')
         ->assertHasErrors(['name' => 'unique']);
 
@@ -121,57 +122,111 @@ it('allows renaming to a name already used in a different country via cities.edi
 /*
 |--------------------------------------------------------------------------
 | meetups/create und meetups/edit: dieselbe landesbezogene Bremse in der
-| "Stadt hinzufuegen"-Modal (createCity()), unabhaengig vom Meetup selbst.
+| "Stadt hinzufuegen"-Modal (searchCity/chooseCity), unabhaengig vom Meetup
+| selbst. Gleicher Name ohne osm_id-Treffer verlangt confirmDuplicateCity;
+| stilles Zurueckgeben des Bestands gibt es nicht. osm_id-Treffer waehlt.
 |--------------------------------------------------------------------------
 */
 
-it('blocks a same-name/same-country city via the meetups.create add-city modal', function () {
+function bindUnthrottledNominatimForIdentityTests(): void
+{
+    NominatimClient::resetThrottle();
+    Cache::flush();
+    app()->bind(NominatimClient::class, fn (): NominatimClient => new NominatimClient(minIntervalMs: 0));
+}
+
+function salemNominatimHit(int $osmId = 424242): array
+{
+    return [[
+        'osm_type' => 'relation',
+        'osm_id' => $osmId,
+        'name' => 'Salem',
+        'display_name' => 'Salem, Deutschland',
+        'lat' => '38.6',
+        'lon' => '-86.1',
+        'category' => 'place',
+    ]];
+}
+
+it('does not silently return an existing same-name city via the meetups.create add-city modal', function () {
     actingAsUser();
-    $country = Country::factory()->create();
+    bindUnthrottledNominatimForIdentityTests();
+    $country = Country::factory()->create(['code' => 'de']);
     City::factory()->create(['name' => 'Salem', 'country_id' => $country->id]);
 
-    Livewire::test('meetups.create')
-        ->set('newCityName', 'Salem')
-        ->set('newCityCountryId', $country->id)
-        ->set('newCityLatitude', 38.6)
-        ->set('newCityLongitude', -86.1)
-        ->call('createCity')
-        ->assertHasErrors(['newCityName' => 'unique']);
+    Http::fake(['*' => Http::response(salemNominatimHit())]);
 
-    expect(City::query()->where('name', 'Salem')->count())->toBe(1);
+    $form = Livewire::test('meetups.create')
+        ->set('newCityCountryId', $country->id)
+        ->set('newCityQuery', 'Salem')
+        ->call('searchCity')
+        ->call('chooseCity', 0);
+
+    expect($form->get('city_id'))->toBeNull()
+        ->and($form->get('duplicateCityCandidates'))->not->toBeEmpty()
+        ->and($form->get('confirmDuplicateCity'))->toBeFalse()
+        ->and(City::query()->where('name', 'Salem')->count())->toBe(1);
 });
 
 it('allows a same-name city in a different country via the meetups.create add-city modal', function () {
     actingAsUser();
+    bindUnthrottledNominatimForIdentityTests();
     City::factory()->create(['name' => 'Salem']);
-    $otherCountry = Country::factory()->create();
+    $otherCountry = Country::factory()->create(['code' => 'us']);
+
+    Http::fake(['*' => Http::response(salemNominatimHit())]);
 
     Livewire::test('meetups.create')
-        ->set('newCityName', 'Salem')
         ->set('newCityCountryId', $otherCountry->id)
-        ->set('newCityLatitude', 38.6)
-        ->set('newCityLongitude', -86.1)
-        ->call('createCity')
+        ->set('newCityQuery', 'Salem')
+        ->call('searchCity')
+        ->call('chooseCity', 0)
         ->assertHasNoErrors();
 
     expect(City::query()->where('name', 'Salem')->count())->toBe(2);
 });
 
-it('blocks a same-name/same-country city via the meetups.edit add-city modal', function () {
+it('does not silently return an existing same-name city via the meetups.edit add-city modal', function () {
     $user = actingAsUser();
+    bindUnthrottledNominatimForIdentityTests();
     $meetup = Meetup::factory()->create(['created_by' => $user->id]);
-    $country = Country::factory()->create();
+    $country = Country::factory()->create(['code' => 'de']);
     City::factory()->create(['name' => 'Salem', 'country_id' => $country->id]);
 
-    Livewire::test('meetups.edit', ['meetup' => $meetup])
-        ->set('newCityName', 'Salem')
-        ->set('newCityCountryId', $country->id)
-        ->set('newCityLatitude', 38.6)
-        ->set('newCityLongitude', -86.1)
-        ->call('createCity')
-        ->assertHasErrors(['newCityName' => 'unique']);
+    Http::fake(['*' => Http::response(salemNominatimHit())]);
 
-    expect(City::query()->where('name', 'Salem')->count())->toBe(1);
+    $form = Livewire::test('meetups.edit', ['meetup' => $meetup])
+        ->set('newCityCountryId', $country->id)
+        ->set('newCityQuery', 'Salem')
+        ->call('searchCity')
+        ->call('chooseCity', 0);
+
+    expect($form->get('city_id'))->not->toBe(City::query()->where('name', 'Salem')->value('id'))
+        ->and($form->get('duplicateCityCandidates'))->not->toBeEmpty()
+        ->and(City::query()->where('name', 'Salem')->count())->toBe(1);
+});
+
+it('selects the existing city when the Nominatim hit shares osm_type and osm_id', function () {
+    actingAsUser();
+    bindUnthrottledNominatimForIdentityTests();
+    $country = Country::factory()->create(['code' => 'de']);
+    $existing = City::factory()->create([
+        'name' => 'Alt-Salem',
+        'country_id' => $country->id,
+        'osm_type' => 'relation',
+        'osm_id' => 424242,
+    ]);
+
+    Http::fake(['*' => Http::response(salemNominatimHit())]);
+
+    Livewire::test('meetups.create')
+        ->set('newCityCountryId', $country->id)
+        ->set('newCityQuery', 'Salem')
+        ->call('searchCity')
+        ->call('chooseCity', 0)
+        ->assertSet('city_id', $existing->id);
+
+    expect(City::query()->where('osm_type', 'relation')->where('osm_id', 424242)->count())->toBe(1);
 });
 
 /*
@@ -202,8 +257,7 @@ it('blocks without confirmation and lists distinguishable candidates via cities.
     $component = Livewire::test('cities.create')
         ->set('name', 'Georgetown')
         ->set('country_id', $country->id)
-        ->set('latitude', 41.02)
-        ->set('longitude', -85.05)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 41.02, 'osm_lon' => -85.05]))
         ->call('createCity')
         ->assertHasErrors(['name' => 'unique']);
 
@@ -234,8 +288,7 @@ it('creates via cities.create with confirmDuplicate despite an existing same-nam
     Livewire::test('cities.create')
         ->set('name', 'Georgetown')
         ->set('country_id', $country->id)
-        ->set('latitude', 38.32)
-        ->set('longitude', -85.87)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 38.32, 'osm_lon' => -85.87]))
         ->set('confirmDuplicate', true)
         ->call('createCity')
         ->assertHasNoErrors();
@@ -263,8 +316,7 @@ it('blocks "Offenburg " against an existing "Offenburg" via cities.create (N8 re
     Livewire::test('cities.create')
         ->set('name', 'Offenburg ')
         ->set('country_id', $country->id)
-        ->set('latitude', 48.4744)
-        ->set('longitude', 7.9438)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 48.4744, 'osm_lon' => 7.9438]))
         ->call('createCity')
         ->assertHasErrors(['name' => 'unique']);
 
@@ -288,37 +340,58 @@ it('blocks renaming to "Offenburg " against an existing "Offenburg" via cities.e
     expect($mine->fresh()->name)->toBe('Lahr');
 });
 
-it('blocks "Offenburg " via the meetups.create add-city modal (N8 regression)', function () {
+it('requires confirmDuplicateCity when a hit matches "Offenburg " after trim via meetups.create (N8)', function () {
     actingAsUser();
-    $country = Country::factory()->create();
-    City::factory()->create(['name' => 'Offenburg', 'country_id' => $country->id]);
+    bindUnthrottledNominatimForIdentityTests();
+    $country = Country::factory()->create(['code' => 'de']);
+    City::factory()->create(['name' => 'Offenburg ', 'country_id' => $country->id]);
 
-    Livewire::test('meetups.create')
-        ->set('newCityName', 'Offenburg ')
+    Http::fake(['*' => Http::response([[
+        'osm_type' => 'relation',
+        'osm_id' => 515151,
+        'name' => 'Offenburg',
+        'display_name' => 'Offenburg, Deutschland',
+        'lat' => '48.4744',
+        'lon' => '7.9438',
+        'category' => 'place',
+    ]])]);
+
+    $form = Livewire::test('meetups.create')
         ->set('newCityCountryId', $country->id)
-        ->set('newCityLatitude', 48.4744)
-        ->set('newCityLongitude', 7.9438)
-        ->call('createCity')
-        ->assertHasErrors(['newCityName' => 'unique']);
+        ->set('newCityQuery', 'Offenburg')
+        ->call('searchCity')
+        ->call('chooseCity', 0);
 
-    expect(City::query()->where('country_id', $country->id)->count())->toBe(1);
+    expect($form->get('duplicateCityCandidates'))->not->toBeEmpty()
+        ->and($form->get('city_id'))->toBeNull()
+        ->and(City::query()->where('country_id', $country->id)->count())->toBe(1);
 });
 
-it('blocks "Offenburg " via the meetups.edit add-city modal (N8 regression)', function () {
+it('requires confirmDuplicateCity when a hit matches "Offenburg " after trim via meetups.edit (N8)', function () {
     $user = actingAsUser();
+    bindUnthrottledNominatimForIdentityTests();
     $meetup = Meetup::factory()->create(['created_by' => $user->id]);
-    $country = Country::factory()->create();
-    City::factory()->create(['name' => 'Offenburg', 'country_id' => $country->id]);
+    $country = Country::factory()->create(['code' => 'de']);
+    City::factory()->create(['name' => 'Offenburg ', 'country_id' => $country->id]);
 
-    Livewire::test('meetups.edit', ['meetup' => $meetup])
-        ->set('newCityName', 'Offenburg ')
+    Http::fake(['*' => Http::response([[
+        'osm_type' => 'relation',
+        'osm_id' => 515151,
+        'name' => 'Offenburg',
+        'display_name' => 'Offenburg, Deutschland',
+        'lat' => '48.4744',
+        'lon' => '7.9438',
+        'category' => 'place',
+    ]])]);
+
+    $form = Livewire::test('meetups.edit', ['meetup' => $meetup])
         ->set('newCityCountryId', $country->id)
-        ->set('newCityLatitude', 48.4744)
-        ->set('newCityLongitude', 7.9438)
-        ->call('createCity')
-        ->assertHasErrors(['newCityName' => 'unique']);
+        ->set('newCityQuery', 'Offenburg')
+        ->call('searchCity')
+        ->call('chooseCity', 0);
 
-    expect(City::query()->where('country_id', $country->id)->count())->toBe(1);
+    expect($form->get('duplicateCityCandidates'))->not->toBeEmpty()
+        ->and(City::query()->where('country_id', $country->id)->count())->toBe(1);
 });
 
 // P4-f — cities.edit: Rename auf einen im selben Land belegten Namen wird MIT

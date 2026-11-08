@@ -3,6 +3,7 @@
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
+use Tests\Browser\Support\Ready;
 
 /*
  * Issue e5233554: the country/language/timezone dropdown next to the calendar-stream
@@ -19,6 +20,7 @@ beforeEach(function () {
 
 it('is usable at 360px width with visible labels and 44px touch targets, in light and dark mode', function () {
     $page = visit('/de/meetups');
+    Ready::alpine($page, '[data-testid^="calendar-stream-"][data-testid$="-trigger"]');
 
     $page->resize(360, 740)
         ->assertNoJavaScriptErrors()
@@ -67,18 +69,37 @@ it('is usable at 360px width with visible labels and 44px touch targets, in ligh
     // Default appearance (see header.blade.php: dark unless the visitor picked light).
     expect($page->script("document.documentElement.classList.contains('dark')"))->toBeTrue();
     $page->assertNoJavaScriptErrors();
+});
 
-    // Force light mode and confirm the same panel still renders without errors.
-    $page->script("localStorage.setItem('flux.appearance', 'light')");
-    $page = $page->navigate($page->url());
-    $page->resize(360, 740)
-        ->assertNoJavaScriptErrors();
+/*
+ * The light half of the 360px check used to store the preference and reload the
+ * SAME page with navigate(). That path is what failed in 3 of 6 full runs
+ * (the click right after the reload, then a stale websocket message handed to
+ * assertNoJavaScriptErrors — see Ready.php). A fresh visit() has no stored
+ * preference and cannot get one before its scripts run, so light mode is
+ * applied the way a visitor does it at runtime (Flux's appearance switch),
+ * on the already initialised page.
+ *
+ * What this no longer covers: the first paint with a stored 'light' preference.
+ * That is header.blade.php's early script, and is not what this panel's markup
+ * depends on.
+ */
+it('opens the panel at 360px in light mode as well, without errors', function () {
+    $page = visit('/de/meetups');
+    Ready::alpine($page, '[data-testid^="calendar-stream-"][data-testid$="-trigger"]');
+
+    $page->resize(360, 740);
+    $page->script("Flux.appearance = 'light'");
+
     expect($page->script("document.documentElement.classList.contains('dark')"))->toBeFalse();
-    $page->click('[data-testid^="calendar-stream-"][data-testid$="-trigger"]')
+
+    $page->assertNoJavaScriptErrors()
+        ->click('[data-testid^="calendar-stream-"][data-testid$="-trigger"]')
         ->assertVisible('[data-testid^="calendar-stream-"][data-testid$="-panel"]')
         ->assertSee('Land')
         ->assertSee('Sprache')
-        ->assertSee('Zeitzone');
+        ->assertSee('Zeitzone')
+        ->assertNoJavaScriptErrors();
 });
 
 it('is keyboard-operable, traps focus in the open panel and returns it to the trigger on close', function () {
@@ -297,4 +318,68 @@ it('keeps its test ids across a Livewire re-render of the meetups search field',
     $after = $page->script($collectIds);
 
     expect($after)->toBe($before);
+});
+
+/*
+ * The picker renders one flag <img> per country (243 of them on /de/meetups, in
+ * every picker on the page). Without loading="lazy" they were all requested on
+ * the first load — through the single-threaded in-process server, 7.3 s for a
+ * reload against 0.7 s with it (measured 2026-10-25) — and a reload under host
+ * load timed out CalendarStreamPickerTest. The flags are inside a closed
+ * dropdown, so the browser may defer them; this pins that it does, and that
+ * they still render once the dropdown is open.
+ */
+it('defers the country flags until the dropdown is open, and then renders them', function () {
+    // Enough countries that eager loading cannot hide under the threshold below:
+    // with the single fixture country the count could never reach 20.
+    foreach (['at', 'ch', 'fr', 'it', 'es', 'pt', 'nl', 'be', 'lu', 'dk', 'se', 'no', 'fi', 'pl', 'cz', 'sk', 'hu', 'si', 'hr', 'ro', 'bg', 'gr', 'ie', 'gb', 'us', 'ca', 'mx', 'br', 'ar', 'cl'] as $code) {
+        Country::query()->create(['code' => $code, 'name' => 'Land '.$code, 'english_name' => 'Country '.$code, 'language_codes' => ['en'], 'longitude' => 0, 'latitude' => 0]);
+    }
+
+    $page = visit('/de/meetups');
+    $page->resize(1280, 900);
+
+    // Count only after the deferred island has delivered the picker, and give
+    // the browser a few frames to start whatever it is going to fetch. Counting
+    // before the island arrived is how 224 eager flag requests stayed green.
+    Ready::alpine($page, '[data-testid^="calendar-stream-"][data-testid$="-trigger"]');
+    $flagsRequested = $page->script(<<<'JS'
+        (async () => {
+            for (let frame = 0; frame < 30; frame++) {
+                await new Promise((resolve) => requestAnimationFrame(resolve));
+            }
+
+            return performance.getEntriesByType('resource').filter((entry) => entry.name.includes('blade-flags')).length;
+        })()
+    JS);
+
+    // Not 243: only what is on screen without opening anything.
+    expect($flagsRequested)->toBeLessThan(20);
+
+    $page->click('[data-testid^="calendar-stream-"][data-testid$="-trigger"]');
+    $page->click('[data-testid^="calendar-stream-"][data-testid$="-country"]');
+
+    // Wait on the artifact: visible flags that finished loading.
+    $rendered = $page->script(<<<'JS'
+        (async () => {
+            for (let frame = 0; frame < 300; frame++) {
+                const flags = Array.from(document.querySelectorAll('img[src*="blade-flags"]'))
+                    .filter((img) => img.offsetParent !== null);
+
+                if (flags.length > 0 && flags.every((img) => img.complete && img.naturalWidth > 0)) {
+                    return { visible: flags.length, broken: 0 };
+                }
+
+                await new Promise((resolve) => requestAnimationFrame(resolve));
+            }
+
+            const flags = Array.from(document.querySelectorAll('img[src*="blade-flags"]'))
+                .filter((img) => img.offsetParent !== null);
+
+            return { visible: flags.length, broken: flags.filter((img) => ! (img.complete && img.naturalWidth > 0)).length };
+        })()
+    JS);
+
+    expect($rendered['visible'])->toBeGreaterThan(0)
+        ->and($rendered['broken'])->toBe(0);
 });

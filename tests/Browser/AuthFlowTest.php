@@ -1,30 +1,30 @@
 <?php
 
-it('renders the login page with the Nostr button and collapsed Lightning login', function () {
+it('renders the login page with Google, Nostr and Lightning as first-class buttons', function () {
     $page = visit('/login');
 
     /*
-     * Nostr is now the primary path; Lightning is deprecated and collapsed behind an
-     * accordion, so its QR/connect button are not visible until expanded.
-     *
-     * Die Texte kommen aus __(), nicht als Literale: dieser Test stand vorher auf
-     * Englisch, weil DomainMiddleware auf 127.0.0.1 nicht griff und die Sprache aus
-     * Playwrights Accept-Language geraten wurde. Seit der Rueckfall greift, ist es
-     * Deutsch — und ein Test, der an einer geratenen Sprache haengt, faellt beim
-     * naechsten Mal genauso um.
+     * Issue #147: Google must be on /login, not behind the Nostr button.
+     * Lightning is still LNURL but a real button, not an accordion heading.
+     * Texts come from __(); DomainMiddleware fallback is German.
      */
-    $page->assertSee(__('Log in mit Nostr'))
+    $page->assertSee(__('Log in mit Google'))
+        ->assertSee(__('Log in mit Nostr'))
+        ->assertSee(__('Log in mit Lightning'))
         ->assertSee(__('Lightning-Login wird abgelöst'))
-        ->assertSee(__('Lightning-Login anzeigen'))
         ->assertSee('Bitcoin, not blockchain')
+        ->assertDontSee(__('Lightning-Login anzeigen'))
         ->assertDontSee(__('Click to connect'))
+        ->assertDontSee('window.nostr.js')
+        ->assertDontSee('wnjParams')
         ->assertNoJavaScriptErrors();
 });
 
-it('reveals the Lightning QR and connect button when the accordion is expanded', function () {
+it('reveals the Lightning QR and connect button when Lightning is opened', function () {
     $page = visit('/login');
 
-    $page->click(__('Lightning-Login anzeigen'))
+    $page->click(__('Log in mit Lightning'))
         ->assertSee(__('Click to connect'))
+        ->assertSee(__('Log in mit Google'))
         ->assertNoJavaScriptErrors();
 });

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Http;
 use swentel\nostr\Key\Key as NostrKey;
 
 // Echte, dekodierbare npubs (bech32) — nötig, weil das Matching npub→hex normalisiert.
-// randomNpub() liefert nur zu 70 % ein echtes; hier deterministisch fixe Werte.
+// Factory npubs are synthetic; these fixed values keep the gate tests deterministic.
 const REAL_NPUBS = [
     'npub1sg6plzptd64u62a878hep2kev88swjh3tw00gjsfl8f237lmu63q0uf63m',
     'npub1xtscya34g58tk0z605fvr788k263gsu6cy9x0mhnm87echrgufzsevkk5s',

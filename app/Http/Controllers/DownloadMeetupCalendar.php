@@ -257,7 +257,7 @@ class DownloadMeetupCalendar extends Controller
 
     private function buildEntry(MeetupEvent $event, DateTimeZone $timezone, ?string $fallbackImageUrl, ?string $fallbackImageMime, ?string $language): Event
     {
-        $entry = Event::create($event->title ?: $event->meetup->name)
+        $entry = Event::create($event->displayTitle())
             // Stabil ueber Umbenennungen von Meetup ODER Event hinweg — anders als
             // vorher, wo der Meetup-Name Teil der UID war und ein abonnierter Client
             // nach jeder Umbenennung ein Duplikat statt eines Updates saehe.

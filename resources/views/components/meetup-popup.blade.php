@@ -28,6 +28,12 @@
         <flux:subheading class="mb-2">{{ __('Nächster Termin') }}</flux:subheading>
 
         <div class="space-y-1">
+            @if($meetup->nextEvent['title'])
+                <flux:text class="text-sm font-medium wrap-anywhere" data-testid="event-title">
+                    {{ $meetup->nextEvent['title'] }}
+                </flux:text>
+            @endif
+
             <flux:text class="text-sm flex items-center gap-2">
                 <flux:icon.calendar class="w-4 h-4"/>
                 {{ $meetup->nextEvent['start']->asDate() }}

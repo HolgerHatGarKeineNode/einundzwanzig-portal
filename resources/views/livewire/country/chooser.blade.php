@@ -116,6 +116,7 @@ new class extends Component
                 <div class="flex items-center space-x-2">
                     <img alt="{{ str($country->iso_code)->lower() }}"
                          src="{{ asset('vendor/blade-flags/country-'.str($country->iso_code)->lower().'.svg') }}"
+                         loading="lazy" decoding="async"
                          width="24" height="12"/>
                     <span>{{ $country->name }}</span>
                 </div>

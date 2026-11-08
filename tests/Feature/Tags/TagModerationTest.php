@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\MeetupEvent;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -603,6 +604,183 @@ it('does not flag a seeded proper noun that is the same word everywhere', functi
     Livewire::test('tags.moderation')
         ->call('edit', $seeded->id)
         ->assertDontSee('vermutlich vom alten Picker kopiert');
+});
+
+it('marks commitment tags in the vocabulary rows', function () {
+    $this->actingAs(moderator());
+
+    $families = Tag::factory()->named(['de' => 'Familien', 'en' => 'Families'])
+        ->create(['type' => 'meetup_event', 'is_commitment' => true]);
+    $plain = Tag::factory()->named(['de' => 'Vortrag', 'en' => 'Talk'])
+        ->create(['type' => 'meetup_event']);
+
+    Livewire::test('tags.moderation')
+        ->assertSeeHtml('data-testid="commitment-'.$families->id.'"')
+        ->assertSee('Versprechen an Besucher')
+        ->assertDontSeeHtml('data-testid="commitment-'.$plain->id.'"');
+});
+
+it('shows the usage count and heuristic badges in the vocabulary rows', function () {
+    $this->actingAs(moderator());
+
+    // One host chain for all events: the nested factories draw from faker's
+    // shared unique() pool, and a fresh city-country chain per row exhausts it.
+    //
+    // Five events in total, so the broad arithmetic is exact: a tag on all
+    // five covers 100 %; a tag on two covers 40 % and must stay unbadged.
+    $country = \App\Models\Country::factory()->create();
+    $city = \App\Models\City::factory()->create(['country_id' => $country->id]);
+    $host = \App\Models\Meetup::factory()->create(['city_id' => $city->id]);
+    $events = MeetupEvent::factory()->count(5)->create(['meetup_id' => $host->id]);
+
+    $used = Tag::factory()->named(['de' => 'Gut genutzt'])->create(['type' => 'meetup_event']);
+    $events->take(2)->each(fn (MeetupEvent $event) => $event->attachTag($used));
+
+    $broad = Tag::factory()->named(['de' => 'Allgegenwärtig'])->create(['type' => 'meetup_event']);
+    $events->each(fn (MeetupEvent $event) => $event->attachTag($broad));
+
+    $rare = Tag::factory()->named(['de' => 'Vergessen'])->create(['type' => 'meetup_event']);
+    $events->last()->attachTag($rare);
+    // The one old event must not carry $used: that tag has only two usages, and
+    // an old one would tip it into "rare" as well.
+    $events->last()->newQuery()->whereKey($events->last()->id)
+        ->update(['created_at' => now()->subMonths(13)]);
+
+    Livewire::test('tags.moderation')
+        ->assertSeeHtml('data-testid="usage-'.$used->id.'"')
+        ->assertSeeHtml('data-testid="too-broad-'.$broad->id.'"')
+        ->assertSeeHtml('data-testid="too-rare-'.$rare->id.'"')
+        ->assertSee('zu breit')
+        ->assertSee('zu selten')
+        ->assertDontSeeHtml('data-testid="too-broad-'.$used->id.'"')
+        ->assertDontSeeHtml('data-testid="too-rare-'.$used->id.'"');
+});
+
+/*
+|--------------------------------------------------------------------------
+| The description language switch (issue #149, P8)
+|--------------------------------------------------------------------------
+|
+| The flag shown is the FIRST country the portal maps to the language
+| (config/lang-country.php) — de→de, en→gb, cs→cz, es→es, hu→hu, lv→lv,
+| nl→nl, pl→pl, pt→pt. A language without a mapping renders no flag rather
+| than a guessed one.
+|
+*/
+
+it('offers every tag locale on the description switch, each with its mapped flag', function () {
+    $this->actingAs(moderator());
+    app()->setLocale('de');
+
+    $tag = Tag::factory()->named(['de' => 'Selbstverwahrung'])->create(['type' => 'meetup_event']);
+
+    $html = Livewire::test('tags.moderation')
+        ->call('edit', $tag->id)
+        ->assertOk()
+        ->html();
+
+    $expected = [
+        'cs' => 'country-cz.svg',
+        'de' => 'country-de.svg',
+        // First mapped country for English is en-GB, deliberately not en-US:
+        // the config order is the single source, no second opinion here.
+        'en' => 'country-gb.svg',
+        'es' => 'country-es.svg',
+        'hu' => 'country-hu.svg',
+        'lv' => 'country-lv.svg',
+        'nl' => 'country-nl.svg',
+        'pl' => 'country-pl.svg',
+        'pt' => 'country-pt.svg',
+    ];
+
+    foreach ($expected as $locale => $flag) {
+        expect($html)->toContain("vendor/blade-flags/{$flag}");
+    }
+
+    // Decoration stays decoration: every flag image is hidden from assistive
+    // technology, the button's text label carries the meaning.
+    preg_match_all('/<img[^>]*blade-flags[^>]*>/', $html, $images);
+
+    expect($images)->not->toBeEmpty();
+
+    foreach ($images[0] as $image) {
+        expect($image)->toContain('alt=""')
+            ->and($image)->toContain('aria-hidden="true"');
+    }
+});
+
+it('keeps the language name as the visible text next to the flag', function () {
+    $this->actingAs(moderator());
+    app()->setLocale('de');
+
+    $tag = Tag::factory()->named(['de' => 'Selbstverwahrung'])->create(['type' => 'meetup_event']);
+
+    Livewire::test('tags.moderation')
+        ->call('edit', $tag->id)
+        ->assertSeeHtml('data-testid="locale-button-cs"')
+        ->assertSeeHtml('data-testid="locale-button-pt"')
+        ->assertSeeHtml('aria-pressed="true"')
+        ->assertSee('CS')
+        ->assertSee('PT');
+});
+
+it('refills the description when the switch changes the language', function () {
+    $this->actingAs(moderator());
+    app()->setLocale('de');
+
+    $tag = Tag::factory()->named(['de' => 'Selbstverwahrung'])->create(['type' => 'meetup_event']);
+    $tag->setTranslation('description', 'de', 'Deutscher Text.');
+    $tag->setTranslation('description', 'cs', 'Český text.');
+    $tag->save();
+
+    Livewire::test('tags.moderation')
+        ->call('edit', $tag->id)
+        ->assertSet('editDescription', 'Deutscher Text.')
+        ->set('editLocale', 'cs')
+        ->assertSet('editLocale', 'cs')
+        ->assertSet('editDescription', 'Český text.');
+});
+
+it('saves into the switched language, not the request language', function () {
+    $this->actingAs(moderator());
+    app()->setLocale('de');
+
+    $tag = Tag::factory()->named(['de' => 'Selbstverwahrung'])->create(['type' => 'meetup_event']);
+
+    Livewire::test('tags.moderation')
+        ->call('edit', $tag->id)
+        ->set('editLocale', 'cs')
+        ->set('editDescription', 'Český text.')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $fresh = $tag->fresh();
+
+    expect($fresh->getTranslation('description', 'cs', false))->toBe('Český text.')
+        ->and($fresh->getTranslation('description', 'de', false))->toBe('');
+});
+
+it('refuses a language the tag vocabulary does not carry', function () {
+    $this->actingAs(moderator());
+    app()->setLocale('de');
+
+    $tag = Tag::factory()->named(['de' => 'Selbstverwahrung'])->create(['type' => 'meetup_event']);
+    $tag->setTranslation('description', 'de', 'Deutscher Text.');
+    $tag->save();
+
+    // A crafted snapshot value must reach no JSON column: the switch resets it,
+    // and save() re-checks at the only door the value goes through.
+    Livewire::test('tags.moderation')
+        ->call('edit', $tag->id)
+        ->set('editLocale', 'xx')
+        ->set('editDescription', 'Eingeschmuggelter Text.')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $fresh = $tag->fresh();
+
+    expect($fresh->getTranslation('description', 'xx', false))->toBe('')
+        ->and($fresh->getTranslation('description', 'de', false))->toBe('Eingeschmuggelter Text.');
 });
 
 it('keeps a non-editor out of the name editor', function () {

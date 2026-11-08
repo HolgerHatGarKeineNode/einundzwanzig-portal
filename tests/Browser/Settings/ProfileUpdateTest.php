@@ -2,6 +2,10 @@
 
 use App\Models\User;
 
+beforeEach(function () {
+    portalCountry();
+});
+
 it('lets an authenticated user update their profile name and persists it', function () {
     $user = actingAsUser(['name' => 'Old Name']);
 

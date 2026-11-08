@@ -11,6 +11,7 @@ use Livewire\Livewire;
 use swentel\nostr\Event\Event as NostrEvent;
 use swentel\nostr\Key\Key as NostrKey;
 use swentel\nostr\Sign\Sign as NostrSign;
+use Tests\Fixtures\NostrTestKeys;
 
 /**
  * Beide Anlagepfade legen ein Konto an, ohne ein `lnbits`-Objekt zu schreiben.
@@ -54,7 +55,7 @@ function expectNoLnbitsWallet(int $userId): void
 function signedNostrLoginEventForLnbitsProbe(): array
 {
     $keyGen = new NostrKey;
-    $privateKey = $keyGen->generatePrivateKey();
+    $privateKey = NostrTestKeys::generatePrivateKey();
     $publicKey = $keyGen->getPublicKey($privateKey);
 
     $event = new NostrEvent;

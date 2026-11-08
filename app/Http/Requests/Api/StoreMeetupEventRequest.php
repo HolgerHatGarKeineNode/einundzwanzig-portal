@@ -92,7 +92,7 @@ class StoreMeetupEventRequest extends FormRequest
              *
              * @example https://example.com/meetup
              */
-            'link' => ['nullable', 'url', 'max:255'],
+            'link' => ['nullable', 'url', 'max:2048'],
 
             /**
              * Every place this date is announced — Meetup.com, Luma, the group's own
@@ -112,7 +112,7 @@ class StoreMeetupEventRequest extends FormRequest
              *
              * @example https://www.meetup.com/bitcoin-berlin/events/123456789/
              */
-            'links.*.url' => ['required', 'url', 'max:255'],
+            'links.*.url' => ['required', 'url', 'max:2048'],
 
             /**
              * What to call this link, e.g. "Meetup.com". Optional: an entry without a

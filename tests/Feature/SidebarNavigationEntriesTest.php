@@ -102,6 +102,17 @@ it('lists a meetup the signed-in user leads', function () {
         ->and($html)->toContain('/de/meetup/'.$meetup->slug);
 });
 
+it('shows a led meetup without the Einundzwanzig prefix and keeps the full name in the title', function () {
+    $leader = User::factory()->create();
+    $meetup = Meetup::factory()->create(['city_id' => $this->city->id, 'name' => 'EINUNDZWANZIG WÜRZBURG']);
+    $meetup->users()->syncWithoutDetaching([$leader->id => ['is_leader' => true]]);
+
+    $html = $this->actingAs($leader)->get('/de/services')->assertOk()->getContent();
+
+    expect(sidebarMeetupNames($html))->toBe(['WÜRZBURG'])
+        ->and($html)->toMatch('/<a[^>]*title="EINUNDZWANZIG WÜRZBURG"[^>]*data-testid="sidebar-my-meetup"|<a[^>]*data-testid="sidebar-my-meetup"[^>]*title="EINUNDZWANZIG WÜRZBURG"/s');
+});
+
 it('does not list a meetup the signed-in user does not lead', function () {
     $leader = User::factory()->create();
     $ownMeetup = Meetup::factory()->create(['city_id' => $this->city->id, 'name' => 'Eigenes Meetup']);

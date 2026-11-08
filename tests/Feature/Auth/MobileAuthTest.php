@@ -9,6 +9,7 @@ use Laravel\Sanctum\Sanctum;
 use swentel\nostr\Event\Event as NostrEvent;
 use swentel\nostr\Key\Key as NostrKey;
 use swentel\nostr\Sign\Sign as NostrSign;
+use Tests\Fixtures\NostrTestKeys;
 
 /**
  * Build a NIP-55-style signed login event for a given k1 challenge, as an
@@ -19,7 +20,8 @@ use swentel\nostr\Sign\Sign as NostrSign;
 function makeSignedMobileNostrEvent(string $challenge): array
 {
     $keyGen = new NostrKey;
-    $privateKey = $keyGen->generatePrivateKey();
+    // Padded to 64 hex characters; see NostrTestKeys for why the raw key can be short.
+    $privateKey = NostrTestKeys::generatePrivateKey();
     $publicKey = $keyGen->getPublicKey($privateKey);
 
     $event = new NostrEvent;

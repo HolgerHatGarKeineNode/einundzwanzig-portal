@@ -60,6 +60,21 @@ it('hides the edit action in the detail header from a guest', function () {
 | the only link in the row.
 */
 
+it('shows the meetup name without the Einundzwanzig prefix and keeps the full name for screen readers', function () {
+    $this->meetup->update(['name' => 'Einundzwanzig Testhausen']);
+
+    $html = $this->get(route('meetups.index', ['country' => 'de']))->assertSuccessful()->getContent();
+
+    preg_match_all('/<a\b[^>]*>/', $html, $anchors);
+    $meetupLabel = __('Meetup :name öffnen', ['name' => 'Einundzwanzig Testhausen']);
+    $meetupAnchor = collect($anchors[0])
+        ->first(fn (string $tag): bool => str_contains($tag, 'aria-label="'.$meetupLabel.'"'));
+
+    expect($meetupAnchor)->not->toBeNull()
+        ->and($meetupAnchor)->toContain('title="Einundzwanzig Testhausen"')
+        ->and(trim(strip_tags(str($html)->after($meetupAnchor)->before('</a>')->value())))->toBe('Testhausen');
+});
+
 it('renders the meetup link and the event link with different markup and different accessible names', function () {
     MeetupEvent::factory()->create([
         'meetup_id' => $this->meetup->id,

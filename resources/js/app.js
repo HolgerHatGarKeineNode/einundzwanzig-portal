@@ -1,3 +1,4 @@
+import "./millAuth.js";
 import nostrLogin from "./nostrLogin.js";
 import registerCopyToClipboard from "./copyToClipboard.js";
 

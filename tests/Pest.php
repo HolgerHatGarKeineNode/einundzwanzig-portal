@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Browser\Support\BrowserLatch;
 use Tests\TestCase;
 
 /*
@@ -124,11 +125,37 @@ pest()->extend(TestCase::class)
     })
     ->in('Feature', '../resources/views');
 
+/*
+| pest-plugin-browser removes tests/Browser/Traces while it collects the first
+| browser test (Support/Trace.php: `@rmdir(self::dir())`) and never creates it.
+| On a serial run the directory does not exist, rmdir() raises a warning that
+| the @ only hides from the error handler's output, and failOnWarning in
+| phpunit.xml counts it: every serial browser run exited 1 with all tests green
+| (measured 2026-10-25: "1 passed", exit 1; a parallel run was exit 0 because
+| its coordinator never reaches that code). Creating the empty directory first
+| lets the plugin's cleanup do what it means to, without loosening failOnWarning.
+| This file loads before the tests are collected, which is before the cleanup.
+*/
+(function (): void {
+    $traces = __DIR__.'/Browser/Traces';
+
+    // Parallel workers load this file at the same moment: a plain mkdir() would
+    // raise the very warning this exists to prevent in the one that loses the race.
+    if (! is_dir($traces) && ! @mkdir($traces, 0755, true) && ! is_dir($traces)) {
+        throw new RuntimeException("Cannot create {$traces}");
+    }
+})();
+
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->beforeEach(function () {
         config()->set('database.connections.sqlite.database', database_path('testing.sqlite'));
         config()->set('permission.testing', true);
+
+        BrowserLatch::install();
+    })
+    ->afterEach(function () {
+        BrowserLatch::assertSilent();
     })
     ->in('Browser');
 
@@ -236,12 +263,56 @@ expect()->extend('toBeOne', function () {
 |--------------------------------------------------------------------------
 */
 
+/**
+ * The country behind the `/de/...` segment every page test visits.
+ *
+ * Country-prefixed routes answer 404 for a segment no country carries, so a test
+ * that visits a page needs this row. It reuses an existing "de" instead of adding a
+ * second one, so a test that also builds its own Germany sees exactly one.
+ *
+ * @param  array<string, mixed>  $attributes
+ */
+function portalCountry(array $attributes = []): Country
+{
+    $country = Country::query()->matchingCode('de')->first();
+
+    if ($country === null) {
+        return Country::factory()->create(['code' => 'de', ...$attributes]);
+    }
+
+    if ($attributes !== []) {
+        $country->update($attributes);
+    }
+
+    return $country;
+}
+
 function actingAsUser(array $attributes = []): User
 {
     $user = User::factory()->create($attributes);
     test()->actingAs($user);
 
     return $user;
+}
+
+/**
+ * OSM picker payload for cities.create / cities.edit.
+ *
+ * Coordinates come from the hit. Forms no longer accept typed WGS84.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function cityOsmPlace(array $overrides = []): array
+{
+    return array_merge([
+        'osm_type' => 'relation',
+        'osm_id' => 62422,
+        'osm_name' => 'Berlin',
+        'osm_address' => 'Berlin, Deutschland',
+        'osm_lat' => 52.5173885,
+        'osm_lon' => 13.3951309,
+    ], $overrides);
 }
 
 function defaultCountrySegment(): string

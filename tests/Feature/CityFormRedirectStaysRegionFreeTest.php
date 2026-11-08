@@ -37,8 +37,7 @@ it('redirects to the plain country route after creating a city, even under a reg
         ->set('name', 'Fort Wayne Redirect Test')
         ->set('country_id', $this->usa->id)
         ->set('region_id', $this->indiana->id)
-        ->set('latitude', 41.0793)
-        ->set('longitude', -85.1394)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 41.0793, 'osm_lon' => -85.1394]))
         ->call('createCity')
         ->assertHasNoErrors()
         ->assertRedirect(route('cities.index', ['country' => 'us']));

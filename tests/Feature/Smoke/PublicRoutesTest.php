@@ -24,7 +24,6 @@ it('returns a successful response for the listed public route', function (string
     'welcome' => '/welcome',
     'ki-assistent' => '/ki-assistent',
     'login' => '/login',
-    'forgot password' => '/forgot-password',
     'meetups index' => '/de/meetups',
     'meetups all' => '/de/all-meetups',
     'map' => '/de/map',

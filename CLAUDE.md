@@ -3,11 +3,9 @@
 
 # Laravel Boost Guidelines
 
-The Laravel Boost guidelines are specifically curated by Laravel maintainers for this application. These guidelines should be followed closely to ensure the best experience when building Laravel applications.
-
 ## Foundational Context
 
-This application is a Laravel application running on PHP 8.5. You are an expert with the Laravel ecosystem. Always use the APIs that match the installed major version of each package — do not assume a version.
+This application is a Laravel application running on PHP 8.5. Always use the APIs that match the installed major version of each package — do not assume a version.
 
 Before relying on a package's API, confirm its installed version:
 - PHP packages: run `composer show --direct` to list direct dependencies with versions, or `composer show <vendor/package>` for a single package.
@@ -34,15 +32,11 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 ## Frontend Bundling
 
-- If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
+- If a frontend change doesn't show in the UI or you get a "Unable to locate file in Vite manifest" error, run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
 
 ## Documentation Files
 
 - You must only create documentation files if explicitly requested by the user.
-
-## Replies
-
-- Be concise in your explanations - focus on what's important rather than explaining obvious details.
 
 === boost rules ===
 
@@ -76,7 +70,6 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 # Deployment
 
 - Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
-- Activate the `deploying-to-cloud` skill whenever deploying to Laravel Cloud, configuring Cloud environments or resources, using the Cloud CLI, or troubleshooting Cloud deployments.
 
 === tests rules ===
 
@@ -113,10 +106,6 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
 - Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
 - When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
-
-## Vite Error
-
-- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
 
 === livewire/core rules ===
 
@@ -227,6 +216,18 @@ passage disappearing, and the passage reappearing inside the block.
   ```
 
   Browser assertions stay available on purpose — run them deliberately through `vendor/bin/pest --testsuite=Browser`, never as a side effect of a full run.
+
+- **The whole suite has exactly one sanctioned command, and it carries its own time limit:**
+
+  ```
+  composer test:all          # = bash scripts/test-all.sh
+  ```
+
+  It runs Unit, Feature, Components and Browser in parallel (`vendor/bin/pest --parallel`, 24 workers for the non-browser half, 8 for Browser — at 24 browser workers six extra tests time out) under `timeout 600`. A run still going after 600 s is killed and the script exits 124 with "TEST BUDGET EXCEEDED" (a kill by anything else is reported as the signal, not as a budget overrun). The run lives in its own session, and the script reaps whatever is left in it by session id on every exit: `timeout`'s group signal alone left the Playwright `run-server` node process running (measured 2026-10-25). `TEST_BUDGET_SECONDS=5 composer test:all` proves the exit code; `TEST_BUDGET_SECONDS=150` kills inside the Browser half and leaves no `playwright run-server` behind. The limit is the user's rule of 2026-10-23: the whole suite stays under ten minutes. Measured 2026-10-24 on 24 threads: 441 s end-to-end, 2588 + 144 tests green (107 s Unit+Feature, 330 s Browser; the same suite ran ~25 min serial: 646 s without Browser, 868 s Browser). Other processes on the host move that number by tens of seconds. Over budget is a bug before it is a feature: profile, then optimise, merge or delete tests.
+
+- **Every browser test is watched by `tests/Browser/Support/BrowserLatch.php`**, installed from `tests/Pest.php`: any console message, uncaught error, rejected promise, failed resource, response >= 400 (Livewire roundtrips included) or request to another origin fails the test that caused it. `OfflineBrowser` answers third-party images, tile servers and the font files locally, so the browser suite does not touch the internet. Pages therefore render in the monospace fallback, never in Inconsolata (APP_URL is not the test server). `tests/Browser/BrowserLatchTest.php` provokes each channel. A test that provokes a complaint on purpose takes it out with `BrowserLatch::drain()`.
+
+- **Outgoing HTTP is blocked in every test** (`Http::preventStrayRequests()` in `tests/TestCase.php`). Fake with `Http::fake([...])` or `Http::fake([])`, never a bare `Http::fake()`: that one answers every URL with 200 and defeats the guard.
 
 ## Code Formatting
 

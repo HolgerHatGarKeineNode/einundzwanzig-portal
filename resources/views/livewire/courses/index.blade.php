@@ -56,7 +56,7 @@ class extends Component
         </div>
     </div>
 
-    <flux:table :paginate="$courses" class="mt-6">
+    <flux:table :paginate="$courses" class="mt-6" data-table-stack="xl">
         <flux:table.columns>
             <flux:table.column>
                 {{ __('Name') }}
@@ -81,7 +81,9 @@ class extends Component
                                     <a href="{{ route('courses.landingpage', ['course' => $course, 'country' => $country]) }}">
                                         <span>{{ Str::limit($course->name, 30) }}</span>
                                         @if($course->description)
-                                            <div class="text-xs text-zinc-500">
+                                            {{-- wrap-anywhere: descriptions hold bare URLs, and the
+                                                 table's break-word cells would keep one on a single line. --}}
+                                            <div class="text-xs text-zinc-500 wrap-anywhere">
                                                 {{ Str::limit($course->description, 60) }}
                                             </div>
                                         @endif

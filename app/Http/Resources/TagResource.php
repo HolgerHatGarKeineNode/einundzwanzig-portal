@@ -13,7 +13,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * TWO KEYS, ONE VALUE: `locale` AND `name_locale` (issue #57).
  *
  * The hand-built tag array of `GET /api/meetup-events`
- * ({@see MeetupEventController::__invoke()}) has always called
+ * ({@see MeetupEventController::listEvents()}) has always called
  * this field `locale`; every response that goes through this resource — the
  * authenticated read endpoints, the write responses, the webhook and change-log
  * envelope, the course events — has always called it `name_locale`. Since PR #52 both

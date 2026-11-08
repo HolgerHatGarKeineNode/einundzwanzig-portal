@@ -36,8 +36,19 @@ class extends Component
     {
         return [
             'meetup' => $this->meetup,
+            /*
+             * The update ability — leader, creator, super-admin, meetup steward — plus the
+             * leader pivot, same as the list view's "Bearbeiten". Computed once here because
+             * two places ask: the edit button and the Nostr publishing notice.
+             */
+            'canManageMeetup' => auth()->check()
+                && ($this->meetup->leadByMe || auth()->user()->can('update', $this->meetup)),
             'events' => $this->meetup
                 ->meetupEvents()
+                // The card counts merge Nostr RSVPs (D12a): the linked rows once for all
+                // cards, the unlinked ones as aggregates of this very query.
+                ->with(['linkedNostrRsvps', 'rsvpTimes'])
+                ->withAttendanceCounts()
                 ->where('start', '>=', now())
                 ->orderBy('start', 'asc')
                 ->get(),
@@ -56,6 +67,22 @@ class extends Component
 @endsection
 
 <div class="container mx-auto px-4 py-8">
+    {{-- Publishing became default-on on 2026-09-17 (migration 2026_09_17_200000), and
+         this notice is the one place leaders learn about it. Managers only, and only
+         while the switch is on: once a leader has switched it off, "are published"
+         would no longer be true. --}}
+    @if($canManageMeetup && $meetup->nostr_publishing_enabled)
+        <flux:callout variant="secondary" icon="information-circle" class="mb-6" data-testid="nostr-publishing-notice">
+            <flux:callout.heading>{{ __('Termine dieses Meetups erscheinen jetzt auf Nostr') }}</flux:callout.heading>
+            <flux:callout.text>{{ __('Sie werden öffentlich als Nostr-Kalendereinträge veröffentlicht, damit Teilnehmer auch mit Nostr zusagen können. Du kannst das in den Meetup-Einstellungen abschalten.') }}</flux:callout.text>
+            <x-slot name="actions">
+                <flux:button size="sm" :href="route_with_country('meetups.edit', ['meetup' => $meetup])">
+                    {{ __('Zu den Meetup-Einstellungen') }}
+                </flux:button>
+            </x-slot>
+        </flux:callout>
+    @endif
+
     {{-- Identity row: who and where, in one band. Everything a visitor needs to
          confirm they are on the right page, and nothing that delays the list. --}}
     <div class="flex flex-col sm:flex-row items-center space-x-0 sm:space-x-4 space-y-4 sm:space-y-0">
@@ -67,21 +94,19 @@ class extends Component
                 {{ $meetup->city->name }}, {{ $meetup->city->country->name }}
             </flux:subheading>
             <x-calendar-stream-picker :meetup-id="$meetup->id"/>
-            @if(auth()->check())
-                {{-- Identical condition to the list view's edit action
-                     (index.blade.php, "Bearbeiten"): the update ability —
-                     leader, creator, super-admin, meetup steward. Without
-                     this, editing a meetup was reachable only by going back
-                     to the list view. --}}
-                @if($meetup->leadByMe || auth()->user()->can('update', $meetup))
-                    <div>
-                        <flux:button
-                            :href="route_with_country('meetups.edit', ['meetup' => $meetup])"
-                            size="sm" variant="filled" icon="pencil">
-                            {{ __('Meetup bearbeiten') }}
-                        </flux:button>
-                    </div>
-                @endif
+            {{-- Identical condition to the list view's edit action
+                 (index.blade.php, "Bearbeiten"): the update ability —
+                 leader, creator, super-admin, meetup steward. Without
+                 this, editing a meetup was reachable only by going back
+                 to the list view. --}}
+            @if($canManageMeetup)
+                <div>
+                    <flux:button
+                        :href="route_with_country('meetups.edit', ['meetup' => $meetup])"
+                        size="sm" variant="filled" icon="pencil">
+                        {{ __('Meetup bearbeiten') }}
+                    </flux:button>
+                </div>
             @endif
         </div>
     </div>
@@ -151,8 +176,16 @@ class extends Component
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 @foreach($events as $event)
                     <flux:card size="sm" class="h-full flex flex-col">
+                        {{-- An event's own title leads the card when it has one (issue #157);
+                             the date then moves into the time line below. Without a title the
+                             card stays as it was: the meetup's name is already the page
+                             heading, so repeating it on every card would say nothing. --}}
                         <flux:heading class="flex items-center gap-2">
-                            {{ $event->start->asDate() }}
+                            @if($event->title)
+                                <span class="wrap-anywhere" data-testid="event-title">{{ $event->title }}</span>
+                            @else
+                                {{ $event->start->asDate() }}
+                            @endif
                             {{-- Series marker (issue #43). `recurrence_group` is the only
                                  reliable series identity: the 2026_08_25_194948 migration
                                  backfilled that column alone, so events of pre-P5 series
@@ -173,6 +206,9 @@ class extends Component
 
                         <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
                             <flux:icon.clock class="inline w-4 h-4"/>
+                            @if($event->title)
+                                {{ $event->start->asDate() }},
+                            @endif
                             {{ __(':time Uhr', ['time' => $event->start->asTime()]) }}
                         </flux:text>
 
@@ -193,10 +229,20 @@ class extends Component
 
                         @if($canSeeAttendees)
                             <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                                <div class="text-xs text-zinc-500 flex items-center gap-2">
-                                    <span>{{ trans_choice(':count Zusage|:count Zusagen', count($event->attendees ?? [])) }}</span>
+                                {{-- Counts include the Nostr RSVPs of linked accounts; RSVPs of
+                                     unlinked keys follow as "+N via Nostr", never named (D12a).
+                                     `flex-wrap` so the two extra spans break onto a second line
+                                     in a narrow card instead of running past its edge. --}}
+                                <div class="text-xs text-zinc-500 flex flex-wrap items-center gap-2">
+                                    <span>{{ trans_choice(':count Zusage|:count Zusagen', $event->attendeesCount()) }}</span>
+                                    @if($event->nostrAttendeesCount() > 0)
+                                        <span data-testid="nostr-attendees">{{ __('+:count via Nostr', ['count' => $event->nostrAttendeesCount()]) }}</span>
+                                    @endif
                                     <flux:separator vertical/>
-                                    <span>{{ trans_choice(':count Vielleicht|:count Vielleicht', count($event->might_attendees ?? [])) }}</span>
+                                    <span>{{ trans_choice(':count Vielleicht|:count Vielleicht', $event->mightAttendeesCount()) }}</span>
+                                    @if($event->nostrMightAttendeesCount() > 0)
+                                        <span data-testid="nostr-might-attendees">{{ __('+:count via Nostr', ['count' => $event->nostrMightAttendeesCount()]) }}</span>
+                                    @endif
                                 </div>
                             </flux:text>
                         @endif
@@ -245,7 +291,7 @@ class extends Component
                                         <div>
                                             <flux:heading size="lg">{{ __('Event löschen?') }}</flux:heading>
                                             <flux:subheading>
-                                                {{ __('Möchtest du das Event vom') }} {{ $event->start->asDate() }} {{ __('wirklich löschen?') }}
+                                                {{ __('Möchtest du das Event vom') }} {{ $event->start->asDate() }}@if($event->title) ("{{ $event->title }}")@endif {{ __('wirklich löschen?') }}
                                             </flux:subheading>
                                             <flux:subheading class="mt-2">
                                                 {{ __('Diese Aktion kann nicht rückgängig gemacht werden.') }}

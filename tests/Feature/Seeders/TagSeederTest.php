@@ -64,8 +64,11 @@ it('marks exactly the intended featured tags, all on events', function () {
 
     $featured = Tag::query()->featured()->get();
 
-    expect($featured)->toHaveCount(7)
-        ->and($featured->pluck('type')->unique()->all())->toBe(['meetup_event']);
+    // Six since issue #149: Bitcoin left the resting list as redundant on a
+    // Bitcoin portal — Talk, Workshop, Meetup, Beginners, Lightning, Self-custody.
+    expect($featured)->toHaveCount(6)
+        ->and($featured->pluck('type')->unique()->all())->toBe(['meetup_event'])
+        ->and($featured->pluck('name.de'))->not->toContain('Bitcoin');
 });
 
 it('contains no duplicate names within a type', function () {
@@ -108,4 +111,48 @@ it('marks every seeded tag as approved', function () {
     $this->seed(TagSeeder::class);
 
     expect(Tag::query()->pending()->count())->toBe(0);
+});
+
+it('seeds German and English guidance for every event tag (issue #149)', function () {
+    $this->seed(TagSeeder::class);
+
+    $events = Tag::query()->where('type', 'meetup_event')->get();
+
+    expect($events)->toHaveCount(16);
+
+    $events->each(function (Tag $tag): void {
+        expect($tag->getTranslation('description', 'de', false))
+            ->not->toBe('', "missing de description for {$tag->getTranslation('name', 'de')}")
+            ->and($tag->getTranslation('description', 'en', false))
+            ->not->toBe('', "missing en description for {$tag->getTranslation('name', 'de')}");
+    });
+});
+
+it('fills only empty description locales and never overwrites edits (issue #149)', function () {
+    $this->seed(TagSeeder::class);
+
+    $beginners = Tag::query()->where('type', 'meetup_event')->get()
+        ->first(fn (Tag $t): bool => $t->getTranslation('name', 'de') === 'Einsteiger');
+
+    $edited = 'Manuell gepflegter Text aus dem Moderations-UI.';
+    $beginners->setTranslation('description', 'de', $edited);
+    $beginners->setTranslation('description', 'cs', 'Ručně upravený text.');
+    $beginners->save();
+
+    $this->seed(TagSeeder::class);
+
+    $fresh = $beginners->fresh();
+
+    expect($fresh->getTranslation('description', 'de', false))->toBe($edited)
+        ->and($fresh->getTranslation('description', 'cs', false))->toBe('Ručně upravený text.')
+        ->and($fresh->getTranslation('description', 'en', false))->not->toBe('');
+});
+
+it('removes Bitcoin from the featured resting list (issue #149)', function () {
+    $this->seed(TagSeeder::class);
+
+    $bitcoin = Tag::query()->where('type', 'meetup_event')->get()
+        ->first(fn (Tag $t): bool => $t->getTranslation('name', 'de') === 'Bitcoin');
+
+    expect($bitcoin->featured)->toBeFalse();
 });

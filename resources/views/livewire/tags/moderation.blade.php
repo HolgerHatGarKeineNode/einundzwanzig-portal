@@ -3,6 +3,7 @@
 use App\Models\Tag;
 use App\Support\TagEditorGate;
 use App\Support\TagLocales;
+use App\Support\TagUsageStats;
 use App\Traits\SeoTrait;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
@@ -68,6 +69,22 @@ new class extends Component
     public string $editDescription = '';
 
     /**
+     * The language the description field reads and writes (issue #149, P8).
+     *
+     * This used to be a derived property — TagLocales::current(), i.e. whatever
+     * language the whole portal happens to be in — which made the only way to
+     * edit a Czech description a full portal switch, header menu included. It is
+     * a real choice now, made on the screen where the field lives, and it sticks
+     * across editor sessions because a moderator fills one language after
+     * another, not one request at a time.
+     *
+     * Not #[Locked]: the switch buttons write to it. Every write is re-validated
+     * in updatedEditLocale() and save() against TagLocales::all(), so a crafted
+     * snapshot value reaches no translation the vocabulary does not carry.
+     */
+    public string $editLocale = 'de';
+
+    /**
      * locale => name, one entry per tag locale, empty where the tag has no name.
      *
      * All nine at once, unlike `editDescription`, which edits only the request's
@@ -95,6 +112,8 @@ new class extends Component
     public function mount(): void
     {
         abort_unless(TagEditorGate::allows(auth()->user()), 403);
+
+        $this->editLocale = TagLocales::current();
 
         $this->featured = Tag::query()
             ->approved()
@@ -174,22 +193,48 @@ new class extends Component
         return Tag::query()->approved()->count();
     }
 
+    /**
+     * Usage numbers and heuristic flags for the vocabulary rows (issue #149).
+     *
+     * A computed property, so one request renders every row from the same
+     * snapshot: the pivot is read once, not once per row.
+     */
+    public function getUsageProperty(): TagUsageStats
+    {
+        return TagUsageStats::load();
+    }
+
     public function getFeaturedCountProperty(): int
     {
         return Tag::query()->approved()->where('featured', true)->count();
     }
 
     /**
-     * The language a description is written in on this screen.
+     * A language switch wrote editLocale (issue #149, P8).
      *
-     * `description` carries all nine tag locales. Editing nine textareas per row
-     * would be absurd, and guessing a locale that the tag vocabulary does not even
-     * use would write into a language the picker never reads — so the request's
-     * locale is used when it is one of the nine, and the app's fallback otherwise.
+     * Two jobs, one hook:
+     *
+     *   1. Validate. The value arrives from the client like any public property;
+     *      anything outside the nine tag locales is reset to the request's
+     *      language rather than written into a JSON column nothing reads.
+     *   2. Refill the description field from the tag being edited. Without this
+     *      the field would keep showing the previous language's text under the
+     *      new language's label — and saving would store that text in the wrong
+     *      place. Unsaved typing is deliberately dropped on the switch: the
+     *      switch IS the explicit act of leaving that text behind.
      */
-    public function getEditLocaleProperty(): string
+    public function updatedEditLocale(string $value): void
     {
-        return TagLocales::current();
+        if (! in_array($value, TagLocales::all(), true)) {
+            $this->editLocale = TagLocales::current();
+
+            return;
+        }
+
+        if ($this->editingId !== null) {
+            $tag = Tag::find($this->editingId);
+            $this->editDescription = (string) $tag?->getTranslation('description', $this->editLocale, false);
+        }
     }
 
     /**
@@ -359,6 +404,13 @@ new class extends Component
 
         $names = $this->normalisedEditNames();
         $this->editNames = $names;
+
+        // The write guard for editLocale: updatedEditLocale() covers the switch
+        // buttons, but a crafted snapshot can seed the property directly, and
+        // this is the door the value goes through on its way into the JSON.
+        if (! in_array($this->editLocale, TagLocales::all(), true)) {
+            $this->editLocale = TagLocales::current();
+        }
 
         $this->validate([
             'editIcon' => ['required', 'string', Rule::in((array) config('einundzwanzig.tag_icons', []))],

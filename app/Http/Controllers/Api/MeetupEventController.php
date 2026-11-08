@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\MeetupEvents\CreateMeetupEventSeries;
+use App\Enums\NostrRsvpStatus;
 use App\Enums\RsvpStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\ListMeetupEventsRequest;
 use App\Http\Requests\Api\RsvpMeetupEventRequest;
 use App\Http\Requests\Api\StoreMeetupEventRequest;
 use App\Http\Requests\Api\UpdateMeetupEventRequest;
@@ -12,6 +14,7 @@ use App\Http\Resources\MeetupEventResource;
 use App\Http\Resources\TagResource;
 use App\Models\MeetupEvent;
 use App\Models\User;
+use App\Support\NostrCalendarAddress;
 use Carbon\Carbon;
 use Carbon\Exceptions\InvalidFormatException;
 use Dedoc\Scramble\Attributes\Group;
@@ -23,6 +26,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 #[Group(name: 'Meetups', weight: 3)]
@@ -42,14 +46,30 @@ class MeetupEventController extends Controller
      * List meetup events
      *
      * Returns upcoming/past meetup events. With an optional date, the result is filtered
-     * to the month of that date.
+     * to the month of that date. The query filters of the bare list path apply here too.
      *
      * @return Collection<int, array<string, mixed>>
      */
     #[PathParameter(name: 'date', description: 'Optional date (Y-m-d); filters to the month of that date.', required: false, type: 'string')]
     #[QueryParameter(name: 'locale', description: self::LOCALE_PARAMETER_DESCRIPTION, required: false, type: 'string')]
     #[ResponseAttribute(status: 400, description: 'The given date cannot be parsed (Y-m-d is expected).')]
-    public function __invoke(Request $request, ?string $date = null): Collection
+    #[ResponseAttribute(status: 422, description: 'Invalid filter value, or an unknown query parameter.')]
+    public function month(ListMeetupEventsRequest $request, string $date): Collection
+    {
+        return $this->listEvents($request, $date);
+    }
+
+    /**
+     * The one implementation behind `month()` and `index()`.
+     *
+     * Neither public method calls the other: when `index()` delegated to the dated
+     * action, Scramble reused that action's inferred definition and then failed on the
+     * dated route itself ("Scope is not initialized for route", GEN001), which dropped
+     * every parameter of `/meetup-events/{date}` from the API reference.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function listEvents(ListMeetupEventsRequest $request, ?string $date): Collection
     {
         $requestedLocale = $this->resolveRequestedLocale($request);
 
@@ -67,12 +87,44 @@ class MeetupEventController extends Controller
                 // Without this the resource's whenLoaded('tags') stays silent and the
                 // field disappears from the payload rather than showing up empty.
                 'tags',
+                // The attendee counts merge Nostr RSVPs (D12a). Only the LINKED rows are
+                // loaded, in two queries for the whole list; the unlinked ones are
+                // aggregates of the query below and are never hydrated.
+                'linkedNostrRsvps',
+                'rsvpTimes',
             ])
+            ->withAttendanceCounts()
             ->when(
                 $date,
                 fn ($query) => $query
                     ->where('start', '>=', $date)
                     ->where('start', '<=', $date->copy()->endOfMonth()),
+            )
+            // Issue #163 — the filters of ListMeetupEventsRequest, combined with AND.
+            ->when(
+                $request->meetupIds(),
+                fn ($query, array $meetupIds) => $query->whereIn('meetup_id', $meetupIds),
+            )
+            ->when(
+                $request->country(),
+                fn ($query, string $country) => $query->whereHas(
+                    'meetup.city.country',
+                    fn ($countryQuery) => $countryQuery->whereRaw('LOWER(code) = ?', [$country]),
+                ),
+            )
+            // An event still running on `from` belongs to it: compared by its end, or by
+            // its start when it has none.
+            ->when(
+                $request->from(withDefaultWindow: $date === null),
+                fn ($query, $from) => $query->where(
+                    fn ($rangeQuery) => $rangeQuery
+                        ->where('end', '>=', $from)
+                        ->orWhere(fn ($noEndQuery) => $noEndQuery->whereNull('end')->where('start', '>=', $from)),
+                ),
+            )
+            ->when(
+                $request->to(),
+                fn ($query, $to) => $query->where('start', '<=', $to),
             )
             ->get();
 
@@ -150,8 +202,13 @@ class MeetupEventController extends Controller
                 'locale' => $tag->displayLocale($requestedLocale),
             ])->all(),
             // null = the attendee count is not public for this meetup (attendees_public=false).
+            // Since D12a both include the Nostr RSVPs of keys linked to a portal account.
             'attendees' => $event->meetup->attendees_public ? $event->attendeesCount() : null,
             'might_attendees' => $event->meetup->attendees_public ? $event->mightAttendeesCount() : null,
+            // Nostr RSVPs (kind 31925) of keys linked to NO portal account — "+N via Nostr",
+            // counted apart and never named (D12a). Same null rule as the two above.
+            'nostr_attendees' => $event->meetup->attendees_public ? $event->nostrAttendeesCount() : null,
+            'nostr_might_attendees' => $event->meetup->attendees_public ? $event->nostrMightAttendeesCount() : null,
             'meetup.name' => $event->meetup->name,
             'meetup.portalLink' => url()->route(
                 'meetups.landingpage',
@@ -172,6 +229,19 @@ class MeetupEventController extends Controller
             'meetup.nostr' => $event->meetup->nostr,
             'meetup.logo' => $event->meetup->getFirstMediaUrl('logo'),
             'meetup.rsvp_enabled' => $event->meetup->rsvp_enabled,
+            /*
+             * The NIP-01 address of this event's kind 31923 (`31923:<pubkey hex>:<d>`),
+             * or null while it has not been published. Clients RSVP over Nostr with a
+             * kind 31925 whose `a` tag carries exactly this string; without it they
+             * fall back to the REST RSVP endpoint. Appended last, so the order of every
+             * existing key stays exactly as shipped app builds have seen it.
+             */
+            'nostr_address' => NostrCalendarAddress::timeBasedEventCoordinate($event->nostr_coordinate),
+            // Issue #163, appended for the same reason: the meetup's ID, under both the
+            // key MeetupEventResource and the webhook payloads use and the dotted
+            // `meetup.*` spelling of this list.
+            'meetup_id' => $event->meetup_id,
+            'meetup.id' => $event->meetup_id,
         ],
         );
     }
@@ -179,8 +249,9 @@ class MeetupEventController extends Controller
     /**
      * List meetup events
      *
-     * Returns every upcoming/past meetup event, unfiltered. The same list
-     * `GET /meetup-events/{date}` returns when no date is given.
+     * Returns the meetup events that ended at most 7 days ago or are still to come. Pass an
+     * older `from` for the history. Optional query filters narrow it by meetup, country
+     * and date range; they combine with AND, and an unknown parameter is rejected with 422.
      *
      * EXISTS FOR THE API REFERENCE, NOT FOR THE BEHAVIOUR (issue #57). The route used
      * to be `meetup-events/{date?}` alone, and Scramble collapses an optional path
@@ -189,17 +260,19 @@ class MeetupEventController extends Controller
      * for the path consumers actually call. A route of its own is the only way to get
      * that path generated rather than synthesised into the document afterwards.
      *
-     * A SEPARATE METHOD rather than a second route onto `__invoke()`: the attributes
+     * A SEPARATE METHOD rather than a second route onto `month()`: the attributes
      * are per method, so sharing one would put `#[PathParameter(name: 'date')]` on a
-     * path that has no `{date}` placeholder — invalid OpenAPI, measured. The body
-     * delegates, so there is exactly one implementation and the two paths cannot drift.
+     * path that has no `{date}` placeholder — invalid OpenAPI, measured. Both delegate
+     * to `listEvents()`, so there is exactly one implementation and the two paths
+     * cannot drift.
      *
      * @return Collection<int, array<string, mixed>>
      */
     #[QueryParameter(name: 'locale', description: self::LOCALE_PARAMETER_DESCRIPTION, required: false, type: 'string')]
-    public function index(Request $request): Collection
+    #[ResponseAttribute(status: 422, description: 'Invalid filter value, or an unknown query parameter.')]
+    public function index(ListMeetupEventsRequest $request): Collection
     {
-        return $this->__invoke($request);
+        return $this->listEvents($request, null);
     }
 
     /**
@@ -312,6 +385,19 @@ class MeetupEventController extends Controller
     #[ResponseAttribute(status: 422, description: 'Validation error (unknown status) or RSVP disabled for this meetup.')]
     public function rsvp(RsvpMeetupEventRequest $request, MeetupEvent $meetupEvent): JsonResponse
     {
+        /*
+         * Usage probe for the REST RSVP path. Clients move to Nostr RSVPs (kind 31925)
+         * wherever an event carries a `nostr_address`, but app builds already shipped
+         * keep calling this endpoint, and only this line can tell when they stopped.
+         * The user agent names the build; the user id is the only personal datum.
+         * Logged before the `rsvp_enabled` gate, so a rejected call still counts as a call.
+         */
+        Log::info('REST RSVP received', [
+            'meetup_event_id' => $meetupEvent->id,
+            'user_id' => $request->user()->id,
+            'user_agent' => $request->userAgent(),
+        ]);
+
         abort_if(
             ! $meetupEvent->meetup->rsvp_enabled,
             Response::HTTP_UNPROCESSABLE_ENTITY,
@@ -331,24 +417,32 @@ class MeetupEventController extends Controller
      * null if the attendee list is not visible to the viewer
      * (attendees_public=false and not a manager).
      *
-     * @return array{status: string, attendees: int|null, might_attendees: int|null, attendee_names: list<string>|null}
+     * Since D12a the status, the counters and the names merge the Nostr RSVPs of keys
+     * linked to a portal account (newer answer per user wins); `nostr_attendees` and
+     * `nostr_might_attendees` count the Nostr RSVPs of unlinked keys, which are never
+     * named. The write path of this endpoint is unchanged.
+     *
+     * @return array{status: string, attendees: int|null, might_attendees: int|null, attendee_names: list<string>|null, nostr_attendees: int|null, nostr_might_attendees: int|null}
      */
     private function rsvpPayload(MeetupEvent $meetupEvent, User $user): array
     {
         $countsVisible = $meetupEvent->meetup->attendeesVisibleTo($user);
+        $attendance = $meetupEvent->attendance();
 
         return [
-            'status' => $meetupEvent->rsvpStatusFor($user)->value,
-            'attendees' => $countsVisible ? $meetupEvent->attendeesCount() : null,
-            'might_attendees' => $countsVisible ? $meetupEvent->mightAttendeesCount() : null,
+            'status' => $attendance->statusFor($user->id)->value,
+            'attendees' => $countsVisible ? $attendance->attendeesCount() : null,
+            'might_attendees' => $countsVisible ? $attendance->mightAttendeesCount() : null,
             // Display names of the attendees without the `id_<userId>|` prefix. Same
             // visibility rule as the counters (attendees_public or manager).
             'attendee_names' => $countsVisible
-                ? collect($meetupEvent->attendees ?? [])
+                ? collect($attendance->attendeeEntries())
                     ->map(fn (string $entry): string => str($entry)->after('|')->toString())
                     ->values()
                     ->all()
                 : null,
+            'nostr_attendees' => $countsVisible ? $attendance->unlinkedNostrCount(NostrRsvpStatus::Accepted) : null,
+            'nostr_might_attendees' => $countsVisible ? $attendance->unlinkedNostrCount(NostrRsvpStatus::Tentative) : null,
         ];
     }
 

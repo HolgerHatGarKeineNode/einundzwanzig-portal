@@ -3,6 +3,10 @@
 use App\Enums\SelfHostedServiceType;
 use App\Models\SelfHostedService;
 
+beforeEach(function () {
+    portalCountry();
+});
+
 it('creates a new SelfHostedService end-to-end and shows it on the index', function () {
     actingAsUser();
 

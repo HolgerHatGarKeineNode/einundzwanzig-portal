@@ -53,8 +53,9 @@ it('schedules the calendar publisher for meetups and for events', function () {
 });
 
 /*
- * The interval is load-bearing, not cosmetic: PublishCalendarEvents handles ONE record
- * per run, so a backlog of N needs N runs. Measured from the public API on 2026-09-04,
+ * The interval is load-bearing, not cosmetic: PublishCalendarEvents handled ONE record
+ * per run until 2026-09-17 (a batch of 25 since, see the next test), so a backlog of N
+ * needed N runs. Measured from the public API on 2026-09-04,
  * as upper bounds: 307 meetups and 76 upcoming events portal-wide. At hourly the
  * one-time meetup drain takes 12.8 days, during which a leader who switched publishing
  * on keeps reading "not yet published" on his own page — the complaint that produced
@@ -79,6 +80,21 @@ it('drains fast enough to keep the backlog and the safety margin where they were
 
         expect($event)->not->toBeNull("no schedule entry for {$model}");
         expect($event->expression)->toBe('*/5 * * * *', "cadence for {$model} is no longer every five minutes");
+    }
+});
+
+/*
+ * The batch is what clears the default-on backlog — 669 upcoming events on 2026-09-17,
+ * 27 runs at 25 per run instead of 669 runs at one. Asserted on the schedule entry,
+ * because that is what production runs; the command default of 25 only covers a manual
+ * invocation.
+ */
+it('publishes a batch of 25 per scheduled run', function () {
+    foreach (['Meetup', 'MeetupEvent'] as $model) {
+        $command = (string) (scheduledMatching("nostr:publish-calendar --model='{$model}'")[0] ?? null)?->command;
+
+        expect(str_contains($command, '--limit=25'))
+            ->toBeTrue("the {$model} publisher lost its batch size of 25");
     }
 });
 

@@ -1,6 +1,6 @@
 <?php
 
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use App\Support\LoginQrCode;
 
 /*
  * Beide Login-Seiten bauen ihren QR-Code seit 2026-08-25 ueber
@@ -28,13 +28,7 @@ function extractLnurlFromHtml(string $html): string
 
 function qrCodePngBase64(string $lnurl, string $imagePathRelativeToPublic): string
 {
-    return base64_encode(
-        QrCode::format('png')
-            ->size(300)
-            ->merge('/public/'.$imagePathRelativeToPublic, .3)
-            ->errorCorrection('H')
-            ->generate($lnurl)
-    );
+    return base64_encode(LoginQrCode::png($lnurl, public_path($imagePathRelativeToPublic)));
 }
 
 it('embeds the twenty-one motif in the desktop login QR code for a language without its own image (regression)', function () {
@@ -86,4 +80,40 @@ it('embeds the twenty-one motif in the mobile login QR code for a language witho
 
     expect($actualQrCode)->toBe(qrCodePngBase64($lnurl, 'img/domains/twenty-one.png'))
         ->and($actualQrCode)->not->toBe(qrCodePngBase64($lnurl, 'img/domains/de-DE.jpg'));
+});
+
+/*
+ * Every test above compares LoginQrCode with ITSELF, so changing its size,
+ * error correction or merge would leave them all green. This one compares it
+ * with an image LoginQrCode did not make: the output of
+ * simplesoftwareio/simple-qrcode 4.2.0
+ * (`format('png')->size(300)->merge($image, .3)->errorCorrection('H')`),
+ * the package it replaced, for the content below with
+ * public/img/domains/twenty-one.png in the centre. The class promises to
+ * reproduce that output; this is where the promise is checked.
+ *
+ * Compared as decoded pixels, not as PNG bytes: the bytes also carry the
+ * libpng/Imagick build's compression choices, and another build must not turn
+ * this red without a code change. (On this build the bytes are identical too,
+ * measured 2026-10-25.) Mutation: SIZE 300 -> 200 turns it red.
+ */
+it('renders the login QR code pixel for pixel like simple-qrcode 4.2.0 did', function () {
+    $lnurl = 'LNURL1DP68GURN8GHJ7MRWW4EXCTNXD9SHG6NPVCHXXMMD9AKXUATJDSKHQCTE8AEK2UMND9HKU0'.'0';
+
+    $actual = imagecreatefromstring(LoginQrCode::png($lnurl, public_path('img/domains/twenty-one.png')));
+    $golden = imagecreatefromstring((string) file_get_contents(base_path('tests/Fixtures/login-qr-simple-qrcode-4.2.0.png')));
+
+    expect([imagesx($actual), imagesy($actual)])->toBe([imagesx($golden), imagesy($golden)]);
+
+    $differing = 0;
+
+    for ($y = 0; $y < imagesy($golden); $y++) {
+        for ($x = 0; $x < imagesx($golden); $x++) {
+            if (imagecolorat($actual, $x, $y) !== imagecolorat($golden, $x, $y)) {
+                $differing++;
+            }
+        }
+    }
+
+    expect($differing)->toBe(0);
 });

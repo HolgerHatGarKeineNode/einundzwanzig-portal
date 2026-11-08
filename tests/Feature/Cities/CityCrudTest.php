@@ -14,12 +14,16 @@ it('creates a City with valid data', function () {
     Livewire::test('cities.create')
         ->set('name', 'Berlin')
         ->set('country_id', $this->country->id)
-        ->set('latitude', 52.52)
-        ->set('longitude', 13.405)
+        ->set('osmPlace', cityOsmPlace())
         ->call('createCity')
         ->assertHasNoErrors();
 
-    expect(City::query()->where('name', 'Berlin')->exists())->toBeTrue();
+    $city = City::query()->where('name', 'Berlin')->first();
+
+    expect($city)->not->toBeNull()
+        ->and((float) $city->latitude)->toBe(52.5173885)
+        ->and((float) $city->longitude)->toBe(13.3951309)
+        ->and($city->osm_id)->toBe(62422);
 });
 
 it('rejects city creation when required fields are blank (country_id is preset by mount() from the route prefix)', function () {
@@ -29,8 +33,7 @@ it('rejects city creation when required fields are blank (country_id is preset b
         ->call('createCity')
         ->assertHasErrors([
             'name' => 'required',
-            'latitude' => 'required',
-            'longitude' => 'required',
+            'osmPlace.osm_id' => 'required',
         ]);
 });
 
@@ -56,22 +59,22 @@ it('rejects city creation when country_id is explicitly cleared', function () {
     Livewire::test('cities.create')
         ->set('name', 'No Country City')
         ->set('country_id', null)
-        ->set('latitude', 1)
-        ->set('longitude', 1)
+        ->set('osmPlace', cityOsmPlace())
         ->call('createCity')
         ->assertHasErrors(['country_id' => 'required']);
 });
 
-it('rejects city creation with out-of-range latitude', function () {
+it('rejects city creation when the osm place has no usable coordinates', function () {
     actingAsUser();
 
     Livewire::test('cities.create')
         ->set('name', 'Bad Lat')
         ->set('country_id', $this->country->id)
-        ->set('latitude', 150)
-        ->set('longitude', 0)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => null, 'osm_lon' => null]))
         ->call('createCity')
-        ->assertHasErrors(['latitude' => 'between']);
+        ->assertHasErrors(['osmPlace.osm_id']);
+
+    expect(City::query()->where('name', 'Bad Lat')->exists())->toBeFalse();
 });
 
 it('rejects city creation with non-existent country', function () {
@@ -80,8 +83,7 @@ it('rejects city creation with non-existent country', function () {
     Livewire::test('cities.create')
         ->set('name', 'No Country')
         ->set('country_id', 999999)
-        ->set('latitude', 0)
-        ->set('longitude', 0)
+        ->set('osmPlace', cityOsmPlace())
         ->call('createCity')
         ->assertHasErrors(['country_id' => 'exists']);
 });
@@ -92,10 +94,9 @@ it('rejects city creation when latitude and longitude are both zero', function (
     Livewire::test('cities.create')
         ->set('name', 'Null Island')
         ->set('country_id', $this->country->id)
-        ->set('latitude', 0)
-        ->set('longitude', 0)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 0, 'osm_lon' => 0]))
         ->call('createCity')
-        ->assertHasErrors(['latitude']);
+        ->assertHasErrors(['osmPlace.osm_id']);
 
     expect(City::query()->where('name', 'Null Island')->exists())->toBeFalse();
 });
@@ -112,10 +113,9 @@ it('rejects city update when latitude and longitude are both zero', function () 
     Livewire::test('cities.edit', ['city' => $city])
         ->set('name', 'Berlin Test')
         ->set('country_id', $this->country->id)
-        ->set('latitude', 0)
-        ->set('longitude', 0)
+        ->set('osmPlace', cityOsmPlace(['osm_lat' => 0, 'osm_lon' => 0]))
         ->call('updateCity')
-        ->assertHasErrors(['latitude']);
+        ->assertHasErrors(['osmPlace.osm_id']);
 
     expect($city->refresh()->latitude)->toEqual(52.52);
 });
@@ -130,8 +130,7 @@ it('updates an existing city', function () {
     Livewire::test('cities.edit', ['city' => $city])
         ->set('name', 'New Name')
         ->set('country_id', $this->country->id)
-        ->set('latitude', 52.52)
-        ->set('longitude', 13.405)
+        ->set('osmPlace', cityOsmPlace())
         ->call('updateCity')
         ->assertHasNoErrors();
 

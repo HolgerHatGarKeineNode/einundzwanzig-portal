@@ -6,15 +6,16 @@ use Livewire\Attributes\Modelable;
 use Livewire\Component;
 
 /**
- * Picks a place from OpenStreetMap and hands the parent form the fields the events
- * table stores.
+ * Picks a place from OpenStreetMap and hands the parent form the stored columns.
  *
  * The search runs server-side on purpose. Nominatim's policy caps requests at one per
  * second and forbids stock user agents, so the call cannot happen in the browser: only
  * the server can throttle it, cache it and identify itself properly.
  *
- * Nothing here is required. The free-text location field beside it stays the right
- * answer for "TBA" or "follow the Signal group", which is exactly how the issue framed it.
+ * Event forms leave this optional: TBA still lives in the text field beside it, and
+ * search() stays fail-soft so an outage looks like "type it as text". City forms pass
+ * required=true — the pick is the source of coordinates, trySearch() distinguishes an
+ * outage from zero hits, and the copy never tells anyone to type WGS84.
  */
 new class extends Component {
     /**
@@ -31,17 +32,41 @@ new class extends Component {
     #[Locked]
     public ?string $countryCode = null;
 
+    /**
+     * City forms pass true. Locked so a client cannot switch the picker into the
+     * event fail-soft path and skip the outage callout.
+     */
+    #[Locked]
+    public bool $required = false;
+
     /** @var array<int, array<string, mixed>> */
     public array $results = [];
 
     public bool $searched = false;
 
+    /** True only after trySearch() failed. Event mode never sets this. */
+    public bool $searchFailed = false;
+
     public function search(): void
     {
         $this->searched = true;
+        $this->searchFailed = false;
 
         if (mb_strlen(trim($this->query)) < 3) {
             $this->results = [];
+
+            return;
+        }
+
+        if ($this->required) {
+            $outcome = app(NominatimClient::class)
+                ->trySearch($this->query, $this->countryCode);
+
+            $this->searchFailed = $outcome['failed'];
+            $this->results = $outcome['hits']
+                ->take(5)
+                ->values()
+                ->all();
 
             return;
         }
@@ -84,11 +109,13 @@ new class extends Component {
         $this->results = [];
         $this->query = '';
         $this->searched = false;
+        $this->searchFailed = false;
     }
 
     public function clearPlace(): void
     {
         $this->place = [];
+        $this->searchFailed = false;
     }
 
     public function getChosenProperty(): bool
@@ -134,7 +161,7 @@ new class extends Component {
             <flux:input
                 wire:model="query"
                 wire:keydown.enter.prevent="search"
-                placeholder="{{ __('z.B. Café Mustermann, Hauptstr. 1') }}"
+                placeholder="{{ $required ? __('z.B. Berlin') : __('z.B. Café Mustermann, Hauptstr. 1') }}"
                 data-testid="osm-query"
             />
             <flux:button wire:click="search" data-testid="osm-search">
@@ -155,14 +182,26 @@ new class extends Component {
                     </button>
                 @endforeach
             </div>
+        @elseif ($searched && $required && $searchFailed)
+            <flux:callout variant="danger" icon="x-circle" class="mt-2" data-testid="osm-unavailable">
+                {{ __('OpenStreetMap ist gerade nicht erreichbar. Versuch es später noch einmal.') }}
+            </flux:callout>
         @elseif ($searched)
             <flux:callout class="mt-2" data-testid="osm-empty">
-                {{ __('Nichts gefunden. Trag den Ort einfach als Text ein — das Feld darunter genügt.') }}
+                @if ($required)
+                    {{ __('Keine Stadt gefunden.') }}
+                @else
+                    {{ __('Nichts gefunden. Trag den Ort einfach als Text ein — das Feld darunter genügt.') }}
+                @endif
             </flux:callout>
         @endif
     @endif
 
     <flux:description>
-        {{ __('Optional. Ein Kartenort macht das Event auffindbar; für „wird noch bekannt gegeben" reicht das Textfeld.') }}
+        @if ($required)
+            {{ __('Suche den Ort auf OpenStreetMap. Die Koordinaten setzen wir aus dem Treffer.') }}
+        @else
+            {{ __('Optional. Ein Kartenort macht das Event auffindbar; für „wird noch bekannt gegeben" reicht das Textfeld.') }}
+        @endif
     </flux:description>
 </flux:field>

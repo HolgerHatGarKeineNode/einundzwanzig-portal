@@ -210,7 +210,7 @@ class extends Component {
         @endif
     </div>
 
-    <flux:table :paginate="$services" class="mt-6">
+    <flux:table :paginate="$services" class="mt-6" data-table-stack="xl">
         <flux:table.columns>
             <flux:table.column>{{ __('Name') }}</flux:table.column>
             <flux:table.column>{{ __('Typ') }}</flux:table.column>

@@ -100,7 +100,7 @@ it('rejects a subscription url that now resolves to a private address, counts it
     $subscription = WebhookSubscription::factory()->create(['url' => 'https://10.0.0.9/hook']);
     $delivery = WebhookDelivery::factory()->create(['subscription_id' => $subscription->id]);
 
-    Http::fake();
+    Http::fake([]);
 
     DeliverWebhookJob::dispatch($subscription->id, $delivery->id);
 
@@ -137,7 +137,7 @@ it('auto-disables a subscription after the configured number of consecutive fail
 });
 
 it('does nothing for a subscription or delivery that no longer exists', function () {
-    Http::fake();
+    Http::fake([]);
 
     (new DeliverWebhookJob(999999, 999999))->handle();
 

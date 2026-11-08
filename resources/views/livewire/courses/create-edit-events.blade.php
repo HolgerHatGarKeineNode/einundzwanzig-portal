@@ -67,7 +67,7 @@ class extends Component
     #[Validate('nullable|string|max:255|required_without:osmPlace.osm_id')]
     public ?string $location = null;
 
-    #[Validate('required|url|max:255')]
+    #[Validate('required|url|max:2048')]
     public ?string $link = null;
 
     /**
@@ -223,7 +223,7 @@ class extends Component
             // A structured OSM place is an equally valid answer to "where" — only reject
             // when the event has neither a text location nor a picked map place.
             'location' => ['nullable', 'string', 'max:255', 'required_without:osmPlace.osm_id'],
-            'link' => 'required|url|max:255',
+            'link' => 'required|url|max:2048',
             ...($this->tagsRequired ? ['tagIds' => 'required|array|min:1'] : []),
         ], [
             'location.required_without' => __('Gib entweder einen Ort als Text ein oder wähle einen Ort auf der Karte.'),
@@ -352,10 +352,10 @@ class extends Component
         $code = Country::find($this->newCityCountryId)?->code;
 
         $this->newCityResults = app(NominatimClient::class)
-            ->search($this->newCityQuery, $code)
+            ->search($this->newCityQuery, $code, featureType: 'settlement')
             // Only populated places. Without this a search for "Bern" also offers streets
             // and buildings named Bern, and one of them would become a "city".
-            ->filter(fn (array $hit): bool => ($hit['category'] ?? null) === 'place')
+            ->filter(fn (array $hit): bool => in_array($hit['category'] ?? null, ['place', 'boundary'], true))
             ->take(5)
             ->values()
             ->all();

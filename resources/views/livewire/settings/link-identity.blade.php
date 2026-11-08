@@ -573,11 +573,21 @@ class extends Component {
 <script>
     Alpine.data('mergeNostr', () => ({
         signing: false,
-        async signAndProve() {
+                async signAndProve() {
             if (this.signing) return;
             this.signing = true;
             try {
+                const mill = window.millAuth;
+                if (mill && ! mill.hasNostrExtension()) {
+                    try {
+                        await mill.connectMill({ methods: ['nip46'] });
+                    } catch (connectError) {
+                        mill.dropFailedBunker();
+                        throw new Error('{{ __('Kein Nostr-Signierer gefunden. Bitte installiere eine Nostr-Browser-Extension.') }}');
+                    }
+                }
                 if (!window.nostr || typeof window.nostr.signEvent !== 'function') {
+                    mill?.dropFailedBunker();
                     throw new Error('{{ __('Kein Nostr-Signierer gefunden. Bitte installiere eine Nostr-Browser-Extension.') }}');
                 }
                 const challenge = this.$root.dataset.mergeChallenge;

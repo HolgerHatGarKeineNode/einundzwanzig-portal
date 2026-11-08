@@ -85,6 +85,9 @@ it('answers the bare list path with the unchanged payload of the dated one', fun
             'tags',
             'attendees',
             'might_attendees',
+            // Hybrid RSVP (D12a): Nostr RSVPs of keys linked to no portal account.
+            'nostr_attendees',
+            'nostr_might_attendees',
             'meetup.name',
             'meetup.portalLink',
             'meetup.url',
@@ -99,6 +102,11 @@ it('answers the bare list path with the unchanged payload of the dated one', fun
             'meetup.nostr',
             'meetup.logo',
             'meetup.rsvp_enabled',
+            // Added 2026-09-17, appended so no existing key moved.
+            'nostr_address',
+            // Issue #163, appended for the same reason.
+            'meetup_id',
+            'meetup.id',
         ])
         ->and($bareRow['title'])->toBe('Einsteigerabend')
         // Both routes reach the same code, and the value comparison says so for every
