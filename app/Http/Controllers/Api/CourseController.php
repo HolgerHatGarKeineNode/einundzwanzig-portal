@@ -191,8 +191,18 @@ class CourseController extends Controller
                 'osm_address' => $event->osm_address,
                 'osm_lat' => $event->osm_lat,
                 'osm_lon' => $event->osm_lon,
+                /** DEPRECATED (#145): `2026-09-16T17:00:00.000000Z`. Read `from_iso`; kept byte for byte, as on CourseEventResource. */
                 'from' => $event->from,
+                /** DEPRECATED (#145): `2026-09-16T20:30:00.000000Z`. Read `to_iso`; kept byte for byte, as on CourseEventResource. */
                 'to' => $event->to,
+                /**
+                 * Issue #145: the `+00:00` twins CourseEventResource carries since the
+                 * follow-up to #125. This list is built by hand, not through the
+                 * resource, so the conversion is repeated here verbatim;
+                 * CourseIso8601TimestampsApiTest holds the two producers together.
+                 */
+                'from_iso' => $event->from->setTimezone('UTC')->toIso8601String(),
+                'to_iso' => $event->to->setTimezone('UTC')->toIso8601String(),
                 'link' => $event->link,
                 'city' => $this->citySummary($event->city),
             ])->all(),
