@@ -7,6 +7,7 @@ use App\Models\MeetupEvent;
 use App\Support\NostrCalendarEventFactory;
 use App\Support\NostrEventTransmitter;
 use App\Support\NostrPayloadFingerprint;
+use App\Support\NostrRelays;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -268,7 +269,9 @@ class RepublishCalendarEvents extends Command
             $signer = new Sign;
             $signer->signEvent($event, $hexKey);
 
-            if ($this->transmitter->transmit($event, config('services.nostr.relays', []))) {
+            $answers = $this->transmitter->transmit($event, NostrRelays::all());
+
+            if ($answers->reached(NostrRelays::quorum())) {
                 /*
                  * The fingerprint of the event that was ACTUALLY signed and sent, not
                  * of the one built during the `--changed` scan a moment earlier. The
@@ -288,13 +291,13 @@ class RepublishCalendarEvents extends Command
                 continue;
             }
 
-            $this->error(sprintf('Failed to republish %s #%d (%s)', class_basename($record), $record->id, $coordinate));
+            $this->error(sprintf('Failed to republish %s #%d (%s): %s', class_basename($record), $record->id, $coordinate, $answers->summary()));
             $failed++;
         }
 
         if (! $force) {
             $this->newLine();
-            $this->warn('Nothing was sent. Re-run with --force to transmit to '.count((array) config('services.nostr.relays', [])).' relay(s).');
+            $this->warn('Nothing was sent. Re-run with --force to transmit to '.count(NostrRelays::all()).' relay(s).');
 
             return self::SUCCESS;
         }

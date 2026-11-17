@@ -4,6 +4,7 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
+use App\Support\NostrBroadcastResult;
 use App\Support\NostrEventTransmitter;
 use Illuminate\Support\Carbon;
 
@@ -94,7 +95,7 @@ function orderingFixture(Meetup $meetup): array
 function fakeAcceptingTransmitter(): void
 {
     test()->mock(NostrEventTransmitter::class, function ($mock) {
-        $mock->shouldReceive('transmit')->andReturn(true);
+        $mock->shouldReceive('transmit')->andReturnUsing(fn ($event, array $relays) => NostrBroadcastResult::acceptedByAll($event, $relays));
     });
 }
 

@@ -2,7 +2,9 @@
 
 namespace Tests\Fixtures;
 
+use App\Support\NostrBroadcastResult;
 use App\Support\NostrEventTransmitter;
+use App\Support\NostrRelayAnswer;
 use swentel\nostr\Event\Event;
 
 /**
@@ -31,7 +33,7 @@ class RecordingNostrTransmitter extends NostrEventTransmitter
     public array $relayLists = [];
 
     /**
-     * What transmit() reports. `false` stands for "no relay accepted it".
+     * `false` makes every relay refuse — "no relay accepted it".
      */
     public bool $accepts = true;
 
@@ -44,18 +46,31 @@ class RecordingNostrTransmitter extends NostrEventTransmitter
     public array $rejectedKinds = [];
 
     /**
+     * Relays that refuse while the rest accepts: relay URL => refusal text. This is what
+     * lets a test stage "one relay says yes, the others say no".
+     *
+     * @var array<string, string>
+     */
+    public array $refusingRelays = [];
+
+    /**
      * @param  list<string>  $relayUrls
      */
-    public function transmit(Event $event, array $relayUrls): bool
+    public function transmit(Event $event, array $relayUrls): NostrBroadcastResult
     {
         $this->events[] = $event;
         $this->relayLists[] = $relayUrls;
 
-        if (in_array($event->getKind(), $this->rejectedKinds, true)) {
-            return false;
+        if (! $this->accepts || in_array($event->getKind(), $this->rejectedKinds, true)) {
+            return NostrBroadcastResult::refusedByAll($event, $relayUrls);
         }
 
-        return $this->accepts;
+        return new NostrBroadcastResult($event->getId(), array_map(
+            fn (string $relay): NostrRelayAnswer => isset($this->refusingRelays[$relay])
+                ? NostrRelayAnswer::refused($relay, $this->refusingRelays[$relay])
+                : NostrRelayAnswer::accepted($relay),
+            array_values($relayUrls),
+        ));
     }
 
     /**

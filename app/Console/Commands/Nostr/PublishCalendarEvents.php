@@ -5,9 +5,11 @@ namespace App\Console\Commands\Nostr;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Support\NostrCalendarEventFactory;
+use App\Support\NostrBroadcastResult;
 use App\Support\NostrEventTransmitter;
 use App\Support\NostrPayloadFingerprint;
 use App\Support\NostrPublishFailures;
+use App\Support\NostrRelays;
 use Carbon\CarbonInterface;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -199,10 +201,10 @@ class PublishCalendarEvents extends Command
         /**
          * Whether the relay set accepted anything at all in this run.
          *
-         * This is the one piece of evidence {@see NostrEventTransmitter} cannot give per
-         * send: its return value is a single boolean, so "the relays are down" and "this
-         * event is malformed" arrive as the same answer. An acceptance somewhere else in
-         * the same run separates them — see the re-offer below.
+         * A send that misses the quorum cannot say on its own whether "the relays are
+         * down" or "this event is malformed" — both arrive as too few `OK true`. An
+         * acceptance somewhere else in the same run separates them — see the re-offer
+         * below.
          */
         $acceptedSomething = false;
 
@@ -289,9 +291,9 @@ class PublishCalendarEvents extends Command
      *
      * ## Why an acceptance elsewhere in the run is the right trigger
      *
-     * {@see NostrEventTransmitter::transmit()} answers with one boolean for the whole
-     * relay set, so a single send can never tell "the relays are down" from "this event
-     * is malformed". Another record accepted in the same minute can: it is the relays
+     * A send that misses the quorum ({@see NostrRelays::quorum()}) can never tell "the
+     * relays are down" from "this event is malformed" on its own. Another record
+     * accepted in the same minute can: it is the relays
      * saying yes to something. On that evidence a record that was given up on deserves
      * one more try, and a rejection that follows it means the payload — which is why the
      * count is kept rather than cleared, and why the warning stays.
@@ -411,7 +413,16 @@ class PublishCalendarEvents extends Command
         $signer = new Sign;
         $signer->signEvent($event, $hexKey);
 
-        if (! $this->transmit($event)) {
+        $answers = $this->transmit($event);
+
+        /*
+         * Published means: at least NostrRelays::quorum() relays answered `OK true` to
+         * THIS event id. Until 2026-11-17 one positive frame of any kind from one relay
+         * was enough, and 557 of 684 upcoming dates were marked published while neither
+         * configured relay held them. The relays that refused are named below and are
+         * filled in by `nostr:rebroadcast-calendar`, which reads before it sends.
+         */
+        if (! $answers->reached(NostrRelays::quorum())) {
             /*
              * Count the rejection before reporting it: this is what turns the third
              * failure of one payload into the skip above, instead of an endless queue
@@ -420,7 +431,15 @@ class PublishCalendarEvents extends Command
              */
             $attempts = NostrPublishFailures::recordFailure($model, $event);
 
-            $this->error("Failed to publish calendar event for {$modelName} #{$model->id} (attempt {$attempts} with this payload)");
+            $this->error("Failed to publish calendar event for {$modelName} #{$model->id} (attempt {$attempts} with this payload): {$answers->summary()}");
+
+            Log::warning('Nostr calendar publish missed the relay quorum', [
+                'model' => $modelName,
+                'id' => $model->id,
+                'attempt' => $attempts,
+                'quorum' => NostrRelays::quorum(),
+                'relays' => $answers->summary(),
+            ]);
 
             return false;
         }
@@ -447,7 +466,7 @@ class PublishCalendarEvents extends Command
          */
         NostrPublishFailures::clear($model);
 
-        $this->info("Published calendar event for {$modelName} #{$model->id}");
+        $this->info("Published calendar event for {$modelName} #{$model->id}: {$answers->summary()}");
 
         return true;
     }
@@ -457,7 +476,7 @@ class PublishCalendarEvents extends Command
      * transmission of this run but the first — calendar refreshes included, since they
      * go to the same relays. A run with a single send pays no wait.
      */
-    private function transmit(Event $event): bool
+    private function transmit(Event $event): NostrBroadcastResult
     {
         $sleepSeconds = max(0.0, (float) $this->option('sleep'));
 
@@ -467,7 +486,7 @@ class PublishCalendarEvents extends Command
 
         $this->hasTransmitted = true;
 
-        return $this->transmitter->transmit($event, config('services.nostr.relays', []));
+        return $this->transmitter->transmit($event, NostrRelays::all());
     }
 
     /**
@@ -515,8 +534,10 @@ class PublishCalendarEvents extends Command
         $signer = new Sign;
         $signer->signEvent($calendar, $hexKey);
 
-        if (! $this->transmit($calendar)) {
-            $this->warn("Published the event but could not refresh the calendar for Meetup #{$meetup->id}; it will be retried.");
+        $answers = $this->transmit($calendar);
+
+        if (! $answers->reached(NostrRelays::quorum())) {
+            $this->warn("Published the event but could not refresh the calendar for Meetup #{$meetup->id}; it will be retried: {$answers->summary()}");
 
             return;
         }

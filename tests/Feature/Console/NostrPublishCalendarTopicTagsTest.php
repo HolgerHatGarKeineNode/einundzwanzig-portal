@@ -5,6 +5,7 @@ use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Models\Region;
+use App\Support\NostrBroadcastResult;
 use App\Support\NostrEventTransmitter;
 use swentel\nostr\Event\Event;
 
@@ -65,7 +66,7 @@ function topicTagCaptureTransmitted(&$captured): void
             ->andReturnUsing(function (Event $event, array $relayUrls) use (&$captured) {
                 $captured = $event;
 
-                return true;
+                return NostrBroadcastResult::acceptedByAll($event, $relayUrls);
             });
     });
 }

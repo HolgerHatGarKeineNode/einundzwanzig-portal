@@ -4,6 +4,7 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
+use App\Support\NostrBroadcastResult;
 use App\Support\NostrEventTransmitter;
 use swentel\nostr\Event\Event;
 use swentel\nostr\Key\Key;
@@ -135,12 +136,14 @@ it('batches the meetup calendars too', function () {
 it('stops at the first rejected send and does not mark the records it did not send', function () {
     $transmitter = batchTransmitter(new class extends RecordingNostrTransmitter
     {
-        public function transmit(Event $event, array $relayUrls): bool
+        public function transmit(Event $event, array $relayUrls): NostrBroadcastResult
         {
             parent::transmit($event, $relayUrls);
 
             // Accept the first two events, reject the third.
-            return count($this->ofKind(31923)) <= 2;
+            return count($this->ofKind(31923)) <= 2
+                ? NostrBroadcastResult::acceptedByAll($event, $relayUrls)
+                : NostrBroadcastResult::refusedByAll($event, $relayUrls);
         }
     });
 
@@ -185,11 +188,13 @@ it('refreshes a meetup calendar once per run, listing every event of the batch',
 it('still refreshes the calendar for the events published before a rejected send', function () {
     $transmitter = batchTransmitter(new class extends RecordingNostrTransmitter
     {
-        public function transmit(Event $event, array $relayUrls): bool
+        public function transmit(Event $event, array $relayUrls): NostrBroadcastResult
         {
             parent::transmit($event, $relayUrls);
 
-            return $event->getKind() !== 31923 || count($this->ofKind(31923)) === 1;
+            return $event->getKind() !== 31923 || count($this->ofKind(31923)) === 1
+                ? NostrBroadcastResult::acceptedByAll($event, $relayUrls)
+                : NostrBroadcastResult::refusedByAll($event, $relayUrls);
         }
     });
 
@@ -215,12 +220,12 @@ it('still refreshes the calendar for the events published before a rejected send
 it('starts no new record once the run budget is used up', function () {
     $transmitter = batchTransmitter(new class extends RecordingNostrTransmitter
     {
-        public function transmit(Event $event, array $relayUrls): bool
+        public function transmit(Event $event, array $relayUrls): NostrBroadcastResult
         {
             parent::transmit($event, $relayUrls);
             test()->travel(250)->seconds();
 
-            return true;
+            return NostrBroadcastResult::acceptedByAll($event, $relayUrls);
         }
     });
 

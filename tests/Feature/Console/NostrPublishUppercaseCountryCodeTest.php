@@ -4,6 +4,7 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
+use App\Support\NostrBroadcastResult;
 use App\Support\NostrEventTransmitter;
 use Illuminate\Process\PendingProcess;
 use Illuminate\Support\Facades\Process;
@@ -53,7 +54,7 @@ it('publishes a Spanish calendar event with the Madrid timezone when the stored 
             ->andReturnUsing(function (Event $event, array $relayUrls) use (&$transmitted) {
                 $transmitted = $event;
 
-                return true;
+                return NostrBroadcastResult::acceptedByAll($event, $relayUrls);
             });
     });
 

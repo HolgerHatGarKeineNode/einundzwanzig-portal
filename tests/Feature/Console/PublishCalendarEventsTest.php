@@ -4,6 +4,7 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
+use App\Support\NostrBroadcastResult;
 use App\Support\NostrEventTransmitter;
 use swentel\nostr\Key\Key;
 
@@ -46,7 +47,7 @@ it('succeeds without changes when there is nothing to publish', function () {
 
 it('publishes a meetup as a kind 31924 calendar and stores its coordinate', function () {
     $this->mock(NostrEventTransmitter::class, function ($mock) {
-        $mock->shouldReceive('transmit')->once()->andReturn(true);
+        $mock->shouldReceive('transmit')->once()->andReturnUsing(fn ($event, array $relays) => NostrBroadcastResult::acceptedByAll($event, $relays));
     });
 
     $meetup = meetupWithCity(['nostr_publishing_enabled' => true]);
@@ -61,7 +62,7 @@ it('publishes a meetup as a kind 31924 calendar and stores its coordinate', func
 
 it('publishes a meetup event as a kind 31923 event and stores its coordinate', function () {
     $this->mock(NostrEventTransmitter::class, function ($mock) {
-        $mock->shouldReceive('transmit')->once()->andReturn(true);
+        $mock->shouldReceive('transmit')->once()->andReturnUsing(fn ($event, array $relays) => NostrBroadcastResult::acceptedByAll($event, $relays));
     });
 
     $meetup = meetupWithCity(['nostr_publishing_enabled' => true]);
@@ -138,7 +139,7 @@ it('ignores meetup events that already started', function () {
 
 it('leaves nostr_coordinate empty when no relay accepts the event', function () {
     $this->mock(NostrEventTransmitter::class, function ($mock) {
-        $mock->shouldReceive('transmit')->once()->andReturn(false);
+        $mock->shouldReceive('transmit')->once()->andReturnUsing(fn ($event, array $relays) => NostrBroadcastResult::refusedByAll($event, $relays));
     });
 
     $meetup = meetupWithCity(['nostr_publishing_enabled' => true]);

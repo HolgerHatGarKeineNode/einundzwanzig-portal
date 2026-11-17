@@ -4,6 +4,7 @@ use App\Models\City;
 use App\Models\Country;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
+use App\Support\NostrBroadcastResult;
 use App\Support\NostrEventTransmitter;
 use App\Support\NostrPublishFailures;
 use Illuminate\Support\Facades\DB;
@@ -68,10 +69,12 @@ function selfHealingMeetup(): Meetup
 function transmitterRejecting(array &$rejectedDTags, array &$sent): void
 {
     test()->mock(NostrEventTransmitter::class, function ($mock) use (&$rejectedDTags, &$sent) {
-        $mock->shouldReceive('transmit')->andReturnUsing(function (Event $event, array $relayUrls) use (&$rejectedDTags, &$sent): bool {
+        $mock->shouldReceive('transmit')->andReturnUsing(function (Event $event, array $relayUrls) use (&$rejectedDTags, &$sent): NostrBroadcastResult {
             $sent[] = $event;
 
-            return ! in_array(publishedDTag($event), $rejectedDTags, true);
+            return in_array(publishedDTag($event), $rejectedDTags, true)
+                ? NostrBroadcastResult::refusedByAll($event, $relayUrls)
+                : NostrBroadcastResult::acceptedByAll($event, $relayUrls);
         });
     });
 }

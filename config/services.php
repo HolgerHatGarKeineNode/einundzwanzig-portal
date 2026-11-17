@@ -48,10 +48,37 @@ return [
     */
     'nostr' => [
         'publisher_key' => env('NOSTR_PUBLISHER_NSEC'),
+
+        /*
+         * Every relay the portal WRITES calendar events to and reads RSVPs from. Read it
+         * through App\Support\NostrRelays, never directly.
+         *
+         * The default is the relay list the publishing key advertises in its own NIP-65
+         * kind 10002 (as signed on 2026-11-17): the association's relay first, then six
+         * large public strfry relays whose NIP-11 shows no auth, no payment and no
+         * restricted writes, and which were measured to store kind 31923/31924. Until
+         * 2026-11-17 the default was two relays, of which only one was in that list.
+         *
+         * nostr.einundzwanzig.space reports `restricted_writes: true` (nostr-rs-relay):
+         * it refuses the portal key until that key is on its pubkey whitelist. It is in
+         * the list anyway — a refusal is recorded per relay and costs one connection —
+         * and it is never REQUIRED: see `publish_quorum`.
+         */
         'relays' => array_values(array_filter(array_map(
             'trim',
-            explode(',', (string) env('NOSTR_RELAYS', 'wss://nos.lol,wss://relay.damus.io'))
+            explode(',', (string) env(
+                'NOSTR_RELAYS',
+                'wss://nostr.einundzwanzig.space,wss://nos.lol,wss://relay.primal.net,wss://relay.damus.io,wss://nostr.mom,wss://relay.nostr.net,wss://offchain.pub'
+            ))
         ))),
+
+        /*
+         * How many relays must answer `OK true` for an event before the record counts as
+         * published. Two, not one: "one relay is enough" is what let 557 of 684 upcoming
+         * dates be marked published while neither configured relay held them (measured
+         * 2026-11-17). Capped at the number of configured relays.
+         */
+        'publish_quorum' => (int) env('NOSTR_PUBLISH_QUORUM', 2),
     ],
 
     /*
