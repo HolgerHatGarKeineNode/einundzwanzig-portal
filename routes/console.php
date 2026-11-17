@@ -6,6 +6,7 @@ use App\Console\Commands\Database\UpdateMeetupActivity;
 use App\Console\Commands\Nostr\IngestNostrRsvps;
 use App\Console\Commands\Nostr\PublishCalendarEvents;
 use App\Console\Commands\Nostr\PublishUnpublishedItems;
+use App\Console\Commands\Nostr\RebroadcastCalendarEvents;
 use App\Console\Commands\Nostr\RepublishCalendarEvents;
 
 Schedule::command(CleanupLoginKeys::class)->everyFifteenMinutes();
@@ -251,6 +252,25 @@ Schedule::command(RepublishCalendarEvents::class, [
     '--force',
     '--limit' => 10,
 ])->hourly();
+
+/*
+|--------------------------------------------------------------------------
+| NIP-52 rebroadcast: close the gap between "published" and "held by a relay"
+|--------------------------------------------------------------------------
+|
+| A relay may accept an event and not keep it, or cap a burst (measured
+| 2026-11-17: 557 of 684 upcoming dates were on neither configured relay).
+| This run reads every relay first and offers each one only the upcoming
+| dates and calendars it lacks, with the command's own defaults: 40 records
+| per model, 8 events per relay, at most 480 s. It never sends a past date.
+| Every ten minutes, so an empty relay fills in about 15 hours and a single
+| dropped event is back within the hour. With `withoutOverlapping()`: unlike
+| the publishers, a run can take minutes, and two runs would offer the same
+| events to the same relay and spend its burst budget twice.
+*/
+Schedule::command(RebroadcastCalendarEvents::class, [
+    '--force',
+])->everyTenMinutes()->withoutOverlapping(15);
 
 /*
 |--------------------------------------------------------------------------

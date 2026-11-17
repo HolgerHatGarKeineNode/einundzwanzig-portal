@@ -181,3 +181,12 @@ it('repairs hourly, the cadence its scan cost and batch size were chosen for', f
     expect(scheduledMatching('nostr:republish-calendar')[0]->expression)
         ->toBe('0 * * * *', 'the payload repair is no longer hourly');
 });
+
+it('schedules the calendar rebroadcast every ten minutes, forced and without overlap', function () {
+    $events = scheduledMatching('nostr:rebroadcast-calendar');
+
+    expect($events)->toHaveCount(1, 'nostr:rebroadcast-calendar is not scheduled')
+        ->and((string) $events[0]->command)->toContain('--force')
+        ->and($events[0]->expression)->toBe('*/10 * * * *')
+        ->and($events[0]->withoutOverlapping)->toBeTrue();
+});
