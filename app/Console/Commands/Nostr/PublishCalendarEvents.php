@@ -5,6 +5,7 @@ namespace App\Console\Commands\Nostr;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Support\NostrCalendarEventFactory;
+use App\Support\NostrCalendarHorizon;
 use App\Support\NostrBroadcastResult;
 use App\Support\NostrEventTransmitter;
 use App\Support\NostrPayloadFingerprint;
@@ -117,6 +118,15 @@ class PublishCalendarEvents extends Command
                 ->with('city.country')
                 ->whereNull('nostr_coordinate')
                 ->where('nostr_publishing_enabled', true)
+                /*
+                 * A calendar goes out only for a meetup that has a date within the
+                 * horizon (NostrCalendarHorizon) — published or not: the date queue
+                 * publishes it within minutes and refreshes this calendar with its `a`
+                 * tag. A meetup with nothing ahead, or only dates years ahead, waits
+                 * here without being offered or counted, and is picked up by itself
+                 * once one of its dates comes into the window.
+                 */
+                ->whereHas('meetupEvents', fn ($events) => NostrCalendarHorizon::constrain($events->whereNull('cancelled_at')))
                 ->orderBy('created_at'),
             /*
              * `cancelled_at IS NULL` — an event that is off is never published in the
@@ -147,7 +157,14 @@ class PublishCalendarEvents extends Command
                 ->with('meetup.city.country')
                 ->whereNull('nostr_coordinate')
                 ->whereNull('cancelled_at')
-                ->where('start', '>', now())
+                /*
+                 * `now < start <= now + horizon` (NostrCalendarHorizon). A date further
+                 * ahead is not selected at all — so it cannot sit at the head of the
+                 * queue, is never offered and never counts a failed attempt — and it
+                 * enters this result set by itself on the day it comes within the
+                 * horizon. `orderBy('start')` below then still puts the nearest first.
+                 */
+                ->where(fn ($query) => NostrCalendarHorizon::constrain($query))
                 ->whereHas('meetup', fn ($meetup) => $meetup->where('nostr_publishing_enabled', true))
                 ->orderBy('start'),
             default => null,

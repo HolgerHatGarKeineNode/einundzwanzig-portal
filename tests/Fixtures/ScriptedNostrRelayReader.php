@@ -43,11 +43,21 @@ class ScriptedNostrRelayReader extends NostrRelayReader
     public int $secondsPerRead = 0;
 
     /**
+     * Called at the start of every read — the way a test lets something happen in the
+     * portal while a run is busy reading (an organiser moving or cancelling a date).
+     */
+    public ?\Closure $onRead = null;
+
+    /**
      * @param  list<array<string, mixed>>  $filters
      */
     public function read(string $relayUrl, array $filters): NostrRelayReadResult
     {
         $this->reads[] = ['relay' => $relayUrl, 'filters' => $filters];
+
+        if ($this->onRead !== null) {
+            ($this->onRead)($relayUrl);
+        }
 
         if ($this->secondsPerRead > 0) {
             \Illuminate\Support\Carbon::setTestNow(now()->addSeconds($this->secondsPerRead));

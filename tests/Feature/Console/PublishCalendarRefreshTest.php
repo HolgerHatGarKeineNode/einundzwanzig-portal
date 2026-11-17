@@ -142,7 +142,9 @@ it('does not touch a calendar when the event itself was rejected', function () {
 
 it('does not re-send a calendar when a meetup itself is published', function () {
     $transmitter = refreshTransmitter();
-    refreshMeetup();
+    $meetup = refreshMeetup();
+    // A calendar is sent only for a meetup with a date inside the horizon (2026-11-17).
+    MeetupEvent::factory()->create(['meetup_id' => $meetup->id, 'start' => now()->addWeek()]);
 
     $this->artisan('nostr:publish-calendar', ['--model' => 'Meetup'])->assertExitCode(0);
 

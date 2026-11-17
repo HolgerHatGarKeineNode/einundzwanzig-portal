@@ -124,7 +124,11 @@ it('batches the meetup calendars too', function () {
     batchTransmitter();
 
     foreach (range(1, 3) as $i) {
-        batchMeetup(['name' => "Batch Meetup {$i}"]);
+        // A calendar is sent only for a meetup with a date inside the horizon.
+        MeetupEvent::factory()->create([
+            'meetup_id' => batchMeetup(['name' => "Batch Meetup {$i}"])->id,
+            'start' => now()->addWeek(),
+        ]);
     }
 
     $this->artisan('nostr:publish-calendar', ['--model' => 'Meetup', '--limit' => 2, '--sleep' => 0])

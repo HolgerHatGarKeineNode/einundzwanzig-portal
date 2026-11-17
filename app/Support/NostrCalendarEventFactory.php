@@ -274,10 +274,10 @@ class NostrCalendarEventFactory
 
         return $meetup->meetupEvents()
             ->whereNotNull('nostr_coordinate')
-            // Only what lies ahead (2026-11-17). Until then a calendar listed every date
-            // the meetup ever published, so the list grew without bound and every
-            // re-send carried the whole past along.
-            ->where('start', '>', now())
+            // Only what lies ahead and within the horizon (2026-11-17). Until then a
+            // calendar listed every date the meetup ever published, so the list grew
+            // without bound and every re-send carried the whole past along.
+            ->where(fn ($query) => NostrCalendarHorizon::constrain($query))
             ->orderBy('start')
             ->orderBy('id')
             ->pluck('nostr_coordinate')

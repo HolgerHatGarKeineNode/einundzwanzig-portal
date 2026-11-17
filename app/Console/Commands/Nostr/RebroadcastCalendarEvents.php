@@ -6,6 +6,7 @@ use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Support\NostrCalendarAddress;
 use App\Support\NostrCalendarEventFactory;
+use App\Support\NostrCalendarHorizon;
 use App\Support\NostrEventTransmitter;
 use App\Support\NostrEventVerifier;
 use App\Support\NostrPayloadFingerprint;
@@ -33,12 +34,15 @@ use swentel\nostr\Sign\Sign;
  *
  * ## What is sent — and what never is
  *
- * ONLY WHAT LIES AHEAD (the operator's rule, 2026-11-17: no re-broadcast of the past):
+ * ONLY WHAT LIES AHEAD, AND NO FURTHER THAN THE HORIZON (the operator's rules of
+ * 2026-11-17: no re-broadcast of the past, and no date more than a year ahead —
+ * {@see NostrCalendarHorizon}):
  *
- *  - kind 31923 for dates that start in the future and are not cancelled,
+ *  - kind 31923 for dates that start within the horizon and are not cancelled,
  *  - kind 31924 for meetups that have at least one such date.
  *
- * A past or cancelled date is neither read nor sent here, whatever a relay holds. The
+ * A past, cancelled or far-future date is neither read nor sent here, whatever a relay
+ * holds. Nearest start first, so an interrupted run has delivered what matters. The
  * rule is checked twice: in the query ({@see self::candidates()}) and again at the one
  * place an event leaves ({@see self::mayBeSent()}).
  *
@@ -66,7 +70,8 @@ use swentel\nostr\Sign\Sign;
  * `--per-relay` bounds the events offered to one relay per run, `--sleep` spaces them.
  * The defaults stay below what the relays were seen to keep from one burst (ten on
  * nos.lol, eight on relay.damus.io). What is not sent now is found missing again by a
- * later run; the cursor walks the whole catalogue in id order and starts over.
+ * later run; the cursor walks the records in scope from the nearest start outwards and
+ * starts over.
  */
 class RebroadcastCalendarEvents extends Command
 {
@@ -95,6 +100,11 @@ class RebroadcastCalendarEvents extends Command
     private array $perRelay = [];
 
     private bool $hasSent = false;
+
+    /**
+     * @var array<string, array<int, string>> model name => record id => the start it is ordered by
+     */
+    private array $sortKeys = [];
 
     public function __construct(private readonly NostrEventTransmitter $transmitter)
     {
@@ -155,7 +165,8 @@ class RebroadcastCalendarEvents extends Command
                 $checked += $batch->count();
 
                 if ($force) {
-                    Cache::forever(self::CURSOR_CACHE_PREFIX.$name, (int) $batch->last()->id);
+                    $last = (int) $batch->last()->id;
+                    Cache::forever(self::CURSOR_CACHE_PREFIX.$name, $this->sortKeys[$name][$last].'|'.$last);
                 }
             }
         }
@@ -164,46 +175,93 @@ class RebroadcastCalendarEvents extends Command
     }
 
     /**
-     * The records this run looks at: published under the configured key, upcoming, not
-     * cancelled — in id order, continuing after the last run's cursor and starting over
-     * at the end. A dry run always starts at the beginning and moves no cursor.
+     * The records this run looks at: published under the configured key, not cancelled,
+     * starting within the horizon ({@see NostrCalendarHorizon}) — NEAREST START FIRST,
+     * so a run that is interrupted has delivered what matters. A calendar takes the
+     * start of its meetup's nearest date.
+     *
+     * A scheduled run takes `--limit` records, continues after the last run's cursor
+     * and starts over at the end, so every record is looked at in turn. A dry run always
+     * starts at the nearest date and moves no cursor.
      *
      * @return Collection<int, Meetup|MeetupEvent>
      */
     private function candidates(string $modelName, string $pubkeyHex, bool $force): Collection
     {
         $limit = max(0, (int) $this->option('limit'));
+        $order = $modelName === 'Meetup' ? $this->calendarOrder($pubkeyHex) : $this->dateOrder($pubkeyHex);
 
-        $query = $modelName === 'Meetup'
-            ? Meetup::query()
-                ->with('city.country')
-                ->where('nostr_publishing_enabled', true)
-                ->where('nostr_coordinate', 'like', NostrCalendarAddress::KIND_CALENDAR.":{$pubkeyHex}:%")
-                ->whereHas('meetupEvents', fn ($events) => $events
-                    ->whereNotNull('nostr_coordinate')
-                    ->whereNull('cancelled_at')
-                    ->where('start', '>', now()))
-            : MeetupEvent::query()
-                ->with('meetup.city.country')
+        $this->sortKeys[$modelName] = array_column($order, 0, 1);
+
+        if ($limit > 0) {
+            $cursor = $force ? Cache::get(self::CURSOR_CACHE_PREFIX.$modelName) : null;
+            $offset = 0;
+
+            if (is_string($cursor) && str_contains($cursor, '|')) {
+                [$cursorKey, $cursorId] = explode('|', $cursor, 2);
+
+                foreach ($order as $position => [$key, $id]) {
+                    if (strcmp($key, $cursorKey) < 0 || ($key === $cursorKey && $id <= (int) $cursorId)) {
+                        $offset = $position + 1;
+                    }
+                }
+            }
+
+            // After the cursor first, then from the nearest date again; never twice.
+            $order = array_slice([...array_slice($order, $offset), ...array_slice($order, 0, $offset)], 0, $limit);
+        }
+
+        $ids = array_column($order, 1);
+
+        $records = $modelName === 'Meetup'
+            ? Meetup::query()->with('city.country')->whereKey($ids)->get()
+            : MeetupEvent::query()->with('meetup.city.country')->whereKey($ids)->get();
+
+        $position = array_flip($ids);
+
+        return $records->sortBy(fn (Meetup|MeetupEvent $record): int => $position[$record->id])->values();
+    }
+
+    /**
+     * @return list<array{0: string, 1: int}> [start, id] of every date in scope, nearest first
+     */
+    private function dateOrder(string $pubkeyHex): array
+    {
+        return NostrCalendarHorizon::constrain(
+            MeetupEvent::query()
                 ->where('nostr_coordinate', 'like', NostrCalendarAddress::KIND_TIME_BASED_EVENT.":{$pubkeyHex}:%")
                 ->whereNull('cancelled_at')
-                ->where('start', '>', now())
-                ->whereHas('meetup', fn ($meetup) => $meetup->where('nostr_publishing_enabled', true));
+                ->whereHas('meetup', fn ($meetup) => $meetup->where('nostr_publishing_enabled', true))
+                ->toBase()
+        )
+            ->orderBy('start')
+            ->orderBy('id')
+            ->get(['id', 'start'])
+            ->map(fn (object $row): array => [(string) $row->start, (int) $row->id])
+            ->all();
+    }
 
-        if ($limit === 0) {
-            return $query->orderBy('id')->get();
-        }
+    /**
+     * @return list<array{0: string, 1: int}> [start of the nearest date in scope, meetup id], nearest first
+     */
+    private function calendarOrder(string $pubkeyHex): array
+    {
+        $nearest = NostrCalendarHorizon::constrain(
+            MeetupEvent::query()->whereNotNull('nostr_coordinate')->whereNull('cancelled_at')->toBase()
+        )
+            ->groupBy('meetup_id')
+            ->selectRaw('meetup_id, min(start) as nearest_start')
+            ->pluck('nearest_start', 'meetup_id');
 
-        $cursor = $force ? (int) Cache::get(self::CURSOR_CACHE_PREFIX.$modelName, 0) : 0;
-        $records = (clone $query)->where('id', '>', $cursor)->orderBy('id')->limit($limit)->get();
-
-        if ($records->count() < $limit && $cursor > 0) {
-            $records = $records->concat(
-                (clone $query)->where('id', '<=', $cursor)->orderBy('id')->limit($limit - $records->count())->get()
-            );
-        }
-
-        return $records->values();
+        return Meetup::query()
+            ->where('nostr_publishing_enabled', true)
+            ->where('nostr_coordinate', 'like', NostrCalendarAddress::KIND_CALENDAR.":{$pubkeyHex}:%")
+            ->whereKey($nearest->keys())
+            ->pluck('id')
+            ->map(fn (int $id): array => [(string) $nearest[$id], $id])
+            ->sort(fn (array $a, array $b): int => strcmp($a[0], $b[0]) ?: ($a[1] - $b[1]))
+            ->values()
+            ->all();
     }
 
     /**
@@ -398,21 +456,25 @@ class RebroadcastCalendarEvents extends Command
     }
 
     /**
-     * The last gate before an event leaves: nothing about the past, nothing cancelled.
+     * The last gate before an event leaves: nothing about the past, nothing cancelled,
+     * nothing further ahead than the horizon.
      * Deliberately independent of {@see self::candidates()} — a change to that query
      * must not be able to turn this command into a re-broadcast of the back catalogue.
      */
     private function mayBeSent(Meetup|MeetupEvent $record): bool
     {
         if ($record instanceof MeetupEvent) {
-            return $record->cancelled_at === null && $record->start !== null && $record->start->isFuture();
+            // Asked of the database, not of the record loaded when the run began: a run
+            // reads relays for minutes, and a date an organiser cancelled or moved out
+            // of the window meanwhile must not leave as if nothing had happened.
+            return NostrCalendarHorizon::constrain(
+                MeetupEvent::query()->whereKey($record->id)->whereNull('cancelled_at')
+            )->exists();
         }
 
-        return $record->meetupEvents()
-            ->whereNotNull('nostr_coordinate')
-            ->whereNull('cancelled_at')
-            ->where('start', '>', now())
-            ->exists();
+        return NostrCalendarHorizon::constrain(
+            $record->meetupEvents()->whereNotNull('nostr_coordinate')->whereNull('cancelled_at')
+        )->exists();
     }
 
     private function report(int $checked, bool $force): int

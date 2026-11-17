@@ -51,6 +51,8 @@ it('publishes a meetup as a kind 31924 calendar and stores its coordinate', func
     });
 
     $meetup = meetupWithCity(['nostr_publishing_enabled' => true]);
+    // A calendar is sent only for a meetup with a date inside the horizon (2026-11-17).
+    MeetupEvent::factory()->create(['meetup_id' => $meetup->id, 'start' => now()->addWeek()]);
 
     $this->artisan('nostr:publish-calendar', ['--model' => 'Meetup'])
         ->assertExitCode(0);
@@ -143,6 +145,7 @@ it('leaves nostr_coordinate empty when no relay accepts the event', function () 
     });
 
     $meetup = meetupWithCity(['nostr_publishing_enabled' => true]);
+    MeetupEvent::factory()->create(['meetup_id' => $meetup->id, 'start' => now()->addWeek()]);
 
     $this->artisan('nostr:publish-calendar', ['--model' => 'Meetup'])
         ->assertExitCode(1);

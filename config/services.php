@@ -79,6 +79,14 @@ return [
          * 2026-11-17). Capped at the number of configured relays.
          */
         'publish_quorum' => (int) env('NOSTR_PUBLISH_QUORUM', 2),
+
+        /*
+         * How far ahead a date may start to be sent to the relays: now < start <= now +
+         * this many days. Recurring series reach years ahead; publishing all of them
+         * floods the relays with dates nobody looks at yet. A date further ahead is
+         * published when it comes into the window. See App\Support\NostrCalendarHorizon.
+         */
+        'calendar_horizon_days' => (int) env('NOSTR_CALENDAR_HORIZON_DAYS', 365),
     ],
 
     /*

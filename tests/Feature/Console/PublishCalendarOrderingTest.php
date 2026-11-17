@@ -62,6 +62,19 @@ function orderingMeetup(array $attributes = []): Meetup
 }
 
 /**
+ * A meetup waiting in the calendar queue: opted in, and with a date inside the horizon
+ * — without one its calendar is not sent at all (NostrCalendarHorizon, 2026-11-17).
+ */
+function orderingQueuedMeetup(array $attributes = []): Meetup
+{
+    $meetup = orderingMeetup($attributes);
+
+    MeetupEvent::factory()->create(['meetup_id' => $meetup->id, 'start' => now()->addWeek()]);
+
+    return $meetup;
+}
+
+/**
  * Four events whose creation order is the exact inverse of nothing in particular —
  * deliberately shuffled so that "newest created", "oldest created" and "starts
  * soonest" are three different records.
@@ -262,9 +275,9 @@ it('still refuses to publish an event that has already started, whatever the ord
 it('publishes the longest-waiting meetup first', function () {
     fakeAcceptingTransmitter();
 
-    $oldest = orderingMeetup(['name' => 'waiting since 2023', 'created_at' => Carbon::parse('-400 days')]);
-    orderingMeetup(['name' => 'opted in today', 'created_at' => Carbon::parse('-1 hour')]);
-    orderingMeetup(['name' => 'somewhere between', 'created_at' => Carbon::parse('-30 days')]);
+    $oldest = orderingQueuedMeetup(['name' => 'waiting since 2023', 'created_at' => Carbon::parse('-400 days')]);
+    orderingQueuedMeetup(['name' => 'opted in today', 'created_at' => Carbon::parse('-1 hour')]);
+    orderingQueuedMeetup(['name' => 'somewhere between', 'created_at' => Carbon::parse('-30 days')]);
 
     $this->artisan('nostr:publish-calendar', ['--model' => 'Meetup', '--limit' => 1])
         ->assertExitCode(0);
@@ -276,16 +289,16 @@ it('publishes the longest-waiting meetup first', function () {
 it('does not starve an old meetup when newer ones keep opting in', function () {
     fakeAcceptingTransmitter();
 
-    $old = orderingMeetup(['name' => 'the old one', 'created_at' => Carbon::parse('-400 days')]);
+    $old = orderingQueuedMeetup(['name' => 'the old one', 'created_at' => Carbon::parse('-400 days')]);
 
     // Two rounds of newcomers arriving while the queue is being worked through. Under
     // `created_at DESC` each round would jump the queue and the old one would still be
     // unpublished at the end; under ascending it goes first and leaves the queue.
-    orderingMeetup(['name' => 'newcomer A', 'created_at' => Carbon::parse('-2 hours')]);
+    orderingQueuedMeetup(['name' => 'newcomer A', 'created_at' => Carbon::parse('-2 hours')]);
 
     $this->artisan('nostr:publish-calendar', ['--model' => 'Meetup', '--limit' => 1])->assertExitCode(0);
 
-    orderingMeetup(['name' => 'newcomer B', 'created_at' => Carbon::parse('-1 hour')]);
+    orderingQueuedMeetup(['name' => 'newcomer B', 'created_at' => Carbon::parse('-1 hour')]);
 
     expect($old->fresh()->nostr_coordinate)->not->toBeNull();
 });

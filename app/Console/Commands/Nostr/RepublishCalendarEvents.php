@@ -5,6 +5,7 @@ namespace App\Console\Commands\Nostr;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use App\Support\NostrCalendarEventFactory;
+use App\Support\NostrCalendarHorizon;
 use App\Support\NostrEventTransmitter;
 use App\Support\NostrPayloadFingerprint;
 use App\Support\NostrRelays;
@@ -344,7 +345,8 @@ class RepublishCalendarEvents extends Command
                 // Only what lies ahead (the operator's rule, 2026-11-17): a past date is
                 // never re-sent, changed payload or not. A cancelled UPCOMING date stays
                 // in — re-sending it is how the cancellation reaches subscribers (#141).
-                ->where('start', '>', now())
+                // And nothing further ahead than the horizon, cancelled or not.
+                ->where(fn ($query) => NostrCalendarHorizon::constrain($query))
                 ->whereHas('meetup', fn ($query) => $query->where('nostr_publishing_enabled', true))
                 ->when($meetup, fn ($query) => $query->where('meetup_id', $meetup->id))
                 ->orderBy('start')
@@ -360,7 +362,7 @@ class RepublishCalendarEvents extends Command
                 // Same rule for calendars: only those of meetups with a published date
                 // still ahead. Without it, trimming the `a` tags to upcoming dates would
                 // make this command re-send the calendar of every dormant meetup once.
-                ->whereHas('meetupEvents', fn ($query) => $query->whereNotNull('nostr_coordinate')->where('start', '>', now()))
+                ->whereHas('meetupEvents', fn ($query) => NostrCalendarHorizon::constrain($query->whereNotNull('nostr_coordinate')))
                 ->when($meetup, fn ($query) => $query->whereKey($meetup->id))
                 ->orderBy('id')
                 ->get();

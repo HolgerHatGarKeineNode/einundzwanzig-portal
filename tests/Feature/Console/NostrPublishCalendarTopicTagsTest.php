@@ -75,7 +75,8 @@ it('transmits the geography topics on a published calendar', function () {
     $transmitted = null;
     topicTagCaptureTransmitted($transmitted);
 
-    topicTagIndianapolisMeetup();
+    // A calendar is sent only for a meetup with a date inside the horizon (2026-11-17).
+    MeetupEvent::factory()->create(['meetup_id' => topicTagIndianapolisMeetup()->id, 'start' => now()->addWeek()]);
 
     $this->artisan('nostr:publish-calendar', ['--model' => 'Meetup'])
         ->assertExitCode(0);
