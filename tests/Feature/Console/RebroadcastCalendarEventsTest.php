@@ -281,3 +281,20 @@ it('does not send a date that began while the relays were being read', function 
     expect($reader->reads)->toHaveCount(3)
         ->and($transmitter->events)->toBe([]);
 });
+
+it('keeps nostr:republish-calendar to what lies ahead as well', function () {
+    $dormant = rebroadcastMeetup();
+    rebroadcastDate($dormant, ['start' => now()->subWeek()]);
+
+    $active = rebroadcastMeetup();
+    rebroadcastDate($active, ['start' => now()->subWeek()]);
+    $upcoming = rebroadcastDate($active);
+
+    [, $transmitter] = rebroadcastWorld([]);
+
+    $this->artisan('nostr:republish-calendar', ['--force' => true, '--sleep' => 0])->assertExitCode(0);
+
+    // No past date, and no calendar of a meetup that has nothing ahead.
+    expect(array_map(fn ($event) => RecordingNostrTransmitter::tagValue($event, 'd'), $transmitter->events))
+        ->toBe(['meetup-event-'.$upcoming->id, 'meetup-'.$active->id]);
+});

@@ -341,6 +341,10 @@ class RepublishCalendarEvents extends Command
             : MeetupEvent::query()
                 ->with('meetup.city.country')
                 ->whereNotNull('nostr_coordinate')
+                // Only what lies ahead (the operator's rule, 2026-11-17): a past date is
+                // never re-sent, changed payload or not. A cancelled UPCOMING date stays
+                // in — re-sending it is how the cancellation reaches subscribers (#141).
+                ->where('start', '>', now())
                 ->whereHas('meetup', fn ($query) => $query->where('nostr_publishing_enabled', true))
                 ->when($meetup, fn ($query) => $query->where('meetup_id', $meetup->id))
                 ->orderBy('start')
@@ -353,6 +357,10 @@ class RepublishCalendarEvents extends Command
                 ->with('city.country')
                 ->whereNotNull('nostr_coordinate')
                 ->where('nostr_publishing_enabled', true)
+                // Same rule for calendars: only those of meetups with a published date
+                // still ahead. Without it, trimming the `a` tags to upcoming dates would
+                // make this command re-send the calendar of every dormant meetup once.
+                ->whereHas('meetupEvents', fn ($query) => $query->whereNotNull('nostr_coordinate')->where('start', '>', now()))
                 ->when($meetup, fn ($query) => $query->whereKey($meetup->id))
                 ->orderBy('id')
                 ->get();
