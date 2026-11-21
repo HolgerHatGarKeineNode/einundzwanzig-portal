@@ -7,6 +7,7 @@ use App\Models\CourseEvent;
 use App\Models\Meetup;
 use App\Models\MeetupEvent;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Process;
 
 trait NostrTrait
@@ -39,8 +40,26 @@ trait NostrTrait
         ];
     }
 
+    /**
+     * Returns null — and so publishes nothing — when the current locale has no
+     * translation for the note's template. The translator would otherwise hand back
+     * the bare key (`nostr.meetup_event_text`), and a published Nostr note cannot be
+     * taken back.
+     */
     public function getText(Model $model, string $countryCode): ?string
     {
+        $key = match (true) {
+            $model instanceof CourseEvent => 'nostr.course_event_text',
+            $model instanceof MeetupEvent => 'nostr.meetup_event_text',
+            $model instanceof Meetup => 'nostr.meetup_text',
+            $model instanceof Course => 'nostr.course_text',
+            default => null,
+        };
+
+        if ($key === null || ! Lang::hasForLocale($key)) {
+            return null;
+        }
+
         return match (true) {
             $model instanceof CourseEvent => __('nostr.course_event_text', [
                 'from' => $this->getFrom($model),

@@ -44,6 +44,19 @@ class PublishUnpublishedItems extends Command
     ];
 
     /**
+     * Country codes whose language file carries a different name than the country.
+     *
+     * Everything not listed here is tried as a locale of its own name, and a code
+     * without a lang/<code>.json falls back to `app.fallback_locale` — see
+     * localeForCountry().
+     */
+    private const LOCALE_MAP = [
+        'at' => 'de',
+        'ch' => 'de',
+        'cz' => 'cs',
+    ];
+
+    /**
      * Issue #84: every branch that prints an error now ends the run non-zero.
      *
      * Until #84 only the schema gate from #72 did, so a publish that failed on every
@@ -180,9 +193,27 @@ class PublishUnpublishedItems extends Command
     {
         // Set user timezone and locale based on country code
         $timezone = self::TZ_MAP[$countryCode] ?? 'Europe/Berlin';
-        config([
-            'app.user-timezone' => $timezone,
-            'app.locale' => in_array($countryCode, ['at', 'ch']) ? 'de' : $countryCode,
-        ]);
+        config(['app.user-timezone' => $timezone]);
+
+        // setLocale() rather than config(['app.locale' => …]): it also reaches a
+        // translator that was resolved before this point, which a config write does not.
+        app()->setLocale($this->localeForCountry($countryCode));
+    }
+
+    /**
+     * The note's text locale for a country code.
+     *
+     * Until this fix the country code itself became the locale, and Laravel never
+     * falls back for JSON translations: Translator::get() looks the key up in the
+     * JSON file of the requested locale only, and returns the bare key when that
+     * file does not exist. A meetup in France, the US, the UK, Italy or Czechia
+     * (code `cz`, file `cs.json`) therefore published `nostr.meetup_event_text`
+     * as its note.
+     */
+    private function localeForCountry(string $countryCode): string
+    {
+        $locale = self::LOCALE_MAP[$countryCode] ?? $countryCode;
+
+        return is_file(lang_path($locale.'.json')) ? $locale : config('app.fallback_locale');
     }
 }
