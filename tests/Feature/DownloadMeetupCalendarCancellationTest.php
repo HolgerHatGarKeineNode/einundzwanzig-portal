@@ -398,9 +398,12 @@ it('re-delivers an un-cancelled UID as STATUS:CONFIRMED with a SEQUENCE above th
     ]);
 
     $uid = 'meetup-event-'.$event->id.'@einundzwanzig.space';
+    // Read the feed before mounting: since Livewire 4.4.9 a component remembers the origin and
+    // route it was rendered on and rejects updates from another context. A feed request between
+    // mount and call('cancel') replaces that context in the test and the call answers 404.
+    $announced = cancellationFeedEntryFor($uid);
     $component = Livewire::test('meetups.create-edit-events', ['meetup' => $meetup, 'event' => $event]);
 
-    $announced = cancellationFeedEntryFor($uid);
     expect($announced)->not->toBeNull()
         ->and($announced)->toContain('STATUS:CONFIRMED');
 
