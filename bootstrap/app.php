@@ -10,6 +10,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\Log;
+use League\OAuth2\Server\Exception\OAuthServerException;
 use Livewire\Exceptions\MethodNotFoundException;
 use Livewire\Exceptions\PublicPropertyNotFoundException;
 use Livewire\Features\SupportFileUploads\MissingFileUploadsTraitException;
@@ -101,6 +102,22 @@ return Application::configure(basePath: dirname(__DIR__))
             return $e instanceof PublicPropertyNotFoundException && ! app()->isLocal();
         };
 
+        $isRejectedBearerToken = function (Throwable $e): bool {
+            /*
+             * Passport's TokenGuard catches every OAuthServerException raised while it
+             * validates a bearer token, answers the request as a guest (401) and still
+             * calls report() on it (vendor/laravel/passport/src/Guards/TokenGuard.php,
+             * `catch (OAuthServerException $e)`). An expired, revoked or malformed token
+             * from an API or MCP client therefore landed in Nightwatch as an exception
+             * (issue #33, first seen 2026-07-30, reopened by itself after being resolved).
+             *
+             * Only `access_denied` is silenced: that is what BearerTokenValidator throws
+             * for a missing, unverifiable, expired or revoked token. Any other error type,
+             * e.g. `server_error` for an unreadable key, keeps being reported.
+             */
+            return $e instanceof OAuthServerException && $e->getErrorType() === 'access_denied';
+        };
+
         /*
          * TokenMismatchException steht in Laravels `internalDontReport`, und dieser
          * Filter greift VOR den hier registrierten Callbacks — ohne stopIgnoring()
@@ -141,7 +158,11 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         };
 
-        $exceptions->report(function (Throwable $e) use ($isStaleLivewireAsset, $isStaleCompiledView, $isMissingFileUploadsTrait, $isLivewireExploitProbe, $isMalformedLivewirePropertyUpdate, $isSilencedFourNineteen, $livewireComponentNames) {
+        $exceptions->report(function (Throwable $e) use ($isRejectedBearerToken, $isStaleLivewireAsset, $isStaleCompiledView, $isMissingFileUploadsTrait, $isLivewireExploitProbe, $isMalformedLivewirePropertyUpdate, $isSilencedFourNineteen, $livewireComponentNames) {
+            if ($isRejectedBearerToken($e)) {
+                return false;
+            }
+
             if ($isStaleLivewireAsset($e, request())) {
                 return false;
             }
