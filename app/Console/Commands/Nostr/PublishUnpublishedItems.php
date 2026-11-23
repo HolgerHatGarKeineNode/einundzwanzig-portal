@@ -9,6 +9,7 @@ use App\Models\MeetupEvent;
 use App\Traits\NostrTrait;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 
@@ -152,17 +153,53 @@ class PublishUnpublishedItems extends Command
             if ($result['success']) {
                 $this->info("Published successfully for {$modelName}");
             } else {
-                $this->error("Failed to publish for {$modelName}: ".$result['errorOutput']);
-
-                return self::FAILURE;
+                return $this->failRun("Failed to publish for {$modelName}: ".$result['errorOutput'], $model);
             }
         } else {
-            $this->error("No text generated for {$modelName}");
-
-            return self::FAILURE;
+            return $this->failRun("No text generated for {$modelName}", $model);
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Ends a run that had a record to publish and did not publish it.
+     *
+     * The scheduler only sees the exit code: Nightwatch issues #44 and #47 recorded
+     * "failed with exit code [1]" 30+ times and nothing else, because the error line
+     * went to the console of a scheduled run, which nobody keeps. So the same message
+     * is also logged, with the record it was about.
+     *
+     * Logs reach Nightwatch only through its `nightwatch` channel, and whether the
+     * default stack contains it is decided by LOG_STACK on the server, not here. The
+     * channel is therefore added explicitly unless the default stack already has it,
+     * so the reason shows up beside the failed task without being logged twice.
+     */
+    private function failRun(string $message, Model $model): int
+    {
+        // noscl ends its stderr with a newline; a log line should not.
+        $message = trim($message);
+
+        $this->error($message);
+
+        $defaultChannel = config('logging.default');
+        $defaultChannels = config("logging.channels.{$defaultChannel}.driver") === 'stack'
+            ? (array) config("logging.channels.{$defaultChannel}.channels", [])
+            : [$defaultChannel];
+
+        $channels = [$defaultChannel];
+
+        if (config('logging.channels.nightwatch') !== null && ! in_array('nightwatch', $defaultChannels, true)) {
+            $channels[] = 'nightwatch';
+        }
+
+        Log::stack($channels)->warning($message, [
+            'command' => $this->getName(),
+            'model' => $model::class,
+            'id' => $model->getKey(),
+        ]);
+
+        return self::FAILURE;
     }
 
     /**
